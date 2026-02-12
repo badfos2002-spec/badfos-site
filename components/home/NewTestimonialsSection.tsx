@@ -22,16 +22,14 @@ export default function NewTestimonialsSection() {
   ]
 
   return (
-    <section className="py-16 lg:py-24 bg-background-pink">
-      <div className="container-rtl">
+    <section className="w-full bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-20">
+      <div className="mx-auto max-w-[1600px] px-6 lg:px-8">
         {/* Heading */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-              מה הלקוחות שלנו חושבים
-            </span>
+          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            מה הלקוחות שלנו חושבים
           </h2>
-          <p className="text-text-gray">
+          <p className="text-gray-600">
             קראו מה אלפי לקוחות מרוצים יש לנו מהאיכות שלנו
           </p>
         </div>
@@ -41,28 +39,28 @@ export default function NewTestimonialsSection() {
           {testimonials.map((testimonial, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+              className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow text-right"
             >
               {/* Quote Icon */}
-              <div className="text-6xl text-gray-200 leading-none mb-4">"</div>
+              <div className="w-10 h-10 text-gray-300 text-4xl leading-none mb-4">"</div>
 
               {/* Rating */}
-              <div className="flex gap-1 mb-4">
+              <div className="flex gap-1 mb-4 justify-end">
                 {[...Array(testimonial.rating)].map((_, i) => (
                   <Star
                     key={i}
-                    className="w-5 h-5 fill-primary text-primary"
+                    className="w-5 h-5 fill-yellow-400 text-yellow-400"
                   />
                 ))}
               </div>
 
               {/* Text */}
-              <p className="text-text-gray mb-4 leading-relaxed text-sm">
+              <p className="text-gray-600 mb-4 leading-relaxed text-sm">
                 {testimonial.text}
               </p>
 
               {/* Name */}
-              <p className="font-bold text-text-dark">{testimonial.name}</p>
+              <p className="font-bold text-gray-900">{testimonial.name}</p>
             </div>
           ))}
         </div>

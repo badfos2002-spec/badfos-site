@@ -59,8 +59,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Heebo', 'sans-serif'],
-        display: ['Rubik', 'sans-serif'],
+        sans: ['var(--font-rubik)', 'Rubik', 'sans-serif'],
+        display: ['var(--font-rubik)', 'Rubik', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

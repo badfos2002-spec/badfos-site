@@ -6,40 +6,34 @@ export default function NewHowItWorksSection() {
   const steps = [
     {
       number: 1,
-      title: 'העלת תמונה',
-      description: 'העלו את התמונה שלי, בחרו את סוג הבד והאורך את החולצה',
+      title: 'העלה תמונה',
+      description: 'העלה את העיצוב שלך או בחר מהגלריה',
       icon: Upload,
-      color: 'bg-accent-purple',
-      gradient: 'from-purple-500 to-purple-600',
     },
     {
       number: 2,
       title: 'בחר עיצוב',
-      description: 'בחר מקום להדפסה, העלה קובץ למינימה שלך',
+      description: 'התאם אישית עם צבעים, טקסט וגרפיקה',
       icon: Palette,
-      color: 'bg-accent-pink',
-      gradient: 'from-pink-500 to-pink-600',
     },
     {
       number: 3,
       title: 'צפה במוקאפ',
-      description: 'צפה איך זה נראה על החולצה. אם את רוצה להזמין',
+      description: 'ראה תצוגה מקדימה בזמן אמת',
       icon: ShoppingBag,
-      color: 'bg-green-500',
-      gradient: 'from-green-500 to-green-600',
     },
   ]
 
   return (
-    <section className="py-16 lg:py-24 bg-white">
-      <div className="container-rtl">
+    <section className="w-full bg-gradient-to-br from-white via-blue-50 to-purple-50 py-20">
+      <div className="mx-auto max-w-[1600px] px-6 lg:px-8">
         {/* Heading */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl lg:text-4xl font-bold text-text-dark mb-4">
+          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
             איך זה עובד?
           </h2>
-          <p className="text-lg text-text-gray max-w-2xl mx-auto">
-            תהליך פשוט במיוחד שמאפשר עיצוב ליצירת חולצה המושלמת שלך
+          <p className="text-lg text-gray-600">
+            הכל פשוט, מהיר ויעיל
           </p>
         </div>
 
@@ -70,17 +64,15 @@ export default function NewHowItWorksSection() {
                 {/* Step Card */}
                 <div className="text-center relative z-10">
                   {/* Icon Circle */}
-                  <div
-                    className={`w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br ${step.gradient} flex items-center justify-center shadow-lg`}
-                  >
-                    <step.icon className="w-12 h-12 text-white" />
+                  <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white border-2 border-yellow-200 flex items-center justify-center shadow-lg">
+                    <step.icon className="w-12 h-12 text-[#ffc32e]" />
                   </div>
 
                   {/* Content */}
-                  <h3 className="text-xl font-bold text-text-dark mb-3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
                     {step.number}. {step.title}
                   </h3>
-                  <p className="text-sm text-text-gray leading-relaxed">
+                  <p className="text-sm text-gray-600 leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -111,11 +103,8 @@ export default function NewHowItWorksSection() {
         {/* CTA */}
         <div className="text-center">
           <Link href="/designer">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90 text-white font-bold px-8 py-5 h-auto text-base rounded-full shadow-lg"
-            >
-              בואו נתחיל! ⚡
+            <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold px-8 h-12 rounded-full shadow-lg text-lg">
+              בואו נתחיל! 🚀
             </Button>
           </Link>
         </div>

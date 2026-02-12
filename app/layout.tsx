@@ -1,8 +1,17 @@
 import type { Metadata } from 'next'
+import { Rubik } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import WhatsAppButton from '@/components/layout/WhatsAppButton'
+
+// Configure Rubik font
+const rubik = Rubik({
+  subsets: ['latin', 'hebrew'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-rubik',
+})
 
 export const metadata: Metadata = {
   title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
@@ -22,12 +31,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="he" dir="rtl">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+    <html lang="he" dir="rtl" className={rubik.variable}>
+      <body className={`min-h-screen bg-background antialiased ${rubik.className}`}>
         <Header />
         <main className="min-h-[calc(100vh-4rem)]">{children}</main>
         <Footer />

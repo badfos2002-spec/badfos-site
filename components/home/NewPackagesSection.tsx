@@ -3,74 +3,61 @@ import { Button } from '@/components/ui/button'
 
 export default function NewPackagesSection() {
   return (
-    <section className="py-16 lg:py-24 bg-background-gray">
-      <div className="container-rtl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Right Side - Content */}
-          <div className="order-2 lg:order-1 text-center lg:text-right">
-            <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm mb-6">
-              <span className="text-xl">🎉</span>
-              <span className="text-sm font-bold">הזול ביותר בשוק</span>
+    <section className="w-full bg-white py-20 relative overflow-hidden">
+      {/* Blue/Indigo color blobs */}
+      <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full opacity-20 blur-3xl"></div>
+      <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-tr from-indigo-100 to-blue-100 rounded-full opacity-15 blur-3xl"></div>
+
+      <div className="mx-auto max-w-[1600px] px-6 lg:px-8 relative z-10">
+        {/* Card Container */}
+        <div className="bg-white rounded-3xl shadow-xl py-10 px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* RIGHT - Text Content */}
+            <div className="text-center lg:text-right flex flex-col items-center lg:items-end">
+              <div className="inline-flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full mb-6">
+                <span className="text-xl">💰</span>
+                <span className="text-sm font-bold">חיסכון חכם בכמויות</span>
+              </div>
+
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+                חבילות ומבצעים
+              </h2>
+
+              <p className="text-lg text-gray-600 mb-8">
+                בחרו טווח כמות, סוג, צבע ומידות – והכול מוכן לקופה בהמשך
+              </p>
+
+              <div className="flex flex-wrap gap-3 mb-8 justify-center lg:justify-end">
+                <div className="bg-gray-100 px-4 py-2 rounded-full text-sm font-medium">
+                  חיסכון בכמות
+                </div>
+                <div className="bg-gray-100 px-4 py-2 rounded-full text-sm font-medium">
+                  דילים משתלמים
+                </div>
+                <div className="bg-gray-100 px-4 py-2 rounded-full text-sm font-medium">
+                  איכות פרימיום
+                </div>
+              </div>
+
+              <Link href="/packages">
+                <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold px-7 h-12 rounded-full shadow-lg">
+                  👕 לצפייה בכל החבילות
+                </Button>
+              </Link>
             </div>
 
-            <h2 className="text-3xl lg:text-4xl font-bold text-text-dark mb-4">
-              חבילות ומבצעים
-            </h2>
-
-            <p className="text-lg text-text-gray mb-8">
-              בחרו מוצר כמות, עיצוב ומידות – והכול מוכן לקופה בהמשך
-            </p>
-
-            <div className="flex flex-wrap gap-4 justify-center lg:justify-start mb-8">
-              <div className="bg-white px-6 py-3 rounded-full shadow-sm">
-                <span className="text-sm font-medium">אריזה בודדת</span>
+            {/* LEFT - Carousel */}
+            <div>
+              {/* Mobile: h-48, Tablet: h-60, Desktop: h-80 */}
+              <div className="relative w-full h-48 md:h-60 lg:h-80 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl shadow-xl overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-6xl mb-4">📦</div>
+                    <p className="text-lg font-medium">קרוסלת חבילות</p>
+                    <p className="text-sm text-gray-500 mt-2">192px / 240px / 320px</p>
+                  </div>
+                </div>
               </div>
-              <div className="bg-white px-6 py-3 rounded-full shadow-sm">
-                <span className="text-sm font-medium">זמני משלוחים</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-full shadow-sm">
-                <span className="text-sm font-medium">הזמנה במספר</span>
-              </div>
-            </div>
-
-            <Link href="/packages">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90 text-white font-bold px-8 py-5 h-auto text-base rounded-full shadow-lg"
-              >
-                👕 לצפייה בכל החבילות
-              </Button>
-            </Link>
-          </div>
-
-          {/* Left Side - Big Package Box */}
-          <div className="order-1 lg:order-2">
-            <div className="bg-white rounded-3xl shadow-xl p-8 lg:p-12 text-center relative overflow-hidden">
-              {/* Decorative wavy line */}
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-orange-400 to-primary"></div>
-
-              {/* Content */}
-              <div className="relative z-10">
-                <h3 className="text-6xl lg:text-8xl font-black mb-4 leading-none">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-500 to-primary drop-shadow-lg" style={{
-                    WebkitTextStroke: '2px #FDB913',
-                  }}>
-                    11-20
-                  </span>
-                </h3>
-                <h4 className="text-4xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-500 to-primary mb-6" style={{
-                  WebkitTextStroke: '2px #FDB913',
-                }}>
-                  חולצות
-                </h4>
-                <p className="text-text-gray">
-                  מחיר מיוחד לכמות זו
-                </p>
-              </div>
-
-              {/* Decorative elements */}
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-2xl"></div>
-              <div className="absolute -top-10 -left-10 w-32 h-32 bg-orange-300/20 rounded-full blur-2xl"></div>
             </div>
           </div>
         </div>
