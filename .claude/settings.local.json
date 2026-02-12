@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@14 . --typescript --tailwind --app --no-src-dir --import-alias \"@/*\")",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(curl:*)",
+      "Bash(bash:*)",
+      "Bash(xcode-select --install:*)",
+      "Bash(xcode-select:*)",
+      "Bash(gcc:*)",
+      "Bash(npx:*)",
+      "Bash(tar:*)",
+      "Bash(export PATH=\"$HOME/.local/node/bin:$PATH\")",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(yarn --version:*)",
+      "Bash(echo:*)",
+      "Bash(mdfind:*)",
+      "Bash(/bin/bash -c 'source ~/.bash_profile 2>/dev/null; which node')",
+      "Bash(\"/Applications/Adobe Photoshop 2026/Adobe Photoshop 2026.app/Contents/MacOS/node\" ./node_modules/.bin/next dev)",
+      "Bash(sudo installer:*)",
+      "Bash(pkill:*)",
+      "Bash(export PATH=\"/tmp/node-v20.11.0-darwin-x64/bin:$PATH\")",
+      "Bash(/Users/mac/.local/node/bin/npx shadcn@latest add badge dialog select)",
+      "WebFetch(domain:badfos.co.il)",
+      "Bash(git init:*)",
+      "Bash(git --version)",
+      "Bash(git add:*)"
+    ]
+  }
+}
