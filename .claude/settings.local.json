@@ -28,7 +28,11 @@
       "WebFetch(domain:badfos.co.il)",
       "Bash(git init:*)",
       "Bash(git --version)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nComplete website redesign to match original badfos.co.il design\n\nMajor Changes:\n- Completely rebuilt homepage with 7 new sections matching exact design\n- Updated all colors in tailwind.config to match brand guidelines\n- Added logo to Header \\(center\\) and Footer \\(top right\\)\n- Redesigned all UI components with proper styling\n\nHomepage Sections:\n1. Hero Section: Cream background, image left, content right, gradient CTA button\n2. Why Choose Us: Device mockup with 3 benefits\n3. Packages: Large \"11-20 חולצות\" display with gradient text\n4. How It Works: 3-step circular flow with purple/pink/green icons\n5. Contact Form: Dark navy background with white form card\n6. Testimonials: Pink background with customer reviews\n7. Final CTA: Purple gradient background with large CTA button\n\nComponents:\n- Created NewHeroSection.tsx with cream background and proper layout\n- Created NewWhyChooseSection.tsx with benefits list\n- Created NewPackagesSection.tsx with large package display\n- Created NewHowItWorksSection.tsx with step flow\n- Created NewContactFormSection.tsx with dark theme\n- Created NewTestimonialsSection.tsx with review cards\n- Created NewFinalCTASection.tsx with purple gradient\n\nUI Updates:\n- Updated Header: Clean design, increased height, better shadow\n- Updated Footer: Dark navy, logo at top, 3 columns, social icons at bottom\n- Added Input component for forms\n- Updated Button styles with gradients and rounded corners\n- Fixed all color references to use new palette\n\nTechnical:\n- Fixed Firebase initialization for development mode\n- Created API routes for email, AI design, webhooks\n- Built complete admin dashboard structure\n- Added SEO files \\(sitemap, robots\\)\n- All components properly typed with TypeScript\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(ls:*)",
+      "Bash(firebase login --help:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
