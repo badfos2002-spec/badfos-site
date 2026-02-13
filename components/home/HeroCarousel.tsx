@@ -1,127 +1,109 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useCallback } from 'react'
 
 // Placeholder images - will be replaced with Firebase Storage images
 const slides = [
   {
     id: 1,
-    title: 'הדפסת חולצות באיכות מקצועית',
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1200&h=600&fit=crop',
+    title: 'חולצה מעוצבת 1',
+    image: '/placeholder1.jpg',
   },
   {
     id: 2,
-    title: 'עיצובים אישיים שמדברים בשבילך',
-    image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=1200&h=600&fit=crop',
+    title: 'חולצה מעוצבת 2',
+    image: '/placeholder2.jpg',
   },
   {
     id: 3,
-    title: 'טכנולוגיית DTF המתקדמת ביותר',
-    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=1200&h=600&fit=crop',
+    title: 'חולצה מעוצבת 3',
+    image: '/placeholder3.jpg',
   },
   {
     id: 4,
-    title: 'משלוח מהיר לכל הארץ',
-    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=1200&h=600&fit=crop',
-  },
-  {
-    id: 5,
-    title: 'מחירים משתלמים לכל כיס',
-    image: 'https://images.unsplash.com/photo-1622445275576-721325763afe?w=1200&h=600&fit=crop',
+    title: 'חולצה מעוצבת 4',
+    image: '/placeholder4.jpg',
   },
 ]
 
 export default function HeroCarousel() {
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length)
+  }, [])
+
+  const goToSlide = (index: number) => {
+    setCurrentIndex(index)
+  }
 
   // Auto-advance every 5 seconds
   useEffect(() => {
-    if (!isAutoPlaying) return
+    if (isPaused) return
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length)
-    }, 5000)
+      nextSlide()
+    }, 5000) // 5 seconds
 
     return () => clearInterval(interval)
-  }, [isAutoPlaying])
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index)
-    setIsAutoPlaying(false)
-    // Resume auto-play after 10 seconds
-    setTimeout(() => setIsAutoPlaying(true), 10000)
-  }
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length)
-    setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), 10000)
-  }
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
-    setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), 10000)
-  }
+  }, [isPaused, nextSlide])
 
   return (
-    <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-xl">
-      {/* Slides */}
-      <div className="relative h-full">
+    <div
+      className="w-full bg-white p-2 pb-10 rounded-[2.5rem] relative"
+      style={{
+        boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.08)',
+      }}
+      onPointerDown={() => setIsPaused(true)}
+      onPointerUp={() => setIsPaused(false)}
+      onPointerLeave={() => setIsPaused(false)}
+    >
+      {/* Carousel Container */}
+      <div className="relative aspect-[4/5] lg:aspect-[4/4] w-full overflow-hidden rounded-[1.5rem]">
+        {/* Images */}
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentSlide ? 'opacity-100' : 'opacity-0'
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              index === currentIndex ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <div
-              className="w-full h-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${slide.image})` }}
-            >
-              <div className="w-full h-full bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center pb-12">
-                <h2 className="text-white text-2xl md:text-4xl font-bold text-center px-4">
-                  {slide.title}
-                </h2>
+            <div className="w-full h-full bg-gradient-to-br from-yellow-100 via-orange-100 to-pink-100 flex items-center justify-center">
+              {/* Placeholder - replace with actual Image component when images are available */}
+              <div className="text-center">
+                <div className="text-6xl mb-4">👕</div>
+                <p className="text-lg font-medium text-gray-700">
+                  תמונה {index + 1}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">{slide.title}</p>
               </div>
+              {/* Uncomment when actual images are available:
+              <Image
+                src={slide.image}
+                alt={slide.title}
+                fill
+                className="object-cover rounded-[1.5rem]"
+                priority={index === 0}
+              />
+              */}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Navigation Arrows */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-1/2 -translate-y-1/2 right-4 bg-white/80 hover:bg-white"
-        onClick={prevSlide}
-      >
-        <ChevronRight className="h-6 w-6" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-1/2 -translate-y-1/2 left-4 bg-white/80 hover:bg-white"
-        onClick={nextSlide}
-      >
-        <ChevronLeft className="h-6 w-6" />
-      </Button>
-
-      {/* Dots Navigation */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+      {/* Indicators (Dots) */}
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
         {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => goToSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              index === currentSlide
-                ? 'bg-primary w-8'
-                : 'bg-white/60 hover:bg-white/80'
+            className={`transition-all duration-300 rounded-full ${
+              index === currentIndex
+                ? 'bg-white w-2.5 h-2.5 scale-110 shadow-sm'
+                : 'bg-white/50 w-2.5 h-2.5'
             }`}
-            aria-label={`עבור לשקופית ${index + 1}`}
+            aria-label={`עבור לתמונה ${index + 1}`}
           />
         ))}
       </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Sparkles } from 'lucide-react'
+import HeroCarousel from './HeroCarousel'
 
 export default function NewHeroSection() {
   return (
@@ -52,34 +53,8 @@ export default function NewHeroSection() {
 
           {/* LEFT Side - Image Carousel (order-1 on mobile, order-2 on desktop) */}
           <div className="order-1 lg:order-2 flex justify-center lg:justify-start">
-            <div className="w-full max-w-[83%] relative">
-              {/* Image Container with aspect ratios */}
-              <div className="relative aspect-[4/5] lg:aspect-[4/4] w-full">
-                {/* Placeholder - replace with actual carousel */}
-                <div className="absolute inset-0 bg-white rounded-3xl shadow-2xl flex items-center justify-center overflow-hidden">
-                  <div className="text-center p-8">
-                    <div className="text-8xl mb-4">👕</div>
-                    <p className="text-gray-600 text-lg font-medium">קרוסלת תמונות</p>
-                    <p className="text-sm text-gray-400 mt-2">
-                      4:5 (mobile) / 1:1 (desktop)
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Carousel Dots */}
-              <div className="flex justify-center gap-2 mt-6">
-                {[1, 2, 3, 4].map((dot) => (
-                  <div
-                    key={dot}
-                    className={`h-2 rounded-full transition-all ${
-                      dot === 1
-                        ? 'bg-[rgb(251,191,36)] w-8'
-                        : 'bg-gray-300 w-2'
-                    }`}
-                  />
-                ))}
-              </div>
+            <div className="w-full max-w-[83%]">
+              <HeroCarousel />
             </div>
           </div>
         </div>
