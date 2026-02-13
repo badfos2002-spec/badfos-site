@@ -29,7 +29,7 @@ export default function NewTestimonialsSection() {
           <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
             מה הלקוחות שלנו חושבים
           </h2>
-          <p className="text-gray-600">
+          <p className="text-xl text-gray-600">
             קראו מה אלפי לקוחות מרוצים יש לנו מהאיכות שלנו
           </p>
         </div>
@@ -39,7 +39,7 @@ export default function NewTestimonialsSection() {
           {testimonials.map((testimonial, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow text-right"
+              className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl hover:scale-105 hover-lift transition-all duration-200 text-right"
             >
               {/* Quote Icon */}
               <div className="w-10 h-10 text-gray-300 text-4xl leading-none mb-4">"</div>
@@ -55,12 +55,12 @@ export default function NewTestimonialsSection() {
               </div>
 
               {/* Text */}
-              <p className="text-gray-600 mb-4 leading-relaxed text-sm">
+              <p className="text-gray-600 mb-4 leading-relaxed text-base">
                 {testimonial.text}
               </p>
 
               {/* Name */}
-              <p className="font-bold text-gray-900">{testimonial.name}</p>
+              <p className="font-bold text-base text-gray-900">{testimonial.name}</p>
             </div>
           ))}
         </div>

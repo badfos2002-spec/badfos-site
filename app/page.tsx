@@ -5,6 +5,7 @@ import NewHowItWorksSection from '@/components/home/NewHowItWorksSection'
 import NewContactFormSection from '@/components/home/NewContactFormSection'
 import NewTestimonialsSection from '@/components/home/NewTestimonialsSection'
 import NewFinalCTASection from '@/components/home/NewFinalCTASection'
+import LeadPopup from '@/components/home/LeadPopup'
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
       <NewContactFormSection />
       <NewTestimonialsSection />
       <NewFinalCTASection />
+      <LeadPopup />
     </main>
   )
 }

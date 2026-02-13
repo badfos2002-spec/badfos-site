@@ -5,9 +5,9 @@ import { Sparkles } from 'lucide-react'
 export default function NewHeroSection() {
   return (
     <section className="w-full bg-[#fffdf5] py-12 lg:py-20 relative overflow-hidden">
-      {/* Abstract gradient blobs */}
-      <div className="absolute top-10 right-10 w-96 h-96 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full opacity-30 blur-3xl"></div>
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-gradient-to-tr from-yellow-100 to-orange-100 rounded-full opacity-20 blur-3xl"></div>
+      {/* Dynamic floating blobs */}
+      <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-gradient-radial from-[#fef08a]/60 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute -top-48 -left-48 w-[600px] h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl"></div>
 
       <div className="mx-auto max-w-[1600px] px-6 lg:px-8 relative z-10">
         {/* Grid Container */}
@@ -30,12 +30,12 @@ export default function NewHeroSection() {
             </h1>
 
             {/* Subheading with bullets */}
-            <p className="text-lg font-medium text-gray-900 mb-3">
+            <h2 className="text-2xl lg:text-3xl font-medium text-gray-900 mb-3">
               <span className="text-[#ffc32e]">דיוק • איכות • זמינות</span>
-            </p>
+            </h2>
 
             {/* Description */}
-            <p className="text-base text-gray-600 mb-8 leading-relaxed">
+            <p className="text-lg lg:text-[22px] text-gray-600 mb-8 leading-relaxed">
               הפכנו חולצות של מיליוני בני אדם חינם ואנחנו רוצים
               <br />
               שתהיה השם הבא ברשימה שלנו
@@ -43,7 +43,7 @@ export default function NewHeroSection() {
 
             {/* CTA Button */}
             <Link href="/designer">
-              <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold px-8 py-6 h-auto text-base rounded-full shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2">
+              <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold px-8 py-6 h-auto text-xl rounded-full shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-200 inline-flex items-center gap-2">
                 <span className="text-xl">👕</span>
                 עצבו את החולצה שלכם
               </Button>

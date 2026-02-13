@@ -6,107 +6,104 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-background-dark text-gray-300">
-      <div className="container-rtl py-12">
-        {/* Logo at top right */}
-        <div className="flex justify-end mb-8">
-          <img
-            src="/logo.png"
-            alt="בדפוס"
-            className="h-16 w-auto"
-          />
-        </div>
+    <footer className="bg-gray-900 text-gray-400">
+      <div className="mx-auto max-w-[1600px] px-4 md:px-6 lg:px-8 py-12">
+        {/* Grid: 4 columns desktop, 1 column mobile */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-right">
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Column 1 - Quick Links */}
+          {/* Column 1 - Logo & About */}
+          <div>
+            <img
+              src="/logo.png"
+              alt="בדפוס"
+              className="h-12 w-auto mx-auto md:mx-0 mb-4"
+            />
+            <p className="text-sm leading-relaxed">
+              בדפוס - הדפסת חולצות ומוצרי טקסטיל באיכות גבוהה. עיצוב אישי, מחירים הוגנים, ושירות מעולה.
+            </p>
+          </div>
+
+          {/* Column 2 - Quick Links */}
           <div>
             <h3 className="text-white text-lg font-bold mb-4">קישורים מהירים</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/" className="hover:text-primary transition-colors">
+                <Link href="/" className="hover:text-yellow-400 transition-colors">
                   דף הבית
                 </Link>
               </li>
               <li>
-                <Link href="/designer" className="hover:text-primary transition-colors">
+                <Link href="/designer" className="hover:text-yellow-400 transition-colors">
                   מעצב חולצות
                 </Link>
               </li>
               <li>
-                <Link href="/packages" className="hover:text-primary transition-colors">
+                <Link href="/packages" className="hover:text-yellow-400 transition-colors">
                   חבילות ומבצעים
                 </Link>
               </li>
               <li>
-                <Link href="/reviews" className="hover:text-primary transition-colors">
+                <Link href="/reviews" className="hover:text-yellow-400 transition-colors">
                   ביקורות לקוחות
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="hover:text-primary transition-colors">
+                <Link href="/faq" className="hover:text-yellow-400 transition-colors">
                   שאלות נפוצות
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-primary transition-colors">
+                <Link href="/about" className="hover:text-yellow-400 transition-colors">
                   אודות
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-primary transition-colors">
+                <Link href="/contact" className="hover:text-yellow-400 transition-colors">
                   צור קשר
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Contact Info */}
+          {/* Column 3 - Contact Info */}
           <div>
-            <h3 className="text-white text-lg font-bold mb-4">צור קשר</h3>
+            <h3 className="text-white text-lg font-bold mb-4">יצירת קשר</h3>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary" />
+              <li className="flex items-center gap-2 justify-center md:justify-start">
+                <Phone className="h-4 w-4 text-yellow-400" />
                 <a
                   href={`tel:${CONTACT_INFO.phone}`}
-                  className="hover:text-primary transition-colors"
+                  className="hover:text-yellow-400 transition-colors"
                 >
                   {CONTACT_INFO.phone}
                 </a>
               </li>
-              <li className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-primary" />
+              <li className="flex items-center gap-2 justify-center md:justify-start">
+                <Mail className="h-4 w-4 text-yellow-400" />
                 <a
                   href={`mailto:${CONTACT_INFO.email}`}
-                  className="hover:text-primary transition-colors"
+                  className="hover:text-yellow-400 transition-colors"
                 >
                   {CONTACT_INFO.email}
                 </a>
               </li>
-              <li className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
+              <li className="flex items-center gap-2 justify-center md:justify-start">
+                <MapPin className="h-4 w-4 text-yellow-400" />
                 <span>{CONTACT_INFO.address}</span>
               </li>
             </ul>
           </div>
-        </div>
 
-        <div className="border-t border-gray-800 mt-8 pt-8">
-          {/* Social Icons & Copyright */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-gray-500">
-              © {currentYear} בדפוס. כל הזכויות שמורות.
-            </div>
-
-            <div className="flex gap-4">
-              <h4 className="text-white font-bold">עקבו אחרינו</h4>
-            </div>
-
-            <div className="flex gap-4">
+          {/* Column 4 - Social Networks */}
+          <div>
+            <h3 className="text-white text-lg font-bold mb-4">רשתות חברתיות</h3>
+            <div className="flex gap-3 justify-center md:justify-start">
               <a
                 href={CONTACT_INFO.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform"
+                className="w-10 h-10 bg-gray-800 hover:bg-yellow-600 rounded-lg flex items-center justify-center transition-colors"
+                aria-label="Instagram"
               >
                 <Instagram className="h-5 w-5 text-white" />
               </a>
@@ -114,7 +111,8 @@ export default function Footer() {
                 href={CONTACT_INFO.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform"
+                className="w-10 h-10 bg-gray-800 hover:bg-yellow-600 rounded-lg flex items-center justify-center transition-colors"
+                aria-label="Facebook"
               >
                 <Facebook className="h-5 w-5 text-white" />
               </a>
@@ -122,12 +120,23 @@ export default function Footer() {
                 href="https://www.tiktok.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-black rounded-full flex items-center justify-center hover:scale-110 transition-transform"
+                className="w-10 h-10 bg-gray-800 hover:bg-yellow-600 rounded-lg flex items-center justify-center transition-colors"
+                aria-label="TikTok"
               >
                 <span className="text-white text-lg">🎵</span>
               </a>
             </div>
+            <p className="mt-4 text-xs">
+              עקבו אחרינו ברשתות החברתיות לעדכונים ומבצעים בלעדיים!
+            </p>
           </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-gray-800 mt-8 pt-8 text-center">
+          <p className="text-sm text-gray-500">
+            © {currentYear} בדפוס. כל הזכויות שמורות.
+          </p>
         </div>
       </div>
     </footer>

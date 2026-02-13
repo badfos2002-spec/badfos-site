@@ -27,7 +27,7 @@ export default function NewWhyChooseSection() {
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
                 למה לבחור בנו?
               </h2>
-              <p className="text-gray-600">
+              <p className="text-xl text-gray-600">
                 הכנסה לחשבון, עיצוב חולצה ותפוקה — כל זה מיידי ויעיל ביותר
               </p>
             </div>
@@ -37,10 +37,10 @@ export default function NewWhyChooseSection() {
                   <span className="text-2xl text-yellow-600">{benefit.icon}</span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg text-gray-900 mb-1">
+                  <h3 className="font-bold text-xl text-gray-900 mb-1">
                     {benefit.title}
                   </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                  <p className="text-gray-600 text-base leading-relaxed">
                     {benefit.description}
                   </p>
                 </div>
@@ -49,9 +49,9 @@ export default function NewWhyChooseSection() {
           </div>
           <div className="relative flex justify-center lg:justify-start">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-96 h-[36rem] bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl transform rotate-6" />
+              <div className="w-96 h-[36rem] bg-gradient-to-br from-yellow-300 via-orange-300 to-red-300 rounded-3xl transform rotate-6 animate-pulse"></div>
             </div>
-            <div className="relative w-96 h-[36rem] bg-gray-900 rounded-3xl shadow-2xl overflow-hidden">
+            <div className="relative w-96 h-[36rem] bg-gray-900 rounded-3xl shadow-2xl overflow-hidden hover-lift cursor-pointer">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center text-white">
                   <div className="text-6xl mb-4">📱</div>
