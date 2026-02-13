@@ -47,7 +47,7 @@ export default function NewContactFormSection() {
       <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
 
-      <div className="mx-auto max-w-[1600px] px-4 md:px-6 lg:px-8 relative z-10">
+      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Right Side - Form Card */}
           <div className="order-1 lg:order-2" dir="rtl">

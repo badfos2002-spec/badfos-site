@@ -1,281 +1,85 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { ShoppingBag, Users, Package, TrendingUp, DollarSign, Star } from 'lucide-react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import {
-  ShoppingBag,
-  Users,
-  Package,
-  Star,
-  Tag,
-  Percent,
-  Image as ImageIcon,
-  DollarSign,
-  Gift,
-  BarChart3,
-  TrendingUp,
-  AlertCircle,
-} from 'lucide-react'
-import { getAllDocuments } from '@/lib/db'
-import type { Order, Lead, Review, InventoryItem } from '@/lib/types'
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    orders: 0,
-    leads: 0,
-    reviews: 0,
-    lowStock: 0,
-    todayOrders: 0,
-    todayLeads: 0,
-    pendingReviews: 0,
-    totalRevenue: 0,
-  })
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadStats()
-  }, [])
-
-  const loadStats = async () => {
-    try {
-      // Fetch all data
-      const [orders, leads, reviews, inventory] = await Promise.all([
-        getAllDocuments<Order>('orders'),
-        getAllDocuments<Lead>('leads'),
-        getAllDocuments<Review>('reviews'),
-        getAllDocuments<InventoryItem>('inventory'),
-      ])
-
-      // Calculate stats
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      const todayOrders = orders.filter((order) => {
-        const orderDate = order.createdAt?.toDate()
-        return orderDate && orderDate >= today
-      })
-
-      const todayLeads = leads.filter((lead) => {
-        const leadDate = lead.createdAt?.toDate()
-        return leadDate && leadDate >= today
-      })
-
-      const pendingReviews = reviews.filter(
-        (review) => review.status === 'pending'
-      )
-
-      const lowStock = inventory.filter(
-        (item) => item.quantity <= item.lowStockThreshold
-      )
-
-      const totalRevenue = orders
-        .filter((order) => order.status !== 'cancelled')
-        .reduce((sum, order) => sum + order.total, 0)
-
-      setStats({
-        orders: orders.length,
-        leads: leads.length,
-        reviews: reviews.length,
-        lowStock: lowStock.length,
-        todayOrders: todayOrders.length,
-        todayLeads: todayLeads.length,
-        pendingReviews: pendingReviews.length,
-        totalRevenue,
-      })
-    } catch (error) {
-      console.error('Error loading stats:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const statCards = [
-    {
-      title: 'הזמנות',
-      value: stats.orders,
-      change: `+${stats.todayOrders} היום`,
-      icon: ShoppingBag,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-    },
-    {
-      title: 'לידים',
-      value: stats.leads,
-      change: `+${stats.todayLeads} היום`,
-      icon: Users,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-    },
-    {
-      title: 'ביקורות',
-      value: stats.reviews,
-      change: `${stats.pendingReviews} ממתינות`,
-      icon: Star,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
-    },
-    {
-      title: 'מלאי נמוך',
-      value: stats.lowStock,
-      change: 'דורש תשומת לב',
-      icon: AlertCircle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-    },
+  const stats = [
+    { icon: ShoppingBag, label: 'הזמנות היום', value: '12', change: '+8%', color: 'from-blue-500 to-indigo-600' },
+    { icon: Users, label: 'לידים חדשים', value: '23', change: '+15%', color: 'from-green-500 to-emerald-600' },
+    { icon: Package, label: 'מוצרים במלאי', value: '1,247', change: '-3%', color: 'from-purple-500 to-pink-600' },
+    { icon: DollarSign, label: 'הכנסות היום', value: '₪8,420', change: '+12%', color: 'from-yellow-500 to-orange-500' },
+    { icon: Star, label: 'ביקורות ממתינות', value: '5', change: '0%', color: 'from-red-500 to-rose-600' },
+    { icon: TrendingUp, label: 'שיעור המרה', value: '24%', change: '+5%', color: 'from-cyan-500 to-blue-600' },
   ]
 
-  const modules = [
-    {
-      title: 'ניהול הזמנות',
-      description: 'עקוב ועדכן סטטוס הזמנות',
-      href: '/admin/orders',
-      icon: ShoppingBag,
-      color: 'from-blue-500 to-blue-600',
-    },
-    {
-      title: 'ניהול לידים',
-      description: 'עקוב אחר לקוחות פוטנציאליים',
-      href: '/admin/leads',
-      icon: Users,
-      color: 'from-green-500 to-green-600',
-    },
-    {
-      title: 'ניהול מלאי',
-      description: 'עדכן ועקוב אחר המלאי',
-      href: '/admin/inventory',
-      icon: Package,
-      color: 'from-purple-500 to-purple-600',
-    },
-    {
-      title: 'ביקורות לקוחות',
-      description: 'אשר ונהל ביקורות',
-      href: '/admin/reviews',
-      icon: Star,
-      color: 'from-yellow-500 to-yellow-600',
-    },
-    {
-      title: 'קופונים והנחות',
-      description: 'צור וניהל קופונים',
-      href: '/admin/coupons',
-      icon: Tag,
-      color: 'from-pink-500 to-pink-600',
-    },
-    {
-      title: 'כללי הנחה',
-      description: 'הגדר הנחות כמותיות',
-      href: '/admin/discounts',
-      icon: Percent,
-      color: 'from-indigo-500 to-indigo-600',
-    },
-    {
-      title: 'ניהול תמונות',
-      description: 'העלה ונהל מוקאפים ותמונות',
-      href: '/admin/images',
-      icon: ImageIcon,
-      color: 'from-teal-500 to-teal-600',
-    },
-    {
-      title: 'ניהול מחירים',
-      description: 'עדכן מחירי בסיס ותוספות',
-      href: '/admin/pricing',
-      icon: DollarSign,
-      color: 'from-emerald-500 to-emerald-600',
-    },
-    {
-      title: 'חבילות ומבצעים',
-      description: 'צור וניהל חבילות מוצרים',
-      href: '/admin/packages',
-      icon: Gift,
-      color: 'from-rose-500 to-rose-600',
-    },
-    {
-      title: 'אנליטיקה ודוחות',
-      description: 'צפה בנתונים וסטטיסטיקות',
-      href: '/admin/analytics',
-      icon: BarChart3,
-      color: 'from-orange-500 to-orange-600',
-    },
+  const recentOrders = [
+    { id: '#1234', customer: 'יוסי כהן', amount: '₪450', status: 'pending', time: 'לפני 10 דקות' },
+    { id: '#1233', customer: 'שרה לוי', amount: '₪680', status: 'paid', time: 'לפני 25 דקות' },
+    { id: '#1232', customer: 'דוד אברהם', amount: '₪1,200', status: 'in_production', time: 'לפני שעה' },
   ]
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">⏳</div>
-          <p className="text-text-gray">טוען נתונים...</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
-    <div>
+    <div dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">לוח בקרה</h1>
-        <p className="text-text-gray">סקירה כללית של המערכת</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">לוח בקרה</h1>
+        <p className="text-gray-600">סקירה כללית של המערכת</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {stats.map((stat, idx) => {
+          const Icon = stat.icon
+          return (
+            <div key={idx} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center`}>
+                  <Icon className="w-6 h-6 text-white" />
                 </div>
-                <TrendingUp className="w-5 h-5 text-green-500" />
+                <span className={`text-sm font-medium ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                  {stat.change}
+                </span>
               </div>
-              <h3 className="text-2xl font-bold mb-1">{stat.value}</h3>
-              <p className="text-sm text-text-gray mb-1">{stat.title}</p>
-              <p className="text-xs text-primary font-medium">{stat.change}</p>
-            </CardContent>
-          </Card>
-        ))}
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+              <p className="text-sm text-gray-600">{stat.label}</p>
+            </div>
+          )
+        })}
       </div>
 
-      {/* Revenue Card */}
-      <Card className="mb-8 bg-gradient-to-l from-primary to-secondary text-white">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/80 mb-1">סה"כ הכנסות</p>
-              <h2 className="text-4xl font-bold">
-                ₪{stats.totalRevenue.toLocaleString()}
-              </h2>
-            </div>
-            <div className="p-4 bg-white/20 rounded-full">
-              <DollarSign className="w-8 h-8" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modules Grid */}
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold mb-6">מודולי ניהול</h2>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {modules.map((module) => (
-          <Link key={module.title} href={module.href}>
-            <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader>
-                <div
-                  className={`w-12 h-12 bg-gradient-to-br ${module.color} rounded-lg flex items-center justify-center mb-3`}
-                >
-                  <module.icon className="w-6 h-6 text-white" />
-                </div>
-                <CardTitle className="text-lg">{module.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-text-gray text-sm">{module.description}</p>
-              </CardContent>
-            </Card>
+      {/* Recent Orders */}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">הזמנות אחרונות</h2>
+          <Link href="/admin/orders" className="text-yellow-600 hover:text-yellow-700 font-medium text-sm">
+            צפה בהכל ←
           </Link>
-        ))}
+        </div>
+        <div className="space-y-4">
+          {recentOrders.map((order) => (
+            <div key={order.id} className="flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-yellow-200 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">
+                  {order.customer.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{order.customer}</p>
+                  <p className="text-sm text-gray-500">{order.id} • {order.time}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="font-bold text-lg text-gray-900">{order.amount}</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  order.status === 'paid' ? 'bg-green-100 text-green-700' :
+                  order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-blue-100 text-blue-700'
+                }`}>
+                  {order.status === 'paid' ? 'שולם' : order.status === 'pending' ? 'ממתין' : 'בייצור'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

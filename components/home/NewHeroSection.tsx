@@ -5,25 +5,25 @@ import HeroCarousel from './HeroCarousel'
 
 export default function NewHeroSection() {
   return (
-    <section className="w-full bg-[#fffdf5] py-12 lg:py-20 relative overflow-hidden">
+    <section className="w-full bg-[#fffdf5] min-h-[600px] pt-3 pb-20 relative overflow-hidden" dir="rtl">
       {/* Dynamic floating blobs */}
       <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-gradient-radial from-[#fef08a]/60 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute -top-48 -left-48 w-[600px] h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl"></div>
 
-      <div className="mx-auto max-w-[1600px] px-6 lg:px-8 relative z-10">
+      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 relative z-10">
         {/* Grid Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8 items-center">
 
           {/* RIGHT Side - Text Content (order-2 on mobile, order-1 on desktop) */}
-          <div className="order-2 lg:order-1 text-center">
+          <div className="order-2 lg:order-1 text-center" dir="rtl">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm mb-6">
-              <span className="text-xl">✨</span>
+              <Sparkles className="w-3.5 h-3.5 text-[#ffc32e]" />
               <span className="text-sm font-medium">עיצובים אישיים ייחודיים</span>
             </div>
 
             {/* Main Heading */}
-            <h1 className="text-4xl lg:text-6xl font-bold font-display text-gray-900 mb-4 leading-tight">
+            <h1 className="text-4xl lg:text-6xl font-bold text-[#1e293b] mb-6 leading-[1.1]">
               הפוך את הרעיונות שלך
               <br />
               לחולצות{' '}
@@ -31,12 +31,12 @@ export default function NewHeroSection() {
             </h1>
 
             {/* Subheading with bullets */}
-            <h2 className="text-2xl lg:text-3xl font-medium text-gray-900 mb-3">
-              <span className="text-[#ffc32e]">דיוק • איכות • זמינות</span>
+            <h2 className="text-2xl lg:text-3xl font-medium text-[#f59e0b] mb-8">
+              דיוק • איכות • זמינות
             </h2>
 
             {/* Description */}
-            <p className="text-lg lg:text-[22px] text-gray-600 mb-8 leading-relaxed">
+            <p className="text-lg lg:text-[22px] text-[#64748b] mb-8 leading-relaxed">
               הפכנו חולצות של מיליוני בני אדם חינם ואנחנו רוצים
               <br />
               שתהיה השם הבא ברשימה שלנו
@@ -44,8 +44,8 @@ export default function NewHeroSection() {
 
             {/* CTA Button */}
             <Link href="/designer">
-              <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold px-8 py-6 h-auto text-xl rounded-full shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-200 inline-flex items-center gap-2">
-                <span className="text-xl">👕</span>
+              <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold px-12 py-6 min-w-[280px] h-20 text-xl rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 inline-flex items-center justify-center gap-2">
+                <Sparkles className="w-5 h-5 mr-2" />
                 עצבו את החולצה שלכם
               </Button>
             </Link>

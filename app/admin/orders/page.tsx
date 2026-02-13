@@ -1,397 +1,165 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useState } from 'react'
+import { Search, Filter, Download, Eye, Trash2, Package } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { getAllOrders, updateOrderStatus, deleteDocument } from '@/lib/db'
-import type { Order } from '@/lib/types'
-import { Search, Trash2, Eye, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
-export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [methodFilter, setMethodFilter] = useState('all')
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [detailsOpen, setDetailsOpen] = useState(false)
+export default function AdminOrdersPage() {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
 
-  useEffect(() => {
-    loadOrders()
-  }, [])
+  const orders = [
+    { 
+      id: '#1234', 
+      customer: 'יוסי כהן', 
+      email: 'yossi@example.com',
+      phone: '050-1234567',
+      amount: '₪450', 
+      status: 'pending_payment', 
+      date: '13/02/2026',
+      items: 3,
+      delivery: 'delivery'
+    },
+    { 
+      id: '#1233', 
+      customer: 'שרה לוי', 
+      email: 'sara@example.com',
+      phone: '052-9876543',
+      amount: '₪680', 
+      status: 'paid', 
+      date: '13/02/2026',
+      items: 5,
+      delivery: 'pickup'
+    },
+    { 
+      id: '#1232', 
+      customer: 'דוד אברהם', 
+      email: 'david@example.com',
+      phone: '054-5555555',
+      amount: '₪1,200', 
+      status: 'in_production', 
+      date: '12/02/2026',
+      items: 12,
+      delivery: 'delivery'
+    },
+    { 
+      id: '#1231', 
+      customer: 'מיכל רוזן', 
+      email: 'michal@example.com',
+      phone: '053-7777777',
+      amount: '₪320', 
+      status: 'shipped', 
+      date: '11/02/2026',
+      items: 2,
+      delivery: 'delivery'
+    },
+  ]
 
-  useEffect(() => {
-    filterOrders()
-  }, [orders, searchQuery, statusFilter, methodFilter])
-
-  const loadOrders = async () => {
-    try {
-      const data = await getAllOrders()
-      setOrders(data)
-    } catch (error) {
-      console.error('Error loading orders:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const filterOrders = () => {
-    let filtered = [...orders]
-
-    // Search filter
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (order) =>
-          order.orderNumber.toString().includes(searchQuery) ||
-          order.customer.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          order.customer.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          order.customer.email.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((order) => order.status === statusFilter)
-    }
-
-    // Method filter
-    if (methodFilter !== 'all') {
-      filtered = filtered.filter((order) => order.shipping.method === methodFilter)
-    }
-
-    setFilteredOrders(filtered)
-  }
-
-  const handleStatusChange = async (orderId: string, newStatus: string) => {
-    try {
-      await updateOrderStatus(orderId, newStatus)
-
-      // Update local state
-      setOrders(
-        orders.map((order) =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      )
-
-      // TODO: Trigger automation based on status
-      if (newStatus === 'paid') {
-        // Generate coupon and send email
-        console.log('TODO: Generate coupon and send confirmation email')
-      } else if (newStatus === 'in_production') {
-        // Deduct inventory and send email
-        console.log('TODO: Deduct inventory and send production email')
-      } else if (newStatus === 'shipped') {
-        // Send shipped email
-        console.log('TODO: Send shipped email')
-      }
-    } catch (error) {
-      console.error('Error updating status:', error)
-      alert('שגיאה בעדכון סטטוס')
-    }
-  }
-
-  const handleDeleteOrder = async (orderId: string) => {
-    if (!confirm('האם אתה בטוח שברצונך למחוק הזמנה זו?')) return
-
-    try {
-      await deleteDocument('orders', orderId)
-      setOrders(orders.filter((order) => order.id !== orderId))
-    } catch (error) {
-      console.error('Error deleting order:', error)
-      alert('שגיאה במחיקת הזמנה')
-    }
-  }
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
-      pending_payment: { label: 'ממתין לתשלום', className: 'bg-yellow-100 text-yellow-800' },
-      paid: { label: 'שולם', className: 'bg-green-100 text-green-800' },
-      in_production: { label: 'בייצור', className: 'bg-blue-100 text-blue-800' },
-      shipped: { label: 'נשלח', className: 'bg-purple-100 text-purple-800' },
-      delivered: { label: 'נמסר', className: 'bg-teal-100 text-teal-800' },
-      cancelled: { label: 'בוטל', className: 'bg-red-100 text-red-800' },
-    }
-
-    const variant = variants[status] || { label: status, className: 'bg-gray-100 text-gray-800' }
-    return <Badge className={variant.className}>{variant.label}</Badge>
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">⏳</div>
-          <p className="text-text-gray">טוען הזמנות...</p>
-        </div>
-      </div>
-    )
+  const statusLabels: Record<string, { label: string; color: string }> = {
+    pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-700' },
+    paid: { label: 'שולם', color: 'bg-green-100 text-green-700' },
+    in_production: { label: 'בייצור', color: 'bg-blue-100 text-blue-700' },
+    shipped: { label: 'נשלח', color: 'bg-purple-100 text-purple-700' },
+    completed: { label: 'הושלם', color: 'bg-gray-100 text-gray-700' },
   }
 
   return (
-    <div>
+    <div dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">ניהול הזמנות</h1>
-        <p className="text-text-gray">עקוב ועדכן סטטוס הזמנות</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">ניהול הזמנות</h1>
+        <p className="text-gray-600">צפייה וניהול כל ההזמנות במערכת</p>
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <Input
-                placeholder="חיפוש לפי מספר/שם/אימייל"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="כל הסטטוסים" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הסטטוסים</SelectItem>
-                <SelectItem value="pending_payment">ממתין לתשלום</SelectItem>
-                <SelectItem value="paid">שולם</SelectItem>
-                <SelectItem value="in_production">בייצור</SelectItem>
-                <SelectItem value="shipped">נשלח</SelectItem>
-                <SelectItem value="delivered">נמסר</SelectItem>
-                <SelectItem value="cancelled">בוטל</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={methodFilter} onValueChange={setMethodFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="כל שיטות המשלוח" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל שיטות המשלוח</SelectItem>
-                <SelectItem value="delivery">משלוח</SelectItem>
-                <SelectItem value="pickup">איסוף עצמי</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="text-sm text-text-gray flex items-center">
-              <strong className="ml-2">{filteredOrders.length}</strong>
-              הזמנות
-            </div>
+      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
+            <Input
+              placeholder="חיפוש לפי מספר הזמנה, שם לקוח..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pr-10"
+            />
           </div>
-        </CardContent>
-      </Card>
+          
+          <select 
+            className="border-2 border-gray-200 rounded-lg px-4 py-2 focus:border-yellow-500 focus:outline-none"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all">כל הסטטוסים</option>
+            <option value="pending_payment">ממתין לתשלום</option>
+            <option value="paid">שולם</option>
+            <option value="in_production">בייצור</option>
+            <option value="shipped">נשלח</option>
+            <option value="completed">הושלם</option>
+          </select>
 
-      {/* Orders List */}
-      <div className="space-y-4">
-        {filteredOrders.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <p className="text-text-gray">לא נמצאו הזמנות</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredOrders.map((order) => (
-            <Card key={order.id}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold mb-1">
-                      הזמנה #{order.orderNumber}
-                    </h3>
-                    <p className="text-text-gray">
-                      {order.customer.firstName} {order.customer.lastName} •{' '}
-                      {order.createdAt?.toDate().toLocaleDateString('he-IL')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedOrder(order)
-                        setDetailsOpen(true)
-                      }}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:bg-red-50"
-                      onClick={() => handleDeleteOrder(order.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <p className="text-sm text-text-gray mb-1">סכום</p>
-                    <p className="font-bold text-lg">₪{order.total}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-text-gray mb-1">משלוח</p>
-                    <p className="font-medium">
-                      {order.shipping.method === 'delivery' ? 'משלוח' : 'איסוף עצמי'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-text-gray mb-1">סטטוס</p>
-                    {getStatusBadge(order.status)}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-text-gray">עדכן סטטוס:</span>
-                  <Select
-                    value={order.status}
-                    onValueChange={(value) => handleStatusChange(order.id, value)}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending_payment">ממתין לתשלום</SelectItem>
-                      <SelectItem value="paid">שולם</SelectItem>
-                      <SelectItem value="in_production">בייצור</SelectItem>
-                      <SelectItem value="shipped">נשלח</SelectItem>
-                      <SelectItem value="delivered">נמסר</SelectItem>
-                      <SelectItem value="cancelled">בוטל</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+          <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">
+            <Download className="w-4 h-4 ml-2" />
+            ייצוא לExcel
+          </Button>
+        </div>
       </div>
 
-      {/* Order Details Dialog */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>פרטי הזמנה #{selectedOrder?.orderNumber}</DialogTitle>
-          </DialogHeader>
-
-          {selectedOrder && (
-            <div className="space-y-6">
-              {/* Customer Info */}
-              <div>
-                <h3 className="font-bold mb-2">פרטי לקוח</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-text-gray">שם:</span>{' '}
-                    {selectedOrder.customer.firstName} {selectedOrder.customer.lastName}
-                  </div>
-                  <div>
-                    <span className="text-text-gray">טלפון:</span>{' '}
-                    <a href={`tel:${selectedOrder.customer.phone}`} className="text-blue-600">
-                      {selectedOrder.customer.phone}
-                    </a>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-text-gray">אימייל:</span>{' '}
-                    <a href={`mailto:${selectedOrder.customer.email}`} className="text-blue-600">
-                      {selectedOrder.customer.email}
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Items */}
-              <div>
-                <h3 className="font-bold mb-2">פריטים</h3>
-                {selectedOrder.items.map((item, i) => (
-                  <div key={i} className="bg-gray-50 p-3 rounded-lg mb-2">
-                    <p className="font-medium">
-                      {item.productType} - {item.fabricType}
-                    </p>
-                    <p className="text-sm text-text-gray">
-                      צבע: {item.color} | כמות: {item.quantity} | ₪{item.totalPrice}
-                    </p>
-                    {item.designFileUrls && item.designFileUrls.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-sm font-medium mb-1">קבצי עיצוב:</p>
-                        {item.designFileUrls.map((url, j) => (
-                          <a
-                            key={j}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:underline block"
-                          >
-                            <Download className="w-3 h-3 inline ml-1" />
-                            קובץ {j + 1}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Shipping */}
-              {selectedOrder.shipping.method === 'delivery' && selectedOrder.shipping.address && (
-                <div>
-                  <h3 className="font-bold mb-2">כתובת משלוח</h3>
-                  <p className="text-sm">
-                    {selectedOrder.shipping.address.street}{' '}
-                    {selectedOrder.shipping.address.number}
-                    <br />
-                    {selectedOrder.shipping.address.city},{' '}
-                    {selectedOrder.shipping.address.zipCode}
-                  </p>
-                </div>
-              )}
-
-              {/* Summary */}
-              <div>
-                <h3 className="font-bold mb-2">סיכום</h3>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>סה"כ מוצרים:</span>
-                    <span>₪{selectedOrder.subtotal}</span>
-                  </div>
-                  {selectedOrder.discount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>הנחה:</span>
-                      <span>-₪{selectedOrder.discount}</span>
+      {/* Orders Table */}
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b-2 border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">מספר הזמנה</th>
+                <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">לקוח</th>
+                <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">תאריך</th>
+                <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">פריטים</th>
+                <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">סכום</th>
+                <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">סטטוס</th>
+                <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">פעולות</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {orders.map((order) => (
+                <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <span className="font-medium text-gray-900">{order.id}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <p className="font-medium text-gray-900">{order.customer}</p>
+                      <p className="text-sm text-gray-500">{order.phone}</p>
                     </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>משלוח:</span>
-                    <span>
-                      ₪{selectedOrder.shipping.method === 'delivery' ? '35' : '0'}
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">{order.date}</td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1 text-gray-700">
+                      <Package className="w-4 h-4" />
+                      {order.items}
                     </span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg border-t pt-2">
-                    <span>סה"כ:</span>
-                    <span>₪{selectedOrder.total}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                  </td>
+                  <td className="px-6 py-4 font-bold text-gray-900">{order.amount}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusLabels[order.status].color}`}>
+                      {statusLabels[order.status].label}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="border-red-500 text-red-600 hover:bg-red-50">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

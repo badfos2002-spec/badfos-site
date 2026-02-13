@@ -2,27 +2,27 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
-// Placeholder images - will be replaced with Firebase Storage images
+// Product mockup images
 const slides = [
   {
     id: 1,
-    title: 'חולצה מעוצבת 1',
-    image: '/placeholder1.jpg',
+    title: 'סווטשרט לבן',
+    image: '/images/mockups/sweatshirt-white-front.png',
   },
   {
     id: 2,
-    title: 'חולצה מעוצבת 2',
-    image: '/placeholder2.jpg',
+    title: 'סווטשרט אדום',
+    image: '/images/mockups/sweatshirt-red-front.png',
   },
   {
     id: 3,
-    title: 'חולצה מעוצבת 3',
-    image: '/placeholder3.jpg',
+    title: 'סווטשרט כחול',
+    image: '/images/mockups/sweatshirt-blue-front.png',
   },
   {
     id: 4,
-    title: 'חולצה מעוצבת 4',
-    image: '/placeholder4.jpg',
+    title: 'סווטשרט אפור',
+    image: '/images/mockups/sweatshirt-gray-front.png',
   },
 ]
 
@@ -69,24 +69,8 @@ export default function HeroCarousel() {
               index === currentIndex ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <div className="w-full h-full bg-gradient-to-br from-yellow-100 via-orange-100 to-pink-100 flex items-center justify-center">
-              {/* Placeholder - replace with actual Image component when images are available */}
-              <div className="text-center">
-                <div className="text-6xl mb-4">👕</div>
-                <p className="text-lg font-medium text-gray-700">
-                  תמונה {index + 1}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">{slide.title}</p>
-              </div>
-              {/* Uncomment when actual images are available:
-              <Image
-                src={slide.image}
-                alt={slide.title}
-                fill
-                className="object-cover rounded-[1.5rem]"
-                priority={index === 0}
-              />
-              */}
+            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+              <span className="text-white text-2xl font-medium">תמונה</span>
             </div>
           </div>
         ))}

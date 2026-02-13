@@ -6,13 +6,13 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-gray-900 text-gray-400">
-      <div className="mx-auto max-w-[1600px] px-4 md:px-6 lg:px-8 py-12">
+    <footer className="bg-gray-900 text-gray-400" dir="rtl">
+      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 py-12">
         {/* Grid: 4 columns desktop, 1 column mobile */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-right">
 
           {/* Column 1 - Logo & About */}
-          <div>
+          <div dir="rtl">
             <img
               src="/logo.png"
               alt="בדפוס"
@@ -24,7 +24,7 @@ export default function Footer() {
           </div>
 
           {/* Column 2 - Quick Links */}
-          <div>
+          <div dir="rtl">
             <h3 className="text-white text-lg font-bold mb-4">קישורים מהירים</h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -66,7 +66,7 @@ export default function Footer() {
           </div>
 
           {/* Column 3 - Contact Info */}
-          <div>
+          <div dir="rtl">
             <h3 className="text-white text-lg font-bold mb-4">יצירת קשר</h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2 justify-center md:justify-start">
@@ -95,7 +95,7 @@ export default function Footer() {
           </div>
 
           {/* Column 4 - Social Networks */}
-          <div>
+          <div dir="rtl">
             <h3 className="text-white text-lg font-bold mb-4">רשתות חברתיות</h3>
             <div className="flex gap-3 justify-center md:justify-start">
               <a

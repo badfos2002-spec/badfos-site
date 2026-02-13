@@ -1,186 +1,122 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { onAuthChange, signOut, isAdmin } from '@/lib/auth'
-import {
-  LayoutDashboard,
-  ShoppingBag,
-  Users,
-  Package,
-  Star,
-  Tag,
-  Percent,
-  Image as ImageIcon,
-  DollarSign,
-  Gift,
+import { usePathname } from 'next/navigation'
+import { 
+  LayoutDashboard, 
+  ShoppingBag, 
+  Package, 
+  DollarSign, 
+  Star, 
+  Image, 
+  Tag, 
+  Percent, 
+  Gift, 
+  Users, 
   BarChart3,
-  LogOut,
   Menu,
   X,
+  LogOut
 } from 'lucide-react'
-import { User } from 'firebase/auth'
+import { Button } from '@/components/ui/button'
 
-const navigation = [
-  { name: 'לוח בקרה', href: '/admin', icon: LayoutDashboard },
-  { name: 'הזמנות', href: '/admin/orders', icon: ShoppingBag },
-  { name: 'לידים', href: '/admin/leads', icon: Users },
-  { name: 'מלאי', href: '/admin/inventory', icon: Package },
-  { name: 'ביקורות', href: '/admin/reviews', icon: Star },
-  { name: 'קופונים', href: '/admin/coupons', icon: Tag },
-  { name: 'הנחות', href: '/admin/discounts', icon: Percent },
-  { name: 'תמונות', href: '/admin/images', icon: ImageIcon },
-  { name: 'תמחור', href: '/admin/pricing', icon: DollarSign },
-  { name: 'חבילות', href: '/admin/packages', icon: Gift },
-  { name: 'אנליטיקה', href: '/admin/analytics', icon: BarChart3 },
+const menuItems = [
+  { icon: LayoutDashboard, label: 'לוח בקרה', href: '/admin' },
+  { icon: ShoppingBag, label: 'הזמנות', href: '/admin/orders' },
+  { icon: Users, label: 'לידים', href: '/admin/leads' },
+  { icon: Package, label: 'מלאי', href: '/admin/inventory' },
+  { icon: DollarSign, label: 'תמחור', href: '/admin/pricing' },
+  { icon: Star, label: 'ביקורות', href: '/admin/reviews' },
+  { icon: Image, label: 'תמונות', href: '/admin/images' },
+  { icon: Tag, label: 'קופונים', href: '/admin/coupons' },
+  { icon: Percent, label: 'הנחות', href: '/admin/discounts' },
+  { icon: Gift, label: 'חבילות', href: '/admin/packages' },
+  { icon: BarChart3, label: 'אנליטיקה', href: '/admin/analytics' },
 ]
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  useEffect(() => {
-    const unsubscribe = onAuthChange((currentUser) => {
-      setUser(currentUser)
-      setLoading(false)
-
-      // Redirect if not logged in or not admin
-      if (pathname !== '/admin/login') {
-        if (!currentUser || !isAdmin(currentUser)) {
-          router.push('/admin/login')
-        }
-      }
-    })
-
-    return () => unsubscribe()
-  }, [pathname, router])
-
-  const handleSignOut = async () => {
-    await signOut()
-    router.push('/admin/login')
-  }
-
-  // Don't show layout on login page
-  if (pathname === '/admin/login') {
-    return <>{children}</>
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">⏳</div>
-          <p className="text-text-gray">טוען...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user || !isAdmin(user)) {
-    return null
-  }
+  const pathname = usePathname()
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Mobile header */}
-      <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-        <h1 className="text-xl font-bold">דשבורד אדמין</h1>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSignOut}
-          className="text-red-600"
-        >
-          <LogOut size={20} />
-        </Button>
-      </div>
-
-      {/* Sidebar overlay (mobile) */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      {/* Top Bar */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <Menu className="w-6 h-6" />
+            </Button>
+            <h1 className="text-xl font-bold text-gray-900">🎨 פאנל ניהול - בדפוס</h1>
+          </div>
+          <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+            <LogOut className="w-5 h-5 ml-2" />
+            התנתק
+          </Button>
+        </div>
+      </header>
 
       <div className="flex">
         {/* Sidebar */}
-        <aside
-          className={`
-            fixed lg:sticky top-0 right-0 h-screen w-64 bg-white border-l
-            flex flex-col z-50 transition-transform duration-300
-            ${sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
-          `}
-        >
-          {/* Logo */}
-          <div className="p-6 border-b">
-            <h1 className="text-2xl font-bold bg-gradient-to-l from-primary to-secondary bg-clip-text text-transparent">
-              בדפוס אדמין
-            </h1>
-            <p className="text-sm text-text-gray mt-1">
-              {user.email?.split('@')[0]}
-            </p>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4">
-            <ul className="space-y-2">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href
-                return (
-                  <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`
-                        flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
-                        ${
-                          isActive
-                            ? 'bg-primary text-white font-bold'
-                            : 'hover:bg-gray-100 text-text-dark'
-                        }
-                      `}
-                    >
-                      <item.icon size={20} />
-                      <span>{item.name}</span>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </nav>
-
-          {/* Sign out button (desktop) */}
-          <div className="p-4 border-t hidden lg:block">
+        <aside className={`
+          fixed lg:sticky top-0 right-0 h-screen bg-white border-l border-gray-200 
+          transition-transform duration-300 z-50 lg:translate-x-0
+          ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}
+          w-64
+        `}>
+          <div className="p-4 border-b border-gray-200 lg:hidden flex justify-between items-center">
+            <h2 className="font-bold text-lg">תפריט ניהול</h2>
             <Button
-              onClick={handleSignOut}
-              variant="outline"
-              className="w-full text-red-600 border-red-200 hover:bg-red-50"
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(false)}
             >
-              <LogOut size={20} className="ml-2" />
-              התנתק
+              <X className="w-5 h-5" />
             </Button>
           </div>
+          
+          <nav className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-80px)]">
+            {menuItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                    ${isActive 
+                      ? 'bg-yellow-50 text-yellow-700 font-medium' 
+                      : 'text-gray-700 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
+          </nav>
         </aside>
 
-        {/* Main content */}
-        <main className="flex-1 p-4 lg:p-8">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 p-6">
+          {children}
         </main>
       </div>
     </div>

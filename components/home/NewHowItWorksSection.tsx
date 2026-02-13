@@ -29,7 +29,7 @@ export default function NewHowItWorksSection() {
       {/* Decorative Blob */}
       <div className="absolute top-10 right-10 w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full opacity-10 animate-bounce" style={{ animationDuration: '4s' }}></div>
 
-      <div className="mx-auto max-w-[1600px] px-4 md:px-6 lg:px-8 relative z-10">
+      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 relative z-10">
         {/* Heading */}
         <div className="text-center mb-16" dir="rtl">
           <h2 className="text-3xl lg:text-4xl font-bold mb-4">

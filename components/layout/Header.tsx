@@ -13,8 +13,8 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm">
-        <div className="mx-auto max-w-[1600px] px-4 md:px-6 lg:px-8 flex h-20 md:h-16 items-center justify-between relative">
+      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm" dir="rtl">
+        <div className="mx-auto max-w-[1600px] px-4 md:px-6 lg:px-8 flex h-20 md:h-16 items-center justify-between relative" dir="rtl">
           {/* Mobile Menu Button */}
           <Button
             variant="ghost"

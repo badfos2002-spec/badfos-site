@@ -21,21 +21,12 @@ export default function NewWhyChooseSection() {
 
   return (
     <section className="w-full bg-gradient-to-br from-gray-50 via-white to-gray-50 pt-4 pb-20" dir="rtl">
-      <div className="mx-auto max-w-[1600px] px-4 md:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Video Section - Right Side */}
           <div className="relative flex justify-center lg:justify-end">
-            <div className="absolute inset-0 flex items-center justify-center lg:justify-end">
-              <div className="w-96 h-[36rem] bg-gradient-to-br from-yellow-300 via-orange-300 to-red-300 rounded-3xl transform rotate-180 animate-pulse"></div>
-            </div>
-            <div className="relative w-96 h-[36rem] bg-gray-900 rounded-3xl shadow-2xl overflow-hidden hover-lift cursor-pointer transform rotate-180">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center text-white transform rotate-180" dir="rtl">
-                  <div className="text-6xl mb-4">📱</div>
-                  <p className="text-lg font-medium">סרטון הסבר</p>
-                  <p className="text-sm opacity-75 mt-2">384x576 (9:16)</p>
-                </div>
-              </div>
+            <div className="w-96 h-[36rem] bg-gray-800 rounded-3xl shadow-2xl flex items-center justify-center">
+              <span className="text-white text-2xl font-medium">תמונה</span>
             </div>
           </div>
 
