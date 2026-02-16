@@ -23,6 +23,11 @@ export const metadata: Metadata = {
     locale: 'he_IL',
     type: 'website',
   },
+  verification: {
+    other: {
+      'facebook-domain-verification': 'geeq14rohskfx37jq8rwknrn167zkg',
+    },
+  },
 }
 
 export default function RootLayout({

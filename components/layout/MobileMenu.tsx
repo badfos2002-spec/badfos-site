@@ -47,7 +47,7 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
                 className="rounded-lg px-4 py-3 text-right text-base font-medium hover:bg-gray-100 transition-colors"
                 onClick={onClose}
               >
-                מעצב חולצות
+                עיצוב אישי
               </Link>
               <Link
                 href="/packages"

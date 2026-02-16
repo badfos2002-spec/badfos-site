@@ -39,42 +39,42 @@ export default function Header() {
           <nav className="hidden md:flex gap-8 absolute left-1/2 -translate-x-1/2">
             <Link
               href="/"
-              className="text-sm font-medium text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
+              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
             >
               <Home className="w-4 h-4" />
               דף הבית
             </Link>
             <Link
               href="/designer"
-              className="text-sm font-medium text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
+              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
             >
               <Shirt className="w-4 h-4" />
-              מעצב חולצות
+              עיצוב אישי
             </Link>
             <Link
               href="/packages"
-              className="text-sm font-medium text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
+              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
             >
               <Package className="w-4 h-4" />
               חבילות ומבצעים
             </Link>
             <Link
               href="/reviews"
-              className="text-sm font-medium text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
+              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
             >
               <Star className="w-4 h-4" />
               ביקורות
             </Link>
             <Link
               href="/about"
-              className="text-sm font-medium text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
+              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
             >
               <Info className="w-4 h-4" />
               אודות
             </Link>
             <Link
               href="/contact"
-              className="text-sm font-medium text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
+              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
             >
               <Phone className="w-4 h-4" />
               צור קשר

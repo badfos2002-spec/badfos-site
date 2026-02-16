@@ -34,7 +34,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/designer" className="hover:text-yellow-400 transition-colors">
-                  מעצב חולצות
+                  עיצוב אישי
                 </Link>
               </li>
               <li>
