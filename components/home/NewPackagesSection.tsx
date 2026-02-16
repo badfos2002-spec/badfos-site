@@ -1,90 +1,59 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 
 const packageSlides = [
-  {
-    id: 1,
-    title: 'עד 10 חולצות',
-    image: '/images/packages/package-10.png',
-  },
-  {
-    id: 2,
-    title: '11-20 חולצות',
-    image: '/images/packages/package-11-20.png',
-  },
-  {
-    id: 3,
-    title: '21-50 חולצות',
-    image: '/images/packages/package-21-50.png',
-  },
+  { id: 1, title: 'עד 10 חולצות', image: '/images/packages/package-10.png' },
+  { id: 2, title: '11-20 חולצות', image: '/images/packages/package-11-20.png' },
+  { id: 3, title: '21-50 חולצות', image: '/images/packages/package-21-50.png' },
 ]
 
 export default function NewPackagesSection() {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const indexRef = useRef(0)
+  const [index, setIndex] = useState(0)
 
   useEffect(() => {
-    let cancelled = false
-    function tick() {
-      if (cancelled) return
-      indexRef.current = (indexRef.current + 1) % packageSlides.length
-      setCurrentIndex(indexRef.current)
-      setTimeout(tick, 4000)
-    }
-    const id = setTimeout(tick, 4000)
-    return () => {
-      cancelled = true
-      clearTimeout(id)
-    }
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % packageSlides.length)
+    }, 4000)
+    return () => clearInterval(id)
   }, [])
+
+  const slide = packageSlides[index]
 
   return (
     <section className="w-full bg-white py-16 md:py-20 relative overflow-hidden" dir="rtl">
-      {/* Dynamic color orbs */}
       <div className="absolute -top-20 -left-20 w-96 h-96 bg-gradient-to-br from-blue-300 to-indigo-300 rounded-full opacity-40 blur-3xl"></div>
       <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-200 rounded-full opacity-30 blur-2xl"></div>
 
       <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 relative z-10">
-        {/* Card Container */}
         <div className="bg-white rounded-3xl shadow-xl py-10 px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* RIGHT - Carousel */}
             <div>
               <div className="relative w-full h-48 lg:h-80 rounded-2xl border border-yellow-200 shadow-md overflow-hidden">
-                {packageSlides.map((slide, index) => (
-                  <div
-                    key={slide.id}
-                    className="absolute inset-0 transition-opacity duration-700"
-                    style={{
-                      opacity: index === currentIndex ? 1 : 0,
-                      zIndex: index === currentIndex ? 10 : 1,
-                    }}
-                  >
-                    <Image
-                      src={slide.image}
-                      alt={slide.title}
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                  </div>
-                ))}
+                <Image
+                  key={slide.id}
+                  src={slide.image}
+                  alt={slide.title}
+                  fill
+                  className="object-cover animate-fadeIn"
+                  priority
+                />
                 {/* Navigation dots */}
-                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
-                  {packageSlides.map((_, index) => (
+                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20">
+                  {packageSlides.map((_, i) => (
                     <button
-                      key={index}
-                      onClick={() => setCurrentIndex(index)}
+                      key={i}
+                      onClick={() => setIndex(i)}
                       className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                        index === currentIndex
+                        i === index
                           ? 'bg-yellow-400 scale-110'
                           : 'bg-white/70'
                       }`}
-                      aria-label={`עבור לחבילה ${index + 1}`}
+                      aria-label={`עבור לחבילה ${i + 1}`}
                     />
                   ))}
                 </div>
