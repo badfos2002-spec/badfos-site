@@ -86,20 +86,16 @@ export default function TshirtDesigner() {
             {currentStep === 1 && (
               <ShirtTypeStep
                 selectedType={config.fabricType}
-                onSelect={(type) => {
-                  updateConfig({ fabricType: type })
-                  goToNextStep()
-                }}
+                onSelect={(type) => updateConfig({ fabricType: type })}
+                onNext={goToNextStep}
               />
             )}
             {currentStep === 2 && (
               <ColorStep
                 selectedColor={config.color}
-                onSelect={(color) => {
-                  updateConfig({ color })
-                  goToNextStep()
-                }}
+                onSelect={(color) => updateConfig({ color })}
                 onBack={goToPreviousStep}
+                onNext={goToNextStep}
               />
             )}
             {currentStep === 3 && (

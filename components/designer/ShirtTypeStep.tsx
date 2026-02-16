@@ -1,12 +1,14 @@
 import { FABRIC_TYPES } from '@/lib/constants'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface ShirtTypeStepProps {
   selectedType?: string
   onSelect: (type: string) => void
+  onNext: () => void
 }
 
-export default function ShirtTypeStep({ selectedType, onSelect }: ShirtTypeStepProps) {
+export default function ShirtTypeStep({ selectedType, onSelect, onNext }: ShirtTypeStepProps) {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">שלב 1: בחרו סוג חולצה</h2>
@@ -40,9 +42,13 @@ export default function ShirtTypeStep({ selectedType, onSelect }: ShirtTypeStepP
         ))}
       </div>
 
-      <p className="text-sm text-text-gray mt-6 text-center">
-        לחצו על סוג החולצה כדי להמשיך לשלב הבא
-      </p>
+      <div className="flex justify-end mt-8">
+        {selectedType && (
+          <Button onClick={onNext} className="btn-cta">
+            המשך
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

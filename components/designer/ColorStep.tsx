@@ -6,9 +6,10 @@ interface ColorStepProps {
   selectedColor?: string
   onSelect: (color: string) => void
   onBack: () => void
+  onNext: () => void
 }
 
-export default function ColorStep({ selectedColor, onSelect, onBack }: ColorStepProps) {
+export default function ColorStep({ selectedColor, onSelect, onBack, onNext }: ColorStepProps) {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">שלב 2: בחרו צבע</h2>
@@ -45,7 +46,7 @@ export default function ColorStep({ selectedColor, onSelect, onBack }: ColorStep
           חזור
         </Button>
         {selectedColor && (
-          <Button onClick={() => onSelect(selectedColor)} className="btn-cta">
+          <Button onClick={onNext} className="btn-cta">
             המשך
           </Button>
         )}
