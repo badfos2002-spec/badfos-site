@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 
 // Product mockup images
 const slides = [
@@ -28,60 +29,59 @@ const slides = [
 
 export default function HeroCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
+  const indexRef = useRef(0)
 
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length)
-  }, [])
-
-  const goToSlide = (index: number) => {
-    setCurrentIndex(index)
-  }
-
-  // Auto-advance every 5 seconds
   useEffect(() => {
-    if (isPaused) return
-
-    const interval = setInterval(() => {
-      nextSlide()
-    }, 5000) // 5 seconds
-
-    return () => clearInterval(interval)
-  }, [isPaused, nextSlide])
+    let cancelled = false
+    function tick() {
+      if (cancelled) return
+      indexRef.current = (indexRef.current + 1) % slides.length
+      setCurrentIndex(indexRef.current)
+      setTimeout(tick, 5000)
+    }
+    const id = setTimeout(tick, 5000)
+    return () => {
+      cancelled = true
+      clearTimeout(id)
+    }
+  }, [])
 
   return (
     <div
-      className="w-full bg-white p-2 pb-10 rounded-[2.5rem] relative"
+      className="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem] relative"
       style={{
         boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.08)',
       }}
-      onPointerDown={() => setIsPaused(true)}
-      onPointerUp={() => setIsPaused(false)}
-      onPointerLeave={() => setIsPaused(false)}
     >
       {/* Carousel Container */}
-      <div className="relative aspect-[4/5] lg:aspect-[4/4] w-full overflow-hidden rounded-[1.5rem]">
+      <div className="relative w-[550px] h-[550px] mx-auto overflow-hidden rounded-[2rem]">
         {/* Images */}
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              index === currentIndex ? 'opacity-100' : 'opacity-0'
-            }`}
+            className="absolute inset-0 transition-opacity duration-700"
+            style={{
+              opacity: index === currentIndex ? 1 : 0,
+              zIndex: index === currentIndex ? 10 : 1,
+            }}
           >
-            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-              <span className="text-white text-2xl font-medium">תמונה</span>
-            </div>
+            <Image
+              src={slide.image}
+              alt={slide.title}
+              fill
+              className="object-cover rounded-[1.5rem]"
+              priority
+            />
           </div>
         ))}
       </div>
 
       {/* Indicators (Dots) */}
-      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5" style={{ zIndex: 20 }}>
         {slides.map((_, index) => (
           <button
             key={index}
-            onClick={() => goToSlide(index)}
+            onClick={() => setCurrentIndex(index)}
             className={`transition-all duration-300 rounded-full ${
               index === currentIndex
                 ? 'bg-white w-2.5 h-2.5 scale-110 shadow-sm'

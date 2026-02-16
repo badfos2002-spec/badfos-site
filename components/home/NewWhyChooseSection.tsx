@@ -25,8 +25,16 @@ export default function NewWhyChooseSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Video Section - Right Side */}
           <div className="relative flex justify-center lg:justify-end">
-            <div className="w-96 h-[36rem] bg-gray-800 rounded-3xl shadow-2xl flex items-center justify-center">
-              <span className="text-white text-2xl font-medium">תמונה</span>
+            {/* Background block with 35deg angle */}
+            <div className="absolute w-96 h-[36rem] rounded-3xl bg-[#ffc32e]/20" style={{ transform: 'rotate(35deg)' }}></div>
+            <div className="relative w-96 h-[36rem] rounded-3xl shadow-2xl overflow-hidden">
+              <iframe
+                src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8"
+                title="למה לבחור בנו"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
             </div>
           </div>
 

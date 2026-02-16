@@ -1,7 +1,47 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 
+const packageSlides = [
+  {
+    id: 1,
+    title: 'עד 10 חולצות',
+    image: '/images/packages/package-10.png',
+  },
+  {
+    id: 2,
+    title: '11-20 חולצות',
+    image: '/images/packages/package-11-20.png',
+  },
+  {
+    id: 3,
+    title: '21-50 חולצות',
+    image: '/images/packages/package-21-50.png',
+  },
+]
+
 export default function NewPackagesSection() {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const indexRef = useRef(0)
+
+  useEffect(() => {
+    let cancelled = false
+    function tick() {
+      if (cancelled) return
+      indexRef.current = (indexRef.current + 1) % packageSlides.length
+      setCurrentIndex(indexRef.current)
+      setTimeout(tick, 4000)
+    }
+    const id = setTimeout(tick, 4000)
+    return () => {
+      cancelled = true
+      clearTimeout(id)
+    }
+  }, [])
+
   return (
     <section className="w-full bg-white py-16 md:py-20 relative overflow-hidden" dir="rtl">
       {/* Dynamic color orbs */}
@@ -14,20 +54,39 @@ export default function NewPackagesSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* RIGHT - Carousel */}
             <div>
-              {/* Mobile: h-48 (192px), Desktop: h-80 (320px) */}
-              <div className="relative w-full h-48 lg:h-80 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl border border-yellow-200 shadow-md overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center" dir="rtl">
-                    <div className="text-6xl mb-4">📦</div>
-                    <p className="text-lg font-medium">קרוסלת חבילות</p>
-                    <p className="text-sm text-gray-500 mt-2">192px / 320px</p>
+              <div className="relative w-full h-48 lg:h-80 rounded-2xl border border-yellow-200 shadow-md overflow-hidden">
+                {packageSlides.map((slide, index) => (
+                  <div
+                    key={slide.id}
+                    className="absolute inset-0 transition-opacity duration-700"
+                    style={{
+                      opacity: index === currentIndex ? 1 : 0,
+                      zIndex: index === currentIndex ? 10 : 1,
+                    }}
+                  >
+                    <Image
+                      src={slide.image}
+                      alt={slide.title}
+                      fill
+                      className="object-cover"
+                      priority
+                    />
                   </div>
-                </div>
-                {/* Navigation dots positioned at bottom-3 (12px) */}
+                ))}
+                {/* Navigation dots */}
                 <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  {packageSlides.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentIndex(index)}
+                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                        index === currentIndex
+                          ? 'bg-yellow-400 scale-110'
+                          : 'bg-white/70'
+                      }`}
+                      aria-label={`עבור לחבילה ${index + 1}`}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
