@@ -11,7 +11,7 @@ export const PRODUCT_CATEGORIES = [
     icon: '👕',
     color: 'bg-yellow-100 border-yellow-400',
     textColor: 'text-yellow-900',
-    popular: true,
+    popular: false,
   },
   {
     id: 'sweatshirt' as ProductType,
@@ -122,8 +122,14 @@ export const TSHIRT_DESIGN_AREAS = [
   },
   {
     id: 'chest_logo' as DesignAreaType,
-    name: 'סמל כיס',
-    description: 'סמל קטן בגובה הכיס',
+    name: 'סמל כיס שמאל',
+    description: 'סמל קטן בגובה הכיס צד שמאל',
+    price: 5,
+  },
+  {
+    id: 'chest_logo_right' as DesignAreaType,
+    name: 'סמל כיס ימין',
+    description: 'סמל קטן בגובה הכיס צד ימין',
     price: 5,
   },
 ] as const
