@@ -13,58 +13,7 @@ import PriceSummary from './PriceSummary'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
-
-const tshirtMockups: Record<string, string> = {
-  white: '/assets/חולצה לבנה קדימה.png',
-  black: '/assets/חולצה שחורה קדימה.png',
-  gray: '/assets/חולצה אפורה קדימה.png',
-  blue: '/assets/חולצה כחולה קדימה.png',
-  red: '/assets/חולצה אדומה קדימה.png',
-  burgundy: '/assets/חולצה קדימה בורדו.png',
-  olive: '/assets/חולצה קדימה ירוק זית.png',
-}
-
-const colorFallback: Record<string, string> = {
-  white: 'white', black: 'black', gray: 'gray', red: 'red',
-  navy: 'blue', beige: 'white', burgundy: 'burgundy', olive: 'olive',
-}
-
-const tshirtMockupsBack: Record<string, string> = {
-  white: '/assets/חולצה לבנה אחורה.png',
-  black: '/assets/חולצה שחורה אחורה.png',
-  gray: '/assets/חולצה אפורה אחורה.png',
-  blue: '/assets/חולצה כחולה אחורה.png',
-  red: '/assets/חולצה אדומה אחורה.png',
-  burgundy: '/assets/חולצה אחורה בורדו.png',
-  olive: '/assets/חולצה אחורה ירוק זית.png',
-}
-
-const DESIGN_AREA_OVERLAYS: Record<string, {
-  view: 'front' | 'back'
-  label: string
-  style: { [key: string]: string }
-}> = {
-  front_full: {
-    view: 'front',
-    label: 'הדפסה קדמית',
-    style: { width: '40%', aspectRatio: '140 / 120', top: '35%', left: '50%', transform: 'translateX(-50%)', borderRadius: '10px' },
-  },
-  back: {
-    view: 'back',
-    label: 'הדפסה אחורית',
-    style: { width: '45%', aspectRatio: '180 / 200', top: '25%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
-  },
-  chest_logo: {
-    view: 'front',
-    label: 'סמל שמאל',
-    style: { width: '60px', height: '60px', top: '30%', right: '30%', borderRadius: '6px' },
-  },
-  chest_logo_right: {
-    view: 'front',
-    label: 'סמל ימין',
-    style: { width: '60px', height: '60px', top: '30%', left: '30%', borderRadius: '6px' },
-  },
-}
+import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 
 const stepConfig = [
   { title: 'בחר סוג חולצה', icon: Shirt },
@@ -76,18 +25,36 @@ const stepConfig = [
 export default function TshirtDesigner() {
   const router = useRouter()
   const addItem = useCart((state) => state.addItem)
-
-  const [currentStep, setCurrentStep] = useState(1)
-  const [activeDesignArea, setActiveDesignArea] = useState<string>('front_full')
-  const [config, setConfig] = useState<Partial<ProductConfig>>({
-    productType: 'tshirt',
-    fabricType: undefined,
-    color: '',
-    designs: [],
-    sizes: [],
-  })
+  const replaceItem = useCart((state) => state.replaceItem)
+  const setEditingItem = useCart((state) => state.setEditingItem)
+  const editingItemId = useCart((state) => state.editingItemId)
 
   const totalSteps = 4
+
+  // Read editing item synchronously from Zustand store (getState = no re-render needed)
+  const editingItem = editingItemId
+    ? useCart.getState().items.find((i) => i.id === editingItemId) ?? null
+    : null
+
+  const [currentStep, setCurrentStep] = useState(() => editingItem ? totalSteps : 1)
+  const [activeDesignArea, setActiveDesignArea] = useState<string>('front_full')
+  const [config, setConfig] = useState<Partial<ProductConfig>>(() =>
+    editingItem
+      ? {
+          productType: editingItem.productType,
+          fabricType: editingItem.fabricType,
+          color: editingItem.color,
+          designs: editingItem.designs,
+          sizes: editingItem.sizes,
+        }
+      : {
+          productType: 'tshirt',
+          fabricType: undefined,
+          color: '',
+          designs: [],
+          sizes: [],
+        }
+  )
 
   const updateConfig = (updates: Partial<ProductConfig>) => {
     setConfig((prev) => ({ ...prev, ...updates }))
@@ -104,11 +71,16 @@ export default function TshirtDesigner() {
   const resetDesign = () => {
     setCurrentStep(1)
     setConfig({ productType: 'tshirt', fabricType: undefined, color: '', designs: [], sizes: [] })
+    setEditingItem(null)
   }
 
   const handleAddToCart = () => {
     if (config.productType && config.fabricType && config.color && config.designs && config.sizes && config.sizes.length > 0) {
-      addItem(config as ProductConfig)
+      if (editingItemId) {
+        replaceItem(editingItemId, config as ProductConfig)
+      } else {
+        addItem(config as ProductConfig)
+      }
       router.push('/cart')
     }
   }
@@ -193,7 +165,7 @@ export default function TshirtDesigner() {
               className={`absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 ${
                 isActive
                   ? 'border-green-400 bg-green-100/70'
-                  : 'border-gray-400 bg-gray-200/50'
+                  : 'border-gray-300 bg-gray-200/75'
               }`}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               style={overlay.style as any}
@@ -234,7 +206,7 @@ export default function TshirtDesigner() {
           disabled={!canProceed()}
           className={`gradient-yellow text-white ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
         >
-          הוסף לעגלה 🛒
+          {editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
         </Button>
       )}
     </>
@@ -282,7 +254,7 @@ export default function TshirtDesigner() {
                 disabled={!canProceed()}
                 className="gradient-yellow text-white"
               >
-                הוסף לעגלה 🛒
+                {editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
               </Button>
             )}
           </div>

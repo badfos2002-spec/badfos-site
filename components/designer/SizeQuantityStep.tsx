@@ -1,6 +1,6 @@
 'use client'
 
-import { STANDARD_SIZES } from '@/lib/constants'
+import { STANDARD_SIZES, BUFF_QUANTITIES } from '@/lib/constants'
 import type { ProductConfig, SizeQuantity } from '@/lib/types'
 import { Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,43 @@ interface SizeQuantityStepProps {
   config: ProductConfig
 }
 
-export default function SizeQuantityStep({ sizes, onUpdate }: SizeQuantityStepProps) {
+export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuantityStepProps) {
+  const isBuff = config.productType === 'buff'
+
+  // ── Buff: quantity-only mode ──────────────────────────────────────────────
+  if (isBuff) {
+    const selectedQty = sizes[0]?.quantity ?? null
+
+    return (
+      <div>
+        <p className="text-sm text-gray-500 mb-4">בחרו כמות באפים להזמנה:</p>
+        <div className="grid grid-cols-2 gap-4">
+          {BUFF_QUANTITIES.map(({ value, label }) => {
+            const isSelected = selectedQty === value
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onUpdate([{ size: 'one-size', quantity: value }])}
+                className={`py-6 rounded-xl border-2 text-center transition-all font-bold text-lg ${
+                  isSelected
+                    ? 'border-yellow-400 bg-yellow-50 text-yellow-800'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-yellow-300'
+                }`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+        {!selectedQty && (
+          <p className="text-sm text-red-500 mt-4">יש לבחור כמות כדי להמשיך.</p>
+        )}
+      </div>
+    )
+  }
+
+  // ── Default: size + quantity grid ─────────────────────────────────────────
   const getQuantity = (sizeId: string) => sizes.find(s => s.size === sizeId)?.quantity || 0
   const totalQuantity = sizes.reduce((sum, s) => sum + s.quantity, 0)
 
@@ -84,7 +120,7 @@ export default function SizeQuantityStep({ sizes, onUpdate }: SizeQuantityStepPr
       </div>
 
       {totalQuantity === 0 && (
-        <p className="text-sm text-red-500 mt-4">יש לבחור לפחות חולצה אחת כדי להמשיך.</p>
+        <p className="text-sm text-red-500 mt-4">יש לבחור לפחות פריט אחד כדי להמשיך.</p>
       )}
     </div>
   )

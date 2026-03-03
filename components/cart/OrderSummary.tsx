@@ -1,15 +1,20 @@
 'use client'
 
+import { useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { CartItem, Shipping } from '@/lib/types'
 import { formatPrice, calculateOrderTotal } from '@/lib/pricing'
+import { validateCoupon } from '@/lib/db'
+import { CheckCircle, X, Loader2 } from 'lucide-react'
 
 interface OrderSummaryProps {
   items: CartItem[]
   shipping: Shipping | null
   couponCode: string
   onCouponChange: (code: string) => void
+  onDiscountApplied: (discount: number, code: string) => void
   onCheckout: () => void
   loading: boolean
   canCheckout: boolean
@@ -20,12 +25,50 @@ export default function OrderSummary({
   shipping,
   couponCode,
   onCouponChange,
+  onDiscountApplied,
   onCheckout,
   loading,
   canCheckout,
 }: OrderSummaryProps) {
-  const shippingMethod = shipping?.method || 'delivery'
-  const orderTotal = calculateOrderTotal(items, shippingMethod, 0)
+  const [applying, setApplying] = useState(false)
+  const [couponStatus, setCouponStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
+  const [couponDiscount, setCouponDiscount] = useState(0)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+
+  // Use 'pickup' (₪0) when shipping not yet selected, to avoid phantom shipping cost in total
+  const shippingMethod = shipping?.method || 'pickup'
+  const orderTotal = calculateOrderTotal(items, shippingMethod, couponDiscount)
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return
+    setApplying(true)
+    setCouponStatus('idle')
+    try {
+      const coupon = await validateCoupon(couponCode.trim().toUpperCase())
+      if (coupon) {
+        const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0)
+        const discount = Math.round(subtotal * coupon.discountPercent / 100)
+        setCouponDiscount(discount)
+        setCouponStatus('valid')
+        onDiscountApplied(discount, couponCode.trim().toUpperCase())
+      } else {
+        setCouponStatus('invalid')
+        setCouponDiscount(0)
+        onDiscountApplied(0, '')
+      }
+    } catch {
+      setCouponStatus('invalid')
+    } finally {
+      setApplying(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setCouponStatus('idle')
+    setCouponDiscount(0)
+    onCouponChange('')
+    onDiscountApplied(0, '')
+  }
 
   return (
     <Card className="border-primary/20 border-2">
@@ -35,18 +78,26 @@ export default function OrderSummary({
       <CardContent className="space-y-4">
         {/* Items Summary */}
         <div className="space-y-2">
-          {items.map((item, index) => (
-            <div key={item.id} className="flex justify-between text-sm">
-              <span>{index + 1}. {item.productType} ×{item.totalQuantity}</span>
-              <span className="font-bold">{formatPrice(item.totalPrice)}</span>
-            </div>
-          ))}
+          {items.map((item, index) => {
+            const productLabel: Record<string, string> = {
+              tshirt: 'חולצה בעיצוב אישי',
+              sweatshirt: 'סווטשירט בעיצוב אישי',
+              buff: 'באף בעיצוב אישי',
+              cap: 'כובע בעיצוב אישי',
+            }
+            return (
+              <div key={item.id} className="flex justify-between text-sm">
+                <span>{index + 1}. {productLabel[item.productType] ?? item.productType} ×{item.totalQuantity}</span>
+                <span className="font-bold text-black">{formatPrice(item.totalPrice)}</span>
+              </div>
+            )
+          })}
         </div>
 
         <div className="border-t pt-4 space-y-2">
           <div className="flex justify-between">
             <span>סכום ביניים:</span>
-            <span className="font-bold">{formatPrice(orderTotal.subtotal)}</span>
+            <span className="font-bold text-black">{formatPrice(orderTotal.subtotal)}</span>
           </div>
 
           {orderTotal.quantityDiscount > 0 && (
@@ -56,12 +107,22 @@ export default function OrderSummary({
             </div>
           )}
 
-          {shipping && (
+          {couponDiscount > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>הנחת קופון:</span>
+              <span className="font-bold">-{formatPrice(couponDiscount)}</span>
+            </div>
+          )}
+
+          {shipping ? (
             <div className="flex justify-between">
               <span>משלוח:</span>
-              <span className="font-bold">
-                {shipping.cost === 0 ? 'חינם!' : formatPrice(shipping.cost)}
-              </span>
+              <span className="font-bold text-black">{formatPrice(shipping.cost)}</span>
+            </div>
+          ) : (
+            <div className="flex justify-between text-gray-400 text-sm">
+              <span>משלוח:</span>
+              <span>ייקבע בהמשך</span>
             </div>
           )}
         </div>
@@ -69,30 +130,69 @@ export default function OrderSummary({
         {/* Coupon Code */}
         <div className="border-t pt-4">
           <label className="block text-sm font-medium mb-2">קוד קופון</label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={couponCode}
-              onChange={(e) => onCouponChange(e.target.value)}
-              placeholder="הכנס קוד"
-              className="flex-1 px-3 py-2 border rounded-lg text-sm"
-            />
-            <Button variant="outline" size="sm" disabled>
-              החל
-            </Button>
-          </div>
+          {couponStatus === 'valid' ? (
+            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+              <span className="text-sm text-green-700 font-medium flex-1">{couponCode} — הנחה של {formatPrice(couponDiscount)}</span>
+              <button onClick={handleRemoveCoupon} className="text-gray-400 hover:text-red-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => { onCouponChange(e.target.value); setCouponStatus('idle') }}
+                placeholder="הכנס קוד"
+                className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleApplyCoupon}
+                disabled={applying || !couponCode.trim()}
+              >
+                {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'החל'}
+              </Button>
+            </div>
+          )}
+          {couponStatus === 'invalid' && (
+            <p className="text-xs text-red-500 mt-1">קוד קופון לא תקין או פג תוקף</p>
+          )}
         </div>
 
         {/* Total */}
         <div className="border-t pt-4">
           <div className="flex justify-between text-2xl font-bold mb-4">
             <span>סה"כ לתשלום:</span>
-            <span className="text-primary">{formatPrice(orderTotal.total)}</span>
+            <span className="text-black">{formatPrice(orderTotal.total)}</span>
           </div>
+
+          {/* Terms acceptance */}
+          <label className="flex items-start gap-3 cursor-pointer mb-4 select-none">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 w-4 h-4 accent-yellow-500 shrink-0"
+            />
+            <span className="text-sm text-gray-600 leading-snug">
+              אני מאשר/ת את{' '}
+              <Link href="/privacy" target="_blank" className="text-yellow-600 underline hover:text-yellow-700">
+                מדיניות הפרטיות
+              </Link>
+              {' '}ו
+              <Link href="/terms" target="_blank" className="text-yellow-600 underline hover:text-yellow-700">
+                תקנון האתר
+              </Link>
+            </span>
+          </label>
 
           <Button
             onClick={onCheckout}
-            disabled={!canCheckout || loading}
+            disabled={!canCheckout || loading || !acceptedTerms}
             className="w-full btn-cta text-lg h-14"
           >
             {loading ? 'מעבד...' : 'המשך לתשלום 💳'}

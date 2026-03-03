@@ -12,9 +12,12 @@ import {
 
 interface CartStore {
   items: CartItem[]
+  editingItemId: string | null
   addItem: (config: ProductConfig) => void
   removeItem: (itemId: string) => void
   updateItemQuantity: (itemId: string, sizes: SizeQuantity[]) => void
+  replaceItem: (itemId: string, config: ProductConfig) => void
+  setEditingItem: (itemId: string | null) => void
   clearCart: () => void
   getCartTotal: () => number
   getCartItemCount: () => number
@@ -25,6 +28,7 @@ export const useCart = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      editingItemId: null,
 
       /**
        * Add an item to the cart
@@ -88,6 +92,37 @@ export const useCart = create<CartStore>()(
 
           set({ items: [...items, newItem] })
         }
+      },
+
+      /**
+       * Replace an existing item (used when editing from cart)
+       */
+      replaceItem: (itemId: string, config: ProductConfig) => {
+        const items = get().items
+        const itemIndex = items.findIndex((item) => item.id === itemId)
+        if (itemIndex < 0) {
+          get().addItem(config)
+          return
+        }
+        const totalQuantity = calculateTotalQuantity(config.sizes)
+        const pricePerUnit = calculateItemPrice(config)
+        const totalPrice = calculateTotalPrice(pricePerUnit, totalQuantity)
+        const updatedItems = [...items]
+        updatedItems[itemIndex] = {
+          ...config,
+          id: itemId,
+          pricePerUnit,
+          totalQuantity,
+          totalPrice,
+        }
+        set({ items: updatedItems, editingItemId: null })
+      },
+
+      /**
+       * Set the item currently being edited
+       */
+      setEditingItem: (itemId: string | null) => {
+        set({ editingItemId: itemId })
       },
 
       /**
@@ -166,7 +201,8 @@ export const useCart = create<CartStore>()(
       },
     }),
     {
-      name: 'badfos-cart-storage', // LocalStorage key
+      name: 'badfos-cart-storage',
+      partialize: (state) => ({ items: state.items }),
     }
   )
 )
