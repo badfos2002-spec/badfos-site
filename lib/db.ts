@@ -51,7 +51,7 @@ function ensureFirebase(): void {
  */
 export async function createDocument<T>(
   collectionName: string,
-  data: Omit<T, 'id'>
+  data: Omit<T, 'id' | 'createdAt'>
 ): Promise<string> {
   ensureFirebase()
   const docRef = await addDoc(collection(db!, collectionName), {
@@ -223,6 +223,16 @@ export async function updateOrderStatus(
   status: string
 ): Promise<void> {
   await updateDocument<Order>('orders', orderId, { status } as any)
+}
+
+/**
+ * Find order by sequential order number (e.g. 1001)
+ */
+export async function getOrderByNumber(orderNumber: number): Promise<Order | null> {
+  const orders = await queryDocuments<Order>('orders', [
+    { field: 'orderNumber', operator: '==', value: orderNumber },
+  ])
+  return orders.length > 0 ? orders[0] : null
 }
 
 // ============================================================================

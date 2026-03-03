@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateOrderStatus, getDocument } from '@/lib/db'
-import { Order } from '@/lib/types'
+import { updateOrderStatus, getOrderByNumber } from '@/lib/db'
 
 /**
  * Webhook endpoint for payment gateway (PayPlus/Meshulam)
@@ -26,69 +25,55 @@ export async function POST(request: NextRequest) {
       status,
       amount,
       customer_email,
-      // Add more fields based on payment gateway
     } = body
 
     // Handle different payment statuses
     switch (status) {
       case 'success':
-      case 'completed':
-        // Payment successful - update order status
+      case 'completed': {
         if (order_number) {
-          await updateOrderStatus(order_number, 'paid')
-
-          // Send confirmation email
-          const order = await getDocument<Order>('orders', order_number)
+          // Look up order by sequential orderNumber to get the Firestore document ID
+          const order = await getOrderByNumber(Number(order_number))
           if (order) {
-            // TODO: Generate coupon and send email
+            await updateOrderStatus(order.id, 'paid')
+
+            // TODO: Generate coupon and send confirmation email
+            // const couponCode = await createCoupon(10, order.id)
             // await fetch('/api/send-email', {
             //   method: 'POST',
-            //   body: JSON.stringify({
-            //     type: 'order_confirmation',
-            //     data: order,
-            //     couponCode: generatedCoupon
-            //   })
+            //   body: JSON.stringify({ type: 'order_confirmation', data: order, couponCode })
             // })
+          } else {
+            console.warn(`⚠️ Order not found for orderNumber: ${order_number}`)
           }
         }
         break
+      }
 
       case 'failed':
-      case 'declined':
-        // Payment failed
+      case 'declined': {
         if (order_number) {
-          await updateOrderStatus(order_number, 'payment_failed')
+          const order = await getOrderByNumber(Number(order_number))
+          if (order) {
+            await updateOrderStatus(order.id, 'cancelled')
+          }
         }
         break
+      }
 
-      case 'pending':
-        // Payment pending
-        if (order_number) {
-          await updateOrderStatus(order_number, 'pending_payment')
-        }
+      case 'pending': {
+        // No change needed — order already starts as pending_payment
         break
+      }
 
       default:
         console.warn('Unknown payment status:', status)
     }
 
-    // Return success to webhook sender
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Webhook processed',
-      },
-      { status: 200 }
-    )
+    return NextResponse.json({ success: true, message: 'Webhook processed' }, { status: 200 })
   } catch (error) {
     console.error('❌ Error processing webhook:', error)
-    return NextResponse.json(
-      {
-        error: 'Failed to process webhook',
-        details: error,
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 })
   }
 }
 
@@ -100,23 +85,4 @@ export async function GET() {
     message: 'Webhook endpoint is active',
     timestamp: new Date().toISOString(),
   })
-}
-
-/**
- * Example function to verify PayPlus signature
- * TODO: Implement based on payment gateway documentation
- */
-function verifyPayPlusSignature(body: any, signature: string | null): boolean {
-  if (!signature) return false
-
-  // TODO: Implement signature verification
-  // const secret = process.env.PAYPLUS_SECRET_KEY
-  // const computedSignature = crypto
-  //   .createHmac('sha256', secret)
-  //   .update(JSON.stringify(body))
-  //   .digest('hex')
-  //
-  // return computedSignature === signature
-
-  return true // Placeholder
 }

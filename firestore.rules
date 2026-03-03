@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper: Admin check ───────────────────────────────────────────────────
+    // Replace with the value of NEXT_PUBLIC_ADMIN_EMAIL in your .env.local
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'badfos2002@gmail.com';
+    }
+
+    // ── Orders ────────────────────────────────────────────────────────────────
+    // Anyone can create (checkout flow); only admin can read/update/delete
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ── Leads ─────────────────────────────────────────────────────────────────
+    // Anyone can submit a lead; only admin can manage
+    match /leads/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ── Reviews ───────────────────────────────────────────────────────────────
+    // Approved reviews are public; anyone can submit; admin manages
+    match /reviews/{reviewId} {
+      allow read: if resource.data.status == 'approved';
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Coupons ───────────────────────────────────────────────────────────────
+    // Public read needed for checkout validation; only admin writes
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Packages ──────────────────────────────────────────────────────────────
+    // Public read for the packages page; admin writes
+    match /packages/{packageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Package Orders ────────────────────────────────────────────────────────
+    // Anyone can place a package order; admin manages
+    match /packageOrders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ── Site Images ───────────────────────────────────────────────────────────
+    // Public read (homepage, product pages); admin writes
+    match /siteImages/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Pricing ───────────────────────────────────────────────────────────────
+    // Public read; admin writes
+    match /pricing/{ruleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Discounts ─────────────────────────────────────────────────────────────
+    // Public read (checkout needs active discounts); admin writes
+    match /discounts/{discountId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Inventory ─────────────────────────────────────────────────────────────
+    // Admin only
+    match /inventory/{itemId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── Settings ──────────────────────────────────────────────────────────────
+    // Public read (deals page); admin writes
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Counters ──────────────────────────────────────────────────────────────
+    // Read + write open — used by server-side createOrder to increment order number
+    match /counters/{counterId} {
+      allow read, write: if true;
+    }
+
+    // ── Deny everything else ──────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

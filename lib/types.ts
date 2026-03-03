@@ -202,6 +202,8 @@ export interface Discount {
 export type ImageCategory =
   | 'tshirt_mockups'
   | 'sweatshirt_mockups'
+  | 'buff_mockups'
+  | 'cap_mockups'
   | 'designable_products'
   | 'homepage_carousel'
   | 'logo'
