@@ -1,16 +1,37 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload, Minus, Plus } from 'lucide-react'
+import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
+import { SWEATSHIRT_DESIGN_AREAS } from '@/lib/constants'
+import type { DesignArea } from '@/lib/types'
+import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { useCart } from '@/hooks/useCart'
+
+const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
+  back: { width: '36%', aspectRatio: '180 / 200', top: '33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
+}
 
 const sweatshirtMockups: Record<string, string> = {
   white: '/assets/סווטשרט חזית לבן.png',
+  black: '/assets/סווטשרט חזית.png',
   gray: '/assets/סווטשרט חזית אפור.png',
   navy: '/assets/סווטשרט חזית כחול.png',
   red: '/assets/סווטשרט חזית אדום.png',
+  burgundy: '/assets/סווטשרט חזית בורדו.png',
+}
+
+const sweatshirtMockupsBack: Record<string, string> = {
+  white: '/assets/סווטשירט גב לבן.png',
+  black: '/assets/סווטשירט גב.png',
+  gray: '/assets/סווטשירט גב אפור.png',
+  navy: '/assets/סווטשירט גב כחול.png',
+  red: '/assets/סווטשירט גב אדום.png',
+  burgundy: '/assets/סווטשירט גב בורדו.png',
 }
 
 const colors = [
@@ -20,11 +41,6 @@ const colors = [
   { id: 'navy', name: 'נייבי', hex: '#1E3A8A' },
   { id: 'burgundy', name: 'בורדו', hex: '#7C2D12' },
   { id: 'red', name: 'אדום', hex: '#EF4444' },
-]
-
-const designAreas = [
-  { id: 'front', name: 'קידמי מלא', price: 12 },
-  { id: 'back', name: 'גב', price: 12 },
 ]
 
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL']
@@ -42,14 +58,19 @@ const MIN_DISCOUNT_QTY = 15
 const DISCOUNT_PERCENT = 5
 
 export default function SweatshirtDesignerPage() {
+  const router = useRouter()
+  const { addItem } = useCart()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedColor, setSelectedColor] = useState('')
-  const [selectedAreas, setSelectedAreas] = useState<string[]>([])
+  const [designs, setDesigns] = useState<DesignArea[]>([])
+  const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
+  const [uploadingArea, setUploadingArea] = useState<string | null>(null)
+  const sessionId = useState(() => `sweatshirt-${Date.now()}`)[0]
   const [quantities, setQuantities] = useState<Record<string, number>>({ S: 0, M: 0, L: 0, XL: 0, XXL: 0 })
 
   const totalQuantity = Object.values(quantities).reduce((sum, q) => sum + q, 0)
-  const designCost = selectedAreas.reduce((sum, id) => {
-    const area = designAreas.find(a => a.id === id)
+  const designCost = designs.reduce((sum, d) => {
+    const area = SWEATSHIRT_DESIGN_AREAS.find(a => a.id === d.area)
     return sum + (area?.price || 0)
   }, 0)
   const pricePerUnit = BASE_PRICE + designCost
@@ -61,10 +82,22 @@ export default function SweatshirtDesignerPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1: return !!selectedColor
-      case 2: return selectedAreas.length > 0
+      case 2: return true
       case 3: return totalQuantity > 0
       default: return false
     }
+  }
+
+  const handleAddToCart = () => {
+    addItem({
+      productType: 'sweatshirt',
+      color: selectedColor,
+      sizes: Object.entries(quantities)
+        .filter(([, q]) => q > 0)
+        .map(([size, quantity]) => ({ size, quantity })),
+      designs,
+    })
+    router.push('/cart')
   }
 
   const goToNextStep = () => { if (currentStep < totalSteps) setCurrentStep(s => s + 1) }
@@ -72,19 +105,64 @@ export default function SweatshirtDesignerPage() {
   const resetDesign = () => {
     setCurrentStep(1)
     setSelectedColor('')
-    setSelectedAreas([])
+    setDesigns([])
+    setSelectedAreaId(SWEATSHIRT_DESIGN_AREAS[0].id)
     setQuantities({ S: 0, M: 0, L: 0, XL: 0, XXL: 0 })
   }
 
-  const toggleArea = (id: string) => {
-    setSelectedAreas(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id])
+  const selectedArea = SWEATSHIRT_DESIGN_AREAS.find(a => a.id === selectedAreaId)!
+  const getDesign = (areaId: string) => designs.find(d => d.area === areaId)
+  const hasDesign = (areaId: string) => designs.some(d => d.area === areaId)
+
+  const handleFileSelect = async (file: File) => {
+    if (file.size > 100 * 1024 * 1024) {
+      alert('הקובץ גדול מ-100MB. אנא בחר קובץ קטן יותר.')
+      return
+    }
+
+    // Show preview immediately with blob URL
+    const previewUrl = URL.createObjectURL(file)
+    const areaId = selectedAreaId as DesignArea['area']
+    const tempDesign: DesignArea = {
+      area: areaId,
+      areaName: selectedArea.name,
+      imageUrl: previewUrl,
+      fileName: file.name,
+    }
+    setDesigns(prev => {
+      const idx = prev.findIndex(d => d.area === areaId)
+      if (idx >= 0) { const u = [...prev]; u[idx] = tempDesign; return u }
+      return [...prev, tempDesign]
+    })
+
+    // Upload to Firebase Storage for permanent high-quality URL
+    setUploadingArea(selectedAreaId)
+    try {
+      const uniqueName = generateUniqueFileName(file.name)
+      const permanentUrl = await uploadDesignFile(file, sessionId, uniqueName)
+      setDesigns(prev => prev.map(d =>
+        d.area === areaId ? { ...d, imageUrl: permanentUrl } : d
+      ))
+    } catch (err) {
+      console.error('Upload failed, keeping local preview:', err)
+      // Keep blob URL as fallback if Firebase not configured
+    } finally {
+      setUploadingArea(null)
+    }
   }
+
+  const removeDesign = (areaId: string) => setDesigns(designs.filter(d => d.area !== areaId))
+
+  const currentDesign = getDesign(selectedAreaId)
 
   const updateQuantity = (size: string, delta: number) => {
     setQuantities(prev => ({ ...prev, [size]: Math.max(0, prev[size] + delta) }))
   }
 
-  const mockupSrc = sweatshirtMockups[selectedColor] || '/assets/סווטשרט חזית.png'
+  const isBackView = selectedAreaId === 'back'
+  const mockupSrc = isBackView
+    ? (sweatshirtMockupsBack[selectedColor] || '/assets/סווטשירט גב.png')
+    : (sweatshirtMockups[selectedColor] || '/assets/סווטשרט חזית.png')
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
 
@@ -129,40 +207,129 @@ export default function SweatshirtDesignerPage() {
 
       case 2:
         return (
-          <div className="space-y-4">
-            {designAreas.map(area => {
-              const isSelected = selectedAreas.includes(area.id)
-              return (
-                <div
-                  key={area.id}
-                  className={`rounded-xl border-2 p-4 transition-all cursor-pointer ${isSelected ? 'border-[#fbbf24] bg-yellow-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
-                  onClick={() => toggleArea(area.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-[#fbbf24] border-[#fbbf24]' : 'border-gray-300'}`}>
-                      {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+          <div>
+            <p className="text-sm text-gray-500 mb-4">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
+
+            {/* Area selector tabs */}
+            <div className="grid gap-2 mb-4 grid-cols-2">
+              {SWEATSHIRT_DESIGN_AREAS.map((area) => {
+                const isActive = selectedAreaId === area.id
+                const uploaded = hasDesign(area.id)
+                return (
+                  <button
+                    key={area.id}
+                    onClick={() => setSelectedAreaId(area.id)}
+                    className={`relative text-xs h-16 px-2 py-2 rounded-md border font-medium transition-all flex items-center justify-center ${
+                      isActive
+                        ? 'gradient-yellow text-white border-transparent shadow'
+                        : 'bg-background shadow-sm border-yellow-200 hover:bg-yellow-50 hover:text-accent-foreground'
+                    }`}
+                  >
+                    {uploaded && !isActive && (
+                      <span className="absolute top-1 right-1">
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                      </span>
+                    )}
+                    <div className="flex flex-col items-center">
+                      <span>{area.name}</span>
+                      {uploadingArea === area.id
+                        ? <span className="text-[10px] opacity-80">מעלה...</span>
+                        : <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                      }
                     </div>
-                    <div className="flex-1">
-                      <span className="font-bold text-[#1e293b]">{area.name}</span>
-                      <span className="text-sm text-[#f59e0b] font-bold mr-2">+{area.price}₪</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Upload area */}
+            <div className="space-y-3">
+              {currentDesign ? (
+                <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                      <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{currentDesign.fileName}</span>
                     </div>
+                    <button onClick={() => removeDesign(selectedAreaId)} className="text-red-400 hover:text-red-600 shrink-0 mr-1">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                  {isSelected && (
-                    <div className="mt-3">
-                      <label className="block cursor-pointer" onClick={e => e.stopPropagation()}>
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-[#fbbf24] transition-colors">
-                          <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                          <p className="text-sm font-medium text-gray-600">העלאת עיצוב</p>
-                          <p className="text-xs text-gray-400 mt-1">JPG, PNG עד 10MB</p>
-                          <input type="file" accept="image/*" className="hidden" />
-                        </div>
-                      </label>
+                  <div className="w-full aspect-video bg-white rounded-lg overflow-hidden border border-green-200 mb-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={currentDesign.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
+                  </div>
+                  <label className="cursor-pointer block">
+                    <div className="w-full text-center py-2 px-3 border border-dashed border-yellow-300 rounded-lg hover:border-yellow-400 hover:bg-yellow-50 transition-all text-xs text-gray-500 font-medium">
+                      החלף קובץ
                     </div>
-                  )}
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+                    />
+                  </label>
                 </div>
-              )
-            })}
-            {selectedAreas.length === 0 && <p className="text-sm text-red-500 mt-2">יש לבחור לפחות אזור עיצוב אחד.</p>}
+              ) : (
+                <label className="cursor-pointer block">
+                  <div className="border-2 border-dashed border-yellow-300 rounded-lg p-4 sm:p-6 text-center hover:border-yellow-400 hover:bg-yellow-50 transition-all mx-auto w-full sm:max-w-xs">
+                    <div className="w-12 h-12 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-3">
+                      <ImagePlus className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 mb-1">לחץ להעלאת תמונה</p>
+                    <p className="text-xs text-gray-600 mb-2">JPG, PNG, JPEG עד 100MB</p>
+                    <p className="text-xs text-blue-600 font-medium">יועלה לאזור: {selectedArea.name}</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+                  />
+                </label>
+              )}
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-400">או</span>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
+                type="button"
+                disabled
+              >
+                <Sparkles className="w-4 h-4 ml-2" />
+                עוזר עיצוב AI
+              </Button>
+            </div>
+
+            {designs.length === 0 && (
+              <p className="text-sm text-gray-400 mt-4 text-center">ניתן להמשיך גם ללא העלאת עיצוב</p>
+            )}
+
+            {designs.length > 0 && (
+              <div className="mt-4 space-y-1">
+                {designs.map(d => (
+                  <div key={d.area} className="flex items-center justify-between text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                      <span className="font-medium text-green-700">{d.areaName}</span>
+                      <span className="text-gray-400 truncate max-w-[100px]">{d.fileName}</span>
+                    </div>
+                    <button onClick={() => removeDesign(d.area)} className="text-red-400 hover:text-red-600 mr-1">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )
 
@@ -232,7 +399,7 @@ export default function SweatshirtDesignerPage() {
               </div>
               {designCost > 0 && (
                 <div className="flex justify-between text-gray-600">
-                  <span>עיצובים ({selectedAreas.length})</span>
+                  <span>עיצובים ({designs.length})</span>
                   <span className="font-medium">+{designCost}₪</span>
                 </div>
               )}
@@ -262,16 +429,56 @@ export default function SweatshirtDesignerPage() {
     </div>
   )
 
-  const MockupImage = () => (
-    <Image
-      src={mockupSrc}
-      alt="תצוגה מקדימה"
-      width={0}
-      height={0}
-      sizes="100vw"
-      className="w-full h-auto"
-    />
-  )
+  const MockupImage = () => {
+    const currentView = isBackView ? 'back' : 'front'
+    const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([, overlay]) => overlay.view === currentView)
+    const showAreas = currentStep === 2
+    return (
+      <div className="relative w-full">
+        <Image
+          src={mockupSrc}
+          alt="תצוגה מקדימה"
+          width={0}
+          height={0}
+          sizes="100vw"
+          className="w-full h-auto block"
+        />
+        {visibleAreas.map(([areaId, overlay]) => {
+          const areaStyle = SWEATSHIRT_AREA_OVERRIDES[areaId] ?? overlay.style
+          const design = designs.find(d => d.area === areaId)
+          if (design) {
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={areaId}
+                src={design.imageUrl}
+                alt={overlay.label}
+                className="absolute object-contain"
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                style={areaStyle as any}
+              />
+            )
+          }
+          if (!showAreas) return null
+          const isActive = areaId === selectedAreaId
+          return (
+            <div
+              key={areaId}
+              className={`absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 ${
+                isActive ? 'border-green-400 bg-green-100/70' : 'border-gray-300 bg-gray-200/75'
+              }`}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              style={areaStyle as any}
+            >
+              <span className={`text-xs font-medium text-center leading-tight px-1 ${isActive ? 'text-green-700' : 'text-gray-600'}`}>
+                {overlay.label}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
@@ -295,6 +502,7 @@ export default function SweatshirtDesignerPage() {
         </Button>
       ) : (
         <Button
+          onClick={handleAddToCart}
           disabled={!canProceed()}
           className={`gradient-yellow text-white ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
         >
@@ -342,6 +550,7 @@ export default function SweatshirtDesignerPage() {
               </Button>
             ) : (
               <Button
+                onClick={handleAddToCart}
                 disabled={!canProceed()}
                 className="gradient-yellow text-white"
               >
@@ -357,9 +566,9 @@ export default function SweatshirtDesignerPage() {
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
               <MockupImage />
-              {selectedAreas.length > 0 && (
+              {designs.length > 0 && (
                 <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  ✓ {selectedAreas.length} אזורים
+                  ✓ {designs.length} אזורים
                 </span>
               )}
             </div>
@@ -408,9 +617,9 @@ export default function SweatshirtDesignerPage() {
                     <Eye className="w-5 h-5 text-yellow-500" />
                     <span>תצוגה מקדימה</span>
                   </div>
-                  {selectedAreas.length > 0 && (
+                  {designs.length > 0 && (
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                      ✓ {selectedAreas.length} אזורים
+                      ✓ {designs.length} אזורים
                     </span>
                   )}
                 </div>
