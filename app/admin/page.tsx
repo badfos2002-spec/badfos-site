@@ -1,22 +1,96 @@
 'use client'
 
-import { ShoppingBag, Users, Package, TrendingUp, DollarSign, Star } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ShoppingBag, Users, Star, TrendingUp, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { getAllOrders, getAllLeads, getAllDocuments } from '@/lib/db'
+import type { Order, Lead, Review } from '@/lib/types'
+
+const statusLabels: Record<string, { label: string; color: string }> = {
+  pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-700' },
+  paid: { label: 'שולם', color: 'bg-green-100 text-green-700' },
+  in_production: { label: 'בייצור', color: 'bg-blue-100 text-blue-700' },
+  shipped: { label: 'נשלח', color: 'bg-purple-100 text-purple-700' },
+  completed: { label: 'הושלם', color: 'bg-gray-100 text-gray-700' },
+  cancelled: { label: 'בוטל', color: 'bg-red-100 text-red-700' },
+}
 
 export default function AdminDashboard() {
-  const stats = [
-    { icon: ShoppingBag, label: 'הזמנות היום', value: '12', change: '+8%', color: 'from-blue-500 to-indigo-600' },
-    { icon: Users, label: 'לידים חדשים', value: '23', change: '+15%', color: 'from-green-500 to-emerald-600' },
-    { icon: Package, label: 'מוצרים במלאי', value: '1,247', change: '-3%', color: 'from-purple-500 to-pink-600' },
-    { icon: DollarSign, label: 'הכנסות היום', value: '₪8,420', change: '+12%', color: 'from-yellow-500 to-orange-500' },
-    { icon: Star, label: 'ביקורות ממתינות', value: '5', change: '0%', color: 'from-red-500 to-rose-600' },
-    { icon: TrendingUp, label: 'שיעור המרה', value: '24%', change: '+5%', color: 'from-cyan-500 to-blue-600' },
-  ]
+  const [orders, setOrders] = useState<Order[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [pendingReviews, setPendingReviews] = useState(0)
+  const [loading, setLoading] = useState(true)
 
-  const recentOrders = [
-    { id: '#1234', customer: 'יוסי כהן', amount: '₪450', status: 'pending', time: 'לפני 10 דקות' },
-    { id: '#1233', customer: 'שרה לוי', amount: '₪680', status: 'paid', time: 'לפני 25 דקות' },
-    { id: '#1232', customer: 'דוד אברהם', amount: '₪1,200', status: 'in_production', time: 'לפני שעה' },
+  useEffect(() => {
+    Promise.all([
+      getAllOrders(),
+      getAllLeads(),
+      getAllDocuments<Review>('reviews'),
+    ])
+      .then(([o, l, r]) => {
+        setOrders(o)
+        setLeads(l)
+        setPendingReviews(r.filter(rev => rev.status === 'pending').length)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+
+  const ordersToday = orders.filter(o => {
+    const d = o.createdAt?.toDate?.()
+    return d && d >= today
+  })
+
+  const leadsToday = leads.filter(l => {
+    const d = l.createdAt?.toDate?.()
+    return d && d >= today
+  })
+
+  const revenueThisMonth = orders
+    .filter(o => {
+      const d = o.createdAt?.toDate?.()
+      return d && d >= startOfMonth && o.status !== 'cancelled'
+    })
+    .reduce((sum, o) => sum + (o.total ?? 0), 0)
+
+  const recentOrders = [...orders]
+    .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
+    .slice(0, 5)
+
+  const stats = [
+    {
+      icon: ShoppingBag,
+      label: 'הזמנות היום',
+      value: String(ordersToday.length),
+      color: 'from-blue-500 to-indigo-600',
+      href: '/admin/orders',
+    },
+    {
+      icon: Users,
+      label: 'לידים היום',
+      value: String(leadsToday.length),
+      color: 'from-green-500 to-emerald-600',
+      href: '/admin/leads',
+    },
+    {
+      icon: TrendingUp,
+      label: 'הכנסות החודש',
+      value: `₪${revenueThisMonth.toLocaleString()}`,
+      color: 'from-yellow-500 to-orange-500',
+      href: '/admin/analytics',
+    },
+    {
+      icon: Star,
+      label: 'ביקורות ממתינות',
+      value: String(pendingReviews),
+      color: 'from-red-500 to-rose-600',
+      href: '/admin/reviews',
+    },
   ]
 
   return (
@@ -26,61 +100,72 @@ export default function AdminDashboard() {
         <p className="text-gray-600">סקירה כללית של המערכת</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {stats.map((stat, idx) => {
-          const Icon = stat.icon
-          return (
-            <div key={idx} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <span className={`text-sm font-medium ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                  {stat.change}
-                </span>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-              <p className="text-sm text-gray-600">{stat.label}</p>
-            </div>
-          )
-        })}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {stats.map((stat, idx) => {
+              const Icon = stat.icon
+              return (
+                <Link key={idx} href={stat.href}>
+                  <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center`}>
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+                    <p className="text-sm text-gray-600">{stat.label}</p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
 
-      {/* Recent Orders */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">הזמנות אחרונות</h2>
-          <Link href="/admin/orders" className="text-yellow-600 hover:text-yellow-700 font-medium text-sm">
-            צפה בהכל ←
-          </Link>
-        </div>
-        <div className="space-y-4">
-          {recentOrders.map((order) => (
-            <div key={order.id} className="flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-yellow-200 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">
-                  {order.customer.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{order.customer}</p>
-                  <p className="text-sm text-gray-500">{order.id} • {order.time}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="font-bold text-lg text-gray-900">{order.amount}</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  order.status === 'paid' ? 'bg-green-100 text-green-700' :
-                  order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-blue-100 text-blue-700'
-                }`}>
-                  {order.status === 'paid' ? 'שולם' : order.status === 'pending' ? 'ממתין' : 'בייצור'}
-                </span>
-              </div>
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">הזמנות אחרונות</h2>
+              <Link href="/admin/orders" className="text-yellow-600 hover:text-yellow-700 font-medium text-sm">
+                צפה בהכל ←
+              </Link>
             </div>
-          ))}
-        </div>
-      </div>
+            {recentOrders.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">
+                <ShoppingBag className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                <p>אין הזמנות עדיין</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentOrders.map((order) => {
+                  const statusInfo = statusLabels[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-700' }
+                  return (
+                    <div key={order.id} className="flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-yellow-200 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">
+                          {order.customer.firstName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{order.customer.firstName} {order.customer.lastName}</p>
+                          <p className="text-sm text-gray-500">#{order.orderNumber} • {order.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? ''}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="font-bold text-lg text-gray-900">₪{order.total}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

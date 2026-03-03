@@ -1,25 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  Package, 
-  DollarSign, 
-  Star, 
-  Image, 
-  Tag, 
-  Percent, 
-  Gift, 
-  Users, 
+import { usePathname, useRouter } from 'next/navigation'
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Package,
+  DollarSign,
+  Star,
+  Image,
+  Tag,
+  Percent,
+  Gift,
+  ClipboardList,
+  Users,
   BarChart3,
+  Megaphone,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { onAuthChange, isAdmin, signOut } from '@/lib/auth'
+import type { User } from 'firebase/auth'
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'לוח בקרה', href: '/admin' },
@@ -32,12 +37,50 @@ const menuItems = [
   { icon: Tag, label: 'קופונים', href: '/admin/coupons' },
   { icon: Percent, label: 'הנחות', href: '/admin/discounts' },
   { icon: Gift, label: 'חבילות', href: '/admin/packages' },
+  { icon: ClipboardList, label: 'הזמנות חבילות', href: '/admin/package-orders' },
   { icon: BarChart3, label: 'אנליטיקה', href: '/admin/analytics' },
+  { icon: Megaphone, label: 'הגדרות מבצעים', href: '/admin/deals' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    const unsubscribe = onAuthChange((currentUser) => {
+      setUser(currentUser)
+      setLoading(false)
+      if (!currentUser || !isAdmin(currentUser)) {
+        router.replace('/admin/login')
+      }
+    })
+    return unsubscribe
+  }, [router])
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.replace('/admin/login')
+  }
+
+  // Allow login page without auth
+  if (pathname === '/admin/login') {
+    return <>{children}</>
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
+        <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+      </div>
+    )
+  }
+
+  if (!user || !isAdmin(user)) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -55,7 +98,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Button>
             <h1 className="text-xl font-bold text-gray-900">🎨 פאנל ניהול - בדפוס</h1>
           </div>
-          <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleSignOut}>
             <LogOut className="w-5 h-5 ml-2" />
             התנתק
           </Button>
