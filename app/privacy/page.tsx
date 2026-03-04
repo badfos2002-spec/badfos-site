@@ -59,7 +59,7 @@ export default function PrivacyPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-20" dir="rtl">
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0">
         {/* Header */}
         <div className="text-center mb-16" dir="rtl">
           <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm mb-6">

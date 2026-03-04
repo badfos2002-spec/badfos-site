@@ -6,7 +6,7 @@ import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
-import { SWEATSHIRT_DESIGN_AREAS } from '@/lib/constants'
+import { SWEATSHIRT_DESIGN_AREAS, STANDARD_SIZES } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
@@ -43,8 +43,6 @@ const colors = [
   { id: 'red', name: 'אדום', hex: '#EF4444' },
 ]
 
-const SIZES = ['S', 'M', 'L', 'XL', 'XXL']
-
 const stepConfig = [
   { title: 'בחר צבע', icon: Palette },
   { title: 'העלה עיצוב', icon: ImagePlus },
@@ -66,7 +64,9 @@ export default function SweatshirtDesignerPage() {
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
   const [uploadingArea, setUploadingArea] = useState<string | null>(null)
   const sessionId = useState(() => `sweatshirt-${Date.now()}`)[0]
-  const [quantities, setQuantities] = useState<Record<string, number>>({ S: 0, M: 0, L: 0, XL: 0, XXL: 0 })
+  const [quantities, setQuantities] = useState<Record<string, number>>(
+    () => Object.fromEntries(STANDARD_SIZES.map(s => [s.id, 0]))
+  )
 
   const totalQuantity = Object.values(quantities).reduce((sum, q) => sum + q, 0)
   const designCost = designs.reduce((sum, d) => {
@@ -107,7 +107,7 @@ export default function SweatshirtDesignerPage() {
     setSelectedColor('')
     setDesigns([])
     setSelectedAreaId(SWEATSHIRT_DESIGN_AREAS[0].id)
-    setQuantities({ S: 0, M: 0, L: 0, XL: 0, XXL: 0 })
+    setQuantities(Object.fromEntries(STANDARD_SIZES.map(s => [s.id, 0])))
   }
 
   const selectedArea = SWEATSHIRT_DESIGN_AREAS.find(a => a.id === selectedAreaId)!
@@ -156,7 +156,11 @@ export default function SweatshirtDesignerPage() {
   const currentDesign = getDesign(selectedAreaId)
 
   const updateQuantity = (size: string, delta: number) => {
-    setQuantities(prev => ({ ...prev, [size]: Math.max(0, prev[size] + delta) }))
+    setQuantities(prev => ({ ...prev, [size]: Math.max(0, (prev[size] || 0) + delta) }))
+  }
+
+  const setQuantityDirect = (size: string, value: number) => {
+    setQuantities(prev => ({ ...prev, [size]: Math.max(0, value) }))
   }
 
   const isBackView = selectedAreaId === 'back'
@@ -336,39 +340,48 @@ export default function SweatshirtDesignerPage() {
       case 3:
         return (
           <div>
-            <div className={`rounded-xl p-3 mb-5 flex justify-between items-center ${
-              hasDiscount ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
-            }`}>
-              <span className="text-sm font-medium text-gray-600">סה&quot;כ יחידות</span>
-              <div className="text-left">
-                <span className={`text-2xl font-bold ${hasDiscount ? 'text-green-600' : 'text-[#1e293b]'}`}>{totalQuantity}</span>
-                {hasDiscount && <p className="text-xs text-green-600 font-bold">✓ {DISCOUNT_PERCENT}% הנחה!</p>}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              {SIZES.map(size => {
-                const qty = quantities[size]
-                const isSelected = qty > 0
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+              {STANDARD_SIZES.map((size) => {
+                const qty = quantities[size.id] || 0
                 return (
-                  <div key={size} className={`rounded-xl border-2 p-3 transition-all ${isSelected ? 'border-[#fbbf24] bg-yellow-50' : 'border-gray-200 bg-white'}`}>
-                    <div className="text-center mb-2">
-                      <span className="font-bold text-[#1e293b]">{size}</span>
+                  <div
+                    key={size.id}
+                    className="p-2 sm:p-4 border rounded-lg flex flex-col items-center justify-center space-y-2 sm:space-y-3"
+                  >
+                    <div className="text-center">
+                      <span className="font-semibold text-lg">{size.name}</span>
+                      {size.surcharge > 0 && (
+                        <div className="text-xs text-orange-600 font-medium">+₪{size.surcharge}</div>
+                      )}
                     </div>
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => updateQuantity(size, -1)}
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={qty || ''}
+                      onChange={(e) => setQuantityDirect(size.id, parseInt(e.target.value) || 0)}
+                      className="w-16 sm:w-20 text-center font-bold h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        type="button"
                         disabled={qty === 0}
-                        className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 transition-all"
+                        onClick={() => updateQuantity(size.id, -1)}
+                        className="h-8 w-8"
                       >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="w-8 text-center font-bold text-[#1e293b]">{qty}</span>
-                      <button
-                        onClick={() => updateQuantity(size, 1)}
-                        className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-all"
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        type="button"
+                        onClick={() => updateQuantity(size.id, 1)}
+                        className="h-8 w-8"
                       >
-                        <Plus className="w-3 h-3" />
-                      </button>
+                        <Plus className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 )

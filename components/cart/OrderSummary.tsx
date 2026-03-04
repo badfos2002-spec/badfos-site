@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import type { CartItem, Shipping } from '@/lib/types'
+import type { CartItem, Shipping, Discount } from '@/lib/types'
 import { formatPrice, calculateOrderTotal } from '@/lib/pricing'
-import { validateCoupon } from '@/lib/db'
+import { validateCoupon, getActiveDiscounts } from '@/lib/db'
 import { CheckCircle, X, Loader2 } from 'lucide-react'
 
 interface OrderSummaryProps {
@@ -34,10 +34,27 @@ export default function OrderSummary({
   const [couponStatus, setCouponStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
   const [couponDiscount, setCouponDiscount] = useState(0)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [activeDiscounts, setActiveDiscounts] = useState<Discount[]>([])
+
+  useEffect(() => {
+    getActiveDiscounts().then(setActiveDiscounts).catch(console.error)
+  }, [])
+
+  // Compute quantity discount from Firestore rules (fallback to hardcoded if none)
+  const totalQuantity = items.reduce((sum, item) => sum + item.totalQuantity, 0)
+  const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0)
+  const firestoreQuantityDiscount = activeDiscounts.length > 0
+    ? (() => {
+        const match = activeDiscounts
+          .filter(d => d.type === 'quantity' && totalQuantity >= d.minQuantity)
+          .sort((a, b) => b.discountPercent - a.discountPercent)[0]
+        return match ? Math.round(subtotal * match.discountPercent / 100) : 0
+      })()
+    : undefined // undefined = use hardcoded fallback in calculateOrderTotal
 
   // Use 'pickup' (₪0) when shipping not yet selected, to avoid phantom shipping cost in total
   const shippingMethod = shipping?.method || 'pickup'
-  const orderTotal = calculateOrderTotal(items, shippingMethod, couponDiscount)
+  const orderTotal = calculateOrderTotal(items, shippingMethod, couponDiscount, firestoreQuantityDiscount)
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return

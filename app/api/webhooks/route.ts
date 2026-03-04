@@ -1,84 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateOrderStatus, getOrderByNumber } from '@/lib/db'
+import { adminDb } from '@/lib/firebase-admin'
 
 /**
- * Webhook endpoint for payment gateway (PayPlus/Meshulam)
- * This is a placeholder for future payment integration
+ * Webhook endpoint for Grow (Meshulam) payment notifications.
+ * Uses Firebase Admin SDK (bypasses security rules).
+ *
+ * Configure in Grow dashboard: הגדרות → ניהול וובהוקים
+ * URL: https://badfos.co.il/api/webhooks
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('🔔 Webhook received:', JSON.stringify(body, null, 2))
 
-    console.log('🔔 Webhook received:', body)
+    // Extract paymentId from various possible locations
+    const paymentId =
+      body.purchaseCustomField?.cField1 ||
+      body.cField1 ||
+      body.orderId ||
+      body.paymentId
 
-    // TODO: Verify webhook signature
-    // Example for PayPlus:
-    // const signature = request.headers.get('x-payplus-signature')
-    // if (!verifyPayPlusSignature(body, signature)) {
-    //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    // }
+    const transactionCode = body.transactionCode
+    const paymentSum = body.paymentSum || body.amount
 
-    // Extract payment data
-    const {
-      transaction_id,
-      order_number,
-      status,
-      amount,
-      customer_email,
-    } = body
+    console.log('🔍 Extracted:', JSON.stringify({ paymentId, transactionCode, paymentSum }))
 
-    // Handle different payment statuses
-    switch (status) {
-      case 'success':
-      case 'completed': {
-        if (order_number) {
-          // Look up order by sequential orderNumber to get the Firestore document ID
-          const order = await getOrderByNumber(Number(order_number))
-          if (order) {
-            await updateOrderStatus(order.id, 'paid')
-
-            // TODO: Generate coupon and send confirmation email
-            // const couponCode = await createCoupon(10, order.id)
-            // await fetch('/api/send-email', {
-            //   method: 'POST',
-            //   body: JSON.stringify({ type: 'order_confirmation', data: order, couponCode })
-            // })
-          } else {
-            console.warn(`⚠️ Order not found for orderNumber: ${order_number}`)
-          }
-        }
-        break
-      }
-
-      case 'failed':
-      case 'declined': {
-        if (order_number) {
-          const order = await getOrderByNumber(Number(order_number))
-          if (order) {
-            await updateOrderStatus(order.id, 'cancelled')
-          }
-        }
-        break
-      }
-
-      case 'pending': {
-        // No change needed — order already starts as pending_payment
-        break
-      }
-
-      default:
-        console.warn('Unknown payment status:', status)
+    if (!paymentId) {
+      console.error('❌ No paymentId found in webhook body')
+      return NextResponse.json({ error: 'Missing paymentId' }, { status: 400 })
     }
 
-    return NextResponse.json({ success: true, message: 'Webhook processed' }, { status: 200 })
+    // Query Firestore via Admin SDK — find order by paymentId
+    const snapshot = await adminDb
+      .collection('orders')
+      .where('paymentId', '==', paymentId)
+      .limit(1)
+      .get()
+
+    if (snapshot.empty) {
+      console.error(`❌ No order found with paymentId: ${paymentId}`)
+      return NextResponse.json({ error: `Order not found for paymentId: ${paymentId}` }, { status: 404 })
+    }
+
+    const orderDoc = snapshot.docs[0]
+    const order = orderDoc.data()
+    console.log(`📦 Found order: ${orderDoc.id} (#${order.orderNumber}), current status: ${order.status}`)
+
+    // Update status to 'new' (paid, ready for processing)
+    await adminDb.collection('orders').doc(orderDoc.id).update({
+      status: 'new',
+      updatedAt: new Date(),
+    })
+    console.log(`✅ Order #${order.orderNumber} updated to 'new' (₪${paymentSum || order.total})`)
+
+    // Send confirmation email to customer
+    const email = order.customer?.email || body.payerEmail
+    if (email) {
+      fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'order_confirmation',
+          data: {
+            orderId: orderDoc.id,
+            orderNumber: order.orderNumber,
+            customer: order.customer,
+            total: order.total,
+          },
+        }),
+      }).catch(err => console.error('Failed to send confirmation email:', err))
+    }
+
+    return NextResponse.json({
+      success: true,
+      orderId: orderDoc.id,
+      orderNumber: order.orderNumber,
+    }, { status: 200 })
   } catch (error) {
-    console.error('❌ Error processing webhook:', error)
-    return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 })
+    console.error('❌ Webhook error:', error)
+    return NextResponse.json({ error: 'Failed to process webhook', details: String(error) }, { status: 500 })
   }
 }
 
 /**
- * GET endpoint to test webhook is working
+ * GET endpoint to verify webhook is active
  */
 export async function GET() {
   return NextResponse.json({

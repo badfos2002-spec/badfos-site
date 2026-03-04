@@ -47,6 +47,7 @@ export default function AdminPackageOrdersPage() {
       setOrders(prev => prev.filter(o => o.id !== orderId))
     } catch (e) {
       console.error(e)
+      alert('שגיאה במחיקת הזמנת חבילה')
     }
   }
 

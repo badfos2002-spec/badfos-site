@@ -91,6 +91,13 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // ── Shared Designs ────────────────────────────────────────────────────────
+    // Anyone can create and read shared designs (public share links)
+    match /shared_designs/{designId} {
+      allow read, create: if true;
+      allow update, delete: if isAdmin();
+    }
+
     // ── Deny everything else ──────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;

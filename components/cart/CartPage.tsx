@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/hooks/useCart'
@@ -9,9 +9,26 @@ import CartItem from './CartItem'
 import ContactForm from './ContactForm'
 import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
-import { ArrowRight, ShoppingBag } from 'lucide-react'
+import { ArrowRight, ShoppingBag, Check, Share2, Loader2 } from 'lucide-react'
 import { createOrder } from '@/lib/db'
+import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
+import { sendGoogleAdsConversion, sendMetaPurchaseEvent } from '@/lib/tracking'
+import { calculateOrderTotal } from '@/lib/pricing'
 import type { CustomerInfo, Shipping } from '@/lib/types'
+
+/** Recursively strip undefined values — Firestore rejects them */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stripUndefined<T>(obj: T): T {
+  if (Array.isArray(obj)) return obj.map(stripUndefined) as T
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, stripUndefined(v)])
+    ) as T
+  }
+  return obj
+}
 
 export default function CartPage() {
   const router = useRouter()
@@ -19,7 +36,38 @@ export default function CartPage() {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null)
   const [shipping, setShipping] = useState<Shipping | null>(null)
   const [couponCode, setCouponCode] = useState('')
+  const [couponDiscount, setCouponDiscount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [orderSuccess, setOrderSuccess] = useState(false)
+
+  // Pre-upload cache: base64 hash → Firebase Storage URL
+  const uploadCacheRef = useRef<Map<string, Promise<string>>>(new Map())
+  const tempOrderIdRef = useRef(`order-${Date.now()}`)
+
+  // Pre-upload design images in background while user fills contact/shipping
+  useEffect(() => {
+    if (items.length === 0) return
+    const cache = uploadCacheRef.current
+    const tempOrderId = tempOrderIdRef.current
+
+    for (const item of items) {
+      for (const d of item.designs) {
+        if (d.imageUrl.startsWith('data:') && !cache.has(d.imageUrl)) {
+          // Start upload immediately, store the promise
+          const uploadPromise = uploadBase64Image(
+            d.imageUrl,
+            tempOrderId,
+            generateUniqueFileName(d.fileName || 'design.png')
+          ).catch((err) => {
+            console.warn('Pre-upload failed, will retry at checkout:', err)
+            cache.delete(d.imageUrl)
+            return '' // empty = will re-upload at checkout
+          })
+          cache.set(d.imageUrl, uploadPromise)
+        }
+      }
+    }
+  }, [items])
 
   const handleCheckout = async () => {
     if (!customerInfo || !shipping || items.length === 0) {
@@ -27,45 +75,152 @@ export default function CartPage() {
       return
     }
 
+    if (!/^05\d{8}$/.test(customerInfo.phone)) {
+      alert('נא להזין מספר פלאפון תקין (10 ספרות, מתחיל ב-05)')
+      return
+    }
+
     setLoading(true)
 
     try {
-      // Create order
-      const orderId = await createOrder({
-        status: 'pending_payment',
-        customer: customerInfo,
-        shipping,
-        items: items.map(item => ({
+      // Calculate correct totals (including quantity discount)
+      const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount)
+
+      // Use pre-uploaded images from cache, fallback to upload now if needed
+      const cache = uploadCacheRef.current
+      const tempOrderId = tempOrderIdRef.current
+      const itemsForOrder = await Promise.all(
+        items.map(async (item) => ({
           productType: item.productType,
           fabricType: item.fabricType,
           color: item.color,
           sizes: item.sizes,
-          designs: item.designs,
+          designs: await Promise.all(
+            item.designs.map(async (d) => {
+              if (!d.imageUrl.startsWith('data:')) return d
+              // Check pre-upload cache first
+              const cached = cache.get(d.imageUrl)
+              const url = cached ? await cached : ''
+              return {
+                ...d,
+                imageUrl: url || await uploadBase64Image(d.imageUrl, tempOrderId, generateUniqueFileName(d.fileName || 'design.png')),
+              }
+            })
+          ),
           pricePerUnit: item.pricePerUnit,
           totalQuantity: item.totalQuantity,
           totalPrice: item.totalPrice,
-        })),
-        subtotal: items.reduce((sum, item) => sum + item.totalPrice, 0),
-        discount: 0,
-        couponCode: couponCode || undefined,
-        total: items.reduce((sum, item) => sum + item.totalPrice, 0) + shipping.cost,
-      })
+        }))
+      )
 
-      // Generate WhatsApp message
-      const message = generateWhatsAppMessage(items, customerInfo, shipping)
-      const whatsappUrl = `https://wa.me/5507794277?text=${encodeURIComponent(message)}`
+      // Run Firestore order creation + payment link creation in parallel
+      const orderPromise = createOrder(stripUndefined({
+        status: 'pending_payment' as const,
+        paymentId: tempOrderId,
+        customer: customerInfo,
+        shipping,
+        items: itemsForOrder,
+        subtotal: orderCalc.subtotal,
+        discount: couponDiscount + orderCalc.quantityDiscount,
+        ...(couponCode && { couponCode }),
+        total: orderCalc.total,
+      }))
 
-      // Clear cart and redirect
-      clearCart()
-      window.open(whatsappUrl, '_blank')
-      router.push('/')
+      const paymentPromise = fetch('/api/payment/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: tempOrderId,
+          amount: orderCalc.total,
+          name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+          phone: customerInfo.phone,
+          email: customerInfo.email,
+          description: `הזמנה ${items.length} פריטים - badfos.co.il`,
+        }),
+      }).then(r => r.json())
 
-    } catch (error) {
-      console.error('Error creating order:', error)
-      alert('אירעה שגיאה. אנא נסו שוב.')
-    } finally {
+      const [orderId, paymentData] = await Promise.all([orderPromise, paymentPromise])
+
+      // Fire-and-forget: conversion events + emails
+      sendGoogleAdsConversion(orderCalc.total, orderId)
+      sendMetaPurchaseEvent(orderCalc.total, orderId)
+
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'new_order',
+          data: { orderId, customer: customerInfo, itemsCount: items.length, total: orderCalc.total },
+        }),
+      }).catch(console.error)
+
+      const itemsWithDesigns = items.filter(item => item.designs.length > 0)
+      if (itemsWithDesigns.length > 0) {
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'design_mockup',
+            data: {
+              customer: customerInfo,
+              items: itemsWithDesigns.map(item => ({
+                productType: item.productType,
+                color: item.color,
+                fabricType: item.fabricType,
+                designs: item.designs,
+                totalQuantity: item.totalQuantity,
+              })),
+            },
+          }),
+        }).catch(err => console.error('Failed to send mockup email:', err))
+      }
+
+      if (paymentData.url) {
+        // Keep loading overlay visible — page will unload on redirect
+        window.location.href = paymentData.url
+        return
+      } else {
+        console.error('Payment response:', paymentData)
+        throw new Error(paymentData.raw ? `Make response: ${paymentData.raw}` : (paymentData.error || 'No payment URL'))
+      }
+
+    } catch (error: any) {
+      console.error('❌ Checkout error:', error?.message || error)
+      alert(`אירעה שגיאה: ${error?.message || 'אנא נסו שוב.'}`)
       setLoading(false)
     }
+  }
+
+  const handleShare = async () => {
+    const url = 'https://badfos.co.il/designer'
+    const text = 'עצבתי חולצה ב-בדפוס! גם אתם יכולים 👕'
+    if (navigator.share) {
+      try { await navigator.share({ title: 'בדפוס', text, url }) } catch {}
+    } else {
+      await navigator.clipboard.writeText(url)
+      alert('הקישור הועתק!')
+    }
+  }
+
+  if (orderSuccess) {
+    return (
+      <div className="container-rtl py-16">
+        <div className="max-w-md mx-auto text-center p-6 bg-white rounded-lg shadow-xl">
+          <Check className="w-24 h-24 text-green-500 mx-auto mb-6 animate-bounce" />
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">הזמנתך נקלטה בהצלחה!</h1>
+          <p className="text-lg text-gray-700 mb-6">תודה על הזמנתך! נעדכן במייל את סטטוס הזמנתך</p>
+          <div className="space-y-4">
+            <Button className="gradient-yellow text-white hover-lift w-full" onClick={handleShare}>
+              <Share2 className="w-5 h-5 ml-2" />
+              שתף את העיצוב עם חברים
+            </Button>
+            <Link href="/" className="block">
+              <Button variant="outline" className="w-full">חזור לדף הבית</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (items.length === 0) {
@@ -78,9 +233,9 @@ export default function CartPage() {
             עדיין לא הוספת מוצרים לעגלה. התחל לעצב עכשיו!
           </p>
           <Link href="/designer">
-            <Button size="lg" className="btn-cta">
-              עצב חולצה
-              <ArrowRight className="mr-2 h-5 w-5" />
+            <Button size="lg" className="btn-cta drop-shadow-md">
+              <ArrowRight className="ml-2 h-5 w-5 text-white drop-shadow" />
+              <span className="text-white drop-shadow">התחלו לעצב</span>
             </Button>
           </Link>
         </div>
@@ -89,6 +244,16 @@ export default function CartPage() {
   }
 
   return (
+    <>
+    {loading && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm mx-4">
+          <Loader2 className="w-14 h-14 text-yellow-500 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">מעבד את ההזמנה שלך...</h2>
+          <p className="text-gray-500 text-sm">אנא המתן, מעביר אותך לדף התשלום</p>
+        </div>
+      </div>
+    )}
     <div className="container-rtl py-8">
       <h1 className="text-3xl md:text-4xl font-bold mb-8">עגלת קניות</h1>
 
@@ -125,6 +290,7 @@ export default function CartPage() {
               shipping={shipping}
               couponCode={couponCode}
               onCouponChange={setCouponCode}
+              onDiscountApplied={(discount, code) => { setCouponDiscount(discount); if (code) setCouponCode(code) }}
               onCheckout={handleCheckout}
               loading={loading}
               canCheckout={!!customerInfo && !!shipping}
@@ -133,6 +299,7 @@ export default function CartPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

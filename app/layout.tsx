@@ -1,17 +1,11 @@
 import type { Metadata } from 'next'
-import { Rubik } from 'next/font/google'
+import dynamic from 'next/dynamic'
 import './globals.css'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
-import WhatsAppButton from '@/components/layout/WhatsAppButton'
+import TrackingScripts from '@/components/common/TrackingScripts'
+import PricingLoader from '@/components/common/PricingLoader'
 
-// Configure Rubik font
-const rubik = Rubik({
-  subsets: ['latin', 'hebrew'],
-  weight: ['300', '400', '500', '600', '700', '800'],
-  display: 'swap',
-  variable: '--font-rubik',
-})
+const ConditionalHeader = dynamic(() => import('@/components/layout/ConditionalHeader'), { ssr: false })
+const ConditionalFooter = dynamic(() => import('@/components/layout/ConditionalFooter'), { ssr: false })
 
 export const metadata: Metadata = {
   title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
@@ -36,12 +30,34 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="he" dir="rtl" className={rubik.variable}>
-      <body className={`min-h-screen bg-background antialiased ${rubik.className}`}>
-        <Header />
+    <html lang="he" dir="rtl">
+      <body className="min-h-screen bg-background antialiased">
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-W677BNL4"
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
+
+        {/* Meta Pixel NoScript */}
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: 'none' }}
+            src="https://www.facebook.com/tr?id=877576361459806&ev=PageView&noscript=1"
+            alt=""
+          />
+        </noscript>
+
+        <TrackingScripts />
+        <PricingLoader />
+        <ConditionalHeader />
         <main className="min-h-[calc(100vh-4rem)]">{children}</main>
-        <Footer />
-        <WhatsAppButton />
+        <ConditionalFooter />
       </body>
     </html>
   )

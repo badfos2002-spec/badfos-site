@@ -3,9 +3,9 @@ import {
   getBasePrice,
   getFabricType,
   getDesignAreasByProductType,
-  STANDARD_SIZES,
-  SHIPPING_COSTS,
-  QUANTITY_DISCOUNT,
+  getSizeSurcharge,
+  getLiveShippingCost,
+  getLiveQuantityDiscount,
 } from './constants'
 
 // ============================================================================
@@ -42,9 +42,7 @@ export function calculateItemPrice(config: ProductConfig): number {
   if (sizes && sizes.length > 0) {
     const totalQuantity = sizes.reduce((sum, s) => sum + s.quantity, 0)
     const weightedSurcharge = sizes.reduce((sum, s) => {
-      const sizeConfig = STANDARD_SIZES.find((size) => size.id === s.size)
-      const surcharge = sizeConfig?.surcharge || 0
-      return sum + surcharge * s.quantity
+      return sum + getSizeSurcharge(s.size) * s.quantity
     }, 0)
     sizeSurcharge = totalQuantity > 0 ? weightedSurcharge / totalQuantity : 0
   }
@@ -72,15 +70,14 @@ export function calculateTotalPrice(
 
 /**
  * Apply quantity discount if applicable
- *
- * Rule: ≥15 units → 5% discount
  */
 export function applyQuantityDiscount(
   totalQuantity: number,
   subtotal: number
 ): number {
-  if (totalQuantity >= QUANTITY_DISCOUNT.minQuantity) {
-    return subtotal * (QUANTITY_DISCOUNT.discountPercent / 100)
+  const { minQuantity, discountPercent } = getLiveQuantityDiscount()
+  if (totalQuantity >= minQuantity) {
+    return subtotal * (discountPercent / 100)
   }
   return 0
 }
@@ -91,7 +88,7 @@ export function applyQuantityDiscount(
 export function calculateShippingCost(
   method: 'delivery' | 'pickup'
 ): number {
-  return SHIPPING_COSTS[method]
+  return getLiveShippingCost(method)
 }
 
 /**
@@ -113,7 +110,8 @@ export function validateCouponDiscount(
 export function calculateOrderTotal(
   items: CartItem[],
   shippingMethod: 'delivery' | 'pickup' = 'delivery',
-  couponDiscount: number = 0
+  couponDiscount: number = 0,
+  customQuantityDiscount?: number
 ): {
   subtotal: number
   quantityDiscount: number
@@ -129,8 +127,10 @@ export function calculateOrderTotal(
     0
   )
 
-  // Apply quantity discount
-  const quantityDiscount = applyQuantityDiscount(totalQuantity, subtotal)
+  // Apply quantity discount (use custom if provided, otherwise use hardcoded rule)
+  const quantityDiscount = customQuantityDiscount !== undefined
+    ? customQuantityDiscount
+    : applyQuantityDiscount(totalQuantity, subtotal)
 
   // Calculate shipping
   const shipping = calculateShippingCost(shippingMethod)
@@ -182,14 +182,15 @@ export function generateCartItemId(config: ProductConfig): string {
  * Check if a quantity discount is applicable
  */
 export function isQuantityDiscountApplicable(totalQuantity: number): boolean {
-  return totalQuantity >= QUANTITY_DISCOUNT.minQuantity
+  return totalQuantity >= getLiveQuantityDiscount().minQuantity
 }
 
 /**
  * Get the quantity discount message
  */
 export function getQuantityDiscountMessage(): string {
-  return `הזמינו ${QUANTITY_DISCOUNT.minQuantity} חולצות או יותר וקבלו ${QUANTITY_DISCOUNT.discountPercent}% הנחה!`
+  const { minQuantity, discountPercent } = getLiveQuantityDiscount()
+  return `הזמינו ${minQuantity} חולצות או יותר וקבלו ${discountPercent}% הנחה!`
 }
 
 /**
@@ -222,9 +223,7 @@ export function getPriceBreakdown(config: ProductConfig): {
   if (sizes && sizes.length > 0) {
     const totalQuantity = sizes.reduce((sum, s) => sum + s.quantity, 0)
     const weightedSurcharge = sizes.reduce((sum, s) => {
-      const sizeConfig = STANDARD_SIZES.find((size) => size.id === s.size)
-      const surcharge = sizeConfig?.surcharge || 0
-      return sum + surcharge * s.quantity
+      return sum + getSizeSurcharge(s.size) * s.quantity
     }, 0)
     sizeSurcharge = totalQuantity > 0 ? weightedSurcharge / totalQuantity : 0
   }

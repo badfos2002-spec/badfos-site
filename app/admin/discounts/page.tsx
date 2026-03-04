@@ -82,6 +82,7 @@ export default function AdminDiscountsPage() {
       setDiscounts(prev => prev.map(x => x.id === d.id ? { ...x, isActive: !x.isActive } : x))
     } catch (e) {
       console.error(e)
+      alert('שגיאה בעדכון סטטוס הנחה')
     }
   }
 
@@ -92,6 +93,7 @@ export default function AdminDiscountsPage() {
       setDiscounts(prev => prev.filter(d => d.id !== id))
     } catch (e) {
       console.error(e)
+      alert('שגיאה במחיקת הנחה')
     }
   }
 

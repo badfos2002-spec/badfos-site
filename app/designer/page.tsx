@@ -11,10 +11,10 @@ export default function DesignerPage() {
     <div className="container-rtl py-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl md:text-5xl font-bold mb-4">
-          עצבו את החולצה שלכם 🎨
+          בואו ניצור משהו ביחד 🎨
         </h1>
         <p className="text-xl text-text-gray max-w-2xl mx-auto">
-          בחרו מוצר, התאימו אישית, והפכו את הרעיון למציאות
+          בחר את המוצר שברצונך לעצב
         </p>
       </div>
 

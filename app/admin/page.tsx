@@ -7,7 +7,7 @@ import { getAllOrders, getAllLeads, getAllDocuments } from '@/lib/db'
 import type { Order, Lead, Review } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-700' },
+  new: { label: 'חדשה', color: 'bg-emerald-100 text-emerald-700' },
   paid: { label: 'שולם', color: 'bg-green-100 text-green-700' },
   in_production: { label: 'בייצור', color: 'bg-blue-100 text-blue-700' },
   shipped: { label: 'נשלח', color: 'bg-purple-100 text-purple-700' },
@@ -22,18 +22,17 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      getAllOrders(),
-      getAllLeads(),
-      getAllDocuments<Review>('reviews'),
-    ])
-      .then(([o, l, r]) => {
+    Promise.all([getAllOrders(), getAllLeads()])
+      .then(([o, l]) => {
         setOrders(o)
         setLeads(l)
-        setPendingReviews(r.filter(rev => rev.status === 'pending').length)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
+
+    getAllDocuments<Review>('reviews')
+      .then(r => setPendingReviews(r.filter(rev => rev.status === 'pending').length))
+      .catch(() => {})
   }, [])
 
   const today = new Date()
@@ -41,7 +40,10 @@ export default function AdminDashboard() {
 
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
 
-  const ordersToday = orders.filter(o => {
+  // Exclude unpaid orders from all stats
+  const paidOrders = orders.filter(o => o.status !== 'pending_payment')
+
+  const ordersToday = paidOrders.filter(o => {
     const d = o.createdAt?.toDate?.()
     return d && d >= today
   })
@@ -51,14 +53,14 @@ export default function AdminDashboard() {
     return d && d >= today
   })
 
-  const revenueThisMonth = orders
+  const revenueThisMonth = paidOrders
     .filter(o => {
       const d = o.createdAt?.toDate?.()
       return d && d >= startOfMonth && o.status !== 'cancelled'
     })
     .reduce((sum, o) => sum + (o.total ?? 0), 0)
 
-  const recentOrders = [...orders]
+  const recentOrders = [...paidOrders]
     .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
     .slice(0, 5)
 
@@ -142,7 +144,7 @@ export default function AdminDashboard() {
                 {recentOrders.map((order) => {
                   const statusInfo = statusLabels[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-700' }
                   return (
-                    <div key={order.id} className="flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-yellow-200 transition-colors">
+                    <Link key={order.id} href="/admin/orders" className="flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-yellow-200 hover:bg-yellow-50/30 transition-colors cursor-pointer">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">
                           {order.customer.firstName.charAt(0)}
@@ -158,7 +160,7 @@ export default function AdminDashboard() {
                           {statusInfo.label}
                         </span>
                       </div>
-                    </div>
+                    </Link>
                   )
                 })}
               </div>

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { X, User, Phone, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { createLead } from '@/lib/db'
+import { sendGoogleAdsConversion, sendMetaLeadEvent } from '@/lib/tracking'
 
 export default function LeadPopup() {
   const [isOpen, setIsOpen] = useState(false)
@@ -35,11 +37,17 @@ export default function LeadPopup() {
     setIsSubmitting(true)
 
     try {
-      // TODO: Add Firebase lead creation
-      console.log('Lead submitted:', { name, phone, source: 'popup' })
+      await createLead({ name, phone, email: '', source: 'popup', status: 'new' })
 
-      // Show success message
-      alert('תודה! ניצור איתך קשר בהקדם.')
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'new_lead', data: { name, phone, email: '', source: 'popup', status: 'new' } }),
+      }).catch(console.error)
+
+      sendGoogleAdsConversion()
+      sendMetaLeadEvent()
+
       handleClose()
     } catch (error) {
       console.error('Error submitting lead:', error)
@@ -74,10 +82,10 @@ export default function LeadPopup() {
         <div className="text-center mb-6" dir="rtl">
           <div className="text-5xl mb-4">🎁</div>
           <h2 className="text-2xl font-bold text-[#1e293b] mb-2">
-            רוצים הטבה מיוחדת?
+            רוצים שנחזור אליכם?
           </h2>
           <p className="text-[#64748b]">
-            השאירו פרטים ונחזור אליכם עם הצעה אישית!
+            השאירו פרטים ונחזור בהקדם עם הצעה משתלמת!
           </p>
         </div>
 

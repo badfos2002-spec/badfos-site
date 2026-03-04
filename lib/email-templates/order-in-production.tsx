@@ -181,7 +181,7 @@ export function OrderInProductionEmail({ order }: OrderInProductionEmailProps) {
     <div class="footer">
       <p>יש שאלות? צרו קשר:</p>
       <p>
-        <a href="mailto:info@badfos.co.il">info@badfos.co.il</a> |
+        <a href="mailto:badfos2002@gmail.com">badfos2002@gmail.com</a> |
         <a href="tel:0507794277">050-779-4277</a>
       </p>
       <p style="margin-top: 15px; font-size: 12px; color: #9CA3AF;">

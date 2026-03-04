@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
+import { sendGoogleAdsConversion, sendMetaLeadEvent } from '@/lib/tracking'
 import { User, Phone, ArrowLeft } from 'lucide-react'
 
 export default function NewContactFormSection() {
@@ -24,11 +25,23 @@ export default function NewContactFormSection() {
       await createLead({
         name: formData.name,
         phone: formData.phone,
-        email: '', // Optional
+        email: '',
         message: `מספר זהות: ${formData.idNumber}\nהערות: ${formData.comments}`,
-        source: 'homepage_contact',
+        source: 'bottom_form' as any,
         status: 'new',
       })
+
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'new_lead',
+          data: { name: formData.name, phone: formData.phone, email: '', source: 'bottom_form', status: 'new', message: `מספר זהות: ${formData.idNumber}\nהערות: ${formData.comments}` },
+        }),
+      }).catch(console.error)
+
+      sendGoogleAdsConversion()
+      sendMetaLeadEvent()
 
       setSubmitted(true)
       setFormData({ name: '', phone: '', idNumber: '', comments: '' })
@@ -47,13 +60,13 @@ export default function NewContactFormSection() {
       <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
 
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 relative z-10">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Right Side - Form Card */}
-          <div className="order-1 lg:order-2" dir="rtl">
+          <div className="order-2 lg:order-2" dir="rtl">
             <div className="bg-white rounded-2xl shadow-2xl p-6 text-gray-900 hover:scale-[1.01] transition-transform duration-200 relative">
               {/* Floating Decorative Icon */}
-              <div className="absolute -top-3 -right-3 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+              <div className="absolute -top-3 -left-3 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
                 <Phone className="w-6 h-6 text-white" />
               </div>
 
@@ -166,7 +179,7 @@ export default function NewContactFormSection() {
           </div>
 
           {/* Left Side - Text Content */}
-          <div className="order-2 lg:order-1 text-center lg:text-right space-y-6" dir="rtl">
+          <div className="order-1 lg:order-1 text-center lg:text-right space-y-6" dir="rtl">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1 rounded-full">
               <Phone className="w-4 h-4 text-yellow-400" />

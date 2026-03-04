@@ -6,9 +6,9 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 
 const packageSlides = [
-  { id: 1, title: 'עד 10 חולצות', image: '/images/packages/package-10.png' },
-  { id: 2, title: '11-20 חולצות', image: '/images/packages/package-11-20.png' },
-  { id: 3, title: '21-50 חולצות', image: '/images/packages/package-21-50.png' },
+  { id: 1, title: 'עד 10 חולצות', image: '/assets/ddc5d7f82_10.png' },
+  { id: 2, title: '11-20 חולצות', image: '/assets/0181cec14_11-20.png' },
+  { id: 3, title: '21-50 חולצות', image: '/assets/056e4ce29_21-50.png' },
 ]
 
 export default function NewPackagesSection() {
@@ -28,7 +28,7 @@ export default function NewPackagesSection() {
       <div className="absolute -top-20 -left-20 w-96 h-96 bg-gradient-to-br from-blue-300 to-indigo-300 rounded-full opacity-40 blur-3xl"></div>
       <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-200 rounded-full opacity-30 blur-2xl"></div>
 
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 relative z-10">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
         <div className="bg-white rounded-3xl shadow-xl py-10 px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* RIGHT - Carousel */}

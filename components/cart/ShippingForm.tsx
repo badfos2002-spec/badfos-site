@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import type { Shipping, Address } from '@/lib/types'
 import { SHIPPING_COSTS } from '@/lib/constants'
 
@@ -16,46 +15,18 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
     street: '',
     number: '',
     city: '',
-    zipCode: '',
+    zipCode: 'קרקע',
     entrance: '',
   })
-  const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit({
-      method,
-      address: method === 'delivery' ? address : undefined,
-      cost: SHIPPING_COSTS[method],
-    })
-    setSubmitted(true)
-  }
-
-  const handleEdit = () => {
-    setSubmitted(false)
-  }
-
-  if (submitted) {
-    return (
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-green-800">✓ פרטי משלוח נשמרו</h3>
-              <p className="text-sm text-green-700">
-                {method === 'delivery'
-                  ? `משלוח ל: ${address.street} ${address.number}, ${address.city}`
-                  : 'איסוף עצמי מראשון לציון'}
-              </p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleEdit}>
-              ערוך
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
+  // Auto-update parent whenever method/address changes
+  useEffect(() => {
+    if (method === 'pickup') {
+      onSubmit({ method, cost: SHIPPING_COSTS[method] })
+    } else if (address.street && address.number && address.city && address.zipCode) {
+      onSubmit({ method, address, cost: SHIPPING_COSTS[method] })
+    }
+  }, [method, address])
 
   return (
     <Card>
@@ -63,7 +34,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
         <CardTitle>משלוח</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           {/* Shipping Method */}
           <div className="space-y-3">
             <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover:border-primary transition-colors">
@@ -79,7 +50,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                 <div className="font-bold">משלוח עד הבית</div>
                 <div className="text-sm text-text-gray">3-7 ימי עסקים</div>
               </div>
-              <div className="font-bold text-primary">₪35</div>
+              <div className="font-bold text-black">₪35</div>
             </label>
 
             <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover:border-primary transition-colors">
@@ -95,7 +66,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                 <div className="font-bold">איסוף עצמי</div>
                 <div className="text-sm text-text-gray">ראשון לציון</div>
               </div>
-              <div className="font-bold text-green-600">חינם!</div>
+              <div className="font-bold text-black">₪0</div>
             </label>
           </div>
 
@@ -109,17 +80,15 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                   <label className="block text-sm font-medium mb-2">רחוב *</label>
                   <input
                     type="text"
-                    required
                     value={address.street}
                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">מספר *</label>
+                  <label className="block text-sm font-medium mb-2">מספר בית/בניין *</label>
                   <input
                     type="text"
-                    required
                     value={address.number}
                     onChange={(e) => setAddress({ ...address, number: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
@@ -132,26 +101,28 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                   <label className="block text-sm font-medium mb-2">עיר *</label>
                   <input
                     type="text"
-                    required
                     value={address.city}
                     onChange={(e) => setAddress({ ...address, city: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">מיקוד</label>
-                  <input
-                    type="text"
+                  <label className="block text-sm font-medium mb-2">קומה *</label>
+                  <select
                     value={address.zipCode}
                     onChange={(e) => setAddress({ ...address, zipCode: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
-                    placeholder="אופציונלי"
-                  />
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary bg-white"
+                  >
+                    <option value="קרקע">קרקע</option>
+                    {Array.from({ length: 99 }, (_, i) => i + 1).map(n => (
+                      <option key={n} value={String(n)}>{n}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">כניסה / קומה</label>
+                <label className="block text-sm font-medium mb-2">כניסה</label>
                 <input
                   type="text"
                   value={address.entrance}
@@ -162,11 +133,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
               </div>
             </div>
           )}
-
-          <Button type="submit" className="w-full btn-cta">
-            שמור פרטי משלוח
-          </Button>
-        </form>
+        </div>
       </CardContent>
     </Card>
   )

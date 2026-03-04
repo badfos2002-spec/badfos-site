@@ -1,98 +1,117 @@
 'use client'
 
 import Link from 'next/link'
-import { ShoppingCart, Menu, Home, Shirt, Package, Star, Info, Phone } from 'lucide-react'
-import { useState } from 'react'
+import { ShoppingCart, Menu, Home, Shirt, Package, Star, Info, Phone, HelpCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import MobileMenu from './MobileMenu'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const itemCount = useCart((state) => state.getCartItemCount())
+
+  useEffect(() => { setMounted(true) }, [])
+  const pathname = usePathname()
+
+  const navLinkClass = (href: string) => {
+    const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
+    return isActive
+      ? 'flex items-center space-x-2 space-x-reverse px-3 py-2 rounded-lg transition-all duration-200 hover-lift bg-yellow-100 text-yellow-600'
+      : 'flex items-center space-x-2 space-x-reverse px-3 py-2 rounded-lg transition-all duration-200 hover-lift text-gray-700 hover:text-yellow-600 hover:bg-yellow-50'
+  }
 
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm" dir="rtl">
-        <div className="mx-auto max-w-[1600px] px-4 md:px-6 lg:px-8 flex h-20 md:h-16 items-center justify-between relative" dir="rtl">
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-            <span className="sr-only">פתח תפריט</span>
-          </Button>
+        <div className="mx-auto max-w-[1536px] px-4 md:px-0">
 
-          {/* Logo (Right) */}
-          <Link href="/" className="flex items-center">
-            <img
-              src="/logo.png"
-              alt="בדפוס - הדפסת חולצות"
-              className="h-12 w-auto"
-            />
-          </Link>
+          {/* Mobile Row */}
+          <div className="grid grid-cols-3 items-center h-20 lg:hidden">
+            <div className="flex justify-start">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="פתח תפריט"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="flex justify-center">
+              <Link href="/">
+                <img src="/logo.png" alt="בדפוס - הדפסת חולצות" className="h-12 w-auto" />
+              </Link>
+            </div>
+            <div className="flex justify-end">
+              <Link href="/cart">
+                <Button variant="outline" size="icon" className="relative hover-lift border-yellow-200 hover:border-yellow-300 h-12 w-12" aria-label={`עגלת קניות - ${itemCount} פריטים`}>
+                  <ShoppingCart className="w-5 h-5" />
+                  {mounted && itemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#ffc32e] text-xs font-bold text-white flex items-center justify-center">
+                      {itemCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            </div>
+          </div>
 
-          {/* Desktop Navigation (Center) */}
-          <nav className="hidden md:flex gap-8 absolute left-1/2 -translate-x-1/2">
-            <Link
-              href="/"
-              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
-            >
-              <Home className="w-4 h-4" />
-              דף הבית
-            </Link>
-            <Link
-              href="/designer"
-              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
-            >
-              <Shirt className="w-4 h-4" />
-              עיצוב אישי
-            </Link>
-            <Link
-              href="/packages"
-              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
-            >
-              <Package className="w-4 h-4" />
-              חבילות ומבצעים
-            </Link>
-            <Link
-              href="/reviews"
-              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
-            >
-              <Star className="w-4 h-4" />
-              ביקורות
-            </Link>
-            <Link
-              href="/about"
-              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
-            >
-              <Info className="w-4 h-4" />
-              אודות
-            </Link>
-            <Link
-              href="/contact"
-              className="text-base font-medium font-sans text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 px-3 py-2 rounded-lg flex items-center gap-2"
-            >
-              <Phone className="w-4 h-4" />
-              צור קשר
-            </Link>
-          </nav>
+          {/* Desktop Row */}
+          <div className="hidden lg:flex justify-between items-center h-16">
 
-          {/* Cart Button (Left) */}
-          <Link href="/cart">
-            <Button variant="ghost" size="icon" className="relative border-2 border-yellow-200 hover:border-yellow-300 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 rounded-lg">
-              <ShoppingCart className="h-5 w-5" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#ffc32e] text-xs font-bold text-white flex items-center justify-center">
-                  {itemCount}
-                </span>
-              )}
-              <span className="sr-only">עגלת קניות</span>
-            </Button>
-          </Link>
+            {/* Logo */}
+            <Link href="/" className="flex items-center">
+              <img src="/logo.png" alt="בדפוס - הדפסת חולצות" className="h-12 w-auto" />
+            </Link>
+
+            {/* Navigation */}
+            <nav className="flex items-center space-x-8 space-x-reverse" role="navigation">
+              <Link href="/" className={navLinkClass('/')}>
+                <Home className="w-4 h-4" />
+                <span className="font-medium">בית</span>
+              </Link>
+              <Link href="/designer" className={navLinkClass('/designer')}>
+                <Shirt className="w-4 h-4" />
+                <span className="font-medium">עיצוב אישי</span>
+              </Link>
+              <Link href="/packages" className={navLinkClass('/packages')}>
+                <Package className="w-4 h-4" />
+                <span className="font-medium">חבילות ומבצעים</span>
+              </Link>
+              <Link href="/about" className={navLinkClass('/about')}>
+                <Info className="w-4 h-4" />
+                <span className="font-medium">אודות</span>
+              </Link>
+              <Link href="/reviews" className={navLinkClass('/reviews')}>
+                <Star className="w-4 h-4" />
+                <span className="font-medium">ביקורות</span>
+              </Link>
+              <Link href="/faq" className={navLinkClass('/faq')}>
+                <HelpCircle className="w-4 h-4" />
+                <span className="font-medium">שאלות</span>
+              </Link>
+              <Link href="/contact" className={navLinkClass('/contact')}>
+                <Phone className="w-4 h-4" />
+                <span className="font-medium">יצירת קשר</span>
+              </Link>
+            </nav>
+
+            {/* Cart Button */}
+            <Link href="/cart">
+              <Button variant="outline" size="icon" className="h-9 w-9 relative hover-lift border-yellow-200 hover:border-yellow-300" aria-label={`עגלת קניות - ${itemCount} פריטים`}>
+                <ShoppingCart className="w-4 h-4" />
+                {mounted && itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#ffc32e] text-xs font-bold text-white flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+
+          </div>
         </div>
       </header>
 

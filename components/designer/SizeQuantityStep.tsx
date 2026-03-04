@@ -4,6 +4,7 @@ import { STANDARD_SIZES, BUFF_QUANTITIES } from '@/lib/constants'
 import type { ProductConfig, SizeQuantity } from '@/lib/types'
 import { Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import AnnouncementBar from '@/components/common/AnnouncementBar'
 
 interface SizeQuantityStepProps {
   sizes: SizeQuantity[]
@@ -20,6 +21,7 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
 
     return (
       <div>
+        <AnnouncementBar placement="designer" />
         <p className="text-sm text-gray-500 mb-4">בחרו כמות באפים להזמנה:</p>
         <div className="grid grid-cols-2 gap-4">
           {BUFF_QUANTITIES.map(({ value, label }) => {
@@ -71,6 +73,7 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
 
   return (
     <div>
+      <AnnouncementBar placement="designer" />
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         {STANDARD_SIZES.map((size) => {
           const quantity = getQuantity(size.id)

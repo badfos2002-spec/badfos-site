@@ -15,6 +15,59 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 
+/** Convert blob URL to base64 so it survives localStorage persistence */
+async function blobToBase64(blobUrl: string): Promise<string> {
+  if (!blobUrl.startsWith('blob:')) return blobUrl
+  const response = await fetch(blobUrl)
+  const blob = await response.blob()
+  const isPng = blob.type === 'image/png'
+
+  const img = new window.Image()
+  img.src = blobUrl
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = () => reject(new Error('Image load failed'))
+  })
+
+  const MAX = 1000
+  const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+  const w = Math.round(img.width * scale)
+  const h = Math.round(img.height * scale)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+
+  if (isPng) {
+    ctx.clearRect(0, 0, w, h)
+    ctx.drawImage(img, 0, 0, w, h)
+    return canvas.toDataURL('image/png')
+  }
+
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, w, h)
+  ctx.drawImage(img, 0, 0, w, h)
+  return canvas.toDataURL('image/jpeg', 0.85)
+}
+
+const sweatshirtMockupsFront: Record<string, string> = {
+  white: '/assets/סווטשרט חזית לבן.png',
+  black: '/assets/סווטשרט חזית.png',
+  red: '/assets/סווטשרט חזית אדום.png',
+  blue: '/assets/סווטשרט חזית כחול.png',
+  gray: '/assets/סווטשרט חזית אפור.png',
+  burgundy: '/assets/סווטשרט חזית בורדו.png',
+}
+const sweatshirtMockupsBack: Record<string, string> = {
+  white: '/assets/סווטשירט גב לבן.png',
+  black: '/assets/סווטשירט גב.png',
+  red: '/assets/סווטשירט גב אדום.png',
+  blue: '/assets/סווטשירט גב כחול.png',
+  gray: '/assets/סווטשירט גב אפור.png',
+  burgundy: '/assets/סווטשירט גב בורדו.png',
+}
+
 const stepConfig = [
   { title: 'בחר סוג חולצה', icon: Shirt },
   { title: 'בחר צבע', icon: Palette },
@@ -38,6 +91,7 @@ export default function TshirtDesigner() {
 
   const [currentStep, setCurrentStep] = useState(() => editingItem ? totalSteps : 1)
   const [activeDesignArea, setActiveDesignArea] = useState<string>('front_full')
+  const [previewView, setPreviewView] = useState<'front' | 'back'>('front')
   const [config, setConfig] = useState<Partial<ProductConfig>>(() =>
     editingItem
       ? {
@@ -74,12 +128,21 @@ export default function TshirtDesigner() {
     setEditingItem(null)
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (config.productType && config.fabricType && config.color && config.designs && config.sizes && config.sizes.length > 0) {
+      // Convert blob URLs to base64 NOW — blob URLs expire after page navigation
+      const persistedDesigns = await Promise.all(
+        config.designs.map(async (d) => ({
+          ...d,
+          imageUrl: await blobToBase64(d.imageUrl),
+        }))
+      )
+      const persistedConfig = { ...config, designs: persistedDesigns } as ProductConfig
+
       if (editingItemId) {
-        replaceItem(editingItemId, config as ProductConfig)
+        replaceItem(editingItemId, persistedConfig)
       } else {
-        addItem(config as ProductConfig)
+        addItem(persistedConfig)
       }
       router.push('/cart')
     }
@@ -96,10 +159,14 @@ export default function TshirtDesigner() {
   }
 
   const resolvedColor = config.color ? (colorFallback[config.color] || config.color) : 'black'
-  const isBackView = activeDesignArea === 'back'
-  const mockupSrc = isBackView
-    ? (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
-    : (tshirtMockups[resolvedColor] || tshirtMockups['black'])
+  const isSweatshirt = config.productType === 'sweatshirt'
+  const mockupSrc = previewView === 'back'
+    ? isSweatshirt
+      ? (sweatshirtMockupsBack[resolvedColor] || sweatshirtMockupsBack['black'])
+      : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
+    : isSweatshirt
+      ? (sweatshirtMockupsFront[resolvedColor] || sweatshirtMockupsFront['black'])
+      : (tshirtMockups[resolvedColor] || tshirtMockups['black'])
 
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
@@ -111,7 +178,11 @@ export default function TshirtDesigner() {
       case 2:
         return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} />
       case 3:
-        return <DesignStep designs={config.designs || []} onUpdate={(designs) => updateConfig({ designs })} onAreaFocus={setActiveDesignArea} />
+        return <DesignStep designs={config.designs || []} onUpdate={(designs) => updateConfig({ designs })} onAreaFocus={(area) => {
+          setActiveDesignArea(area)
+          const overlay = DESIGN_AREA_OVERLAYS[area]
+          if (overlay) setPreviewView(overlay.view as 'front' | 'back')
+        }} />
       case 4:
         return <SizeQuantityStep sizes={config.sizes || []} onUpdate={(sizes) => updateConfig({ sizes })} config={config as ProductConfig} />
       default:
@@ -119,8 +190,27 @@ export default function TshirtDesigner() {
     }
   })()
 
+  const ViewTabs = () => currentStep >= 3 ? (
+    <div className="flex justify-center gap-2 mt-3">
+      <button
+        onClick={() => setPreviewView('front')}
+        className={`px-5 py-1.5 text-sm font-semibold rounded-full transition-colors ${previewView === 'front' ? 'text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+        style={previewView === 'front' ? { backgroundColor: 'rgb(255, 195, 46)' } : {}}
+      >
+        חזית
+      </button>
+      <button
+        onClick={() => setPreviewView('back')}
+        className={`px-5 py-1.5 text-sm font-semibold rounded-full transition-colors ${previewView === 'back' ? 'text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+        style={previewView === 'back' ? { backgroundColor: 'rgb(255, 195, 46)' } : {}}
+      >
+        גב
+      </button>
+    </div>
+  ) : null
+
   const MockupImage = () => {
-    const currentView = isBackView ? 'back' : 'front'
+    const currentView = previewView
     const designs = config.designs || []
     const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
       if (overlay.view !== currentView) return false
@@ -272,6 +362,7 @@ export default function TshirtDesigner() {
                 </span>
               )}
             </div>
+            <ViewTabs />
           </div>
 
           {/* Step content card */}
@@ -331,6 +422,7 @@ export default function TshirtDesigner() {
                 <div className="relative mx-auto max-w-md">
                   <MockupImage />
                 </div>
+                <ViewTabs />
               </div>
             </div>
           </div>

@@ -62,7 +62,7 @@ export default function AboutPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" dir="rtl">
       {/* Hero Section */}
       <section className="py-20">
-        <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1536px] px-4 md:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Text Content */}
             <div className="space-y-6" dir="rtl">
@@ -120,7 +120,7 @@ export default function AboutPage() {
 
       {/* Values Section */}
       <section className="py-20 bg-white/50">
-        <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1536px] px-4 md:px-0">
           <div className="text-center mb-12" dir="rtl">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
               הערכים שלנו
@@ -158,7 +158,7 @@ export default function AboutPage() {
 
       {/* Process Section */}
       <section className="py-20">
-        <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1536px] px-4 md:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Image */}
             <div className="relative w-full h-[400px] rounded-3xl overflow-hidden shadow-2xl">
@@ -200,7 +200,7 @@ export default function AboutPage() {
 
       {/* Features Section */}
       <section className="py-20 bg-white/50">
-        <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1536px] px-4 md:px-0">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon
@@ -221,7 +221,7 @@ export default function AboutPage() {
 
       {/* CTA Section */}
       <section className="py-20">
-        <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1536px] px-4 md:px-0">
           <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl p-12 text-center shadow-2xl" dir="rtl">
             <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
               מוכנים להתחיל?

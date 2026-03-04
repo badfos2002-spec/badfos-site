@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -76,6 +77,19 @@ export async function getDocument<T>(
     return { id: docSnap.id, ...docSnap.data() } as T
   }
   return null
+}
+
+/**
+ * Set (create or overwrite) a document with a specific ID
+ */
+export async function setDocument(
+  collectionName: string,
+  documentId: string,
+  data: object
+): Promise<void> {
+  ensureFirebase()
+  const docRef = doc(db!, collectionName, documentId)
+  await setDoc(docRef, data)
 }
 
 /**
@@ -174,7 +188,7 @@ export async function getNextOrderNumber(): Promise<number> {
     return currentNumber + 1
   } else {
     // Initialize counter if it doesn't exist
-    await updateDoc(counterRef, { current: 1001 })
+    await setDoc(counterRef, { current: 1001 })
     return 1001
   }
 }
@@ -231,6 +245,16 @@ export async function updateOrderStatus(
 export async function getOrderByNumber(orderNumber: number): Promise<Order | null> {
   const orders = await queryDocuments<Order>('orders', [
     { field: 'orderNumber', operator: '==', value: orderNumber },
+  ])
+  return orders.length > 0 ? orders[0] : null
+}
+
+/**
+ * Find order by paymentId (the tempOrderId sent to Grow)
+ */
+export async function getOrderByPaymentId(paymentId: string): Promise<Order | null> {
+  const orders = await queryDocuments<Order>('orders', [
+    { field: 'paymentId', operator: '==', value: paymentId },
   ])
   return orders.length > 0 ? orders[0] : null
 }
@@ -521,4 +545,37 @@ export async function createPackageOrder(
   orderData: Omit<PackageOrder, 'id' | 'createdAt'>
 ): Promise<string> {
   return await createDocument<PackageOrder>('packageOrders', orderData)
+}
+
+// ============================================================================
+// Shared Designs (for social sharing)
+// ============================================================================
+
+export interface SharedDesignData {
+  productType: string
+  color: string
+  fabricType?: string
+  designs: { area: string; areaName: string; imageBase64: string }[]
+}
+
+/**
+ * Save a shared design and return its ID
+ */
+export async function createSharedDesign(data: SharedDesignData): Promise<string> {
+  ensureFirebase()
+  const docRef = await addDoc(collection(db!, 'shared_designs'), {
+    ...data,
+    createdAt: Timestamp.now(),
+  })
+  return docRef.id
+}
+
+/**
+ * Get a shared design by ID
+ */
+export async function getSharedDesign(id: string): Promise<(SharedDesignData & { id: string }) | null> {
+  ensureFirebase()
+  const snap = await getDoc(doc(db!, 'shared_designs', id))
+  if (!snap.exists()) return null
+  return { id: snap.id, ...snap.data() } as SharedDesignData & { id: string }
 }

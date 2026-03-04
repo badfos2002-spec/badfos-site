@@ -7,7 +7,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-gray-900 text-gray-400" dir="rtl">
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 py-12">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0 py-12">
         {/* Grid: 4 columns desktop, 1 column mobile */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-right">
 
@@ -133,10 +133,23 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center">
+        <div className="border-t border-gray-800 mt-8 pt-8 text-center space-y-3">
           <p className="text-sm text-gray-500">
             © {currentYear} בדפוס. כל הזכויות שמורות.
           </p>
+          <div className="flex flex-wrap justify-center gap-4 text-xs text-gray-600">
+            <Link href="/terms" className="hover:text-yellow-400 transition-colors">
+              תקנון
+            </Link>
+            <span className="text-gray-700">|</span>
+            <Link href="/privacy" className="hover:text-yellow-400 transition-colors">
+              מדיניות פרטיות
+            </Link>
+            <span className="text-gray-700">|</span>
+            <Link href="/accessibility" className="hover:text-yellow-400 transition-colors">
+              הצהרת נגישות
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

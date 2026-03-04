@@ -31,7 +31,7 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-20" dir="rtl">
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0">
         {/* Header */}
         <div className="text-center mb-16" dir="rtl">
           {/* Badge */}

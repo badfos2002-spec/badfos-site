@@ -1,35 +1,48 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { Award, Truck, ShieldCheck } from 'lucide-react'
+import { getDocument } from '@/lib/db'
+
+const D = {
+  why_title: 'למה לבחור בנו?',
+  why_subtitle: 'הכנסה לחשבון, עיצוב חולצה ותפוקה — כל זה מיידי ויעיל ביותר',
+  why_videoUrl: 'https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8',
+  why_b1_title: 'איכות הדפסה גבוהה',
+  why_b1_desc: 'הדפסת DTF באיכות פרימיום על חולצות ומוצרי טקסטיל',
+  why_b2_title: 'משלוח מהיר',
+  why_b2_desc: 'משלוח עד הבית או איסוף עצמי מהסניף',
+  why_b3_title: 'תשלום מאובטח',
+  why_b3_desc: 'מערכת תשלום מאובטחת ושירות לקוחות 24/7',
+}
+
+const ICONS = [Award, Truck, ShieldCheck]
 
 export default function NewWhyChooseSection() {
-  const benefits = [
-    {
-      icon: Award,
-      title: 'איכות הדפסה גבוהה',
-      description: 'הדפסת DTF באיכות פרימיום על חולצות ומוצרי טקסטיל',
-    },
-    {
-      icon: Truck,
-      title: 'משלוח מהיר',
-      description: 'משלוח עד הבית או איסוף עצמי מהסניף',
-    },
-    {
-      icon: ShieldCheck,
-      title: 'תשלום מאובטח',
-      description: 'מערכת תשלום מאובטחת ושירות לקוחות 24/7',
-    },
-  ]
+  const [c, setC] = useState(D)
+
+  useEffect(() => {
+    getDocument<Record<string, string>>('settings', 'homepage')
+      .then((data) => { if (data) setC({ ...D, ...data }) })
+      .catch(() => {})
+  }, [])
+
+  const benefits = [1, 2, 3].map((i) => ({
+    icon: ICONS[i - 1],
+    title: c[`why_b${i}_title` as keyof typeof c],
+    description: c[`why_b${i}_desc` as keyof typeof c],
+  }))
 
   return (
     <section className="w-full bg-gradient-to-br from-gray-50 via-white to-gray-50 pt-4 pb-20" dir="rtl">
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Video Section - Right Side */}
+          {/* Video Section */}
           <div className="relative flex justify-center lg:justify-end">
-            {/* Background block with 35deg angle */}
             <div className="absolute w-96 h-[36rem] rounded-3xl bg-[#ffc32e]/20" style={{ transform: 'rotate(35deg)' }}></div>
             <div className="relative w-96 h-[36rem] rounded-3xl shadow-2xl overflow-hidden">
               <iframe
-                src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8"
+                src={c.why_videoUrl}
                 title="למה לבחור בנו"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -38,15 +51,11 @@ export default function NewWhyChooseSection() {
             </div>
           </div>
 
-          {/* Text Section - Left Side */}
+          {/* Text Section */}
           <div className="text-right space-y-8" dir="rtl">
             <div className="mb-8">
-              <h2 className="text-3xl lg:text-4xl font-bold text-[#1e293b] mb-4">
-                למה לבחור בנו?
-              </h2>
-              <p className="text-xl text-[#64748b]">
-                הכנסה לחשבון, עיצוב חולצה ותפוקה — כל זה מיידי ויעיל ביותר
-              </p>
+              <h2 className="text-3xl lg:text-4xl font-bold text-[#1e293b] mb-4">{c.why_title}</h2>
+              <p className="text-xl text-[#64748b]">{c.why_subtitle}</p>
             </div>
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon
@@ -56,12 +65,8 @@ export default function NewWhyChooseSection() {
                     <Icon className="w-7 h-7" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-xl text-[#1e293b] mb-1">
-                      {benefit.title}
-                    </h3>
-                    <p className="text-[#64748b] text-base leading-relaxed">
-                      {benefit.description}
-                    </p>
+                    <h3 className="font-bold text-xl text-[#1e293b] mb-1">{benefit.title}</h3>
+                    <p className="text-[#64748b] text-base leading-relaxed">{benefit.description}</p>
                   </div>
                 </div>
               )

@@ -59,8 +59,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-rubik)', 'Rubik', 'sans-serif'],
-        display: ['var(--font-rubik)', 'Rubik', 'sans-serif'],
+        sans: ['ui-sans-serif', 'system-ui', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+        display: ['ui-sans-serif', 'system-ui', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
       },
       borderRadius: {
         lg: 'var(--radius)',

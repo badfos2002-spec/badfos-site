@@ -5,6 +5,8 @@ import { Phone, Mail, MessageCircle, Instagram, Facebook, Send } from 'lucide-re
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CONTACT_INFO } from '@/lib/constants'
+import { createLead } from '@/lib/db'
+import { sendGoogleAdsConversion, sendMetaLeadEvent, trackWhatsAppClick, trackPhoneClick } from '@/lib/tracking'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -22,9 +24,27 @@ export default function ContactPage() {
     setIsSubmitting(true)
 
     try {
-      // TODO: Add Firebase integration
-      console.log('Contact form submitted:', formData)
-      
+      await createLead({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        message: formData.message ? `${formData.subject ? `נושא: ${formData.subject}\n` : ''}${formData.message}` : formData.subject,
+        source: 'contact_form',
+        status: 'new',
+      })
+
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'new_lead',
+          data: { name: formData.name, phone: formData.phone, email: formData.email, source: 'contact_form', status: 'new', message: formData.message },
+        }),
+      }).catch(console.error)
+
+      sendGoogleAdsConversion()
+      sendMetaLeadEvent()
+
       setSubmitted(true)
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
       setTimeout(() => setSubmitted(false), 5000)
@@ -73,7 +93,7 @@ export default function ContactPage() {
       <div className="absolute -top-32 -right-32 w-96 h-96 bg-gradient-to-br from-teal-300/30 to-cyan-300/30 rounded-full blur-3xl"></div>
       <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-gradient-to-tr from-blue-300/30 to-indigo-300/30 rounded-full blur-3xl"></div>
 
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 relative z-10">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
         {/* Header */}
         <div className="text-center mb-16" dir="rtl">
           <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm mb-6">
@@ -204,12 +224,17 @@ export default function ContactPage() {
 
             {contactMethods.map((method, index) => {
               const Icon = method.icon
+              const handleMethodClick = () => {
+                if (method.link.startsWith('https://wa.me')) trackWhatsAppClick('contact_page')
+                else if (method.link.startsWith('tel:')) trackPhoneClick()
+              }
               return (
                 <a
                   key={index}
                   href={method.link}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={handleMethodClick}
                   className="flex items-center gap-4 bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 group"
                 >
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${method.gradient} flex items-center justify-center flex-shrink-0 group-hover:rotate-12 transition-transform`}>

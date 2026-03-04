@@ -17,6 +17,7 @@ import {
   Users,
   BarChart3,
   Megaphone,
+  PanelTop,
   Menu,
   X,
   LogOut,
@@ -39,6 +40,7 @@ const menuItems = [
   { icon: Gift, label: 'חבילות', href: '/admin/packages' },
   { icon: ClipboardList, label: 'הזמנות חבילות', href: '/admin/package-orders' },
   { icon: BarChart3, label: 'אנליטיקה', href: '/admin/analytics' },
+  { icon: PanelTop, label: 'Top Bar', href: '/admin/topbar' },
   { icon: Megaphone, label: 'הגדרות מבצעים', href: '/admin/deals' },
 ]
 

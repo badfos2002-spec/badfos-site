@@ -2,15 +2,23 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ShoppingCart, Check, ArrowLeft, Gift, Mail, Phone, User } from 'lucide-react'
+import { ShoppingCart, Check, ArrowLeft, Gift, Mail, Phone, User, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import Link from 'next/link'
+import { getActivePackages, createPackageOrder } from '@/lib/db'
+import type { Package } from '@/lib/types'
+import { CONTACT_INFO } from '@/lib/constants'
 
 function DealPageContent() {
   const searchParams = useSearchParams()
   const packageId = searchParams.get('package')
+
+  const [packages, setPackages] = useState<Package[]>([])
+  const [pkgLoading, setPkgLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   const [selectedFabric, setSelectedFabric] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState<string>('')
@@ -31,50 +39,12 @@ function DealPageContent() {
     notes: '',
   })
 
-  const packages = [
-    {
-      id: 1,
-      name: '10-20 חולצות',
-      tag: 'מתחילים',
-      minQuantity: 10,
-      maxQuantity: 20,
-      pricePerUnit: 45,
-      designerCost: 150,
-      gradient: 'from-blue-500 to-indigo-600',
-    },
-    {
-      id: 2,
-      name: '21-50 חולצות',
-      tag: 'הכי פופולרי',
-      minQuantity: 21,
-      maxQuantity: 50,
-      pricePerUnit: 40,
-      designerCost: 0,
-      gradient: 'from-yellow-500 to-orange-500',
-    },
-    {
-      id: 3,
-      name: '51-100 חולצות',
-      tag: 'עסקים',
-      minQuantity: 51,
-      maxQuantity: 100,
-      pricePerUnit: 35,
-      designerCost: 0,
-      gradient: 'from-purple-500 to-pink-600',
-    },
-    {
-      id: 4,
-      name: '100+ חולצות',
-      tag: 'ארגונים',
-      minQuantity: 100,
-      maxQuantity: 1000,
-      pricePerUnit: 30,
-      designerCost: 0,
-      gradient: 'from-green-500 to-emerald-600',
-    },
-  ]
-
-  const selectedPackage = packages.find((p) => p.id === Number(packageId))
+  useEffect(() => {
+    getActivePackages()
+      .then(setPackages)
+      .catch(console.error)
+      .finally(() => setPkgLoading(false))
+  }, [])
 
   const fabricTypes = [
     { id: 'cotton', name: 'כותנה', price: 0 },
@@ -94,16 +64,27 @@ function DealPageContent() {
     { id: 'olive', name: 'זית', hex: '#65A30D' },
   ]
 
-  const getTotalQuantity = () => {
-    return Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
-  }
+  const gradients = [
+    'from-blue-500 to-indigo-600',
+    'from-yellow-500 to-orange-500',
+    'from-purple-500 to-pink-600',
+    'from-green-500 to-emerald-600',
+  ]
+
+  const selectedPackage = packages.find((p) => p.id === packageId)
+  const packageGradient = selectedPackage
+    ? gradients[packages.indexOf(selectedPackage) % gradients.length]
+    : gradients[0]
+
+  const getTotalQuantity = () =>
+    Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
 
   const calculateTotal = () => {
     if (!selectedPackage) return 0
     const totalQty = getTotalQuantity()
     const fabricSurcharge = fabricTypes.find((f) => f.id === selectedFabric)?.price || 0
     const itemsTotal = totalQty * (selectedPackage.pricePerUnit + fabricSurcharge)
-    return itemsTotal + selectedPackage.designerCost
+    return itemsTotal + (selectedPackage.graphicDesignerCost || 0)
   }
 
   const handleQuantityChange = (size: string, delta: number) => {
@@ -113,14 +94,11 @@ function DealPageContent() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+
     const totalQty = getTotalQuantity()
-    if (!selectedPackage) {
-      alert('החבילה לא נמצאה')
-      return
-    }
+    if (!selectedPackage) { alert('החבילה לא נמצאה'); return }
     if (totalQty < selectedPackage.minQuantity) {
       alert(`יש להזמין לפחות ${selectedPackage.minQuantity} חולצות`)
       return
@@ -129,17 +107,73 @@ function DealPageContent() {
       alert(`ניתן להזמין עד ${selectedPackage.maxQuantity} חולצות בחבילה זו`)
       return
     }
-    if (!selectedFabric || !selectedColor) {
-      alert('יש לבחור סוג בד וצבע')
-      return
-    }
+    if (!selectedFabric || !selectedColor) { alert('יש לבחור סוג בד וצבע'); return }
     if (!formData.fullName || !formData.email || !formData.phone) {
       alert('יש למלא את כל השדות החובה')
       return
     }
 
-    // TODO: Save to database / send to WhatsApp
-    alert('ההזמנה נשלחה בהצלחה! ניצור איתך קשר בהקדם.')
+    setSubmitting(true)
+    try {
+      const nameParts = formData.fullName.trim().split(' ')
+      const firstName = nameParts[0] || formData.fullName
+      const lastName = nameParts.slice(1).join(' ') || ''
+
+      const sizesArray = Object.entries(quantities)
+        .filter(([, qty]) => qty > 0)
+        .map(([size, quantity]) => ({ size, quantity }))
+
+      await createPackageOrder({
+        packageId: selectedPackage.id,
+        customer: {
+          firstName,
+          lastName,
+          email: formData.email,
+          phone: formData.phone,
+          notes: formData.notes || undefined,
+        },
+        fabricType: selectedFabric,
+        color: selectedColor,
+        sizes: sizesArray,
+        totalQuantity: totalQty,
+        status: 'new',
+      })
+
+      // Open WhatsApp with order summary
+      const fabricName = fabricTypes.find((f) => f.id === selectedFabric)?.name || selectedFabric
+      const colorName = colors.find((c) => c.id === selectedColor)?.name || selectedColor
+      const sizesText = sizesArray.map((s) => `${s.size}: ${s.quantity}`).join(', ')
+      const total = calculateTotal()
+
+      const message = encodeURIComponent(
+        `שלום! קיבלתי הזמנה חדשה דרך האתר 🎉\n\n` +
+        `👤 שם: ${formData.fullName}\n` +
+        `📞 טלפון: ${formData.phone}\n` +
+        `📧 אימייל: ${formData.email}\n\n` +
+        `📦 חבילה: ${selectedPackage.name}\n` +
+        `🧵 סוג בד: ${fabricName}\n` +
+        `🎨 צבע: ${colorName}\n` +
+        `📏 מידות: ${sizesText}\n` +
+        `👕 סה"כ חולצות: ${totalQty}\n` +
+        `💰 סה"כ לתשלום: ₪${total}\n` +
+        (formData.notes ? `\n📝 הערות: ${formData.notes}` : '')
+      )
+      window.open(`https://wa.me/${CONTACT_INFO.whatsapp}?text=${message}`, '_blank')
+      setSubmitted(true)
+    } catch (err) {
+      console.error(err)
+      alert('שגיאה בשמירת ההזמנה. נסו שוב.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (pkgLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" dir="rtl">
+        <Loader2 className="w-10 h-10 animate-spin text-yellow-500" />
+      </div>
+    )
   }
 
   if (!selectedPackage) {
@@ -157,12 +191,33 @@ function DealPageContent() {
     )
   }
 
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 flex items-center justify-center" dir="rtl">
+        <div className="bg-white rounded-3xl shadow-xl p-12 max-w-md text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-10 h-10 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">ההזמנה נשלחה!</h1>
+          <p className="text-gray-600 mb-8">
+            ניצור איתך קשר בהקדם לאישור ההזמנה ופרטי תשלום.
+          </p>
+          <Link href="/">
+            <Button className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 text-white font-bold px-8">
+              חזרה לעמוד הבית
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   const totalQty = getTotalQuantity()
   const isValidQuantity = totalQty >= selectedPackage.minQuantity && totalQty <= selectedPackage.maxQuantity
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 py-20" dir="rtl">
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0">
         {/* Back Button */}
         <Link href="/packages" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors">
           <ArrowLeft className="w-5 h-5 rotate-180" />
@@ -239,7 +294,7 @@ function DealPageContent() {
             {/* Size & Quantity Selection */}
             <div className="bg-white rounded-3xl shadow-xl p-8" dir="rtl">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">3. בחרו מידות וכמויות</h2>
-              
+
               {!isValidQuantity && totalQty > 0 && (
                 <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6">
                   <p className="text-red-800 font-medium text-center">
@@ -273,8 +328,8 @@ function DealPageContent() {
 
               <div className="mt-6 text-center">
                 <p className="text-lg">
-                  <span className="text-gray-600">סה"כ: </span>
-                  <span className={`font-bold ${isValidQuantity ? 'text-green-600' : 'text-gray-900'}`}>
+                  <span className="text-gray-600">סה&quot;כ: </span>
+                  <span className={`font-bold ${isValidQuantity && totalQty > 0 ? 'text-green-600' : 'text-gray-900'}`}>
                     {totalQty} חולצות
                   </span>
                 </p>
@@ -286,9 +341,7 @@ function DealPageContent() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">4. פרטי יצירת קשר</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    שם מלא *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">שם מלא *</label>
                   <div className="relative">
                     <User className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
                     <Input
@@ -303,9 +356,7 @@ function DealPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    אימייל *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">אימייל *</label>
                   <div className="relative">
                     <Mail className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
                     <Input
@@ -320,9 +371,7 @@ function DealPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    טלפון *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">טלפון *</label>
                   <div className="relative">
                     <Phone className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
                     <Input
@@ -337,9 +386,7 @@ function DealPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    הערות (אופציונלי)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">הערות (אופציונלי)</label>
                   <Textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -355,13 +402,13 @@ function DealPageContent() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-3xl shadow-xl p-8 sticky top-8" dir="rtl">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">סיכום הזמנה</h3>
-              
+
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">חבילה:</span>
                   <span className="font-bold">{selectedPackage.name}</span>
                 </div>
-                
+
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">מחיר ליחידה:</span>
                   <span className="font-bold">₪{selectedPackage.pricePerUnit}</span>
@@ -390,15 +437,15 @@ function DealPageContent() {
                   <span className="font-bold text-lg">{totalQty}</span>
                 </div>
 
-                {selectedPackage.designerCost > 0 ? (
+                {selectedPackage.graphicDesignerCost > 0 ? (
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">גרפיקאי:</span>
-                    <span className="font-bold">₪{selectedPackage.designerCost}</span>
+                    <span className="font-bold">₪{selectedPackage.graphicDesignerCost}</span>
                   </div>
                 ) : (
                   <div className="bg-green-50 p-3 rounded-lg">
                     <p className="text-green-700 font-medium text-sm text-center">
-                      🎁 גרפיקאי חינם!
+                      גרפיקאי חינם!
                     </p>
                   </div>
                 )}
@@ -406,20 +453,24 @@ function DealPageContent() {
 
               <div className="border-t-2 border-gray-200 pt-4 mb-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold">סה"כ:</span>
-                  <span className={`text-3xl font-bold bg-gradient-to-r ${selectedPackage.gradient} bg-clip-text text-transparent`}>
+                  <span className="text-xl font-bold">סה&quot;כ:</span>
+                  <span className={`text-3xl font-bold bg-gradient-to-r ${packageGradient} bg-clip-text text-transparent`}>
                     ₪{calculateTotal()}
                   </span>
                 </div>
               </div>
 
               <Button
-                onClick={handleSubmit}
-                disabled={!isValidQuantity || !selectedFabric || !selectedColor || !formData.fullName || !formData.email || !formData.phone}
-                className={`w-full bg-gradient-to-r ${selectedPackage.gradient} hover:opacity-90 text-white font-bold h-14 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                onClick={() => handleSubmit()}
+                disabled={!isValidQuantity || !selectedFabric || !selectedColor || !formData.fullName || !formData.email || !formData.phone || submitting}
+                className={`w-full bg-gradient-to-r ${packageGradient} hover:opacity-90 text-white font-bold h-14 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <ShoppingCart className="w-5 h-5 ml-2" />
-                שליחת הזמנה
+                {submitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                ) : (
+                  <ShoppingCart className="w-5 h-5 ml-2" />
+                )}
+                {submitting ? 'שולח...' : 'שליחת הזמנה'}
               </Button>
 
               <p className="text-xs text-gray-500 text-center mt-4">

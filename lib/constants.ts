@@ -149,8 +149,14 @@ export const SWEATSHIRT_DESIGN_AREAS = [
   },
   {
     id: 'chest_logo' as DesignAreaType,
-    name: 'סמל כיס',
-    description: 'סמל קטן בגובה הכיס',
+    name: 'סמל כיס שמאל',
+    description: 'סמל קטן בגובה הכיס צד שמאל',
+    price: 5,
+  },
+  {
+    id: 'chest_logo_right' as DesignAreaType,
+    name: 'סמל כיס ימין',
+    description: 'סמל קטן בגובה הכיס צד ימין',
     price: 5,
   },
 ] as const
@@ -290,7 +296,7 @@ export const UPLOAD_CONSTRAINTS = {
 
 export const CONTACT_INFO = {
   phone: '050-7794277',
-  whatsapp: '5507794277',
+  whatsapp: '972559885954',
   email: 'badfos2002@gmail.com',
   instagram: 'https://instagram.com/badfos',
   facebook: 'https://facebook.com/badfos',
@@ -311,12 +317,39 @@ export const COUPON_CONFIG = {
 // Helper Functions
 // ============================================================================
 
+// ============================================================================
+// Pricing Overrides — loaded from Firestore admin (settings/pricing)
+// ============================================================================
+
+type PricingOverrides = {
+  basePrices?: Record<string, number>
+  fabricSurcharges?: Record<string, number>
+  designAreas?: Record<string, number>
+  sizeSurcharges?: Record<string, number>
+  shipping?: { delivery?: number; pickup?: number }
+  quantityDiscount?: { minQuantity?: number; discountPercent?: number }
+}
+
+let _pricingOverrides: PricingOverrides = {}
+
+export function applyPricingOverrides(data: PricingOverrides) {
+  _pricingOverrides = data
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
 export function getProductCategory(productType: ProductType) {
   return PRODUCT_CATEGORIES.find((cat) => cat.id === productType)
 }
 
 export function getFabricType(fabricId: FabricType) {
-  return FABRIC_TYPES.find((fabric) => fabric.id === fabricId)
+  const fabric = FABRIC_TYPES.find((f) => f.id === fabricId)
+  if (!fabric) return undefined
+  const overrideSurcharge = _pricingOverrides.fabricSurcharges?.[fabricId]
+  if (overrideSurcharge !== undefined) return { ...fabric, surcharge: overrideSurcharge }
+  return fabric
 }
 
 export function getColorsByProductType(productType: ProductType) {
@@ -333,18 +366,39 @@ export function getColorsByProductType(productType: ProductType) {
 }
 
 export function getDesignAreasByProductType(productType: ProductType) {
-  switch (productType) {
-    case 'tshirt':
-      return TSHIRT_DESIGN_AREAS
-    case 'sweatshirt':
-      return SWEATSHIRT_DESIGN_AREAS
-    case 'buff':
-      return BUFF_DESIGN_AREAS
-    default:
-      return TSHIRT_DESIGN_AREAS
-  }
+  const areas = (() => {
+    switch (productType) {
+      case 'tshirt': return TSHIRT_DESIGN_AREAS
+      case 'sweatshirt': return SWEATSHIRT_DESIGN_AREAS
+      case 'buff': return BUFF_DESIGN_AREAS
+      default: return TSHIRT_DESIGN_AREAS
+    }
+  })()
+  if (!_pricingOverrides.designAreas) return areas
+  return areas.map(a => ({
+    ...a,
+    price: _pricingOverrides.designAreas?.[a.id] ?? a.price,
+  }))
 }
 
 export function getBasePrice(productType: ProductType): number {
-  return BASE_PRICES[productType] || 0
+  return _pricingOverrides.basePrices?.[productType] ?? BASE_PRICES[productType] ?? 0
+}
+
+export function getSizeSurcharge(sizeId: string): number {
+  if (_pricingOverrides.sizeSurcharges?.[sizeId] !== undefined) {
+    return _pricingOverrides.sizeSurcharges[sizeId]
+  }
+  return STANDARD_SIZES.find(s => s.id === sizeId)?.surcharge ?? 0
+}
+
+export function getLiveShippingCost(method: 'delivery' | 'pickup'): number {
+  return _pricingOverrides.shipping?.[method] ?? SHIPPING_COSTS[method]
+}
+
+export function getLiveQuantityDiscount(): { minQuantity: number; discountPercent: number } {
+  return {
+    minQuantity: _pricingOverrides.quantityDiscount?.minQuantity ?? QUANTITY_DISCOUNT.minQuantity,
+    discountPercent: _pricingOverrides.quantityDiscount?.discountPercent ?? QUANTITY_DISCOUNT.discountPercent,
+  }
 }

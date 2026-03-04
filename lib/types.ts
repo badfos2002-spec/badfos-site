@@ -48,6 +48,7 @@ export interface CartItem extends ProductConfig {
 
 export type OrderStatus =
   | 'pending_payment'
+  | 'new'
   | 'paid'
   | 'in_production'
   | 'shipped'
@@ -94,6 +95,7 @@ export interface Order {
   id: string
   orderNumber: number // #1001, #1002...
   status: OrderStatus
+  paymentId?: string // tempOrderId sent to Grow, used by webhook to match
   customer: CustomerInfo
   shipping: Shipping
   items: OrderItem[]
@@ -206,6 +208,7 @@ export type ImageCategory =
   | 'cap_mockups'
   | 'designable_products'
   | 'homepage_carousel'
+  | 'hero_carousel'
   | 'logo'
   | 'about_main'
   | 'about_process'
@@ -266,6 +269,7 @@ export interface Package {
   graphicDesignerCost: number // 250 or 0 (free)
   isActive: boolean
   sortOrder: number
+  image?: string
 }
 
 // ============================================================================

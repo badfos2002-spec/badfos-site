@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Star, User, X, Upload } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Star, User, Upload, Loader2, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -11,9 +11,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { getApprovedReviews, createReview } from '@/lib/db'
+
+type DisplayReview = {
+  id: string
+  name: string
+  rating: number
+  product?: string
+  text: string
+  dateStr: string
+}
+
+const FALLBACK: DisplayReview[] = [
+  { id: '1', name: 'רועי אבירבוך', rating: 5, product: 'חולצה כותנה', text: 'אחלה חוויה! השירות מהיר, המחיר הוגן וההדפסה באיכות ברמה גבוהה. אגיע שוב בוודאות', dateStr: '15/1/2024' },
+  { id: '2', name: 'אורי קארה', rating: 5, product: 'סווטשרט', text: 'השתמשתי בשירות כמה פעמים והכל תמיד מושלם. ממליץ בחום!', dateStr: '10/1/2024' },
+  { id: '3', name: 'דניאל שטופל', rating: 5, product: 'באף', text: 'ההזמנה לקחה זמן מזערי והאיכות מעולה. ממליץ!', dateStr: '5/1/2024' },
+]
 
 export default function ReviewsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [reviews, setReviews] = useState<DisplayReview[]>(FALLBACK)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     rating: 0,
@@ -22,45 +42,52 @@ export default function ReviewsPage() {
     image: null as File | null,
   })
 
-  // Mock reviews data - will be replaced with Firebase
-  const reviews = [
-    {
-      id: 1,
-      name: 'רועי אבירבוך',
-      rating: 5,
-      productType: 'חולצה כותנה',
-      review: 'אחלה חוויה! השירות מהיר, המחיר הוגן וההדפסה באיכות ברמה גבוהה. אגיע שוב בוודאות',
-      date: new Date('2024-01-15'),
-      image: null,
-    },
-    {
-      id: 2,
-      name: 'אורי קארה',
-      rating: 5,
-      productType: 'סווטשרט',
-      review: 'השתמשתי בשירות כמה פעמים והכל תמיד מושלם. ממליץ בחום!',
-      date: new Date('2024-01-10'),
-      image: null,
-    },
-    {
-      id: 3,
-      name: 'דניאל שטופל',
-      rating: 5,
-      productType: 'באף',
-      review: 'ההזמנה לקחה זמן מזערי והאיכות מעולה. ממליץ!',
-      date: new Date('2024-01-05'),
-      image: null,
-    },
-  ]
+  useEffect(() => {
+    getApprovedReviews()
+      .then(data => {
+        if (data.length > 0) {
+          setReviews(data.map(r => ({
+            id: r.id,
+            name: r.name,
+            rating: r.rating,
+            product: r.product,
+            text: r.text,
+            dateStr: r.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? '',
+          })))
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
 
-  const averageRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+  const averageRating = reviews.reduce((acc, r) => acc + r.rating, 0) / (reviews.length || 1)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Add Firebase integration
-    console.log('Review submitted:', formData)
-    setIsDialogOpen(false)
-    setFormData({ name: '', rating: 0, productType: '', review: '', image: null })
+    if (!formData.rating) {
+      alert('יש לבחור דירוג')
+      return
+    }
+    setSubmitting(true)
+    try {
+      await createReview({
+        name: formData.name,
+        rating: formData.rating,
+        product: formData.productType || undefined,
+        text: formData.review,
+        status: 'pending',
+        featured: false,
+      })
+      setIsDialogOpen(false)
+      setFormData({ name: '', rating: 0, productType: '', review: '', image: null })
+      setSubmitSuccess(true)
+      setTimeout(() => setSubmitSuccess(false), 5000)
+    } catch (e) {
+      console.error(e)
+      alert('שגיאה בשליחת ביקורת, נסה שוב')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleStarClick = (rating: number) => {
@@ -74,7 +101,7 @@ export default function ReviewsPage() {
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-orange-300/30 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '3s' }}></div>
       <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-red-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
 
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 relative z-10">
+      <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
         {/* Header */}
         <div className="text-center mb-16" dir="rtl">
           {/* Badge */}
@@ -116,6 +143,14 @@ export default function ReviewsPage() {
               </div>
             </div>
           </div>
+
+          {/* Success message */}
+          {submitSuccess && (
+            <div className="mb-6 inline-flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-6 py-3 rounded-full">
+              <CheckCircle className="w-5 h-5" />
+              <span>הביקורת נשלחה ותפורסם לאחר אישור</span>
+            </div>
+          )}
 
           {/* Write Review Button */}
           <div>
@@ -204,7 +239,9 @@ export default function ReviewsPage() {
                     </label>
                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-yellow-400 transition-colors cursor-pointer">
                       <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">לחץ להעלאת תמונה</p>
+                      <p className="text-sm text-gray-600">
+                        {formData.image ? formData.image.name : 'לחץ להעלאת תמונה'}
+                      </p>
                       <input
                         type="file"
                         accept="image/*"
@@ -220,9 +257,10 @@ export default function ReviewsPage() {
 
                   <Button
                     type="submit"
+                    disabled={submitting}
                     className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold h-14 text-lg rounded-xl"
                   >
-                    שלח ביקורת
+                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'שלח ביקורת'}
                   </Button>
                 </form>
               </DialogContent>
@@ -230,68 +268,64 @@ export default function ReviewsPage() {
           </div>
         </div>
 
+        {/* Loading */}
+        {loading && (
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+          </div>
+        )}
+
         {/* Reviews Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {reviews.map((review) => (
-            <div
-              key={review.id}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
-              dir="rtl"
-            >
-              {/* User Avatar */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center flex-shrink-0">
-                  <User className="w-6 h-6 text-white" />
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {reviews.map((review) => (
+              <div
+                key={review.id}
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                dir="rtl"
+              >
+                {/* User Avatar */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center flex-shrink-0">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1 text-right">
+                    <h3 className="font-bold text-gray-900">{review.name}</h3>
+                    <p className="text-xs text-gray-500">{review.dateStr}</p>
+                  </div>
                 </div>
-                <div className="flex-1 text-right">
-                  <h3 className="font-bold text-gray-900">{review.name}</h3>
-                  <p className="text-xs text-gray-500">
-                    {review.date.toLocaleDateString('he-IL')}
-                  </p>
+
+                {/* Rating */}
+                <div className="flex gap-1 mb-3 justify-end">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < review.rating
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
                 </div>
+
+                {/* Product Type */}
+                {review.product && (
+                  <div className="mb-3">
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
+                      {review.product}
+                    </span>
+                  </div>
+                )}
+
+                {/* Review Text */}
+                <p className="text-gray-700 leading-relaxed">
+                  {review.text}
+                </p>
               </div>
-
-              {/* Rating */}
-              <div className="flex gap-1 mb-3 justify-end">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < review.rating
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Product Type */}
-              {review.productType && (
-                <div className="mb-3">
-                  <span className="text-xs bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
-                    {review.productType}
-                  </span>
-                </div>
-              )}
-
-              {/* Review Text */}
-              <p className="text-gray-700 leading-relaxed mb-4">
-                {review.review}
-              </p>
-
-              {/* Review Image */}
-              {review.image && (
-                <div className="relative w-full h-48 rounded-xl overflow-hidden">
-                  <img
-                    src={review.image}
-                    alt="Review"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

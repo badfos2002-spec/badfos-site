@@ -1,26 +1,53 @@
 'use client'
 
-import { useState } from 'react'
-import { Search, Phone, Mail, Calendar } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, Phone, Mail, Calendar, Loader2, Users } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { getAllLeads, updateLeadStatus } from '@/lib/db'
+import type { Lead } from '@/lib/types'
+
+const statusLabels: Record<string, { label: string; color: string }> = {
+  new: { label: 'חדש', color: 'bg-blue-100 text-blue-700' },
+  answered: { label: 'נענה', color: 'bg-green-100 text-green-700' },
+  called_no_answer: { label: 'התקשרו - לא ענה', color: 'bg-yellow-100 text-yellow-700' },
+  not_relevant: { label: 'לא רלוונטי', color: 'bg-gray-100 text-gray-700' },
+  closed_deal: { label: 'עסקה סגורה', color: 'bg-purple-100 text-purple-700' },
+}
+
+const sourceLabels: Record<string, string> = {
+  popup: 'פופאפ',
+  bottom_form: 'טופס תחתון',
+  contact_form: 'יצירת קשר',
+}
 
 export default function AdminLeadsPage() {
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const leads = [
-    { id: 1, name: 'אבי כהן', phone: '050-1111111', email: 'avi@example.com', source: 'popup', status: 'new', date: '13/02/2026' },
-    { id: 2, name: 'רונית לוי', phone: '052-2222222', email: 'ronit@example.com', source: 'contact_form', status: 'answered', date: '13/02/2026' },
-    { id: 3, name: 'משה דוד', phone: '054-3333333', email: 'moshe@example.com', source: 'bottom_form', status: 'called_no_answer', date: '12/02/2026' },
-  ]
+  useEffect(() => {
+    getAllLeads()
+      .then(setLeads)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
 
-  const statusLabels: Record<string, { label: string; color: string }> = {
-    new: { label: 'חדש', color: 'bg-blue-100 text-blue-700' },
-    answered: { label: 'נענה', color: 'bg-green-100 text-green-700' },
-    called_no_answer: { label: 'התקשרו - לא ענה', color: 'bg-yellow-100 text-yellow-700' },
-    not_relevant: { label: 'לא רלוונטי', color: 'bg-gray-100 text-gray-700' },
-    closed_deal: { label: 'עסקה סגורה', color: 'bg-purple-100 text-purple-700' },
+  const handleStatusChange = async (leadId: string, newStatus: string) => {
+    try {
+      await updateLeadStatus(leadId, newStatus)
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus as any } : l))
+    } catch (e) {
+      console.error(e)
+      alert('שגיאה בעדכון סטטוס ליד')
+    }
   }
+
+  const filtered = leads.filter(l =>
+    !searchTerm ||
+    l.name.includes(searchTerm) ||
+    l.phone.includes(searchTerm) ||
+    (l.email ?? '').includes(searchTerm)
+  )
 
   return (
     <div dir="rtl">
@@ -29,7 +56,6 @@ export default function AdminLeadsPage() {
         <p className="text-gray-600">ניהול פניות לקוחות</p>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
         <div className="relative">
           <Search className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
@@ -42,44 +68,71 @@ export default function AdminLeadsPage() {
         </div>
       </div>
 
-      {/* Leads Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {leads.map((lead) => (
-          <div key={lead.id} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{lead.name}</h3>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusLabels[lead.status].color}`}>
-                {statusLabels[lead.status].label}
-              </span>
-            </div>
-            
-            <div className="space-y-3 mb-4">
-              <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-gray-700 hover:text-yellow-600">
-                <Phone className="w-4 h-4" />
-                <span className="text-sm">{lead.phone}</span>
-              </a>
-              <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-gray-700 hover:text-yellow-600">
-                <Mail className="w-4 h-4" />
-                <span className="text-sm">{lead.email}</span>
-              </a>
-              <div className="flex items-center gap-2 text-gray-500">
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm">{lead.date}</span>
-              </div>
-            </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 text-gray-500">
+          <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p className="text-lg font-medium">אין לידים</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((lead) => {
+            const date = lead.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? ''
+            return (
+              <div
+                key={lead.id}
+                className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl hover:border-yellow-200 border-2 border-transparent transition-all cursor-pointer"
+                onClick={() => window.open(`https://wa.me/${lead.phone.replace(/\D/g, '')}`, '_blank')}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">{lead.name}</h3>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusLabels[lead.status]?.color ?? 'bg-gray-100 text-gray-700'}`}>
+                    {statusLabels[lead.status]?.label ?? lead.status}
+                  </span>
+                </div>
 
-            <div className="pt-4 border-t border-gray-200">
-              <select className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm">
-                <option>שנה סטטוס</option>
-                <option value="answered">נענה</option>
-                <option value="called_no_answer">התקשרו - לא ענה</option>
-                <option value="not_relevant">לא רלוונטי</option>
-                <option value="closed_deal">עסקה סגורה</option>
-              </select>
-            </div>
-          </div>
-        ))}
-      </div>
+                <div className="space-y-3 mb-4">
+                  <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-gray-700 hover:text-yellow-600">
+                    <Phone className="w-4 h-4" />
+                    <span className="text-sm">{lead.phone}</span>
+                  </a>
+                  {lead.email && (
+                    <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-gray-700 hover:text-yellow-600">
+                      <Mail className="w-4 h-4" />
+                      <span className="text-sm">{lead.email}</span>
+                    </a>
+                  )}
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-sm">{date}</span>
+                  </div>
+                  {lead.source && (
+                    <div className="text-xs text-gray-400">מקור: {sourceLabels[lead.source] ?? lead.source}</div>
+                  )}
+                  {lead.message && (
+                    <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-2">{lead.message}</p>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-gray-200" onClick={e => e.stopPropagation()}>
+                  <select
+                    className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-yellow-500 focus:outline-none"
+                    value={lead.status}
+                    onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                  >
+                    {Object.entries(statusLabels).map(([val, { label }]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

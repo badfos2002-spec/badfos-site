@@ -1,99 +1,180 @@
-import { Metadata } from 'next'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+'use client'
 
-export const metadata: Metadata = {
-  title: 'חבילות ומבצעים | בדפוס',
-  description: 'חבילות מיוחדות להדפסת חולצות בכמויות - מחירים משתלמים',
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Gift, Check, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { getAllDocuments } from '@/lib/db'
+import type { Package } from '@/lib/types'
+
+type DisplayPackage = {
+  id: string
+  name: string
+  tag: string
+  range: string
+  subtitle: string
+  pricePerUnit: number
+  graphicDesignerCost: number
+  graphicDesignerLabel: string
+  graphicDesignerFree: boolean
+  description: string
+  image?: string
 }
 
-const packages = [
+const FALLBACK: DisplayPackage[] = [
   {
-    id: 1,
-    name: 'חבילה בסיסית',
-    tag: 'מתאים למתחילים',
-    minQuantity: 10,
-    maxQuantity: 24,
-    pricePerUnit: 45,
+    id: '1',
+    name: 'עד 10 חולצות',
+    tag: 'חדש',
+    range: '1–10 חולצות',
+    subtitle: 'ליווי גרפיקאי בתוספת',
+    pricePerUnit: 42,
     graphicDesignerCost: 250,
+    graphicDesignerLabel: 'גרפיקאי: ₪250',
+    graphicDesignerFree: false,
+    description: 'מחיר ליחידה: 42 ₪. ליווי גרפיקאי בתוספת 250 ₪.',
+    image: 'https://base44.app/api/apps/68626ca21a08e364608a704b/files/ddc5d7f82_10.png',
   },
   {
-    id: 2,
-    name: 'חבילה משתלמת',
-    tag: 'הכי פופולרי',
-    minQuantity: 25,
-    maxQuantity: 49,
+    id: '2',
+    name: '11-20 חולצות',
+    tag: 'חסכוני',
+    range: '11–20 חולצות',
+    subtitle: 'ליווי גרפיקאי בתוספת',
     pricePerUnit: 40,
-    graphicDesignerCost: 0,
+    graphicDesignerCost: 250,
+    graphicDesignerLabel: 'גרפיקאי: ₪250',
+    graphicDesignerFree: false,
+    description: 'מחיר ליחידה: 40 ₪. ליווי גרפיקאי בתוספת 250 ₪.',
+    image: 'https://base44.app/api/apps/68626ca21a08e364608a704b/files/0181cec14_11-20.png',
   },
   {
-    id: 3,
-    name: 'חבילה מקצועית',
-    tag: 'חסכוני ביותר',
-    minQuantity: 50,
-    maxQuantity: 100,
-    pricePerUnit: 35,
+    id: '3',
+    name: '21-50 חולצות',
+    tag: 'הכי משתלם',
+    range: '21–50 חולצות',
+    subtitle: 'כולל גרפיקאי',
+    pricePerUnit: 38,
     graphicDesignerCost: 0,
+    graphicDesignerLabel: 'גרפיקאי חינם',
+    graphicDesignerFree: true,
+    description: 'מחיר ליחידה: 38 ₪. ליווי גרפיקאי חינם.',
+    image: 'https://base44.app/api/apps/68626ca21a08e364608a704b/files/056e4ce29_21-50.png',
   },
 ]
 
+const features = [
+  'שירות מהיר ואמין',
+  'איכות הדפסה גבוהה',
+  'תמיכה עד אישור סופי',
+]
+
+function toDisplay(pkg: Package): DisplayPackage {
+  const free = pkg.graphicDesignerCost === 0
+  return {
+    id: pkg.id,
+    name: pkg.name,
+    tag: pkg.tag,
+    range: `${pkg.minQuantity}–${pkg.maxQuantity} חולצות`,
+    subtitle: free ? 'כולל גרפיקאי' : 'ליווי גרפיקאי בתוספת',
+    pricePerUnit: pkg.pricePerUnit,
+    graphicDesignerCost: pkg.graphicDesignerCost,
+    graphicDesignerLabel: free ? 'גרפיקאי חינם' : `גרפיקאי: ₪${pkg.graphicDesignerCost}`,
+    graphicDesignerFree: free,
+    description: `מחיר ליחידה: ${pkg.pricePerUnit} ₪. ליווי גרפיקאי ${free ? 'חינם' : `בתוספת ${pkg.graphicDesignerCost} ₪`}.`,
+    image: pkg.image,
+  }
+}
+
 export default function PackagesPage() {
+  const [packages, setPackages] = useState<DisplayPackage[]>(FALLBACK)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getAllDocuments<Package>('packages')
+      .then((data: Package[]) => {
+        const active = data.filter(p => p.isActive).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        if (active.length > 0) setPackages(active.map(toDisplay))
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
-    <div className="container-rtl py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-          חבילות ומבצעים מיוחדים
-        </h1>
-        <p className="text-xl text-text-gray max-w-2xl mx-auto">
-          חבילות מיוחדות עם מחירים משתלמים להזמנות בכמויות
-        </p>
-      </div>
+    <div className="min-h-screen bg-white py-10" dir="rtl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center px-4 py-2 bg-yellow-100 border border-yellow-200 rounded-full text-yellow-700 text-sm font-medium shadow-sm mb-4">
+            <Gift className="w-4 h-4 ml-2" />
+            חבילות ומבצעים
+          </div>
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+            חבילות הדפסה משתלמות
+          </h1>
+          <p className="text-gray-600">
+            בחרו את החבילה המתאימה לכם, עם ליווי גרפי צמוד וקבלת עיצוב עד approval.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        {packages.map((pkg) => (
-          <Card key={pkg.id} className="relative hover:shadow-xl transition-shadow">
-            {pkg.tag && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm font-bold whitespace-nowrap">
-                {pkg.tag}
-              </div>
-            )}
-            <CardHeader className="text-center pt-8">
-              <CardTitle className="text-2xl">{pkg.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary mb-2">
-                  ₪{pkg.pricePerUnit}
-                </div>
-                <p className="text-text-gray">ליחידה</p>
-              </div>
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+          </div>
+        ) : (
+          /* Cards Grid */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {packages.map((pkg) => (
+              <Link key={pkg.id} href={`/deal?package=${pkg.id}`}>
+                <Card className="group overflow-hidden hover-lift border-yellow-100 h-full flex flex-col cursor-pointer">
+                  {pkg.image && (
+                    <img
+                      src={pkg.image}
+                      alt={pkg.name}
+                      className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  )}
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>כמות מינימלית:</span>
-                  <span className="font-bold">{pkg.minQuantity}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>כמות מקסימלית:</span>
-                  <span className="font-bold">{pkg.maxQuantity}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>גרפיקאי:</span>
-                  <span className="font-bold">
-                    {pkg.graphicDesignerCost === 0 ? 'חינם!' : `₪${pkg.graphicDesignerCost}`}
-                  </span>
-                </div>
-              </div>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold tracking-tight text-xl">{pkg.name}</div>
+                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">{pkg.tag}</span>
+                    </div>
+                    <div className="mt-2 text-gray-600">{pkg.range} • {pkg.subtitle}</div>
+                  </CardHeader>
 
-              <Link href="/designer" className="block">
-                <Button className="w-full btn-cta">
-                  בחר חבילה
-                </Button>
+                  <CardContent className="space-y-4 flex flex-col flex-1">
+                    <p className="text-sm text-gray-700 min-h-12">{pkg.description}</p>
+
+                    <div className="flex items-center justify-between min-h-10">
+                      <div className="text-2xl font-bold text-gray-900">
+                        ₪{pkg.pricePerUnit} <span className="text-sm font-normal text-gray-600">ליח&apos;</span>
+                      </div>
+                      <div className={`text-sm px-3 py-1 rounded-full ${pkg.graphicDesignerFree ? 'text-green-700 bg-green-50' : 'text-gray-700 bg-gray-50'}`}>
+                        {pkg.graphicDesignerLabel}
+                      </div>
+                    </div>
+
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      {features.map((feature) => (
+                        <li key={feature} className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-600" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="pt-2 mt-auto">
+                      <button className="w-full h-12 gradient-yellow text-white flex items-center justify-center text-lg font-semibold rounded-md shadow hover:opacity-90 transition-opacity">
+                        בחירה
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
               </Link>
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

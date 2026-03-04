@@ -69,6 +69,28 @@ export async function uploadSiteImage(
 }
 
 /**
+ * Upload a base64 data URL to Firebase Storage and return the download URL.
+ * Used at checkout to move design images out of the Firestore document.
+ */
+export async function uploadBase64Image(
+  base64DataUrl: string,
+  orderId: string,
+  fileName: string
+): Promise<string> {
+  ensureFirebase()
+
+  // Convert data URL → Blob
+  const res = await fetch(base64DataUrl)
+  const blob = await res.blob()
+
+  const filePath = `designs/${orderId}/${fileName}`
+  const storageRef = ref(storage!, filePath)
+
+  await uploadBytes(storageRef, blob)
+  return await getDownloadURL(storageRef)
+}
+
+/**
  * Delete a file from storage
  */
 export async function deleteFile(fileUrl: string): Promise<void> {
