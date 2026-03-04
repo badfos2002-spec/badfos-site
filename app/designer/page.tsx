@@ -10,7 +10,7 @@ export default function DesignerPage() {
   return (
     <div className="container-rtl py-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl md:text-5xl font-bold mb-4">
+        <h1 className="text-[1.7rem] md:text-[2.8rem] font-bold mb-4">
           בואו ניצור משהו ביחד 🎨
         </h1>
         <p className="text-xl text-text-gray max-w-2xl mx-auto">

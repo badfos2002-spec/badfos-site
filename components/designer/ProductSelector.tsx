@@ -17,6 +17,7 @@ const categoryDetails: Record<string, { title: string; description: string; imag
   cap: {
     title: 'כובעים',
     description: 'כובעים עם רקמה או הדפסה בהתאמה אישית',
+    image: '/assets/a82d25357_.png',
   },
   buff: {
     title: 'באפים',
