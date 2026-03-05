@@ -9,7 +9,7 @@ import CartItem from './CartItem'
 import ContactForm from './ContactForm'
 import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
-import { ArrowRight, ShoppingBag, Check, Share2, Loader2 } from 'lucide-react'
+import { ArrowRight, ShoppingBag, Check, Share2, Loader2, Package, Trash2 } from 'lucide-react'
 import { createOrder } from '@/lib/db'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { sendGoogleAdsConversion, sendMetaPurchaseEvent } from '@/lib/tracking'
@@ -32,7 +32,7 @@ function stripUndefined<T>(obj: T): T {
 
 export default function CartPage() {
   const router = useRouter()
-  const { items, clearCart } = useCart()
+  const { items, packageItems, removePackage, clearCart } = useCart()
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null)
   const [shipping, setShipping] = useState<Shipping | null>(null)
   const [couponCode, setCouponCode] = useState('')
@@ -70,7 +70,7 @@ export default function CartPage() {
   }, [items])
 
   const handleCheckout = async () => {
-    if (!customerInfo || !shipping || items.length === 0) {
+    if (!customerInfo || !shipping || (items.length === 0 && packageItems.length === 0)) {
       alert('נא למלא את כל הפרטים')
       return
     }
@@ -85,10 +85,15 @@ export default function CartPage() {
     try {
       // Calculate correct totals (including quantity discount)
       const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount)
+      // Add package totals
+      const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
+      orderCalc.subtotal += packagesTotal
+      orderCalc.total += packagesTotal
 
       // Use pre-uploaded images from cache, fallback to upload now if needed
       const cache = uploadCacheRef.current
       const tempOrderId = tempOrderIdRef.current
+      console.time('⏱️ checkout:imageUpload')
       const itemsForOrder = await Promise.all(
         items.map(async (item) => ({
           productType: item.productType,
@@ -112,20 +117,34 @@ export default function CartPage() {
           totalPrice: item.totalPrice,
         }))
       )
+      console.timeEnd('⏱️ checkout:imageUpload')
 
       // Run Firestore order creation + payment link creation in parallel
+      console.time('⏱️ checkout:createOrder+payment')
+      console.time('⏱️ checkout:createOrder')
       const orderPromise = createOrder(stripUndefined({
         status: 'pending_payment' as const,
         paymentId: tempOrderId,
         customer: customerInfo,
         shipping,
         items: itemsForOrder,
+        ...(packageItems.length > 0 && {
+          packages: packageItems.map(pkg => ({
+            packageId: pkg.packageId,
+            packageName: pkg.packageName,
+            quantity: pkg.quantity,
+            pricePerUnit: pkg.pricePerUnit,
+            graphicDesignerCost: pkg.graphicDesignerCost,
+            totalPrice: pkg.totalPrice,
+          })),
+        }),
         subtotal: orderCalc.subtotal,
         discount: couponDiscount + orderCalc.quantityDiscount,
         ...(couponCode && { couponCode }),
         total: orderCalc.total,
-      }))
+      })).then(id => { console.timeEnd('⏱️ checkout:createOrder'); return id })
 
+      console.time('⏱️ checkout:paymentCreate')
       const paymentPromise = fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -135,11 +154,12 @@ export default function CartPage() {
           name: `${customerInfo.firstName} ${customerInfo.lastName}`,
           phone: customerInfo.phone,
           email: customerInfo.email,
-          description: `הזמנה ${items.length} פריטים - badfos.co.il`,
+          description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
         }),
-      }).then(r => r.json())
+      }).then(r => r.json()).then(data => { console.timeEnd('⏱️ checkout:paymentCreate'); return data })
 
       const [orderId, paymentData] = await Promise.all([orderPromise, paymentPromise])
+      console.timeEnd('⏱️ checkout:createOrder+payment')
 
       // Fire-and-forget: conversion events + emails
       sendGoogleAdsConversion(orderCalc.total, orderId)
@@ -223,7 +243,7 @@ export default function CartPage() {
     )
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && packageItems.length === 0) {
     return (
       <div className="container-rtl py-16">
         <div className="max-w-2xl mx-auto text-center">
@@ -275,6 +295,50 @@ export default function CartPage() {
             </div>
           </div>
 
+          {/* Package Items */}
+          {packageItems.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">חבילות ({packageItems.length})</h2>
+                <Link href="/packages">
+                  <Button variant="outline">+ הוסף חבילה</Button>
+                </Link>
+              </div>
+              <div className="space-y-4">
+                {packageItems.map((pkg) => (
+                  <div key={pkg.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-yellow-50 flex items-center justify-center">
+                          <Package className="w-6 h-6 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900">{pkg.packageName}</h3>
+                          <p className="text-sm text-gray-500">{pkg.quantity} חולצות × ₪{pkg.pricePerUnit}</p>
+                          {pkg.graphicDesignerCost > 0 && (
+                            <p className="text-xs text-gray-400">+ גרפיקאי ₪{pkg.graphicDesignerCost}</p>
+                          )}
+                          {pkg.graphicDesignerCost === 0 && (
+                            <p className="text-xs text-green-600">גרפיקאי חינם</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="font-bold text-lg">₪{pkg.totalPrice}</span>
+                        <button
+                          onClick={() => removePackage(pkg.id)}
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Customer Info */}
           <ContactForm onSubmit={setCustomerInfo} />
 
@@ -287,13 +351,14 @@ export default function CartPage() {
           <div className="sticky top-24">
             <OrderSummary
               items={items}
+              packageItems={packageItems}
               shipping={shipping}
               couponCode={couponCode}
               onCouponChange={setCouponCode}
               onDiscountApplied={(discount, code) => { setCouponDiscount(discount); if (code) setCouponCode(code) }}
               onCheckout={handleCheckout}
               loading={loading}
-              canCheckout={!!customerInfo && !!shipping}
+              canCheckout={!!customerInfo && !!shipping && (items.length > 0 || packageItems.length > 0)}
             />
           </div>
         </div>

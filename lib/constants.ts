@@ -86,6 +86,12 @@ export const TSHIRT_COLORS = [
   { id: 'olive', name: 'זית', hex: '#6B7245' },
 ] as const
 
+// Colors available per fabric type (undefined = all TSHIRT_COLORS)
+export const FABRIC_COLOR_FILTER: Record<string, string[]> = {
+  oversized: ['white', 'black', 'beige'],
+  polo: ['white', 'black', 'red'],
+}
+
 export const SWEATSHIRT_COLORS = [
   { id: 'black', name: 'שחור', hex: '#000000' },
   { id: 'gray', name: 'אפור', hex: '#9CA3AF' },

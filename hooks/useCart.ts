@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { CartItem, ProductConfig, SizeQuantity } from '@/lib/types'
+import type { CartItem, ProductConfig, SizeQuantity, PackageCartItem } from '@/lib/types'
 import {
   calculateItemPrice,
   calculateTotalQuantity,
@@ -12,12 +12,16 @@ import {
 
 interface CartStore {
   items: CartItem[]
+  packageItems: PackageCartItem[]
   editingItemId: string | null
   addItem: (config: ProductConfig) => void
   removeItem: (itemId: string) => void
   updateItemQuantity: (itemId: string, sizes: SizeQuantity[]) => void
   replaceItem: (itemId: string, config: ProductConfig) => void
   setEditingItem: (itemId: string | null) => void
+  addPackage: (pkg: Omit<PackageCartItem, 'id' | 'totalPrice'>) => void
+  removePackage: (id: string) => void
+  updatePackageQuantity: (id: string, quantity: number) => void
   clearCart: () => void
   getCartTotal: () => number
   getCartItemCount: () => number
@@ -28,6 +32,7 @@ export const useCart = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      packageItems: [],
       editingItemId: null,
 
       /**
@@ -173,36 +178,89 @@ export const useCart = create<CartStore>()(
       },
 
       /**
+       * Add a package to the cart
+       */
+      addPackage: (pkg) => {
+        const id = `package-${pkg.packageId}`
+        const totalPrice = pkg.quantity * pkg.pricePerUnit + pkg.graphicDesignerCost
+        const packageItems = get().packageItems
+        const existingIndex = packageItems.findIndex((p) => p.id === id)
+
+        if (existingIndex >= 0) {
+          const updated = [...packageItems]
+          updated[existingIndex] = { ...pkg, id, totalPrice }
+          set({ packageItems: updated })
+        } else {
+          set({ packageItems: [...packageItems, { ...pkg, id, totalPrice }] })
+        }
+      },
+
+      /**
+       * Remove a package from the cart
+       */
+      removePackage: (id: string) => {
+        set((state) => ({
+          packageItems: state.packageItems.filter((p) => p.id !== id),
+        }))
+      },
+
+      /**
+       * Update package quantity
+       */
+      updatePackageQuantity: (id: string, quantity: number) => {
+        if (quantity <= 0) {
+          get().removePackage(id)
+          return
+        }
+        const packageItems = get().packageItems
+        const index = packageItems.findIndex((p) => p.id === id)
+        if (index >= 0) {
+          const updated = [...packageItems]
+          const pkg = updated[index]
+          updated[index] = {
+            ...pkg,
+            quantity,
+            totalPrice: quantity * pkg.pricePerUnit + pkg.graphicDesignerCost,
+          }
+          set({ packageItems: updated })
+        }
+      },
+
+      /**
        * Clear all items from cart
        */
       clearCart: () => {
-        set({ items: [] })
+        set({ items: [], packageItems: [] })
       },
 
       /**
        * Get total price of all items
        */
       getCartTotal: () => {
-        return get().items.reduce((total, item) => total + item.totalPrice, 0)
+        const itemsTotal = get().items.reduce((total, item) => total + item.totalPrice, 0)
+        const packagesTotal = get().packageItems.reduce((total, pkg) => total + pkg.totalPrice, 0)
+        return itemsTotal + packagesTotal
       },
 
       /**
        * Get total number of items (by unique products, not quantity)
        */
       getCartItemCount: () => {
-        return get().items.length
+        return get().items.length + get().packageItems.length
       },
 
       /**
        * Get subtotal (sum of all item prices)
        */
       getCartSubtotal: () => {
-        return get().items.reduce((total, item) => total + item.totalPrice, 0)
+        const itemsTotal = get().items.reduce((total, item) => total + item.totalPrice, 0)
+        const packagesTotal = get().packageItems.reduce((total, pkg) => total + pkg.totalPrice, 0)
+        return itemsTotal + packagesTotal
       },
     }),
     {
       name: 'badfos-cart-storage',
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ items: state.items, packageItems: state.packageItems }),
     }
   )
 )

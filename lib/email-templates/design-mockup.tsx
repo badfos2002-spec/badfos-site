@@ -20,11 +20,12 @@ const MOCKUP_IMAGES: Record<string, { front: string; back: string }> = {
   red: { front: '/assets/חולצה אדומה קדימה.png', back: '/assets/חולצה אדומה אחורה.png' },
   burgundy: { front: '/assets/חולצה קדימה בורדו.png', back: '/assets/חולצה אחורה בורדו.png' },
   olive: { front: '/assets/חולצה קדימה ירוק זית.png', back: '/assets/חולצה אחורה ירוק זית.png' },
+  beige: { front: '/assets/חולצה בז קדימה..png', back: '/assets/חולצה בז אחורה.png' },
 }
 
 const COLOR_FALLBACK: Record<string, string> = {
   white: 'white', black: 'black', gray: 'gray', red: 'red',
-  navy: 'blue', beige: 'white', burgundy: 'burgundy', olive: 'olive',
+  navy: 'blue', beige: 'beige', burgundy: 'burgundy', olive: 'olive',
 }
 
 export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmailProps) {

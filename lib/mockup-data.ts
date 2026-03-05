@@ -9,6 +9,7 @@ export const tshirtMockups: Record<string, string> = {
   red: '/assets/חולצה אדומה קדימה.png',
   burgundy: '/assets/חולצה קדימה בורדו.png',
   olive: '/assets/חולצה קדימה ירוק זית.png',
+  beige: '/assets/חולצה בז קדימה..png',
 }
 
 export const tshirtMockupsBack: Record<string, string> = {
@@ -19,11 +20,12 @@ export const tshirtMockupsBack: Record<string, string> = {
   red: '/assets/חולצה אדומה אחורה.png',
   burgundy: '/assets/חולצה אחורה בורדו.png',
   olive: '/assets/חולצה אחורה ירוק זית.png',
+  beige: '/assets/חולצה בז אחורה.png',
 }
 
 export const colorFallback: Record<string, string> = {
   white: 'white', black: 'black', gray: 'gray', red: 'red',
-  navy: 'blue', beige: 'white', burgundy: 'burgundy', olive: 'olive',
+  navy: 'blue', beige: 'beige', burgundy: 'burgundy', olive: 'olive',
 }
 
 export const DESIGN_AREA_OVERLAYS: Record<string, {

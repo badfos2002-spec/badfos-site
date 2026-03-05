@@ -14,6 +14,7 @@ import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { FABRIC_COLOR_FILTER } from '@/lib/constants'
 
 /** Convert blob URL to base64 so it survives localStorage persistence */
 async function blobToBase64(blobUrl: string): Promise<string> {
@@ -111,7 +112,17 @@ export default function TshirtDesigner() {
   )
 
   const updateConfig = (updates: Partial<ProductConfig>) => {
-    setConfig((prev) => ({ ...prev, ...updates }))
+    setConfig((prev) => {
+      const next = { ...prev, ...updates }
+      // Reset color if it's no longer valid for the new fabric type
+      if (updates.fabricType && prev.color) {
+        const allowed = FABRIC_COLOR_FILTER[updates.fabricType]
+        if (allowed && !allowed.includes(prev.color)) {
+          next.color = ''
+        }
+      }
+      return next
+    })
   }
 
   const goToNextStep = () => {
@@ -176,7 +187,7 @@ export default function TshirtDesigner() {
       case 1:
         return <ShirtTypeStep selectedType={config.fabricType} onSelect={(type) => updateConfig({ fabricType: type })} />
       case 2:
-        return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} />
+        return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} fabricType={config.fabricType} />
       case 3:
         return <DesignStep designs={config.designs || []} onUpdate={(designs) => updateConfig({ designs })} onAreaFocus={(area) => {
           setActiveDesignArea(area)

@@ -42,6 +42,17 @@ export interface CartItem extends ProductConfig {
   mockupImageUrl?: string
 }
 
+export interface PackageCartItem {
+  id: string              // package-{packageId}
+  packageId: string
+  packageName: string
+  quantity: number
+  pricePerUnit: number
+  graphicDesignerCost: number
+  totalPrice: number      // (quantity * pricePerUnit) + graphicDesignerCost
+  image?: string
+}
+
 // ============================================================================
 // Orders
 // ============================================================================

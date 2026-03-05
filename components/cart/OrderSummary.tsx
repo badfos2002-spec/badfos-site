@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import type { CartItem, Shipping, Discount } from '@/lib/types'
+import type { CartItem, Shipping, Discount, PackageCartItem } from '@/lib/types'
 import { formatPrice, calculateOrderTotal } from '@/lib/pricing'
 import { validateCoupon, getActiveDiscounts } from '@/lib/db'
 import { CheckCircle, X, Loader2 } from 'lucide-react'
 
 interface OrderSummaryProps {
   items: CartItem[]
+  packageItems?: PackageCartItem[]
   shipping: Shipping | null
   couponCode: string
   onCouponChange: (code: string) => void
@@ -22,6 +23,7 @@ interface OrderSummaryProps {
 
 export default function OrderSummary({
   items,
+  packageItems = [],
   shipping,
   couponCode,
   onCouponChange,
@@ -43,6 +45,7 @@ export default function OrderSummary({
   // Compute quantity discount from Firestore rules (fallback to hardcoded if none)
   const totalQuantity = items.reduce((sum, item) => sum + item.totalQuantity, 0)
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0)
+  const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
   const firestoreQuantityDiscount = activeDiscounts.length > 0
     ? (() => {
         const match = activeDiscounts
@@ -55,6 +58,9 @@ export default function OrderSummary({
   // Use 'pickup' (₪0) when shipping not yet selected, to avoid phantom shipping cost in total
   const shippingMethod = shipping?.method || 'pickup'
   const orderTotal = calculateOrderTotal(items, shippingMethod, couponDiscount, firestoreQuantityDiscount)
+  // Include packages in totals
+  orderTotal.subtotal += packagesTotal
+  orderTotal.total += packagesTotal
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return
@@ -109,6 +115,12 @@ export default function OrderSummary({
               </div>
             )
           })}
+          {packageItems.map((pkg) => (
+            <div key={pkg.id} className="flex justify-between text-sm">
+              <span>חבילה: {pkg.packageName} ×{pkg.quantity}</span>
+              <span className="font-bold text-black">{formatPrice(pkg.totalPrice)}</span>
+            </div>
+          ))}
         </div>
 
         <div className="border-t pt-4 space-y-2">
@@ -216,7 +228,7 @@ export default function OrderSummary({
           </Button>
 
           <p className="text-xs text-center text-text-gray mt-3">
-            כרגע התשלום מתבצע דרך WhatsApp
+            תשלום מאובטח בכרטיס אשראי
           </p>
         </div>
       </CardContent>

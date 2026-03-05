@@ -1,13 +1,19 @@
-import { TSHIRT_COLORS } from '@/lib/constants'
+import { TSHIRT_COLORS, FABRIC_COLOR_FILTER } from '@/lib/constants'
 import { Check } from 'lucide-react'
 
 interface ColorStepProps {
   selectedColor?: string
   onSelect: (color: string) => void
+  fabricType?: string
 }
 
-export default function ColorStep({ selectedColor, onSelect }: ColorStepProps) {
-  const selectedColorData = TSHIRT_COLORS.find(c => c.id === selectedColor)
+export default function ColorStep({ selectedColor, onSelect, fabricType }: ColorStepProps) {
+  const allowedIds = fabricType ? FABRIC_COLOR_FILTER[fabricType] : undefined
+  const colors = allowedIds
+    ? TSHIRT_COLORS.filter(c => allowedIds.includes(c.id))
+    : TSHIRT_COLORS
+
+  const selectedColorData = colors.find(c => c.id === selectedColor)
 
   return (
     <div>
@@ -16,7 +22,7 @@ export default function ColorStep({ selectedColor, onSelect }: ColorStepProps) {
       </p>
 
       <div className="grid grid-cols-4 sm:grid-cols-8 gap-4">
-        {TSHIRT_COLORS.map((color) => {
+        {colors.map((color) => {
           const isSelected = selectedColor === color.id
           return (
             <button
