@@ -10,11 +10,38 @@ import ContactForm from './ContactForm'
 import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
 import { ArrowRight, ShoppingBag, Check, Share2, Loader2, Package, Trash2 } from 'lucide-react'
-import { createOrder } from '@/lib/db'
+import { createOrder, createSharedCart } from '@/lib/db'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { sendGoogleAdsConversion, sendMetaPurchaseEvent } from '@/lib/tracking'
 import { calculateOrderTotal } from '@/lib/pricing'
 import type { CustomerInfo, Shipping } from '@/lib/types'
+
+async function blobToBase64(blobUrl: string): Promise<string> {
+  if (!blobUrl.startsWith('blob:')) return blobUrl
+  const response = await fetch(blobUrl)
+  const blob = await response.blob()
+  if (blob.type === 'image/png') {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+  const img = new Image()
+  img.src = blobUrl
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = () => reject(new Error('Image load failed'))
+  })
+  const MAX = 800
+  const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(img.width * scale)
+  canvas.height = Math.round(img.height * scale)
+  canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL('image/jpeg', 0.7)
+}
 
 /** Recursively strip undefined values — Firestore rejects them */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,6 +66,7 @@ export default function CartPage() {
   const [couponDiscount, setCouponDiscount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
+  const [sharingAll, setSharingAll] = useState(false)
 
   // Pre-upload cache: base64 hash → Firebase Storage URL
   const uploadCacheRef = useRef<Map<string, Promise<string>>>(new Map())
@@ -213,12 +241,78 @@ export default function CartPage() {
 
   const handleShare = async () => {
     const url = 'https://badfos.co.il/designer'
-    const text = 'עצבתי חולצה ב-בדפוס! גם אתם יכולים 👕'
+    const text = 'עצבתי חולצה ב-בדפוס! גם אתם יכולים'
     if (navigator.share) {
       try { await navigator.share({ title: 'בדפוס', text, url }) } catch {}
     } else {
       await navigator.clipboard.writeText(url)
       alert('הקישור הועתק!')
+    }
+  }
+
+  const handleShareAll = async () => {
+    const itemsWithDesigns = items.filter(item => item.designs.length > 0)
+    if (itemsWithDesigns.length === 0) return
+
+    setSharingAll(true)
+    try {
+      const sharePrefix = `share-${Date.now()}`
+      const sharedItems = await Promise.all(
+        itemsWithDesigns.map(async (item, itemIdx) => {
+          const base: Record<string, unknown> = {
+            productType: item.productType,
+            color: item.color,
+            designs: await Promise.all(
+              item.designs.map(async (d, dIdx) => {
+                // Upload to Firebase Storage instead of storing base64 in Firestore
+                const base64 = await blobToBase64(d.imageUrl)
+                const url = await uploadBase64Image(
+                  base64,
+                  sharePrefix,
+                  `item${itemIdx}-${d.area}-${dIdx}.png`
+                )
+                return {
+                  area: d.area,
+                  areaName: d.areaName,
+                  imageBase64: url, // Storage URL, not base64
+                }
+              })
+            ),
+          }
+          if (item.fabricType) base.fabricType = item.fabricType
+          return base
+        })
+      )
+
+      const shareId = await createSharedCart({ items: sharedItems as any })
+      const shareUrl = `${window.location.origin}/share/cart/${shareId}`
+      const shareText = `ראו ${sharedItems.length} עיצובים שיצרתי ב-בדפוס!\n${shareUrl}`
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+      if (isMobile && navigator.share) {
+        await navigator.share({ title: 'העיצובים שלי - בדפוס', text: shareText, url: shareUrl })
+      } else {
+        try {
+          await navigator.clipboard.writeText(shareUrl)
+        } catch {
+          const ta = document.createElement('textarea')
+          ta.value = shareUrl
+          ta.style.position = 'fixed'
+          ta.style.opacity = '0'
+          document.body.appendChild(ta)
+          ta.focus()
+          ta.select()
+          document.execCommand('copy')
+          document.body.removeChild(ta)
+        }
+        alert('הקישור הועתק!')
+        window.open(shareUrl, '_blank')
+      }
+    } catch (err: any) {
+      console.error('Share all failed:', err)
+      alert(`שגיאה בשיתוף: ${err?.message || err}`)
+    } finally {
+      setSharingAll(false)
     }
   }
 
@@ -284,9 +378,23 @@ export default function CartPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">העיצובים שלי ({items.length})</h2>
-              <Link href="/designer">
-                <Button variant="outline">+ הוסף עיצוב חדש</Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                {items.filter(i => i.designs.length > 0).length >= 2 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleShareAll}
+                    disabled={sharingAll}
+                    className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                  >
+                    {sharingAll ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Share2 className="w-4 h-4 ml-1" />}
+                    שתף את כל העיצובים
+                  </Button>
+                )}
+                <Link href="/designer">
+                  <Button variant="outline" size="sm">+ הוסף עיצוב חדש</Button>
+                </Link>
+              </div>
             </div>
             <div className="space-y-4">
               {items.map((item) => (

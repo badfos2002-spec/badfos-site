@@ -98,6 +98,12 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ── Shared Carts (multiple designs) ─────────────────────────────────────
+    match /shared_carts/{cartId} {
+      allow read, create: if true;
+      allow update, delete: if isAdmin();
+    }
+
     // ── Deny everything else ──────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;

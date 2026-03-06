@@ -579,3 +579,27 @@ export async function getSharedDesign(id: string): Promise<(SharedDesignData & {
   if (!snap.exists()) return null
   return { id: snap.id, ...snap.data() } as SharedDesignData & { id: string }
 }
+
+// ============================================================================
+// Shared Cart (multiple designs)
+// ============================================================================
+
+export interface SharedCartData {
+  items: SharedDesignData[]
+}
+
+export async function createSharedCart(data: SharedCartData): Promise<string> {
+  ensureFirebase()
+  const docRef = await addDoc(collection(db!, 'shared_carts'), {
+    ...data,
+    createdAt: Timestamp.now(),
+  })
+  return docRef.id
+}
+
+export async function getSharedCart(id: string): Promise<(SharedCartData & { id: string }) | null> {
+  ensureFirebase()
+  const snap = await getDoc(doc(db!, 'shared_carts', id))
+  if (!snap.exists()) return null
+  return { id: snap.id, ...snap.data() } as SharedCartData & { id: string }
+}
