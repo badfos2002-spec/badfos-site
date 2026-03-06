@@ -3,11 +3,34 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getSharedCart, SharedDesignData } from '@/lib/db'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { TSHIRT_COLORS } from '@/lib/constants'
+import { TSHIRT_COLORS, SWEATSHIRT_COLORS, BUFF_COLORS, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
+
+const ALL_COLORS = [...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...BUFF_COLORS]
+
+function getColorLabel(colorId: string) {
+  return ALL_COLORS.find(c => c.id === colorId)?.name || colorId
+}
+
+function getColorHex(colorId: string) {
+  return ALL_COLORS.find(c => c.id === colorId)?.hex || '#000'
+}
+
+function getProductLabel(productType: string) {
+  return PRODUCT_CATEGORIES.find(c => c.id === productType)?.name || productType
+}
+
+function getProductIcon(productType: string) {
+  return PRODUCT_CATEGORIES.find(c => c.id === productType)?.icon || '👕'
+}
+
+function getFabricLabel(fabricType: string) {
+  return FABRIC_TYPES.find(f => f.id === fabricType)?.name || fabricType
+}
 
 function MockupView({ view, color, designs }: {
   view: 'front' | 'back'
@@ -27,7 +50,7 @@ function MockupView({ view, color, designs }: {
   return (
     <div className="relative w-full">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={mockupSrc} alt={view === 'front' ? 'front' : 'back'} className="w-full h-auto block" />
+      <img src={mockupSrc} alt={view === 'front' ? 'קדימה' : 'אחורה'} className="w-full h-auto block rounded-xl" />
       {viewDesigns.map((design) => {
         const overlay = DESIGN_AREA_OVERLAYS[design.area]
         if (!overlay) return null
@@ -42,6 +65,11 @@ function MockupView({ view, color, designs }: {
           />
         )
       })}
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+        <span className="bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm">
+          {view === 'front' ? 'קדימה' : 'אחורה'}
+        </span>
+      </div>
     </div>
   )
 }
@@ -49,29 +77,65 @@ function MockupView({ view, color, designs }: {
 function DesignCard({ item, index }: { item: SharedDesignData; index: number }) {
   const hasFront = item.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'front')
   const hasBack = item.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'back')
-  const colorLabel = TSHIRT_COLORS.find(c => c.id === item.color)?.name || item.color
+  const colorLabel = getColorLabel(item.color)
+  const colorHex = getColorHex(item.color)
+  const productLabel = getProductLabel(item.productType)
+  const productIcon = getProductIcon(item.productType)
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg">
-      <div className="text-center mb-3">
-        <span className="text-sm font-bold text-gray-500">#{index + 1}</span>
-        <span className="mx-2 text-gray-300">|</span>
-        <span className="text-sm text-gray-600">{colorLabel}</span>
-      </div>
-      {hasFront && hasBack ? (
-        <div className="grid grid-cols-2 gap-2">
-          <MockupView view="front" color={item.color} designs={item.designs} />
-          <MockupView view="back" color={item.color} designs={item.designs} />
+    <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+      {/* Card header */}
+      <div className="bg-gradient-to-l from-gray-50 to-white px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{productIcon}</span>
+          <span className="font-bold text-gray-800 text-sm">{productLabel}</span>
+          {item.fabricType && (
+            <>
+              <span className="text-gray-300">·</span>
+              <span className="text-xs text-gray-500">{getFabricLabel(item.fabricType)}</span>
+            </>
+          )}
         </div>
-      ) : (
-        <div className="max-w-[200px] mx-auto">
-          <MockupView
-            view={hasFront ? 'front' : 'back'}
-            color={item.color}
-            designs={item.designs}
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-4 h-4 rounded-full border border-gray-300 shadow-inner"
+            style={{ backgroundColor: colorHex }}
           />
+          <span className="text-xs text-gray-500">{colorLabel}</span>
         </div>
-      )}
+      </div>
+
+      {/* Mockup images */}
+      <div className="p-4">
+        {hasFront && hasBack ? (
+          <div className="grid grid-cols-2 gap-3">
+            <MockupView view="front" color={item.color} designs={item.designs} />
+            <MockupView view="back" color={item.color} designs={item.designs} />
+          </div>
+        ) : (
+          <div className="max-w-[220px] mx-auto">
+            <MockupView
+              view={hasFront ? 'front' : 'back'}
+              color={item.color}
+              designs={item.designs}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Design areas info */}
+      <div className="px-5 pb-4">
+        <div className="flex flex-wrap gap-1.5 justify-center">
+          {item.designs.map((d) => (
+            <span
+              key={d.area}
+              className="inline-block bg-yellow-50 text-yellow-700 text-[11px] font-medium px-2 py-0.5 rounded-full border border-yellow-200"
+            >
+              {d.areaName}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -96,7 +160,7 @@ export default function ShareCartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fffdf5]">
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf7]">
         <Loader2 className="w-12 h-12 animate-spin text-yellow-400" />
       </div>
     )
@@ -104,7 +168,8 @@ export default function ShareCartPage() {
 
   if (notFound || !cart) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#fffdf5] text-center px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#fafaf7] text-center px-4">
+        <Image src="/logo.png" alt="בדפוס" width={80} height={80} className="mb-2" />
         <p className="text-2xl font-bold text-gray-700">העיצובים לא נמצאו</p>
         <p className="text-gray-500">הקישור אינו תקין או שהעיצובים הוסרו</p>
         <Link href="/designer">
@@ -117,36 +182,46 @@ export default function ShareCartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fffdf5] relative overflow-hidden" dir="rtl">
-      {/* Background blobs */}
-      <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-gradient-radial from-[#fef08a]/60 to-transparent rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -top-48 -left-48 w-[600px] h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-[#fafaf7] relative overflow-hidden" dir="rtl">
+      {/* Subtle background decoration */}
+      <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-yellow-50/80 to-transparent pointer-events-none" />
+      <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-yellow-100/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-60 -left-60 w-[600px] h-[600px] bg-orange-100/20 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 px-4 py-12 max-w-5xl mx-auto">
-        <div className="text-center mb-8">
-          <p className="text-3xl md:text-4xl font-black text-gray-900 mb-2">
-            {cart.items.length} עיצובים מדהימים
-          </p>
-          <p className="text-gray-500">נוצרו ב-בדפוס</p>
-        </div>
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <header className="pt-8 pb-10 text-center">
+          <Link href="/" className="inline-block mb-5">
+            <Image src="/logo.png" alt="בדפוס" width={72} height={72} className="mx-auto drop-shadow-sm" />
+          </Link>
+          <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-2">
+            {cart.items.length} עיצובים שנוצרו ב-בדפוס
+          </h1>
+          <p className="text-gray-400 text-sm">שותפו איתך עיצובים מותאמים אישית</p>
+        </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        {/* Designs grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-14">
           {cart.items.map((item, i) => (
             <DesignCard key={i} item={item} index={i} />
           ))}
         </div>
 
-        <div className="text-center space-y-4">
-          <p className="text-2xl font-bold text-gray-900">רוצים גם אתם?</p>
-          <Link href="/designer">
-            <Button
-              size="lg"
-              className="rounded-full px-10 py-3 text-base md:text-lg font-bold shadow-lg hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: 'rgb(255, 195, 46)' }}
-            >
-              <span className="text-white drop-shadow">התחל לעצב</span>
-            </Button>
-          </Link>
+        {/* CTA */}
+        <div className="text-center pb-16">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 max-w-md mx-auto py-8 px-6">
+            <p className="text-xl font-bold text-gray-900 mb-1">אהבת? גם אתה יכול לעצב</p>
+            <p className="text-gray-400 text-sm mb-5">עצב חולצה מותאמת אישית תוך דקות</p>
+            <Link href="/designer">
+              <Button
+                size="lg"
+                className="rounded-full px-10 py-3 text-base font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+                style={{ backgroundColor: 'rgb(255, 195, 46)' }}
+              >
+                <span className="text-white drop-shadow">התחל לעצב עכשיו</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
