@@ -16,6 +16,22 @@ export const metadata: Metadata = {
     description: 'עצבו חולצות מותאמות אישית עם הדפסה איכותית',
     locale: 'he_IL',
     type: 'website',
+    url: 'https://badfos.co.il',
+    siteName: 'בדפוס',
+    images: [
+      {
+        url: 'https://badfos.co.il/logo.png',
+        width: 512,
+        height: 512,
+        alt: 'בדפוס - הדפסת חולצות בעיצוב אישי',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
+    description: 'עצבו חולצות מותאמות אישית עם הדפסה איכותית',
+    images: ['https://badfos.co.il/logo.png'],
   },
   verification: {
     other: {

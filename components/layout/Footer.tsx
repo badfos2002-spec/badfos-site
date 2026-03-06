@@ -117,7 +117,7 @@ export default function Footer() {
                 <Facebook className="h-5 w-5 text-white" />
               </a>
               <a
-                href="https://www.tiktok.com"
+                href={CONTACT_INFO.tiktok}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-800 hover:bg-yellow-600 rounded-lg flex items-center justify-center transition-colors"

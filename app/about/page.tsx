@@ -99,13 +99,11 @@ export default function AboutPage() {
 
             {/* Image */}
             <div className="relative">
-              <div className="relative w-full h-[400px] lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
-                  <div className="text-center text-gray-700" dir="rtl">
-                    <div className="text-6xl mb-4">👕</div>
-                    <p className="text-2xl font-bold">תמונת אודות</p>
-                    <p className="text-sm opacity-75 mt-2">600x500</p>
-                  </div>
+              <div className="relative w-full h-[400px] lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center">
+                <div className="text-center text-white px-8">
+                  <div className="text-7xl mb-6">👕</div>
+                  <h2 className="text-3xl font-bold mb-2">בדפוס</h2>
+                  <p className="text-lg text-indigo-200">הדפסת חולצות בעיצוב אישי</p>
                 </div>
               </div>
 
@@ -161,13 +159,11 @@ export default function AboutPage() {
         <div className="mx-auto max-w-[1536px] px-4 md:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Image */}
-            <div className="relative w-full h-[400px] rounded-3xl overflow-hidden shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
-                <div className="text-center text-gray-700" dir="rtl">
-                  <div className="text-6xl mb-4">⚙️</div>
-                  <p className="text-2xl font-bold">תהליך העבודה</p>
-                  <p className="text-sm opacity-75 mt-2">600x400</p>
-                </div>
+            <div className="relative w-full h-[400px] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-600 to-cyan-700 flex items-center justify-center">
+              <div className="text-center text-white px-8">
+                <div className="text-7xl mb-6">⚙️</div>
+                <h2 className="text-3xl font-bold mb-2">תהליך העבודה</h2>
+                <p className="text-lg text-blue-200">עיצוב, הדפסה, משלוח</p>
               </div>
             </div>
 

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /share/
+Disallow: /payment/
+
+Sitemap: https://badfos.co.il/sitemap.xml

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Star, User, Upload, Loader2, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +29,7 @@ const FALLBACK: DisplayReview[] = [
 ]
 
 export default function ReviewsPage() {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [reviews, setReviews] = useState<DisplayReview[]>(FALLBACK)
   const [loading, setLoading] = useState(true)
@@ -237,12 +238,16 @@ export default function ReviewsPage() {
                     <label className="block text-sm font-medium mb-2 text-right">
                       העלאת תמונה (רשות)
                     </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-yellow-400 transition-colors cursor-pointer">
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-yellow-400 transition-colors cursor-pointer"
+                    >
                       <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                       <p className="text-sm text-gray-600">
                         {formData.image ? formData.image.name : 'לחץ להעלאת תמונה'}
                       </p>
                       <input
+                        ref={fileInputRef}
                         type="file"
                         accept="image/*"
                         className="hidden"

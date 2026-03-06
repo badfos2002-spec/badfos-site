@@ -306,6 +306,7 @@ export const CONTACT_INFO = {
   email: 'badfos2002@gmail.com',
   instagram: 'https://instagram.com/badfos',
   facebook: 'https://facebook.com/badfos',
+  tiktok: 'https://www.tiktok.com/@badfos',
   address: 'ראשון לציון, ישראל',
 } as const
 

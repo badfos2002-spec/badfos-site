@@ -1,15 +1,18 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/hooks/useCart'
 
 export default function PaymentSuccessPage() {
-  const { clearCart } = useCart()
+  const clearCart = useCart((state) => state.clearCart)
+  const didClear = useRef(false)
 
   useEffect(() => {
+    if (didClear.current) return
+    didClear.current = true
     clearCart()
     sessionStorage.removeItem('badfos_pending_order')
   }, [clearCart])
