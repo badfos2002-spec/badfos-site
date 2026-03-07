@@ -270,7 +270,7 @@ export default function ShareCartPage() {
 
       {/* Designs grid */}
       <div className="relative z-10 mx-auto max-w-[900px] px-4 sm:px-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {visibleItems.map((item, i) => (
             <DesignCard
               key={i}
