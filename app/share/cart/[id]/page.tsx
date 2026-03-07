@@ -107,7 +107,7 @@ function MockupView({ view, color, designs, onClick }: {
   return (
     <div className={`relative w-full ${onClick ? 'cursor-pointer group' : ''}`} onClick={onClick}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={mockupSrc} alt={view === 'front' ? 'קדימה' : 'אחורה'} className="w-full h-auto block rounded-xl group-hover:brightness-95 transition-all duration-200" />
+      <img src={mockupSrc} alt={view === 'front' ? 'קדימה' : 'אחורה'} className="w-full h-auto block rounded-xl group-hover:brightness-[0.97] transition-all duration-200" />
       {viewDesigns.map((design) => {
         const overlay = DESIGN_AREA_OVERLAYS[design.area]
         if (!overlay) return null
@@ -122,11 +122,6 @@ function MockupView({ view, color, designs, onClick }: {
           />
         )
       })}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-        <span className="bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm">
-          {view === 'front' ? 'קדימה' : 'אחורה'}
-        </span>
-      </div>
     </div>
   )
 }
@@ -140,16 +135,16 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
   const productIcon = getProductIcon(item.productType)
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-100">
-      {/* Mockup images */}
-      <div className="p-3">
+    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+      {/* Mockups - big and prominent */}
+      <div className="bg-gray-50/50 p-5 sm:p-6">
         {hasFront && hasBack ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
             <MockupView view="back" color={item.color} designs={item.designs} onClick={() => onClickMockup('back', item.color, item.designs)} />
           </div>
         ) : (
-          <div className="max-w-[200px] mx-auto">
+          <div className="max-w-[260px] mx-auto">
             <MockupView
               view={hasFront ? 'front' : 'back'}
               color={item.color}
@@ -160,31 +155,28 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
         )}
       </div>
 
-      {/* Card footer - compact info */}
-      <div className="px-4 pb-3 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+      {/* Info strip */}
+      <div className="px-5 py-3 flex items-center justify-between border-t border-gray-50">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
           <span>{productIcon}</span>
-          <span className="font-medium text-gray-700">{productLabel}</span>
+          <span className="font-medium">{productLabel}</span>
           {item.fabricType && (
-            <>
-              <span className="text-gray-300">·</span>
-              <span>{getFabricLabel(item.fabricType)}</span>
-            </>
+            <span className="text-gray-400 text-xs">({getFabricLabel(item.fabricType)})</span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
           <div
-            className="w-3.5 h-3.5 rounded-full border border-gray-200"
+            className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"
             style={{ backgroundColor: colorHex }}
           />
-          <span className="text-xs text-gray-400">{colorLabel}</span>
+          <span className="text-sm text-gray-500">{colorLabel}</span>
         </div>
       </div>
     </div>
   )
 }
 
-const INITIAL_SHOW = 4
+const INITIAL_SHOW = 6
 
 export default function ShareCartPage() {
   const params = useParams()
@@ -258,39 +250,76 @@ export default function ShareCartPage() {
     )
   }
 
+  const visibleItems = showAll ? cart.items : cart.items.slice(0, INITIAL_SHOW)
+  const hasMore = !showAll && cart.items.length > INITIAL_SHOW
+
   return (
-    <div className="min-h-screen bg-[#fafaf7] relative" dir="rtl">
-      {/* Top bar */}
-      <div className="border-b border-gray-100 bg-white/60 backdrop-blur-sm sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="בדפוס" width={36} height={36} />
-            <span className="font-bold text-gray-800 text-sm hidden sm:inline">בדפוס</span>
+    <div className="min-h-screen bg-[#fafaf7]" dir="rtl">
+
+      {/* Header */}
+      <header className="bg-white border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link href="/">
+            <Image src="/logo.png" alt="בדפוס" width={40} height={40} />
           </Link>
           <Link href="/designer">
             <Button
               size="sm"
-              className="rounded-full px-5 text-xs font-bold"
+              className="rounded-full px-6 text-sm font-bold"
               style={{ backgroundColor: 'rgb(255, 195, 46)' }}
             >
               <span className="text-white">התחל לעצב</span>
             </Button>
           </Link>
         </div>
-      </div>
+      </header>
 
-      {/* Hero title */}
-      <div className="text-center pt-10 pb-8 px-4">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 mb-1.5">
-          {cart.items.length} עיצובים מותאמים אישית
-        </h1>
-        <p className="text-gray-400 text-sm">לחץ על עיצוב כדי להגדיל</p>
-      </div>
+      {/* Page content */}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6">
 
-      {/* Designs grid */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {(showAll ? cart.items : cart.items.slice(0, INITIAL_SHOW)).map((item, i) => (
+        {/* Title */}
+        <div className="pt-10 pb-2 text-center">
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
+            {cart.items.length} עיצובים מותאמים אישית
+          </h1>
+        </div>
+
+        {/* Inline coupon banner */}
+        <div className="my-6 mx-auto max-w-xl">
+          {!couponCode ? (
+            <div className="flex items-center justify-between gap-4 bg-white rounded-xl border border-yellow-200 px-5 py-3">
+              <div>
+                <p className="text-sm font-bold text-gray-900">5% הנחה על ההזמנה הראשונה</p>
+                <p className="text-xs text-gray-400">חד פעמי · 7 ימים</p>
+              </div>
+              <Button
+                onClick={handleGetCoupon}
+                disabled={couponLoading}
+                size="sm"
+                className="rounded-full px-5 text-xs font-bold bg-gray-900 hover:bg-gray-800 text-white flex-shrink-0"
+              >
+                {couponLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'קבל קופון'}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-4 bg-white rounded-xl border border-green-200 px-5 py-3">
+              <div className="flex items-center gap-3">
+                <span className="font-mono font-black text-lg tracking-wider text-gray-900">{couponCode}</span>
+                <button
+                  onClick={handleCopyCoupon}
+                  className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 flex-shrink-0">הזן בעמוד התשלום</p>
+            </div>
+          )}
+        </div>
+
+        {/* Designs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 pb-6">
+          {visibleItems.map((item, i) => (
             <DesignCard
               key={i}
               item={item}
@@ -300,11 +329,11 @@ export default function ShareCartPage() {
         </div>
 
         {/* Show more */}
-        {!showAll && cart.items.length > INITIAL_SHOW && (
-          <div className="text-center mt-6">
+        {hasMore && (
+          <div className="text-center pb-6">
             <button
               onClick={() => setShowAll(true)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors py-2 px-4 rounded-full border border-gray-200 hover:border-gray-300 bg-white"
             >
               הצג עוד {cart.items.length - INITIAL_SHOW} עיצובים
               <ChevronDown className="w-4 h-4" />
@@ -312,76 +341,22 @@ export default function ShareCartPage() {
           </div>
         )}
 
-        <div className="mb-16" />
-      </div>
-
-      {/* Bottom section */}
-      <div className="bg-white border-t border-gray-100">
-        <div className="max-w-lg mx-auto px-4 sm:px-6 py-10 text-center space-y-6">
-
-          {/* Coupon */}
-          <div className="bg-gradient-to-bl from-yellow-50 to-gray-50 rounded-2xl border border-yellow-100/80 p-6">
-            {!couponCode ? (
-              <>
-                <p className="text-lg font-bold text-gray-900 mb-1">5% הנחה על ההזמנה הראשונה</p>
-                <p className="text-xs text-gray-400 mb-4">קופון חד פעמי, תקף ל-7 ימים</p>
-                <Button
-                  onClick={handleGetCoupon}
-                  disabled={couponLoading}
-                  className="rounded-full px-8 py-2.5 text-sm font-bold bg-gray-900 hover:bg-gray-800 text-white"
-                >
-                  {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'קבל קופון'}
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-gray-500 mb-2">הקופון שלך:</p>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl font-mono font-black tracking-wider text-gray-900">{couponCode}</span>
-                  <button
-                    onClick={handleCopyCoupon}
-                    className="p-1.5 rounded-lg hover:bg-white/80 transition-colors"
-                    title="העתק"
-                  >
-                    {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-gray-400" />}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400">הזן את הקוד בעמוד התשלום</p>
-              </>
-            )}
-          </div>
-
-          {/* CTA */}
-          <div>
-            <p className="text-lg font-bold text-gray-900 mb-1">רוצה גם? עצב חולצה תוך דקות</p>
-            <p className="text-sm text-gray-400 mb-4">איכות מעולה · משלוח מהיר · מחיר הוגן</p>
-            <Link href="/designer">
-              <Button
-                size="lg"
-                className="rounded-full px-10 py-3 text-base font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-                style={{ backgroundColor: 'rgb(255, 195, 46)' }}
-              >
-                <span className="text-white drop-shadow">התחל לעצב עכשיו</span>
-              </Button>
-            </Link>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Mobile sticky CTA */}
-      <div className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        <div className="px-4 py-3 flex items-center justify-center">
-          <Link href="/designer" className="w-full">
+        {/* Bottom CTA */}
+        <div className="text-center py-12 border-t border-gray-100 mt-6">
+          <p className="text-lg font-bold text-gray-900 mb-1">רוצה גם? עצב חולצה תוך דקות</p>
+          <p className="text-sm text-gray-400 mb-5">איכות מעולה · משלוח מהיר · מחיר הוגן</p>
+          <Link href="/designer">
             <Button
-              className="w-full rounded-full py-2.5 text-sm font-bold shadow-md"
+              size="lg"
+              className="rounded-full px-10 py-3 text-base font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
               style={{ backgroundColor: 'rgb(255, 195, 46)' }}
             >
-              <span className="text-white drop-shadow">התחל לעצב</span>
+              <span className="text-white drop-shadow">התחל לעצב עכשיו</span>
             </Button>
           </Link>
         </div>
-      </div>
+
+      </main>
 
       {/* Lightbox */}
       {lightbox && (
