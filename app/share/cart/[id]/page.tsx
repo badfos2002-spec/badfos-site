@@ -265,20 +265,19 @@ export default function ShareCartPage() {
         </div>
       </header>
 
-      {/* Hero */}
-      <div className="relative z-10 text-center pt-12 sm:pt-16 pb-8 px-4">
-        <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-[#fef9c3] rounded-full text-[#854d0e] text-sm font-medium border border-[#fef08a] mb-5">
+      {/* Title */}
+      <div className="relative z-10 text-center pt-8 sm:pt-10 pb-6 px-4">
+        <div className="inline-flex items-center gap-2 px-4 py-1 bg-[#fef9c3] rounded-full text-[#854d0e] text-sm font-medium border border-[#fef08a] mb-3">
           {cart.items.length} עיצובים שותפו איתך
         </div>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#1e293b] leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1e293b]">
           עיצובים מותאמים אישית
         </h1>
-        <p className="text-lg text-[#94a3b8] mt-3">לחץ על עיצוב כדי להגדיל</p>
       </div>
 
       {/* Designs grid */}
-      <div className="relative z-10 mx-auto max-w-[1100px] px-4 sm:px-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+      <div className="relative z-10 mx-auto max-w-[900px] px-4 sm:px-6">
+        <div className="grid grid-cols-2 gap-4">
           {visibleItems.map((item, i) => (
             <DesignCard
               key={i}
@@ -290,54 +289,47 @@ export default function ShareCartPage() {
 
         {/* Show more */}
         {hasMore && (
-          <div className="text-center mt-8">
+          <div className="text-center mt-6">
             <button
               onClick={() => setShowAll(true)}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#854d0e] bg-[#fef9c3] hover:bg-[#fef08a] border border-[#fef08a] rounded-full px-6 py-2.5 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#854d0e] bg-[#fef9c3] hover:bg-[#fef08a] border border-[#fef08a] rounded-full px-5 py-2 transition-colors"
             >
               הצג עוד {cart.items.length - INITIAL_SHOW} עיצובים
               <ChevronDown className="w-4 h-4" />
             </button>
           </div>
         )}
-      </div>
 
-      {/* Coupon section */}
-      <div className="relative z-10 mx-auto max-w-xl px-4 sm:px-6 mt-16 mb-6">
-        <div className="bg-white rounded-2xl border border-[#fef08a] shadow-md px-6 py-5 text-center">
+        {/* Coupon - inline in the flow */}
+        <div className="mt-8 bg-white rounded-xl border border-[#fef08a] px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
           {!couponCode ? (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-center sm:text-right">
-                <p className="text-base font-bold text-[#1e293b]">5% הנחה על ההזמנה הראשונה</p>
-                <p className="text-xs text-[#94a3b8] mt-0.5">קופון חד פעמי · תקף ל-7 ימים</p>
-              </div>
+            <>
+              <p className="text-sm font-bold text-[#1e293b]">5% הנחה על ההזמנה הראשונה <span className="font-normal text-[#94a3b8]">· חד פעמי · 7 ימים</span></p>
               <Button
                 onClick={handleGetCoupon}
                 disabled={couponLoading}
-                className="rounded-full px-6 py-2 text-sm font-bold bg-[#1e293b] hover:bg-[#334155] text-white flex-shrink-0"
+                size="sm"
+                className="rounded-full px-5 text-xs font-bold bg-[#1e293b] hover:bg-[#334155] text-white flex-shrink-0"
               >
-                {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'קבל קופון'}
+                {couponLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'קבל קופון'}
               </Button>
-            </div>
+            </>
           ) : (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="font-mono font-black text-xl tracking-widest text-[#1e293b]">{couponCode}</span>
-                <button
-                  onClick={handleCopyCoupon}
-                  className="p-1.5 rounded-lg hover:bg-[#fef9c3] transition-colors"
-                >
+            <>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-black text-lg tracking-widest text-[#1e293b]">{couponCode}</span>
+                <button onClick={handleCopyCoupon} className="p-1 rounded hover:bg-[#fef9c3] transition-colors">
                   {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-[#94a3b8]" />}
                 </button>
               </div>
-              <p className="text-xs text-[#94a3b8]">הזן בעמוד התשלום · תקף 7 ימים</p>
-            </div>
+              <p className="text-xs text-[#94a3b8]">הזן בעמוד התשלום</p>
+            </>
           )}
         </div>
       </div>
 
-      {/* Final CTA - matching site style */}
-      <div className="relative z-10 mt-10">
+      {/* Final CTA */}
+      <div className="relative z-10 mt-12">
         <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 text-white py-16 sm:py-20 relative overflow-hidden">
           <div className="absolute top-10 right-10 w-40 h-40 bg-yellow-500/30 rounded-full blur-2xl" />
           <div className="absolute bottom-10 left-10 w-52 h-52 bg-pink-500/20 rounded-full blur-2xl" />
