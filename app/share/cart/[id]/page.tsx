@@ -137,7 +137,7 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
   return (
     <div className="rounded-2xl border border-gray-200/80 overflow-hidden bg-white/50 backdrop-blur-sm">
       {/* Mockups - always 2 columns for consistent size */}
-      <div className="p-4">
+      <div className="p-5 sm:p-6">
         <div className="grid grid-cols-2 gap-3">
           <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
           {hasBack ? (
@@ -269,8 +269,8 @@ export default function ShareCartPage() {
       </div>
 
       {/* Designs grid */}
-      <div className="relative z-10 mx-auto max-w-[900px] px-4 sm:px-6">
-        <div className="grid grid-cols-3 gap-4">
+      <div className="relative z-10 mx-auto max-w-[1400px] px-4 sm:px-6">
+        <div className="grid grid-cols-3 gap-5 sm:gap-6">
           {visibleItems.map((item, i) => (
             <DesignCard
               key={i}
