@@ -136,23 +136,16 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
 
   return (
     <div className="rounded-2xl border border-gray-200/80 overflow-hidden bg-white/50 backdrop-blur-sm">
-      {/* Mockups */}
+      {/* Mockups - always 2 columns for consistent size */}
       <div className="p-4">
-        {hasFront && hasBack ? (
-          <div className="grid grid-cols-2 gap-3">
-            <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
+        <div className="grid grid-cols-2 gap-3">
+          <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
+          {hasBack ? (
             <MockupView view="back" color={item.color} designs={item.designs} onClick={() => onClickMockup('back', item.color, item.designs)} />
-          </div>
-        ) : (
-          <div className="max-w-[260px] mx-auto">
-            <MockupView
-              view={hasFront ? 'front' : 'back'}
-              color={item.color}
-              designs={item.designs}
-              onClick={() => onClickMockup(hasFront ? 'front' : 'back', item.color, item.designs)}
-            />
-          </div>
-        )}
+          ) : (
+            <div className="w-full" />
+          )}
+        </div>
       </div>
 
       {/* Info - thin strip */}
