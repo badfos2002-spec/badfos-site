@@ -135,16 +135,16 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
   const productIcon = getProductIcon(item.productType)
 
   return (
-    <div className="bg-white rounded-3xl overflow-hidden shadow-[0_2px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] transition-shadow duration-300">
+    <div className="rounded-2xl border border-gray-200/80 overflow-hidden bg-white/50 backdrop-blur-sm">
       {/* Mockups */}
-      <div className="p-6 sm:p-8">
+      <div className="p-4">
         {hasFront && hasBack ? (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
             <MockupView view="back" color={item.color} designs={item.designs} onClick={() => onClickMockup('back', item.color, item.designs)} />
           </div>
         ) : (
-          <div className="max-w-[280px] mx-auto">
+          <div className="max-w-[260px] mx-auto">
             <MockupView
               view={hasFront ? 'front' : 'back'}
               color={item.color}
@@ -155,21 +155,12 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
         )}
       </div>
 
-      {/* Info */}
-      <div className="px-6 pb-5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-base">{productIcon}</span>
-          <span className="text-sm font-semibold text-[#1e293b]">{productLabel}</span>
-          {item.fabricType && (
-            <span className="text-xs text-[#94a3b8]">{getFabricLabel(item.fabricType)}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-5 h-5 rounded-full border-2 border-white shadow-md"
-            style={{ backgroundColor: colorHex }}
-          />
-          <span className="text-sm text-[#64748b]">{colorLabel}</span>
+      {/* Info - thin strip */}
+      <div className="px-4 py-2.5 border-t border-gray-100 flex items-center justify-between text-xs text-[#64748b]">
+        <span>{productIcon} {productLabel}{item.fabricType ? ` · ${getFabricLabel(item.fabricType)}` : ''}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colorHex }} />
+          <span>{colorLabel}</span>
         </div>
       </div>
     </div>
