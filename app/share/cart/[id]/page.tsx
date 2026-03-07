@@ -4,11 +4,11 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getSharedCart, SharedDesignData } from '@/lib/db'
+import { getSharedCart, SharedDesignData, createShareCoupon } from '@/lib/db'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { TSHIRT_COLORS, SWEATSHIRT_COLORS, BUFF_COLORS, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
-import { Loader2, X } from 'lucide-react'
+import { Loader2, X, Truck, Star, ShieldCheck, Copy, Check } from 'lucide-react'
 
 const ALL_COLORS = [...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...BUFF_COLORS]
 
@@ -198,6 +198,12 @@ function DesignCard({ item, index, onClickMockup }: { item: SharedDesignData; in
   )
 }
 
+const BENEFITS = [
+  { icon: Star, title: 'איכות מעולה', desc: 'הדפסה באיכות גבוהה שנשארת' },
+  { icon: Truck, title: 'משלוח מהיר', desc: 'עד 5 ימי עסקים לכל הארץ' },
+  { icon: ShieldCheck, title: 'מחיר הוגן', desc: 'מחירים שקופים בלי הפתעות' },
+]
+
 export default function ShareCartPage() {
   const params = useParams()
   const id = params?.id as string
@@ -205,6 +211,9 @@ export default function ShareCartPage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [lightbox, setLightbox] = useState<{ view: 'front' | 'back'; color: string; designs: SharedDesignData['designs'] } | null>(null)
+  const [couponCode, setCouponCode] = useState<string | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightbox(null) }
@@ -222,6 +231,26 @@ export default function ShareCartPage() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleGetCoupon = async () => {
+    if (couponCode || couponLoading) return
+    setCouponLoading(true)
+    try {
+      const code = await createShareCoupon(id)
+      setCouponCode(code)
+    } catch {
+      alert('שגיאה ביצירת קופון, נסה שוב')
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  const handleCopyCoupon = async () => {
+    if (!couponCode) return
+    await navigator.clipboard.writeText(couponCode)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   if (loading) {
     return (
@@ -247,7 +276,7 @@ export default function ShareCartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafaf7] relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen pb-20 bg-[#fafaf7] relative overflow-hidden" dir="rtl">
       {/* Subtle background decoration */}
       <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-yellow-50/80 to-transparent pointer-events-none" />
       <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-yellow-100/30 rounded-full blur-3xl pointer-events-none" />
@@ -266,7 +295,7 @@ export default function ShareCartPage() {
         </header>
 
         {/* Designs grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
           {cart.items.map((item, i) => (
             <DesignCard
               key={i}
@@ -277,9 +306,55 @@ export default function ShareCartPage() {
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="text-center pb-16">
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 max-w-md mx-auto py-8 px-6">
+        {/* Why Badfos */}
+        <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-12">
+          {BENEFITS.map((b) => (
+            <div key={b.title} className="text-center">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-yellow-50 border border-yellow-200 flex items-center justify-center">
+                <b.icon className="w-5 h-5 text-yellow-600" />
+              </div>
+              <p className="text-sm font-bold text-gray-800">{b.title}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5 hidden sm:block">{b.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Coupon + CTA */}
+        <div className="max-w-md mx-auto mb-10 space-y-4">
+          {/* Coupon card */}
+          <div className="bg-gradient-to-l from-yellow-50 to-white rounded-2xl shadow-md border border-yellow-100 py-5 px-6 text-center">
+            {!couponCode ? (
+              <>
+                <p className="text-base font-bold text-gray-900 mb-1">קבל 5% הנחה על ההזמנה הראשונה</p>
+                <p className="text-xs text-gray-400 mb-3">קופון חד פעמי, תקף ל-7 ימים</p>
+                <Button
+                  onClick={handleGetCoupon}
+                  disabled={couponLoading}
+                  className="rounded-full px-8 py-2 text-sm font-bold bg-gray-900 hover:bg-gray-800 text-white"
+                >
+                  {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'קבל קופון'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-2">הקופון שלך:</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-xl font-mono font-black tracking-wider text-gray-900">{couponCode}</span>
+                  <button
+                    onClick={handleCopyCoupon}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                    title="העתק"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400">הזן את הקוד בעמוד התשלום - תקף ל-7 ימים</p>
+              </>
+            )}
+          </div>
+
+          {/* CTA card */}
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 py-8 px-6 text-center">
             <p className="text-xl font-bold text-gray-900 mb-1">אהבת? גם אתה יכול לעצב</p>
             <p className="text-gray-400 text-sm mb-5">עצב חולצה מותאמת אישית תוך דקות</p>
             <Link href="/designer">
@@ -292,6 +367,24 @@ export default function ShareCartPage() {
               </Button>
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Sticky bottom CTA */}
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between" dir="rtl">
+          <div className="hidden sm:block">
+            <p className="text-sm font-bold text-gray-800">רוצה חולצה מעוצבת?</p>
+            <p className="text-xs text-gray-400">עצב בקליק, קבל עד הבית</p>
+          </div>
+          <Link href="/designer">
+            <Button
+              className="rounded-full px-8 py-2.5 text-sm font-bold shadow-md hover:shadow-lg transition-all sm:px-10"
+              style={{ backgroundColor: 'rgb(255, 195, 46)' }}
+            >
+              <span className="text-white drop-shadow">התחל לעצב</span>
+            </Button>
+          </Link>
         </div>
       </div>
 

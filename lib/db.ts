@@ -382,6 +382,28 @@ export async function createCoupon(orderId: string): Promise<string> {
 }
 
 /**
+ * Create a one-time share coupon (5%, 7 days expiry)
+ */
+export async function createShareCoupon(shareCartId: string): Promise<string> {
+  const randomPart = Math.random().toString(36).substring(2, 9).toUpperCase()
+  const code = `SHARE5-${randomPart}`
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + 7) // 7 days
+
+  const coupon: Omit<Coupon, 'id' | 'createdAt'> = {
+    code,
+    discountPercent: 5,
+    isUsed: false,
+    isActive: true,
+    expiresAt: Timestamp.fromDate(expiresAt),
+    orderId: `share_${shareCartId}`,
+  }
+
+  await createDocument<Coupon>('coupons', coupon)
+  return code
+}
+
+/**
  * Validate and get coupon by code
  */
 export async function validateCoupon(code: string): Promise<Coupon | null> {
