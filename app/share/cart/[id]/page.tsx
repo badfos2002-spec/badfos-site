@@ -293,29 +293,32 @@ export default function ShareCartPage() {
           </div>
         )}
 
-        {/* Coupon - inline in the flow */}
-        <div className="mt-8 bg-white rounded-xl border border-[#fef08a] px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+        {/* Coupon */}
+        <div className="mt-10 bg-gradient-to-r from-[#fef9c3] to-[#fef08a]/60 rounded-2xl border-2 border-[#fcd34d] px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
           {!couponCode ? (
             <>
-              <p className="text-sm font-bold text-[#1e293b]">5% הנחה על ההזמנה הראשונה <span className="font-normal text-[#94a3b8]">· חד פעמי · 7 ימים</span></p>
+              <div className="text-center sm:text-right">
+                <p className="text-lg font-bold text-[#1e293b]">5% הנחה על ההזמנה הראשונה</p>
+                <p className="text-sm text-[#854d0e] mt-0.5">קופון חד פעמי · תקף ל-7 ימים</p>
+              </div>
               <Button
                 onClick={handleGetCoupon}
                 disabled={couponLoading}
-                size="sm"
-                className="rounded-full px-5 text-xs font-bold bg-[#1e293b] hover:bg-[#334155] text-white flex-shrink-0"
+                className="rounded-full px-8 py-2.5 text-sm font-bold bg-[#1e293b] hover:bg-[#334155] text-white flex-shrink-0 shadow-md"
               >
-                {couponLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'קבל קופון'}
+                {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'קבל קופון'}
               </Button>
             </>
           ) : (
             <>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-black text-lg tracking-widest text-[#1e293b]">{couponCode}</span>
-                <button onClick={handleCopyCoupon} className="p-1 rounded hover:bg-[#fef9c3] transition-colors">
-                  {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-[#94a3b8]" />}
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-[#854d0e]">הקופון שלך:</span>
+                <span className="font-mono font-black text-2xl tracking-widest text-[#1e293b]">{couponCode}</span>
+                <button onClick={handleCopyCoupon} className="p-1.5 rounded-lg bg-white/60 hover:bg-white transition-colors">
+                  {copied ? <Check className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5 text-[#854d0e]" />}
                 </button>
               </div>
-              <p className="text-xs text-[#94a3b8]">הזן בעמוד התשלום</p>
+              <p className="text-sm text-[#854d0e]">הזן בעמוד התשלום · תקף 7 ימים</p>
             </>
           )}
         </div>
