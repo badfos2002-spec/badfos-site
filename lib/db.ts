@@ -385,6 +385,13 @@ export async function createCoupon(orderId: string): Promise<string> {
  * Create a one-time share coupon (5%, 7 days expiry)
  */
 export async function createShareCoupon(shareCartId: string): Promise<string> {
+  ensureFirebase()
+  // Check if a coupon already exists for this share link
+  const existing = await queryDocuments<Coupon>('coupons', [
+    { field: 'orderId', operator: '==', value: `share_${shareCartId}` },
+  ])
+  if (existing.length > 0) return existing[0].code
+
   const randomPart = Math.random().toString(36).substring(2, 9).toUpperCase()
   const code = `SHARE5-${randomPart}`
   const expiresAt = new Date()
