@@ -107,7 +107,7 @@ function MockupView({ view, color, designs, onClick }: {
   return (
     <div className={`relative w-full ${onClick ? 'cursor-pointer group' : ''}`} onClick={onClick}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={mockupSrc} alt={view === 'front' ? 'קדימה' : 'אחורה'} className="w-full h-auto block rounded-xl group-hover:brightness-[0.97] transition-all duration-200" />
+      <img src={mockupSrc} alt={view === 'front' ? 'קדימה' : 'אחורה'} className="w-full h-auto block rounded-xl group-hover:scale-[1.02] transition-transform duration-200" />
       {viewDesigns.map((design) => {
         const overlay = DESIGN_AREA_OVERLAYS[design.area]
         if (!overlay) return null
@@ -135,16 +135,16 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
   const productIcon = getProductIcon(item.productType)
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
-      {/* Mockups - big and prominent */}
-      <div className="bg-gray-50/50 p-5 sm:p-6">
+    <div className="bg-white rounded-3xl overflow-hidden shadow-[0_2px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] transition-shadow duration-300">
+      {/* Mockups */}
+      <div className="p-6 sm:p-8">
         {hasFront && hasBack ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
             <MockupView view="back" color={item.color} designs={item.designs} onClick={() => onClickMockup('back', item.color, item.designs)} />
           </div>
         ) : (
-          <div className="max-w-[260px] mx-auto">
+          <div className="max-w-[280px] mx-auto">
             <MockupView
               view={hasFront ? 'front' : 'back'}
               color={item.color}
@@ -155,21 +155,21 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
         )}
       </div>
 
-      {/* Info strip */}
-      <div className="px-5 py-3 flex items-center justify-between border-t border-gray-50">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span>{productIcon}</span>
-          <span className="font-medium">{productLabel}</span>
+      {/* Info */}
+      <div className="px-6 pb-5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-base">{productIcon}</span>
+          <span className="text-sm font-semibold text-[#1e293b]">{productLabel}</span>
           {item.fabricType && (
-            <span className="text-gray-400 text-xs">({getFabricLabel(item.fabricType)})</span>
+            <span className="text-xs text-[#94a3b8]">{getFabricLabel(item.fabricType)}</span>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <div
-            className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"
+            className="w-5 h-5 rounded-full border-2 border-white shadow-md"
             style={{ backgroundColor: colorHex }}
           />
-          <span className="text-sm text-gray-500">{colorLabel}</span>
+          <span className="text-sm text-[#64748b]">{colorLabel}</span>
         </div>
       </div>
     </div>
@@ -229,20 +229,20 @@ export default function ShareCartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafaf7]">
-        <Loader2 className="w-12 h-12 animate-spin text-yellow-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fffdf5]">
+        <Loader2 className="w-12 h-12 animate-spin text-[#f59e0b]" />
       </div>
     )
   }
 
   if (notFound || !cart) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#fafaf7] text-center px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#fffdf5] text-center px-4">
         <Image src="/logo.png" alt="בדפוס" width={80} height={80} className="mb-2" />
-        <p className="text-2xl font-bold text-gray-700">העיצובים לא נמצאו</p>
-        <p className="text-gray-500">הקישור אינו תקין או שהעיצובים הוסרו</p>
+        <p className="text-2xl font-bold text-[#1e293b]">העיצובים לא נמצאו</p>
+        <p className="text-[#94a3b8]">הקישור אינו תקין או שהעיצובים הוסרו</p>
         <Link href="/designer">
-          <Button className="mt-2 rounded-full px-8 font-bold text-white" style={{ backgroundColor: 'rgb(255, 195, 46)' }}>
+          <Button className="mt-2 bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold rounded-full px-8 shadow-lg">
             התחל לעצב
           </Button>
         </Link>
@@ -254,71 +254,40 @@ export default function ShareCartPage() {
   const hasMore = !showAll && cart.items.length > INITIAL_SHOW
 
   return (
-    <div className="min-h-screen bg-[#fafaf7]" dir="rtl">
+    <div className="min-h-screen bg-[#fffdf5] relative overflow-hidden" dir="rtl">
+      {/* Background blobs - matching the site */}
+      <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-gradient-radial from-[#fef08a]/60 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-48 -left-48 w-[600px] h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-30 w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm">
+        <div className="mx-auto max-w-[1536px] px-4 md:px-6 h-16 flex items-center justify-between">
           <Link href="/">
-            <Image src="/logo.png" alt="בדפוס" width={40} height={40} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="בדפוס" className="h-10 w-auto" />
           </Link>
           <Link href="/designer">
-            <Button
-              size="sm"
-              className="rounded-full px-6 text-sm font-bold"
-              style={{ backgroundColor: 'rgb(255, 195, 46)' }}
-            >
-              <span className="text-white">התחל לעצב</span>
+            <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold rounded-full px-6 shadow-md hover:shadow-lg transition-all hover:scale-105 duration-200">
+              התחל לעצב
             </Button>
           </Link>
         </div>
       </header>
 
-      {/* Page content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6">
-
-        {/* Title */}
-        <div className="pt-10 pb-2 text-center">
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
-            {cart.items.length} עיצובים מותאמים אישית
-          </h1>
+      {/* Hero */}
+      <div className="relative z-10 text-center pt-12 sm:pt-16 pb-8 px-4">
+        <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-[#fef9c3] rounded-full text-[#854d0e] text-sm font-medium border border-[#fef08a] mb-5">
+          {cart.items.length} עיצובים שותפו איתך
         </div>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#1e293b] leading-tight">
+          עיצובים מותאמים אישית
+        </h1>
+        <p className="text-lg text-[#94a3b8] mt-3">לחץ על עיצוב כדי להגדיל</p>
+      </div>
 
-        {/* Inline coupon banner */}
-        <div className="my-6 mx-auto max-w-xl">
-          {!couponCode ? (
-            <div className="flex items-center justify-between gap-4 bg-white rounded-xl border border-yellow-200 px-5 py-3">
-              <div>
-                <p className="text-sm font-bold text-gray-900">5% הנחה על ההזמנה הראשונה</p>
-                <p className="text-xs text-gray-400">חד פעמי · 7 ימים</p>
-              </div>
-              <Button
-                onClick={handleGetCoupon}
-                disabled={couponLoading}
-                size="sm"
-                className="rounded-full px-5 text-xs font-bold bg-gray-900 hover:bg-gray-800 text-white flex-shrink-0"
-              >
-                {couponLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'קבל קופון'}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between gap-4 bg-white rounded-xl border border-green-200 px-5 py-3">
-              <div className="flex items-center gap-3">
-                <span className="font-mono font-black text-lg tracking-wider text-gray-900">{couponCode}</span>
-                <button
-                  onClick={handleCopyCoupon}
-                  className="p-1 rounded-md hover:bg-gray-100 transition-colors"
-                >
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 flex-shrink-0">הזן בעמוד התשלום</p>
-            </div>
-          )}
-        </div>
-
-        {/* Designs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 pb-6">
+      {/* Designs grid */}
+      <div className="relative z-10 mx-auto max-w-[1100px] px-4 sm:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           {visibleItems.map((item, i) => (
             <DesignCard
               key={i}
@@ -330,33 +299,68 @@ export default function ShareCartPage() {
 
         {/* Show more */}
         {hasMore && (
-          <div className="text-center pb-6">
+          <div className="text-center mt-8">
             <button
               onClick={() => setShowAll(true)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors py-2 px-4 rounded-full border border-gray-200 hover:border-gray-300 bg-white"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#854d0e] bg-[#fef9c3] hover:bg-[#fef08a] border border-[#fef08a] rounded-full px-6 py-2.5 transition-colors"
             >
               הצג עוד {cart.items.length - INITIAL_SHOW} עיצובים
               <ChevronDown className="w-4 h-4" />
             </button>
           </div>
         )}
+      </div>
 
-        {/* Bottom CTA */}
-        <div className="text-center py-12 border-t border-gray-100 mt-6">
-          <p className="text-lg font-bold text-gray-900 mb-1">רוצה גם? עצב חולצה תוך דקות</p>
-          <p className="text-sm text-gray-400 mb-5">איכות מעולה · משלוח מהיר · מחיר הוגן</p>
-          <Link href="/designer">
-            <Button
-              size="lg"
-              className="rounded-full px-10 py-3 text-base font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-              style={{ backgroundColor: 'rgb(255, 195, 46)' }}
-            >
-              <span className="text-white drop-shadow">התחל לעצב עכשיו</span>
-            </Button>
-          </Link>
+      {/* Coupon section */}
+      <div className="relative z-10 mx-auto max-w-xl px-4 sm:px-6 mt-16 mb-6">
+        <div className="bg-white rounded-2xl border border-[#fef08a] shadow-md px-6 py-5 text-center">
+          {!couponCode ? (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-center sm:text-right">
+                <p className="text-base font-bold text-[#1e293b]">5% הנחה על ההזמנה הראשונה</p>
+                <p className="text-xs text-[#94a3b8] mt-0.5">קופון חד פעמי · תקף ל-7 ימים</p>
+              </div>
+              <Button
+                onClick={handleGetCoupon}
+                disabled={couponLoading}
+                className="rounded-full px-6 py-2 text-sm font-bold bg-[#1e293b] hover:bg-[#334155] text-white flex-shrink-0"
+              >
+                {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'קבל קופון'}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="font-mono font-black text-xl tracking-widest text-[#1e293b]">{couponCode}</span>
+                <button
+                  onClick={handleCopyCoupon}
+                  className="p-1.5 rounded-lg hover:bg-[#fef9c3] transition-colors"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-[#94a3b8]" />}
+                </button>
+              </div>
+              <p className="text-xs text-[#94a3b8]">הזן בעמוד התשלום · תקף 7 ימים</p>
+            </div>
+          )}
         </div>
+      </div>
 
-      </main>
+      {/* Final CTA - matching site style */}
+      <div className="relative z-10 mt-10">
+        <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 text-white py-16 sm:py-20 relative overflow-hidden">
+          <div className="absolute top-10 right-10 w-40 h-40 bg-yellow-500/30 rounded-full blur-2xl" />
+          <div className="absolute bottom-10 left-10 w-52 h-52 bg-pink-500/20 rounded-full blur-2xl" />
+          <div className="relative z-10 text-center px-4">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">רוצה גם? עצב חולצה תוך דקות</h2>
+            <p className="text-purple-200 text-base sm:text-lg mb-8">העלה תמונה, בחר עיצוב, וקבל חולצה איכותית עד הבית</p>
+            <Link href="/designer">
+              <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold px-10 py-5 h-auto text-lg rounded-full shadow-2xl hover:scale-105 transition-all duration-200">
+                התחל לעצב עכשיו
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {/* Lightbox */}
       {lightbox && (
