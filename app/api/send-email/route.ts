@@ -9,6 +9,16 @@ import { DesignMockupEmail } from '@/lib/email-templates/design-mockup'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+function escapeHtml(str: string): string {
+  if (!str) return ''
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -76,9 +86,9 @@ export async function POST(request: NextRequest) {
               <h1 style="margin: 0; color: #1e293b; font-size: 24px;">🛒 הזמנה חדשה התקבלה!</h1>
             </div>
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-              <tr><td style="padding: 8px 0; color: #64748b; width: 40%;">לקוח</td><td style="padding: 8px 0; font-weight: bold;">${newOrderCustomer.firstName} ${newOrderCustomer.lastName}</td></tr>
-              <tr><td style="padding: 8px 0; color: #64748b;">טלפון</td><td style="padding: 8px 0; font-weight: bold;">${newOrderCustomer.phone}</td></tr>
-              <tr><td style="padding: 8px 0; color: #64748b;">אימייל</td><td style="padding: 8px 0;">${newOrderCustomer.email || '—'}</td></tr>
+              <tr><td style="padding: 8px 0; color: #64748b; width: 40%;">לקוח</td><td style="padding: 8px 0; font-weight: bold;">${escapeHtml(newOrderCustomer.firstName)} ${escapeHtml(newOrderCustomer.lastName)}</td></tr>
+              <tr><td style="padding: 8px 0; color: #64748b;">טלפון</td><td style="padding: 8px 0; font-weight: bold;">${escapeHtml(newOrderCustomer.phone)}</td></tr>
+              <tr><td style="padding: 8px 0; color: #64748b;">אימייל</td><td style="padding: 8px 0;">${escapeHtml(newOrderCustomer.email) || '—'}</td></tr>
               <tr><td style="padding: 8px 0; color: #64748b;">פריטים</td><td style="padding: 8px 0;">${itemsCount}</td></tr>
               <tr><td style="padding: 8px 0; color: #64748b;">סה"כ</td><td style="padding: 8px 0; font-weight: bold; color: #f59e0b; font-size: 20px;">₪${newOrderTotal}</td></tr>
             </table>
@@ -87,7 +97,7 @@ export async function POST(request: NextRequest) {
             </div>
           </div>
         `
-        subject = `🛒 הזמנה חדשה — ${newOrderCustomer.firstName} ${newOrderCustomer.lastName} — ₪${newOrderTotal}`
+        subject = `🛒 הזמנה חדשה — ${escapeHtml(newOrderCustomer.firstName)} ${escapeHtml(newOrderCustomer.lastName)} — ₪${newOrderTotal}`
         to = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'badfos2002@gmail.com'
         break
 
@@ -117,13 +127,11 @@ export async function POST(request: NextRequest) {
       html: emailHtml,
     })
 
-    console.log('✅ Email sent successfully:', result)
-
-    return NextResponse.json({ success: true, data: result }, { status: 200 })
+    return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
-    console.error('❌ Error sending email:', error)
+    console.error('Email send error:', error)
     return NextResponse.json(
-      { error: 'Failed to send email', details: error },
+      { error: 'Failed to send email' },
       { status: 500 }
     )
   }

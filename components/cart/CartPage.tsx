@@ -67,6 +67,7 @@ export default function CartPage() {
   const [loading, setLoading] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [sharingAll, setSharingAll] = useState(false)
+  const checkoutInProgress = useRef(false)
 
   // Pre-upload cache: base64 hash → Firebase Storage URL
   const uploadCacheRef = useRef<Map<string, Promise<string>>>(new Map())
@@ -98,6 +99,7 @@ export default function CartPage() {
   }, [items])
 
   const handleCheckout = async () => {
+    if (checkoutInProgress.current) return
     if (!customerInfo || !shipping || (items.length === 0 && packageItems.length === 0)) {
       alert('נא למלא את כל הפרטים')
       return
@@ -108,6 +110,7 @@ export default function CartPage() {
       return
     }
 
+    checkoutInProgress.current = true
     setLoading(true)
 
     try {
@@ -121,7 +124,6 @@ export default function CartPage() {
       // Use pre-uploaded images from cache, fallback to upload now if needed
       const cache = uploadCacheRef.current
       const tempOrderId = tempOrderIdRef.current
-      console.time('⏱️ checkout:imageUpload')
       const itemsForOrder = await Promise.all(
         items.map(async (item) => ({
           productType: item.productType,
@@ -145,11 +147,8 @@ export default function CartPage() {
           totalPrice: item.totalPrice,
         }))
       )
-      console.timeEnd('⏱️ checkout:imageUpload')
 
       // Run Firestore order creation + payment link creation in parallel
-      console.time('⏱️ checkout:createOrder+payment')
-      console.time('⏱️ checkout:createOrder')
       const orderPromise = createOrder(stripUndefined({
         status: 'pending_payment' as const,
         paymentId: tempOrderId,
@@ -170,9 +169,8 @@ export default function CartPage() {
         discount: couponDiscount + orderCalc.quantityDiscount,
         ...(couponCode && { couponCode }),
         total: orderCalc.total,
-      })).then(id => { console.timeEnd('⏱️ checkout:createOrder'); return id })
+      }))
 
-      console.time('⏱️ checkout:paymentCreate')
       const paymentPromise = fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,10 +182,9 @@ export default function CartPage() {
           email: customerInfo.email,
           description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
         }),
-      }).then(r => r.json()).then(data => { console.timeEnd('⏱️ checkout:paymentCreate'); return data })
+      }).then(r => r.json())
 
       const [orderId, paymentData] = await Promise.all([orderPromise, paymentPromise])
-      console.timeEnd('⏱️ checkout:createOrder+payment')
 
       // Fire-and-forget: conversion events + emails
       sendGoogleAdsConversion(orderCalc.total, orderId)
@@ -224,17 +221,17 @@ export default function CartPage() {
       }
 
       if (paymentData.url) {
-        // Keep loading overlay visible — page will unload on redirect
+        clearCart()
         window.location.href = paymentData.url
         return
       } else {
-        console.error('Payment response:', paymentData)
-        throw new Error(paymentData.raw ? `Make response: ${paymentData.raw}` : (paymentData.error || 'No payment URL'))
+        throw new Error(paymentData.error || 'No payment URL')
       }
 
     } catch (error: any) {
-      console.error('❌ Checkout error:', error?.message || error)
+      console.error('Checkout error:', error?.message || error)
       alert(`אירעה שגיאה: ${error?.message || 'אנא נסו שוב.'}`)
+      checkoutInProgress.current = false
       setLoading(false)
     }
   }

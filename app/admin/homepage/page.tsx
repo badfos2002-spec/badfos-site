@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
-export const HOMEPAGE_DEFAULTS: Record<string, string> = {
+const HOMEPAGE_DEFAULTS: Record<string, string> = {
   // Hero
   hero_badge: 'עיצובים אישיים ייחודיים',
   hero_title1: 'הפוך את הרעיונות שלך',

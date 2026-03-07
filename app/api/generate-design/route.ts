@@ -37,10 +37,6 @@ export async function POST(request: NextRequest) {
     - No text unless specifically requested
     - Centered composition suitable for t-shirt placement`
 
-    console.log('🎨 Generating design with DALL-E...')
-    console.log('User prompt:', prompt)
-    console.log('Enhanced prompt:', enhancedPrompt)
-
     // Generate image using DALL-E 3
     const response = await openai.images.generate({
       model: 'dall-e-3',
@@ -57,8 +53,6 @@ export async function POST(request: NextRequest) {
       throw new Error('No image URL returned from OpenAI')
     }
 
-    console.log('✅ Design generated successfully')
-
     return NextResponse.json(
       {
         success: true,
@@ -68,7 +62,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
   } catch (error: any) {
-    console.error('❌ Error generating design:', error)
+    console.error('Generate design error:', error)
 
     // Handle specific OpenAI errors
     if (error?.response?.status === 429) {
@@ -89,10 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      {
-        error: 'Failed to generate design',
-        details: error?.message || 'Unknown error',
-      },
+      { error: 'Failed to generate design' },
       { status: 500 }
     )
   }

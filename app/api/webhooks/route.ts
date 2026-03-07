@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || ''
+
 /**
  * Webhook endpoint for Grow (Meshulam) payment notifications.
  * Uses Firebase Admin SDK (bypasses security rules).
@@ -10,8 +12,13 @@ import { adminDb } from '@/lib/firebase-admin'
  */
 export async function POST(request: NextRequest) {
   try {
+    // --- Webhook signature / secret validation ---
+    const authHeader = request.headers.get('x-webhook-secret') || request.headers.get('authorization')
+    if (WEBHOOK_SECRET && authHeader !== WEBHOOK_SECRET && authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
-    console.log('🔔 Webhook received:', JSON.stringify(body, null, 2))
 
     // Extract paymentId from various possible locations
     const paymentId =
@@ -23,10 +30,7 @@ export async function POST(request: NextRequest) {
     const transactionCode = body.transactionCode
     const paymentSum = body.paymentSum || body.amount
 
-    console.log('🔍 Extracted:', JSON.stringify({ paymentId, transactionCode, paymentSum }))
-
     if (!paymentId) {
-      console.error('❌ No paymentId found in webhook body')
       return NextResponse.json({ error: 'Missing paymentId' }, { status: 400 })
     }
 
@@ -38,20 +42,41 @@ export async function POST(request: NextRequest) {
       .get()
 
     if (snapshot.empty) {
-      console.error(`❌ No order found with paymentId: ${paymentId}`)
-      return NextResponse.json({ error: `Order not found for paymentId: ${paymentId}` }, { status: 404 })
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
     const orderDoc = snapshot.docs[0]
     const order = orderDoc.data()
-    console.log(`📦 Found order: ${orderDoc.id} (#${order.orderNumber}), current status: ${order.status}`)
+
+    // Only update if order is still pending payment (idempotency + status guard)
+    if (order.status !== 'pending_payment') {
+      return NextResponse.json({
+        success: true,
+        message: `Order already processed (status: ${order.status})`,
+        orderId: orderDoc.id,
+      }, { status: 200 })
+    }
 
     // Update status to 'new' (paid, ready for processing)
     await adminDb.collection('orders').doc(orderDoc.id).update({
       status: 'new',
       updatedAt: new Date(),
     })
-    console.log(`✅ Order #${order.orderNumber} updated to 'new' (₪${paymentSum || order.total})`)
+
+    // Mark coupon as used if order has one
+    if (order.couponCode) {
+      const couponSnap = await adminDb
+        .collection('coupons')
+        .where('code', '==', order.couponCode)
+        .limit(1)
+        .get()
+      if (!couponSnap.empty) {
+        await adminDb.collection('coupons').doc(couponSnap.docs[0].id).update({
+          isUsed: true,
+          updatedAt: new Date(),
+        })
+      }
+    }
 
     // Send confirmation email to customer
     const email = order.customer?.email || body.payerEmail
@@ -77,8 +102,8 @@ export async function POST(request: NextRequest) {
       orderNumber: order.orderNumber,
     }, { status: 200 })
   } catch (error) {
-    console.error('❌ Webhook error:', error)
-    return NextResponse.json({ error: 'Failed to process webhook', details: String(error) }, { status: 500 })
+    console.error('Webhook error:', error)
+    return NextResponse.json({ error: 'Failed to process webhook' }, { status: 500 })
   }
 }
 
