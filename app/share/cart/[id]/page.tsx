@@ -8,7 +8,7 @@ import { getSharedCart, SharedDesignData, createShareCoupon } from '@/lib/db'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { TSHIRT_COLORS, SWEATSHIRT_COLORS, BUFF_COLORS, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
-import { Loader2, X, Truck, Star, ShieldCheck, Copy, Check } from 'lucide-react'
+import { Loader2, X, Copy, Check, ChevronDown } from 'lucide-react'
 
 const ALL_COLORS = [...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...BUFF_COLORS]
 
@@ -184,11 +184,7 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
   )
 }
 
-const BENEFITS = [
-  { icon: Star, text: 'איכות מעולה' },
-  { icon: Truck, text: 'משלוח מהיר' },
-  { icon: ShieldCheck, text: 'מחיר הוגן' },
-]
+const INITIAL_SHOW = 4
 
 export default function ShareCartPage() {
   const params = useParams()
@@ -200,6 +196,7 @@ export default function ShareCartPage() {
   const [couponCode, setCouponCode] = useState<string | null>(null)
   const [couponLoading, setCouponLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightbox(null) }
@@ -285,15 +282,15 @@ export default function ShareCartPage() {
       {/* Hero title */}
       <div className="text-center pt-10 pb-8 px-4">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 mb-1.5">
-          {cart.items.length} עיצובים שנוצרו ב-בדפוס
+          {cart.items.length} עיצובים מותאמים אישית
         </h1>
         <p className="text-gray-400 text-sm">לחץ על עיצוב כדי להגדיל</p>
       </div>
 
       {/* Designs grid */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-16">
-          {cart.items.map((item, i) => (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {(showAll ? cart.items : cart.items.slice(0, INITIAL_SHOW)).map((item, i) => (
             <DesignCard
               key={i}
               item={item}
@@ -301,70 +298,74 @@ export default function ShareCartPage() {
             />
           ))}
         </div>
+
+        {/* Show more */}
+        {!showAll && cart.items.length > INITIAL_SHOW && (
+          <div className="text-center mt-6">
+            <button
+              onClick={() => setShowAll(true)}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              הצג עוד {cart.items.length - INITIAL_SHOW} עיצובים
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        <div className="mb-16" />
       </div>
 
-      {/* Bottom section - one unified block */}
+      {/* Bottom section */}
       <div className="bg-white border-t border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div className="max-w-lg mx-auto px-4 sm:px-6 py-10 text-center space-y-6">
 
-            {/* Right side (RTL) - Benefits + CTA */}
-            <div className="text-center md:text-right">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">למה בדפוס?</h2>
-              <div className="flex flex-col gap-3 mb-6">
-                {BENEFITS.map((b) => (
-                  <div key={b.text} className="flex items-center gap-3 md:justify-start justify-center">
-                    <div className="w-8 h-8 rounded-full bg-yellow-50 border border-yellow-200 flex items-center justify-center flex-shrink-0">
-                      <b.icon className="w-4 h-4 text-yellow-600" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-700">{b.text}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/designer">
+          {/* Coupon */}
+          <div className="bg-gradient-to-bl from-yellow-50 to-gray-50 rounded-2xl border border-yellow-100/80 p-6">
+            {!couponCode ? (
+              <>
+                <p className="text-lg font-bold text-gray-900 mb-1">5% הנחה על ההזמנה הראשונה</p>
+                <p className="text-xs text-gray-400 mb-4">קופון חד פעמי, תקף ל-7 ימים</p>
                 <Button
-                  size="lg"
-                  className="rounded-full px-10 py-3 text-base font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-                  style={{ backgroundColor: 'rgb(255, 195, 46)' }}
+                  onClick={handleGetCoupon}
+                  disabled={couponLoading}
+                  className="rounded-full px-8 py-2.5 text-sm font-bold bg-gray-900 hover:bg-gray-800 text-white"
                 >
-                  <span className="text-white drop-shadow">התחל לעצב עכשיו</span>
+                  {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'קבל קופון'}
                 </Button>
-              </Link>
-            </div>
-
-            {/* Left side (RTL) - Coupon */}
-            <div className="bg-gradient-to-bl from-yellow-50 to-gray-50 rounded-2xl border border-yellow-100/80 p-6 text-center">
-              {!couponCode ? (
-                <>
-                  <p className="text-lg font-bold text-gray-900 mb-1">5% הנחה על ההזמנה הראשונה</p>
-                  <p className="text-xs text-gray-400 mb-4">קופון חד פעמי, תקף ל-7 ימים</p>
-                  <Button
-                    onClick={handleGetCoupon}
-                    disabled={couponLoading}
-                    className="rounded-full px-8 py-2.5 text-sm font-bold bg-gray-900 hover:bg-gray-800 text-white"
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-2">הקופון שלך:</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl font-mono font-black tracking-wider text-gray-900">{couponCode}</span>
+                  <button
+                    onClick={handleCopyCoupon}
+                    className="p-1.5 rounded-lg hover:bg-white/80 transition-colors"
+                    title="העתק"
                   >
-                    {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'קבל קופון'}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-gray-500 mb-2">הקופון שלך:</p>
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-2xl font-mono font-black tracking-wider text-gray-900">{couponCode}</span>
-                    <button
-                      onClick={handleCopyCoupon}
-                      className="p-1.5 rounded-lg hover:bg-white/80 transition-colors"
-                      title="העתק"
-                    >
-                      {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-gray-400" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-400">הזן את הקוד בעמוד התשלום</p>
-                </>
-              )}
-            </div>
-
+                    {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-gray-400" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400">הזן את הקוד בעמוד התשלום</p>
+              </>
+            )}
           </div>
+
+          {/* CTA */}
+          <div>
+            <p className="text-lg font-bold text-gray-900 mb-1">רוצה גם? עצב חולצה תוך דקות</p>
+            <p className="text-sm text-gray-400 mb-4">איכות מעולה · משלוח מהיר · מחיר הוגן</p>
+            <Link href="/designer">
+              <Button
+                size="lg"
+                className="rounded-full px-10 py-3 text-base font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+                style={{ backgroundColor: 'rgb(255, 195, 46)' }}
+              >
+                <span className="text-white drop-shadow">התחל לעצב עכשיו</span>
+              </Button>
+            </Link>
+          </div>
+
         </div>
       </div>
 
