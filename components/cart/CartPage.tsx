@@ -65,6 +65,7 @@ export default function CartPage() {
   const [couponCode, setCouponCode] = useState('')
   const [couponDiscount, setCouponDiscount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('')
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [sharingAll, setSharingAll] = useState(false)
   const checkoutInProgress = useRef(false)
@@ -112,6 +113,7 @@ export default function CartPage() {
 
     checkoutInProgress.current = true
     setLoading(true)
+    setLoadingMessage('מכין את ההזמנה...')
 
     try {
       // Calculate correct totals (including quantity discount)
@@ -147,6 +149,8 @@ export default function CartPage() {
           totalPrice: item.totalPrice,
         }))
       )
+
+      setLoadingMessage('יוצר לינק תשלום...')
 
       // Run Firestore order creation + payment link creation in parallel
       const orderPromise = createOrder(stripUndefined({
@@ -221,6 +225,7 @@ export default function CartPage() {
       }
 
       if (paymentData.url) {
+        setLoadingMessage('מעביר לעמוד תשלום...')
         clearCart()
         window.location.href = paymentData.url
         return
@@ -360,8 +365,8 @@ export default function CartPage() {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div className="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm mx-4">
           <Loader2 className="w-14 h-14 text-yellow-500 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">מעבד את ההזמנה שלך...</h2>
-          <p className="text-gray-500 text-sm">אנא המתן, מעביר אותך לדף התשלום</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{loadingMessage || 'מעבד את ההזמנה שלך...'}</h2>
+          <p className="text-gray-500 text-sm">אנא המתן, זה ייקח מספר שניות</p>
         </div>
       </div>
     )}

@@ -9,22 +9,29 @@ interface ShippingFormProps {
   onSubmit: (shipping: Shipping) => void
 }
 
-export default function ShippingForm({ onSubmit }: ShippingFormProps) {
-  const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
-  const [address, setAddress] = useState<Address>({
-    street: '',
-    number: '',
-    city: '',
-    zipCode: 'קרקע',
-    entrance: '',
-  })
+const STORAGE_KEY = 'badfos_shipping_info'
 
-  // Auto-update parent whenever method/address changes
+function loadSavedShipping(): { method: 'delivery' | 'pickup'; address: Address } {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch {}
+  return { method: 'delivery', address: { street: '', number: '', city: '', zipCode: 'קרקע', entrance: '' } }
+}
+
+export default function ShippingForm({ onSubmit }: ShippingFormProps) {
+  const saved = loadSavedShipping()
+  const [method, setMethod] = useState<'delivery' | 'pickup'>(saved.method)
+  const [address, setAddress] = useState<Address>(saved.address)
+
+  // Auto-update parent whenever method/address changes + save to localStorage
   useEffect(() => {
     if (method === 'pickup') {
       onSubmit({ method, cost: SHIPPING_COSTS[method] })
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ method, address }))
     } else if (address.street && address.number && address.city && address.zipCode) {
       onSubmit({ method, address, cost: SHIPPING_COSTS[method] })
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ method, address }))
     }
   }, [method, address])
 

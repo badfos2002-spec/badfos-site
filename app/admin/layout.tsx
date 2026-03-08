@@ -13,7 +13,6 @@ import {
   Tag,
   Percent,
   Gift,
-  ClipboardList,
   Users,
   BarChart3,
   Megaphone,
@@ -38,7 +37,6 @@ const menuItems = [
   { icon: Tag, label: 'קופונים', href: '/admin/coupons' },
   { icon: Percent, label: 'הנחות', href: '/admin/discounts' },
   { icon: Gift, label: 'חבילות', href: '/admin/packages' },
-  { icon: ClipboardList, label: 'הזמנות חבילות', href: '/admin/package-orders' },
   { icon: BarChart3, label: 'אנליטיקה', href: '/admin/analytics' },
   { icon: PanelTop, label: 'Top Bar', href: '/admin/topbar' },
   { icon: Megaphone, label: 'הגדרות מבצעים', href: '/admin/deals' },
@@ -56,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setUser(currentUser)
       setLoading(false)
       if (!currentUser || !isAdmin(currentUser)) {
-        router.replace('/admin/login')
+        router.replace('/AdminLogin')
       }
     })
     return unsubscribe
@@ -64,11 +62,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleSignOut = async () => {
     await signOut()
-    router.replace('/admin/login')
+    router.replace('/AdminLogin')
   }
 
   // Allow login page without auth
-  if (pathname === '/admin/login') {
+  if (pathname === '/AdminLogin') {
     return <>{children}</>
   }
 

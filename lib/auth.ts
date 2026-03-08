@@ -19,11 +19,13 @@ function ensureFirebase(): void {
  */
 export async function signInWithGoogle(): Promise<User> {
   ensureFirebase()
-  const provider = new GoogleAuthProvider()
-  provider.setCustomParameters({
-    prompt: 'select_account',
-  })
 
+  // If already signed in, return current user
+  if (auth!.currentUser) {
+    return auth!.currentUser
+  }
+
+  const provider = new GoogleAuthProvider()
   const result = await signInWithPopup(auth!, provider)
   return result.user
 }

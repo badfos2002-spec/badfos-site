@@ -8,22 +8,30 @@ interface ContactFormProps {
   onSubmit: (info: CustomerInfo) => void
 }
 
+const STORAGE_KEY = 'badfos_contact_info'
+
+function loadSavedContact(): CustomerInfo {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      return { ...parsed, notes: '' } // don't restore notes
+    }
+  } catch {}
+  return { firstName: '', lastName: '', email: '', phone: '', phoneSecondary: '', notes: '' }
+}
+
 export default function ContactForm({ onSubmit }: ContactFormProps) {
-  const [formData, setFormData] = useState<CustomerInfo>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    phoneSecondary: '',
-    notes: '',
-  })
+  const [formData, setFormData] = useState<CustomerInfo>(loadSavedContact)
 
   const isValidPhone = (phone: string) => /^05\d{8}$/.test(phone)
 
-  // Auto-update parent whenever required fields are filled
+  // Auto-update parent whenever required fields are filled + save to localStorage
   useEffect(() => {
     if (formData.firstName && formData.lastName && formData.email && isValidPhone(formData.phone)) {
       onSubmit(formData)
+      const { notes, ...toSave } = formData
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
     }
   }, [formData])
 

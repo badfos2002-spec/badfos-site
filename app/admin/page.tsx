@@ -1,173 +1,326 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ShoppingBag, Users, Star, TrendingUp, Loader2 } from 'lucide-react'
+import {
+  ShoppingCart,
+  PhoneIncoming,
+  Package,
+  Star,
+  Gift,
+  Percent,
+  Image,
+  DollarSign,
+  ChartColumn,
+  Tag,
+  Megaphone,
+  PanelTop,
+  Loader2,
+} from 'lucide-react'
 import Link from 'next/link'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { getAllOrders, getAllLeads, getAllDocuments } from '@/lib/db'
 import type { Order, Lead, Review } from '@/lib/types'
-
-const statusLabels: Record<string, { label: string; color: string }> = {
-  new: { label: 'חדשה', color: 'bg-emerald-100 text-emerald-700' },
-  paid: { label: 'שולם', color: 'bg-green-100 text-green-700' },
-  in_production: { label: 'בייצור', color: 'bg-blue-100 text-blue-700' },
-  shipped: { label: 'נשלח', color: 'bg-purple-100 text-purple-700' },
-  completed: { label: 'הושלם', color: 'bg-gray-100 text-gray-700' },
-  cancelled: { label: 'בוטל', color: 'bg-red-100 text-red-700' },
-}
 
 export default function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
-  const [pendingReviews, setPendingReviews] = useState(0)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
+  const [couponsCount, setCouponsCount] = useState(0)
+  const [discountsCount, setDiscountsCount] = useState(0)
+  const [imagesCount, setImagesCount] = useState(0)
+  const [inventoryCount, setInventoryCount] = useState(0)
 
   useEffect(() => {
-    Promise.all([getAllOrders(), getAllLeads()])
-      .then(([o, l]) => {
+    Promise.all([
+      getAllOrders(),
+      getAllLeads(),
+      getAllDocuments<Review>('reviews'),
+      getAllDocuments('coupons'),
+      getAllDocuments('discounts'),
+      getAllDocuments('siteImages'),
+      getAllDocuments('inventory'),
+    ])
+      .then(([o, l, r, c, d, img, inv]) => {
         setOrders(o)
         setLeads(l)
+        setReviews(r)
+        setCouponsCount(c.length)
+        setDiscountsCount(d.length)
+        setImagesCount(img.length)
+        setInventoryCount(inv.length)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-
-    getAllDocuments<Review>('reviews')
-      .then(r => setPendingReviews(r.filter(rev => rev.status === 'pending').length))
-      .catch(() => {})
   }, [])
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-
-  // Exclude unpaid orders from all stats
   const paidOrders = orders.filter(o => o.status !== 'pending_payment')
+  const newOrders = paidOrders.filter(o => o.status === 'new')
+  const newLeads = leads.filter(l => l.status === 'new')
+  const pendingReviews = reviews.filter(r => r.status === 'pending')
+  const activeCoupons = couponsCount
 
-  const ordersToday = paidOrders.filter(o => {
-    const d = o.createdAt?.toDate?.()
-    return d && d >= today
-  })
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20" dir="rtl">
+        <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+      </div>
+    )
+  }
 
-  const leadsToday = leads.filter(l => {
-    const d = l.createdAt?.toDate?.()
-    return d && d >= today
-  })
-
-  const revenueThisMonth = paidOrders
-    .filter(o => {
-      const d = o.createdAt?.toDate?.()
-      return d && d >= startOfMonth && o.status !== 'cancelled'
-    })
-    .reduce((sum, o) => sum + (o.total ?? 0), 0)
-
-  const recentOrders = [...paidOrders]
-    .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
-    .slice(0, 5)
-
-  const stats = [
+  const statCards = [
     {
-      icon: ShoppingBag,
-      label: 'הזמנות היום',
-      value: String(ordersToday.length),
-      color: 'from-blue-500 to-indigo-600',
+      icon: ShoppingCart,
+      label: 'הזמנות',
+      value: paidOrders.length,
+      sub: `${newOrders.length} חדשות`,
+      color: 'bg-blue-100 text-blue-600',
       href: '/admin/orders',
     },
     {
-      icon: Users,
-      label: 'לידים היום',
-      value: String(leadsToday.length),
-      color: 'from-green-500 to-emerald-600',
+      icon: PhoneIncoming,
+      label: 'לידים חדשים',
+      value: newLeads.length,
+      sub: `${leads.length} סה״כ פניות`,
+      color: 'bg-orange-100 text-orange-600',
       href: '/admin/leads',
     },
     {
-      icon: TrendingUp,
-      label: 'הכנסות החודש',
-      value: `₪${revenueThisMonth.toLocaleString()}`,
-      color: 'from-yellow-500 to-orange-500',
-      href: '/admin/analytics',
+      icon: Package,
+      label: 'מלאי',
+      value: inventoryCount,
+      sub: 'קיים מלאי',
+      color: 'bg-purple-100 text-purple-600',
+      href: '/admin/inventory',
     },
     {
       icon: Star,
-      label: 'ביקורות ממתינות',
-      value: String(pendingReviews),
-      color: 'from-red-500 to-rose-600',
+      label: 'ביקורות',
+      value: reviews.length,
+      sub: `${pendingReviews.length} ממתינות`,
+      color: 'bg-yellow-100 text-yellow-600',
       href: '/admin/reviews',
+    },
+    {
+      icon: Tag,
+      label: 'קופונים',
+      value: activeCoupons,
+      sub: `${activeCoupons} פעילים`,
+      color: 'bg-green-100 text-green-600',
+      href: '/admin/coupons',
+    },
+    {
+      icon: Percent,
+      label: 'הנחות',
+      value: discountsCount,
+      sub: `${discountsCount} פעילות`,
+      color: 'bg-red-100 text-red-600',
+      href: '/admin/discounts',
+    },
+    {
+      icon: Image,
+      label: 'תמונות',
+      value: imagesCount,
+      sub: `${imagesCount} פעילות`,
+      color: 'bg-indigo-100 text-indigo-600',
+      href: '/admin/images',
+    },
+    {
+      icon: DollarSign,
+      label: 'התמחרות',
+      value: '₪',
+      sub: 'נהל תמחור',
+      color: 'bg-emerald-100 text-emerald-600',
+      href: '/admin/pricing',
+    },
+    {
+      icon: ChartColumn,
+      label: 'אנליטיקה',
+      value: 'נתונים',
+      sub: 'דוחות ומגמות',
+      color: 'bg-pink-100 text-pink-600',
+      href: '/admin/analytics',
+    },
+  ]
+
+  const managementCards = [
+    {
+      icon: PhoneIncoming,
+      iconColor: 'text-orange-600',
+      title: 'ניהול לידים',
+      titleSub: `${newLeads.length} חדשים`,
+      description: 'נהל פניות מלקוחות, פופ-אפים וטפסי צור קשר',
+      alert: newLeads.length > 0 ? `📞 ${newLeads.length} פניות חדשות דורשות טיפול` : undefined,
+      alertColor: 'text-orange-600',
+      buttonText: 'צפה בפניות',
+      buttonColor: 'bg-orange-600 hover:bg-orange-700',
+      borderColor: 'border-orange-100 bg-orange-50/30',
+      href: '/admin/leads',
+    },
+    {
+      icon: ShoppingCart,
+      iconColor: 'text-blue-600',
+      title: 'ניהול הזמנות',
+      titleSub: `${paidOrders.length} הזמנות`,
+      description: 'צפה ונהל את כל ההזמנות שהתקבלו מהלקוחות',
+      alert: newOrders.length > 0 ? `🔔 ${newOrders.length} הזמנות חדשות ממתינות` : undefined,
+      alertColor: 'text-orange-600',
+      buttonText: 'צפה בהזמנות',
+      href: '/admin/orders',
+    },
+    {
+      icon: Package,
+      iconColor: 'text-green-600',
+      title: 'ניהול מלאי',
+      titleSub: '0 מלאי נמוך',
+      description: 'עדכן כמויות זמינות ופרטי מוצרים במלאי',
+      buttonText: 'נהל מלאי',
+      href: '/admin/inventory',
+    },
+    {
+      icon: Star,
+      iconColor: 'text-yellow-600',
+      title: 'ניהול ביקורות',
+      titleSub: `${pendingReviews.length} ממתינות`,
+      description: 'אשר, ערוך או מחק ביקורות לקוחות',
+      buttonText: 'נהל ביקורות',
+      href: '/admin/reviews',
+    },
+    {
+      icon: Tag,
+      iconColor: 'text-purple-600',
+      title: 'ניהול קופונים',
+      titleSub: `${activeCoupons} פעילים`,
+      description: 'צור וערוך קודי הנחה ללקוחות',
+      buttonText: 'נהל קופונים',
+      href: '/admin/coupons',
+    },
+    {
+      icon: Percent,
+      iconColor: 'text-red-600',
+      title: 'ניהול הנחות',
+      titleSub: `${discountsCount} פעילות`,
+      description: 'הגדר הנחות אוטומטיות ומבצעים',
+      buttonText: 'נהל הנחות',
+      href: '/admin/discounts',
+    },
+    {
+      icon: Image,
+      iconColor: 'text-indigo-600',
+      title: 'ניהול תמונות האתר',
+      titleSub: `${imagesCount} תמונות`,
+      description: 'החלף תמונות וסרטונים שמופיעים באתר',
+      buttonText: 'נהל תמונות',
+      href: '/admin/images',
+    },
+    {
+      icon: DollarSign,
+      iconColor: 'text-green-600',
+      title: 'ניהול מחירים',
+      titleSub: 'נהל תמחור',
+      description: 'הגדר מחירי מוצרים, אפשרויות ותמחור עיצוב',
+      buttonText: 'נהל מחירים',
+      href: '/admin/pricing',
+    },
+    {
+      icon: ChartColumn,
+      iconColor: 'text-teal-600',
+      title: 'אנליטיקות',
+      description: 'צפה בנתונים סטטיסטיים וביצועי האתר',
+      buttonText: 'צפה באנליטיקות',
+      href: '/admin/analytics',
+    },
+    {
+      icon: Gift,
+      iconColor: 'text-yellow-600',
+      title: 'ניהול חבילות ומבצעים',
+      titleSub: 'יצירה, עריכה וסידור',
+      description: 'נהל תמונות, מחירים, טווחי כמויות וסטטוס חבילות.',
+      buttonText: 'עבור לניהול חבילות',
+      href: '/admin/packages',
+    },
+    {
+      icon: PanelTop,
+      iconColor: 'text-cyan-600',
+      title: 'Top Bar',
+      titleSub: 'הודעה עליונה',
+      description: 'ערוך את ההודעה שמופיעה בראש האתר',
+      buttonText: 'ערוך Top Bar',
+      href: '/admin/topbar',
+    },
+    {
+      icon: Megaphone,
+      iconColor: 'text-rose-600',
+      title: 'הגדרות מבצעים',
+      titleSub: 'באנרים ודילים',
+      description: 'הגדר מבצעים, באנרים ודילים מיוחדים',
+      buttonText: 'נהל מבצעים',
+      href: '/admin/deals',
     },
   ]
 
   return (
-    <div dir="rtl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">לוח בקרה</h1>
-        <p className="text-gray-600">סקירה כללית של המערכת</p>
+    <div className="max-w-7xl mx-auto" dir="rtl">
+      {/* Stat Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {statCards.map((stat, idx) => {
+          const Icon = stat.icon
+          return (
+            <Link key={idx} href={stat.href} className="block hover:scale-105 transition-transform">
+              <Card className="cursor-pointer hover:shadow-lg transition-all h-full">
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <div className={`${stat.color.split(' ')[0]} p-3 rounded-lg`}>
+                      <Icon className={`w-6 h-6 ${stat.color.split(' ')[1]}`} />
+                    </div>
+                    <div className="mr-4">
+                      <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                      <p className="text-sm text-gray-500">{stat.sub}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          )
+        })}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, idx) => {
-              const Icon = stat.icon
-              return (
-                <Link key={idx} href={stat.href}>
-                  <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${stat.color} flex items-center justify-center`}>
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-                    <p className="text-sm text-gray-600">{stat.label}</p>
+      {/* Management Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {managementCards.map((card, idx) => {
+          const Icon = card.icon
+          return (
+            <Card key={idx} className={`hover:shadow-lg transition-shadow ${card.borderColor || ''}`}>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Icon className={`w-6 h-6 ml-2 ${card.iconColor}`} />
+                    {card.title}
                   </div>
+                  {card.titleSub && (
+                    <span className="text-sm text-gray-500">{card.titleSub}</span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-4">{card.description}</p>
+                {card.alert && (
+                  <p className={`${card.alertColor || 'text-orange-600'} text-sm mb-2 font-medium`}>
+                    {card.alert}
+                  </p>
+                )}
+                <Link href={card.href}>
+                  <Button className={`w-full ${card.buttonColor || ''}`}>
+                    {card.buttonText}
+                  </Button>
                 </Link>
-              )
-            })}
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">הזמנות אחרונות</h2>
-              <Link href="/admin/orders" className="text-yellow-600 hover:text-yellow-700 font-medium text-sm">
-                צפה בהכל ←
-              </Link>
-            </div>
-            {recentOrders.length === 0 ? (
-              <div className="text-center py-10 text-gray-500">
-                <ShoppingBag className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-                <p>אין הזמנות עדיין</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentOrders.map((order) => {
-                  const statusInfo = statusLabels[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-700' }
-                  return (
-                    <Link key={order.id} href="/admin/orders" className="flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-yellow-200 hover:bg-yellow-50/30 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">
-                          {order.customer.firstName.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{order.customer.firstName} {order.customer.lastName}</p>
-                          <p className="text-sm text-gray-500">#{order.orderNumber} • {order.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? ''}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-bold text-lg text-gray-900">₪{order.total}</span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                          {statusInfo.label}
-                        </span>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
     </div>
   )
 }
