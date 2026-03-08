@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useCart } from '@/hooks/useCart'
+import { useCart, hasCartHydrated } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import CartItem from './CartItem'
 import ContactForm from './ContactForm'
@@ -68,7 +68,17 @@ export default function CartPage() {
   const [loadingMessage, setLoadingMessage] = useState('')
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [sharingAll, setSharingAll] = useState(false)
+  const [hydrated, setHydrated] = useState(hasCartHydrated())
   const checkoutInProgress = useRef(false)
+
+  // Wait for Zustand to hydrate from localStorage
+  useEffect(() => {
+    if (hydrated) return
+    const unsub = useCart.persist.onFinishHydration(() => setHydrated(true))
+    // In case it already hydrated
+    if (useCart.persist.hasHydrated()) setHydrated(true)
+    return unsub
+  }, [hydrated])
 
   // Pre-upload cache: base64 hash → Firebase Storage URL
   const uploadCacheRef = useRef<Map<string, Promise<string>>>(new Map())
@@ -373,6 +383,15 @@ export default function CartPage() {
             </Link>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Show loading while cart hydrates from localStorage
+  if (!hydrated) {
+    return (
+      <div className="container-rtl py-16 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
       </div>
     )
   }

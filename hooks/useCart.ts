@@ -264,3 +264,11 @@ export const useCart = create<CartStore>()(
     }
   )
 )
+
+// Hydration check — prevents "empty cart" flash before localStorage loads
+const originalGetState = useCart.getState
+let _hasHydrated = false
+useCart.persist.onFinishHydration(() => { _hasHydrated = true })
+// If already hydrated (sync), mark immediately
+if (useCart.persist.hasHydrated()) _hasHydrated = true
+export const hasCartHydrated = () => _hasHydrated
