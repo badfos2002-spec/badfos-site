@@ -15,6 +15,7 @@ export default function PaymentSuccessPage() {
     didClear.current = true
     clearCart()
     sessionStorage.removeItem('badfos_pending_order')
+    sessionStorage.removeItem('badfos_payment_cache')
   }, [clearCart])
 
   const handleShare = async () => {

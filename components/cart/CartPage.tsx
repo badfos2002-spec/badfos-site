@@ -118,6 +118,18 @@ export default function CartPage() {
     // Skip if already fetching same data
     if (paymentCacheRef.current?.key === cacheKey) return
 
+    // Check sessionStorage for a cached payment URL (from a previous attempt)
+    try {
+      const cached = sessionStorage.getItem('badfos_payment_cache')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (parsed.key === cacheKey && parsed.url) {
+          paymentCacheRef.current = { promise: Promise.resolve({ url: parsed.url }), amount: total, key: cacheKey }
+          return
+        }
+      }
+    } catch {}
+
     const promise = fetch('/api/payment/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -129,7 +141,13 @@ export default function CartPage() {
         email: customerInfo.email,
         description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
       }),
-    }).then(r => r.json()).catch(() => null)
+    }).then(r => r.json()).then(data => {
+      // Cache the URL in sessionStorage for instant reuse
+      if (data?.url) {
+        try { sessionStorage.setItem('badfos_payment_cache', JSON.stringify({ key: cacheKey, url: data.url })) } catch {}
+      }
+      return data
+    }).catch(() => null)
 
     paymentCacheRef.current = { promise, amount: total, key: cacheKey }
   }, [customerInfo, shipping, items, packageItems, couponDiscount, couponCode])
