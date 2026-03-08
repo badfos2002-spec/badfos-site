@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useCart, hasCartHydrated } from '@/hooks/useCart'
+import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import CartItem from './CartItem'
 import ContactForm from './ContactForm'
@@ -68,17 +68,11 @@ export default function CartPage() {
   const [loadingMessage, setLoadingMessage] = useState('')
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [sharingAll, setSharingAll] = useState(false)
-  const [hydrated, setHydrated] = useState(hasCartHydrated())
+  const [hydrated, setHydrated] = useState(false)
   const checkoutInProgress = useRef(false)
 
-  // Wait for Zustand to hydrate from localStorage
-  useEffect(() => {
-    if (hydrated) return
-    const unsub = useCart.persist.onFinishHydration(() => setHydrated(true))
-    // In case it already hydrated
-    if (useCart.persist.hasHydrated()) setHydrated(true)
-    return unsub
-  }, [hydrated])
+  // Mark hydrated after first client-side render (Zustand persist loads synchronously)
+  useEffect(() => { setHydrated(true) }, [])
 
   // Pre-upload cache: base64 hash → Firebase Storage URL
   const uploadCacheRef = useRef<Map<string, Promise<string>>>(new Map())
