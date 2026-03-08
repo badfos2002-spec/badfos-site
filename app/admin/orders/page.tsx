@@ -9,7 +9,6 @@ import { deleteFile } from '@/lib/storage'
 import type { Order } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  pending_payment: { label: 'ממתין לתשלום',   color: 'bg-yellow-100 text-yellow-700' },
   new:             { label: 'חדשה',           color: 'bg-emerald-100 text-emerald-700' },
   paid:            { label: 'שולם',           color: 'bg-green-100 text-green-700' },
   in_production:   { label: 'בייצור',         color: 'bg-blue-100 text-blue-700' },

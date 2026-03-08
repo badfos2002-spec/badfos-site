@@ -10,9 +10,8 @@ import ContactForm from './ContactForm'
 import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
 import { ArrowRight, ShoppingBag, Check, Share2, Loader2, Package, Trash2 } from 'lucide-react'
-import { createOrder, createSharedCart } from '@/lib/db'
+import { createSharedCart } from '@/lib/db'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
-import { sendGoogleAdsConversion, sendMetaPurchaseEvent } from '@/lib/tracking'
 import { calculateOrderTotal } from '@/lib/pricing'
 import type { CustomerInfo, Shipping } from '@/lib/types'
 
@@ -205,29 +204,6 @@ export default function CartPage() {
 
       setLoadingMessage('יוצר לינק תשלום...')
 
-      // Run Firestore order creation
-      const orderPromise = createOrder(stripUndefined({
-        status: 'pending_payment' as const,
-        paymentId: tempOrderId,
-        customer: customerInfo,
-        shipping,
-        items: itemsForOrder,
-        ...(packageItems.length > 0 && {
-          packages: packageItems.map(pkg => ({
-            packageId: pkg.packageId,
-            packageName: pkg.packageName,
-            quantity: pkg.quantity,
-            pricePerUnit: pkg.pricePerUnit,
-            graphicDesignerCost: pkg.graphicDesignerCost,
-            totalPrice: pkg.totalPrice,
-          })),
-        }),
-        subtotal: orderCalc.subtotal,
-        discount: couponDiscount + orderCalc.quantityDiscount,
-        ...(couponCode && { couponCode }),
-        total: orderCalc.total,
-      }))
-
       // Use pre-fetched payment link if amount matches, otherwise create new
       let paymentPromise: Promise<any>
       const cached = paymentCacheRef.current
@@ -248,69 +224,53 @@ export default function CartPage() {
         }).then(r => r.json())
       }
 
-      const [orderId, paymentData] = await Promise.all([orderPromise, paymentPromise])
-
-      // Fire-and-forget: conversion events + emails
-      sendGoogleAdsConversion(orderCalc.total, orderId)
-      sendMetaPurchaseEvent(orderCalc.total, orderId)
-
-      fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'new_order',
-          data: { orderId, customer: customerInfo, itemsCount: items.length, total: orderCalc.total },
-        }),
-      }).catch(console.error)
-
-      const itemsWithDesigns = items.filter(item => item.designs.length > 0)
-      if (itemsWithDesigns.length > 0) {
-        fetch('/api/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'design_mockup',
-            data: {
-              customer: customerInfo,
-              items: itemsWithDesigns.map(item => ({
-                productType: item.productType,
-                color: item.color,
-                fabricType: item.fabricType,
-                designs: item.designs,
-                totalQuantity: item.totalQuantity,
-              })),
-            },
-          }),
-        }).catch(err => console.error('Failed to send mockup email:', err))
-      }
+      const paymentData = await paymentPromise
 
       if (paymentData.url) {
         setLoadingMessage('מעביר לעמוד תשלום...')
-        // Save paymentId so success page can confirm the order
-        sessionStorage.setItem('badfos_pending_order', tempOrderId)
+
+        // Save order data to sessionStorage — order will be created in Firestore
+        // only AFTER successful payment (on the success page)
+        const orderData = stripUndefined({
+          status: 'new' as const,
+          paymentId: tempOrderId,
+          customer: customerInfo,
+          shipping,
+          items: itemsForOrder,
+          ...(packageItems.length > 0 && {
+            packages: packageItems.map(pkg => ({
+              packageId: pkg.packageId,
+              packageName: pkg.packageName,
+              quantity: pkg.quantity,
+              pricePerUnit: pkg.pricePerUnit,
+              graphicDesignerCost: pkg.graphicDesignerCost,
+              totalPrice: pkg.totalPrice,
+            })),
+          }),
+          subtotal: orderCalc.subtotal,
+          discount: couponDiscount + orderCalc.quantityDiscount,
+          ...(couponCode && { couponCode }),
+          total: orderCalc.total,
+        })
+        sessionStorage.setItem('badfos_pending_order', JSON.stringify(orderData))
 
         // Pre-create shared design link for the success page share button
-        const itemsWithDesigns = items.filter(item => item.designs.length > 0)
-        if (itemsWithDesigns.length > 0) {
+        const itemsWithDesigns2 = items.filter(item => item.designs.length > 0)
+        if (itemsWithDesigns2.length > 0) {
           try {
-            const sharePrefix = `share-${Date.now()}`
-            const sharedItems = await Promise.all(
-              itemsWithDesigns.map(async (item, itemIdx) => {
-                const base: Record<string, unknown> = {
-                  productType: item.productType,
-                  color: item.color,
-                  designs: await Promise.all(
-                    item.designs.map(async (d, dIdx) => ({
-                      area: d.area,
-                      areaName: d.areaName,
-                      imageBase64: d.imageUrl, // already uploaded to Storage
-                    }))
-                  ),
-                }
-                if (item.fabricType) base.fabricType = item.fabricType
-                return base
-              })
-            )
+            const sharedItems = itemsWithDesigns2.map((item) => {
+              const base: Record<string, unknown> = {
+                productType: item.productType,
+                color: item.color,
+                designs: item.designs.map((d) => ({
+                  area: d.area,
+                  areaName: d.areaName,
+                  imageBase64: d.imageUrl,
+                })),
+              }
+              if (item.fabricType) base.fabricType = item.fabricType
+              return base
+            })
 
             if (sharedItems.length === 1) {
               const { createSharedDesign } = await import('@/lib/db')
@@ -325,7 +285,6 @@ export default function CartPage() {
           }
         }
 
-        // Don't clearCart() here — success page handles it to avoid empty cart flash
         window.location.href = paymentData.url
         return
       } else {

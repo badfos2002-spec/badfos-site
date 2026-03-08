@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Phone, Mail, Calendar, Loader2, Users } from 'lucide-react'
+import { Search, Phone, Mail, Calendar, Loader2, Users, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { getAllLeads, updateLeadStatus } from '@/lib/db'
+import { Button } from '@/components/ui/button'
+import { getAllLeads, updateLeadStatus, deleteDocument } from '@/lib/db'
 import type { Lead } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -39,6 +40,17 @@ export default function AdminLeadsPage() {
     } catch (e) {
       console.error(e)
       alert('שגיאה בעדכון סטטוס ליד')
+    }
+  }
+
+  const handleDelete = async (leadId: string) => {
+    if (!confirm('למחוק את הליד?')) return
+    try {
+      await deleteDocument('leads', leadId)
+      setLeads(prev => prev.filter(l => l.id !== leadId))
+    } catch (e) {
+      console.error(e)
+      alert('שגיאה במחיקת ליד')
     }
   }
 
@@ -117,9 +129,9 @@ export default function AdminLeadsPage() {
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-gray-200" onClick={e => e.stopPropagation()}>
+                <div className="pt-4 border-t border-gray-200 flex items-center gap-2" onClick={e => e.stopPropagation()}>
                   <select
-                    className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-yellow-500 focus:outline-none"
+                    className="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-yellow-500 focus:outline-none"
                     value={lead.status}
                     onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                   >
@@ -127,6 +139,14 @@ export default function AdminLeadsPage() {
                       <option key={val} value={val}>{label}</option>
                     ))}
                   </select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-red-200 text-red-500 hover:bg-red-50 hover:border-red-400"
+                    onClick={() => handleDelete(lead.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             )
