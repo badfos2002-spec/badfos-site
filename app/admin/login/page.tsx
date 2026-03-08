@@ -4,13 +4,26 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { signInWithGoogle, isAdmin } from '@/lib/auth'
+import { signInWithGoogle, isAdmin, checkRedirectResult } from '@/lib/auth'
 import { User } from 'firebase/auth'
 
 export default function AdminLoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Handle redirect result (when popup failed and used redirect fallback)
+  useEffect(() => {
+    setLoading(true)
+    checkRedirectResult()
+      .then(user => {
+        if (user && isAdmin(user)) {
+          router.push('/admin')
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [router])
 
   const handleGoogleSignIn = async () => {
     setLoading(true)

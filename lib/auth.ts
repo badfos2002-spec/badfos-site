@@ -1,5 +1,7 @@
 import {
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   User,
@@ -15,19 +17,47 @@ function ensureFirebase(): void {
 }
 
 /**
- * Sign in with Google
+ * Check for redirect result (called on page load after redirect sign-in)
+ */
+export async function checkRedirectResult(): Promise<User | null> {
+  if (!isFirebaseConfigured || !auth) return null
+  try {
+    const result = await getRedirectResult(auth)
+    return result?.user ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Sign in with Google — tries popup first, falls back to redirect
  */
 export async function signInWithGoogle(): Promise<User> {
   ensureFirebase()
 
-  // If already signed in, return current user
   if (auth!.currentUser) {
     return auth!.currentUser
   }
 
   const provider = new GoogleAuthProvider()
-  const result = await signInWithPopup(auth!, provider)
-  return result.user
+
+  try {
+    const result = await signInWithPopup(auth!, provider)
+    return result.user
+  } catch (err: any) {
+    // If popup blocked or failed, fall back to redirect
+    if (
+      err?.code === 'auth/popup-blocked' ||
+      err?.code === 'auth/popup-closed-by-user' ||
+      err?.code === 'auth/cancelled-popup-request' ||
+      err?.code === 'auth/internal-error'
+    ) {
+      await signInWithRedirect(auth!, provider)
+      // This line won't be reached — browser redirects to Google
+      throw new Error('redirecting')
+    }
+    throw err
+  }
 }
 
 /**
