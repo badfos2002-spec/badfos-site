@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setUser(currentUser)
       setLoading(false)
       if (!currentUser || !isAdmin(currentUser)) {
-        router.replace('/AdminLogin')
+        router.replace('/admin/login')
       }
     })
     return unsubscribe
@@ -62,11 +62,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleSignOut = async () => {
     await signOut()
-    router.replace('/AdminLogin')
+    router.replace('/admin/login')
   }
 
   // Allow login page without auth
-  if (pathname === '/AdminLogin') {
+  if (pathname === '/admin/login') {
     return <>{children}</>
   }
 

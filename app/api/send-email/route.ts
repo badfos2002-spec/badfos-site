@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
           </div>
         `
         subject = `🛒 הזמנה חדשה — ${escapeHtml(newOrderCustomer.firstName)} ${escapeHtml(newOrderCustomer.lastName)} — ₪${newOrderTotal}`
-        to = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'badfos2002@gmail.com'
+        to = 'badfos2002@gmail.com'
         break
 
       case 'design_mockup':
