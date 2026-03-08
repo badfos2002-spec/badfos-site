@@ -286,6 +286,45 @@ export default function CartPage() {
 
       if (paymentData.url) {
         setLoadingMessage('מעביר לעמוד תשלום...')
+        // Save paymentId so success page can confirm the order
+        sessionStorage.setItem('badfos_pending_order', tempOrderId)
+
+        // Pre-create shared design link for the success page share button
+        const itemsWithDesigns = items.filter(item => item.designs.length > 0)
+        if (itemsWithDesigns.length > 0) {
+          try {
+            const sharePrefix = `share-${Date.now()}`
+            const sharedItems = await Promise.all(
+              itemsWithDesigns.map(async (item, itemIdx) => {
+                const base: Record<string, unknown> = {
+                  productType: item.productType,
+                  color: item.color,
+                  designs: await Promise.all(
+                    item.designs.map(async (d, dIdx) => ({
+                      area: d.area,
+                      areaName: d.areaName,
+                      imageBase64: d.imageUrl, // already uploaded to Storage
+                    }))
+                  ),
+                }
+                if (item.fabricType) base.fabricType = item.fabricType
+                return base
+              })
+            )
+
+            if (sharedItems.length === 1) {
+              const { createSharedDesign } = await import('@/lib/db')
+              const shareId = await createSharedDesign(sharedItems[0] as any)
+              sessionStorage.setItem('badfos_share_url', `${window.location.origin}/share/${shareId}`)
+            } else {
+              const shareId = await createSharedCart({ items: sharedItems as any })
+              sessionStorage.setItem('badfos_share_url', `${window.location.origin}/share/cart/${shareId}`)
+            }
+          } catch (e) {
+            console.warn('Failed to create share link:', e)
+          }
+        }
+
         // Don't clearCart() here — success page handles it to avoid empty cart flash
         window.location.href = paymentData.url
         return

@@ -9,6 +9,7 @@ import { deleteFile } from '@/lib/storage'
 import type { Order } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
+  pending_payment: { label: 'ממתין לתשלום',   color: 'bg-yellow-100 text-yellow-700' },
   new:             { label: 'חדשה',           color: 'bg-emerald-100 text-emerald-700' },
   paid:            { label: 'שולם',           color: 'bg-green-100 text-green-700' },
   in_production:   { label: 'בייצור',         color: 'bg-blue-100 text-blue-700' },
@@ -129,8 +130,7 @@ export default function AdminOrdersPage() {
   }
 
   const filtered = orders.filter(o => {
-    // Hide unpaid orders — they haven't completed payment yet
-    if (o.status === 'pending_payment') return false
+    // Show all orders including pending_payment
     const matchSearch = !searchTerm ||
       `${o.customer.firstName} ${o.customer.lastName}`.includes(searchTerm) ||
       String(o.orderNumber).includes(searchTerm) ||
@@ -195,7 +195,7 @@ export default function AdminOrdersPage() {
           >
             {tab.label}
             <span className={`mr-1.5 text-xs ${filterShipping === tab.key ? 'text-yellow-100' : 'text-gray-400'}`}>
-              ({orders.filter(o => o.status !== 'pending_payment' && (tab.key === 'all' || o.shipping?.method === tab.key)).length})
+              ({orders.filter(o => tab.key === 'all' || o.shipping?.method === tab.key).length})
             </span>
           </button>
         ))}

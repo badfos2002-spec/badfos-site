@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,18 +9,37 @@ import { useCart } from '@/hooks/useCart'
 export default function PaymentSuccessPage() {
   const clearCart = useCart((state) => state.clearCart)
   const didClear = useRef(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (didClear.current) return
     didClear.current = true
     clearCart()
+
+    // Grab share URL before clearing sessionStorage
+    const savedShareUrl = sessionStorage.getItem('badfos_share_url')
+    if (savedShareUrl) setShareUrl(savedShareUrl)
+
+    // Confirm payment — update order status from pending_payment to new
+    const paymentId = sessionStorage.getItem('badfos_pending_order')
+    if (paymentId) {
+      fetch('/api/payment/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId }),
+      }).catch(console.error)
+    }
+
     sessionStorage.removeItem('badfos_pending_order')
     sessionStorage.removeItem('badfos_payment_cache')
+    sessionStorage.removeItem('badfos_share_url')
   }, [clearCart])
 
   const handleShare = async () => {
-    const url = 'https://badfos.co.il/designer'
-    const text = 'עצבתי חולצה ב-בדפוס! גם אתם יכולים 👕'
+    const url = shareUrl || 'https://badfos.co.il/designer'
+    const text = shareUrl
+      ? 'ראו את העיצוב שיצרתי ב-בדפוס!'
+      : 'עצבתי חולצה ב-בדפוס! גם אתם יכולים'
     if (navigator.share) {
       try { await navigator.share({ title: 'בדפוס', text, url }) } catch {}
     } else {
