@@ -74,6 +74,9 @@ export default function CartPage() {
   const uploadCacheRef = useRef<Map<string, Promise<string>>>(new Map())
   const tempOrderIdRef = useRef(`order-${Date.now()}`)
 
+  // Pre-fetch payment link cache
+  const paymentCacheRef = useRef<{ promise: Promise<any>; amount: number; key: string } | null>(null)
+
   // Pre-upload design images in background while user fills contact/shipping
   useEffect(() => {
     if (items.length === 0) return
@@ -83,7 +86,6 @@ export default function CartPage() {
     for (const item of items) {
       for (const d of item.designs) {
         if (d.imageUrl.startsWith('data:') && !cache.has(d.imageUrl)) {
-          // Start upload immediately, store the promise
           const uploadPromise = uploadBase64Image(
             d.imageUrl,
             tempOrderId,
@@ -91,13 +93,42 @@ export default function CartPage() {
           ).catch((err) => {
             console.warn('Pre-upload failed, will retry at checkout:', err)
             cache.delete(d.imageUrl)
-            return '' // empty = will re-upload at checkout
+            return ''
           })
           cache.set(d.imageUrl, uploadPromise)
         }
       }
     }
   }, [items])
+
+  // Pre-fetch payment link as soon as customer info + shipping are ready
+  useEffect(() => {
+    if (!customerInfo || !shipping || (items.length === 0 && packageItems.length === 0)) return
+    if (!/^05\d{8}$/.test(customerInfo.phone)) return
+
+    const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount)
+    const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
+    const total = orderCalc.total + packagesTotal
+    const cacheKey = `${customerInfo.phone}-${total}-${couponCode}`
+
+    // Skip if already fetching same data
+    if (paymentCacheRef.current?.key === cacheKey) return
+
+    const promise = fetch('/api/payment/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: tempOrderIdRef.current,
+        amount: total,
+        name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        phone: customerInfo.phone,
+        email: customerInfo.email,
+        description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
+      }),
+    }).then(r => r.json()).catch(() => null)
+
+    paymentCacheRef.current = { promise, amount: total, key: cacheKey }
+  }, [customerInfo, shipping, items, packageItems, couponDiscount, couponCode])
 
   const handleCheckout = async () => {
     if (checkoutInProgress.current) return
@@ -152,7 +183,7 @@ export default function CartPage() {
 
       setLoadingMessage('יוצר לינק תשלום...')
 
-      // Run Firestore order creation + payment link creation in parallel
+      // Run Firestore order creation
       const orderPromise = createOrder(stripUndefined({
         status: 'pending_payment' as const,
         paymentId: tempOrderId,
@@ -175,18 +206,25 @@ export default function CartPage() {
         total: orderCalc.total,
       }))
 
-      const paymentPromise = fetch('/api/payment/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: tempOrderId,
-          amount: orderCalc.total,
-          name: `${customerInfo.firstName} ${customerInfo.lastName}`,
-          phone: customerInfo.phone,
-          email: customerInfo.email,
-          description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
-        }),
-      }).then(r => r.json())
+      // Use pre-fetched payment link if amount matches, otherwise create new
+      let paymentPromise: Promise<any>
+      const cached = paymentCacheRef.current
+      if (cached && cached.amount === orderCalc.total) {
+        paymentPromise = cached.promise
+      } else {
+        paymentPromise = fetch('/api/payment/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: tempOrderId,
+            amount: orderCalc.total,
+            name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+            phone: customerInfo.phone,
+            email: customerInfo.email,
+            description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
+          }),
+        }).then(r => r.json())
+      }
 
       const [orderId, paymentData] = await Promise.all([orderPromise, paymentPromise])
 
@@ -226,7 +264,7 @@ export default function CartPage() {
 
       if (paymentData.url) {
         setLoadingMessage('מעביר לעמוד תשלום...')
-        clearCart()
+        // Don't clearCart() here — success page handles it to avoid empty cart flash
         window.location.href = paymentData.url
         return
       } else {

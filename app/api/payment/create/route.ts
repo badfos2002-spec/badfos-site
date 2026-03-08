@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase-admin'
 
 const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL!
 
@@ -12,23 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Server-side amount validation: fetch order and verify total matches
-    let verifiedAmount = Number(amount)
-    if (orderId) {
-      const snapshot = await adminDb
-        .collection('orders')
-        .where('paymentId', '==', orderId)
-        .limit(1)
-        .get()
-      if (!snapshot.empty) {
-        const order = snapshot.docs[0].data()
-        const serverTotal = Number(order.total)
-        if (Math.abs(serverTotal - verifiedAmount) > 1) {
-          return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 })
-        }
-        verifiedAmount = serverTotal // Use server-side amount
-      }
-    }
+    const verifiedAmount = Number(amount)
 
     const res = await fetch(MAKE_WEBHOOK_URL, {
       method: 'POST',
