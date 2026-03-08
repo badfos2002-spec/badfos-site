@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    serverComponentsExternalPackages: ['@google-cloud/firestore', 'firebase-admin'],
+  },
   images: {
     remotePatterns: [
       {
