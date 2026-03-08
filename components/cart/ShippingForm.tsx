@@ -11,14 +11,14 @@ interface ShippingFormProps {
 
 export default function ShippingForm({ onSubmit }: ShippingFormProps) {
   const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
-  const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', zipCode: 'קרקע', entrance: '' })
+  const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', floor: 'קרקע', entrance: '' })
   const [touched, setTouched] = useState(false)
 
   // Auto-update parent whenever method/address changes
   useEffect(() => {
     if (method === 'pickup') {
       onSubmit({ method, cost: SHIPPING_COSTS[method] })
-    } else if (address.street && address.number && address.city && address.zipCode) {
+    } else if (address.street && address.number && address.city && address.floor) {
       onSubmit({ method, address, cost: SHIPPING_COSTS[method] })
     }
   }, [method, address])
@@ -123,8 +123,8 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                 <div>
                   <label className="block text-sm font-medium mb-2">קומה <span className="text-red-500">*</span></label>
                   <select
-                    value={address.zipCode}
-                    onChange={(e) => setAddress({ ...address, zipCode: e.target.value })}
+                    value={address.floor}
+                    onChange={(e) => setAddress({ ...address, floor: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary bg-white"
                   >
                     <option value="קרקע">קרקע</option>

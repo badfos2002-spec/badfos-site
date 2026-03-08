@@ -240,6 +240,7 @@ export const QUANTITY_DISCOUNT = {
 
 export const ORDER_STATUS_LABELS = {
   pending_payment: 'ממתין לתשלום',
+  new: 'חדשה',
   paid: 'שולם',
   in_production: 'בייצור',
   shipped: 'נשלח',
@@ -249,6 +250,7 @@ export const ORDER_STATUS_LABELS = {
 
 export const ORDER_STATUS_COLORS = {
   pending_payment: 'bg-yellow-100 text-yellow-800',
+  new: 'bg-emerald-100 text-emerald-800',
   paid: 'bg-green-100 text-green-800',
   in_production: 'bg-blue-100 text-blue-800',
   shipped: 'bg-purple-100 text-purple-800',

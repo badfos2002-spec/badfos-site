@@ -180,7 +180,7 @@ export function OrderShippedEmail({
         <h3>כתובת למשלוח</h3>
         <p style="margin: 5px 0; color: #1A1A2E;">
           ${order.shipping.address?.street} ${order.shipping.address?.number}<br>
-          ${order.shipping.address?.city}, ${order.shipping.address?.zipCode || ''}
+          ${order.shipping.address?.city}${order.shipping.address?.floor ? `, קומה ${order.shipping.address.floor}` : ''}
         </p>
       </div>
       `

@@ -7,7 +7,13 @@ import { OrderShippedEmail } from '@/lib/email-templates/order-shipped'
 import { NewLeadEmail } from '@/lib/email-templates/new-lead'
 import { DesignMockupEmail } from '@/lib/email-templates/design-mockup'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy-init Resend to avoid build-time errors when API key is missing
+let _resend: Resend | null = null
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 
 function escapeHtml(str: string): string {
   if (!str) return ''
@@ -120,6 +126,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Send email using Resend
+    const resend = getResend()
+    if (!resend) {
+      return NextResponse.json({ error: 'Resend not configured' }, { status: 500 })
+    }
     const { data: emailResult, error: emailError } = await resend.emails.send({
       from: 'בדפוס <no-reply@badfos.co.il>',
       to,

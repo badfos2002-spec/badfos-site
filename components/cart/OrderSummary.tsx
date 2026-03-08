@@ -69,8 +69,9 @@ export default function OrderSummary({
     try {
       const coupon = await validateCoupon(couponCode.trim().toUpperCase())
       if (coupon) {
-        const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0)
-        const discount = Math.round(subtotal * coupon.discountPercent / 100)
+        const itemsSubtotal = items.reduce((sum, item) => sum + item.totalPrice, 0)
+        const pkgSubtotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
+        const discount = Math.round((itemsSubtotal + pkgSubtotal) * coupon.discountPercent / 100)
         setCouponDiscount(discount)
         setCouponStatus('valid')
         onDiscountApplied(discount, couponCode.trim().toUpperCase())

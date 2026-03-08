@@ -72,7 +72,7 @@ export interface Address {
   street: string
   number: string
   city: string
-  zipCode?: string
+  floor?: string
   entrance?: string
 }
 

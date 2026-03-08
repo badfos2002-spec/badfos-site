@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL!
-
 export async function POST(request: NextRequest) {
   try {
+    const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL
+    if (!MAKE_WEBHOOK_URL) {
+      console.error('MAKE_WEBHOOK_URL is not configured')
+      return NextResponse.json({ error: 'Payment service not configured' }, { status: 500 })
+    }
+
     const body = await request.json()
     const { name, phone, email, amount, description, orderId } = body
 

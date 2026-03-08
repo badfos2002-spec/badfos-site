@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 
-const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || ''
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
 
 /**
  * Webhook endpoint for Grow (Meshulam) payment notifications.
@@ -13,8 +13,12 @@ const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || ''
 export async function POST(request: NextRequest) {
   try {
     // --- Webhook signature / secret validation ---
+    if (!WEBHOOK_SECRET) {
+      console.error('WEBHOOK_SECRET is not configured')
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+    }
     const authHeader = request.headers.get('x-webhook-secret') || request.headers.get('authorization')
-    if (WEBHOOK_SECRET && authHeader !== WEBHOOK_SECRET && authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
+    if (authHeader !== WEBHOOK_SECRET && authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -78,7 +82,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send confirmation email to customer
+    // Send confirmation email to customer with full order data
     const email = order.customer?.email || body.payerEmail
     if (email) {
       fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'}/api/send-email`, {
@@ -86,12 +90,7 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'order_confirmation',
-          data: {
-            orderId: orderDoc.id,
-            orderNumber: order.orderNumber,
-            customer: order.customer,
-            total: order.total,
-          },
+          data: { id: orderDoc.id, ...order },
         }),
       }).catch(err => console.error('Failed to send confirmation email:', err))
     }

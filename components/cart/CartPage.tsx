@@ -10,7 +10,7 @@ import ContactForm from './ContactForm'
 import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
 import { ArrowRight, ShoppingBag, Check, Share2, Loader2, Package, Trash2 } from 'lucide-react'
-import { createSharedCart } from '@/lib/db'
+import { createSharedCart, createOrder } from '@/lib/db'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { calculateOrderTotal } from '@/lib/pricing'
 import type { CustomerInfo, Shipping } from '@/lib/types'
@@ -38,7 +38,9 @@ async function blobToBase64(blobUrl: string): Promise<string> {
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(img.width * scale)
   canvas.height = Math.round(img.height * scale)
-  canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return blobUrl
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
   return canvas.toDataURL('image/jpeg', 0.7)
 }
 
@@ -227,12 +229,12 @@ export default function CartPage() {
       const paymentData = await paymentPromise
 
       if (paymentData.url) {
-        setLoadingMessage('מעביר לעמוד תשלום...')
+        setLoadingMessage('שומר הזמנה...')
 
-        // Save order data to sessionStorage — order will be created in Firestore
-        // only AFTER successful payment (on the success page)
+        // Create order in Firestore BEFORE redirecting to payment (pending_payment status)
+        // This ensures the order is never lost even if the user closes the browser after paying
         const orderData = stripUndefined({
-          status: 'new' as const,
+          status: 'pending_payment' as const,
           paymentId: tempOrderId,
           customer: customerInfo,
           shipping,
@@ -252,7 +254,16 @@ export default function CartPage() {
           ...(couponCode && { couponCode }),
           total: orderCalc.total,
         })
-        sessionStorage.setItem('badfos_pending_order', JSON.stringify(orderData))
+
+        const orderId = await createOrder(orderData as any)
+
+        // Save orderId + minimal data to sessionStorage for the success page
+        sessionStorage.setItem('badfos_pending_order', JSON.stringify({
+          orderId,
+          customer: customerInfo,
+          items: itemsForOrder,
+          total: orderCalc.total,
+        }))
 
         // Pre-create shared design link for the success page share button
         const itemsWithDesigns2 = items.filter(item => item.designs.length > 0)
@@ -285,6 +296,7 @@ export default function CartPage() {
           }
         }
 
+        setLoadingMessage('מעביר לעמוד תשלום...')
         window.location.href = paymentData.url
         return
       } else {
@@ -545,24 +557,3 @@ export default function CartPage() {
   )
 }
 
-function generateWhatsAppMessage(items: any[], customer: CustomerInfo, shipping: Shipping): string {
-  let message = `היי, אני רוצה להזמין:\n\n`
-
-  items.forEach((item, index) => {
-    message += `${index + 1}. ${item.productType} - ${item.color}\n`
-    message += `   מידות: ${item.sizes.map((s: any) => `${s.size}(${s.quantity})`).join(', ')}\n`
-    message += `   סה"כ: ₪${item.totalPrice}\n\n`
-  })
-
-  message += `פרטי משלוח:\n`
-  message += shipping.method === 'delivery'
-    ? `משלוח ל: ${shipping.address?.street} ${shipping.address?.number}, ${shipping.address?.city}\n`
-    : `איסוף עצמי מראשון לציון\n`
-
-  message += `\nפרטי קשר:\n`
-  message += `${customer.firstName} ${customer.lastName}\n`
-  message += `${customer.phone}\n`
-  message += `${customer.email}\n`
-
-  return message
-}

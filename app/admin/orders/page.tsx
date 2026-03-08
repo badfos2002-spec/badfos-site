@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Download, Eye, Trash2, Package, Loader2, X, MapPin, Phone, Mail } from 'lucide-react'
+import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, deductInventory } from '@/lib/db'
@@ -9,6 +9,7 @@ import { deleteFile } from '@/lib/storage'
 import type { Order } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
+  pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-800' },
   new:             { label: 'חדשה',           color: 'bg-emerald-100 text-emerald-700' },
   paid:            { label: 'שולם',           color: 'bg-green-100 text-green-700' },
   in_production:   { label: 'בייצור',         color: 'bg-blue-100 text-blue-700' },
@@ -24,13 +25,20 @@ const productLabels: Record<string, string> = {
   cap: 'כובע',
 }
 
+const fabricLabels: Record<string, string> = {
+  cotton: 'כותנה',
+  'dri-fit': 'דרייפיט',
+  polo: 'פולו',
+  oversized: 'אוברסייז',
+}
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [filterShipping, setFilterShipping] = useState<'all' | 'delivery' | 'pickup'>('all')
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     getAllOrders()
@@ -45,9 +53,7 @@ export default function AdminOrdersPage() {
     try {
       await updateOrderStatus(orderId, newStatus)
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o))
-      if (selectedOrder?.id === orderId) setSelectedOrder(prev => prev ? { ...prev, status: newStatus as any } : null)
 
-      // When paid → generate coupon + send confirmation email
       if (newStatus === 'paid') {
         const couponCode = await createCoupon(orderId)
         fetch('/api/send-email', {
@@ -57,7 +63,6 @@ export default function AdminOrdersPage() {
         }).catch(console.error)
       }
 
-      // When in_production → deduct inventory + send email
       if (newStatus === 'in_production') {
         deductInventory(order.items).catch(console.error)
         fetch('/api/send-email', {
@@ -67,7 +72,6 @@ export default function AdminOrdersPage() {
         }).catch(console.error)
       }
 
-      // When shipped → send shipping email
       if (newStatus === 'shipped') {
         fetch('/api/send-email', {
           method: 'POST',
@@ -96,7 +100,7 @@ export default function AdminOrdersPage() {
       }
       await deleteDocument('orders', orderId)
       setOrders(prev => prev.filter(o => o.id !== orderId))
-      if (selectedOrder?.id === orderId) setSelectedOrder(null)
+      if (expandedOrderId === orderId) setExpandedOrderId(null)
     } catch (e) {
       console.error(e)
       alert('שגיאה במחיקת הזמנה')
@@ -129,7 +133,6 @@ export default function AdminOrdersPage() {
   }
 
   const filtered = orders.filter(o => {
-    // Show all orders including pending_payment
     const matchSearch = !searchTerm ||
       `${o.customer.firstName} ${o.customer.lastName}`.includes(searchTerm) ||
       String(o.orderNumber).includes(searchTerm) ||
@@ -180,7 +183,7 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Floating shipping filter tabs */}
+      {/* Shipping filter tabs */}
       <div className="flex gap-2 mb-4">
         {shippingTabs.map(tab => (
           <button
@@ -200,54 +203,40 @@ export default function AdminOrdersPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p className="text-lg font-medium">אין הזמנות</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b-2 border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">מספר הזמנה</th>
-                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">לקוח</th>
-                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">תאריך</th>
-                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">פריטים</th>
-                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">סכום</th>
-                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">סטטוס</th>
-                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">פעולות</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filtered.map((order) => {
-                  const totalItems = order.items.reduce((s, i) => s + i.totalQuantity, 0)
-                  const date = order.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? ''
-                  return (
-                    <tr key={order.id} className="hover:bg-yellow-50/40 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
-                      <td className="px-6 py-4 font-medium text-gray-900">#{order.orderNumber}</td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-gray-900">{order.customer.firstName} {order.customer.lastName}</p>
-                          <p className="text-sm text-gray-500">{order.customer.phone}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">{date}</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 text-gray-700">
-                          <Package className="w-4 h-4" />
-                          {totalItems}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-bold text-gray-900">₪{order.total}</td>
-                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+      {/* Orders List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 text-gray-500">
+          <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p className="text-lg font-medium">אין הזמנות</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((order) => {
+            const isExpanded = expandedOrderId === order.id
+            const date = order.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? ''
+            const customerName = `${order.customer.firstName} ${order.customer.lastName}`
+
+            return (
+              <div key={order.id} className="rounded-xl border bg-white shadow overflow-hidden">
+                {/* Card Header */}
+                <div
+                  className="p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                >
+                  {/* Mobile: stacked layout */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-base sm:text-lg">הזמנה #{order.orderNumber}</div>
+                      <p className="text-sm text-gray-600 mt-0.5 truncate">{customerName} &bull; {date}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
                         <select
-                          className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusLabels[order.status]?.color ?? 'bg-gray-100 text-gray-700'}`}
+                          className={`appearance-none rounded-lg pl-7 pr-3 py-1.5 text-xs font-semibold whitespace-nowrap cursor-pointer border border-gray-200 shadow-sm outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${statusLabels[order.status]?.color ?? 'bg-gray-100 text-gray-700'}`}
                           value={order.status}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                         >
@@ -255,207 +244,197 @@ export default function AdminOrdersPage() {
                             <option key={val} value={val}>{label}</option>
                           ))}
                         </select>
-                      </td>
-                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50" onClick={() => setSelectedOrder(order)}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="outline" className="border-red-500 text-red-600 hover:bg-red-50" onClick={() => handleDelete(order.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* ── Order Details Modal ── */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto" dir="rtl" onClick={() => setSelectedOrder(null)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden" onClick={e => e.stopPropagation()}>
-
-            {/* ── Gradient Header ── */}
-            <div className="bg-gradient-to-l from-yellow-400 to-orange-400 p-6 text-white">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-yellow-100 text-sm font-medium mb-1">
-                    {selectedOrder.createdAt?.toDate?.()?.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                  <h2 className="text-3xl font-black">הזמנה #{selectedOrder.orderNumber}</h2>
-                  <div className="mt-2">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold bg-white/25 text-white`}>
-                      {statusLabels[selectedOrder.status]?.label ?? selectedOrder.status}
-                    </span>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
-                  <X className="w-5 h-5 text-white" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-5">
-
-              {/* ── Customer + Shipping ── */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Customer */}
-                <div className="bg-gray-50 rounded-2xl p-4">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">פרטי לקוח</p>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                      {selectedOrder.customer.firstName.charAt(0)}
-                    </div>
-                    <p className="font-bold text-gray-900">{selectedOrder.customer.firstName} {selectedOrder.customer.lastName}</p>
-                  </div>
-                  <a href={`tel:${selectedOrder.customer.phone}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-yellow-600 mb-1.5">
-                    <Phone className="w-3.5 h-3.5 text-gray-400" />
-                    {selectedOrder.customer.phone}
-                  </a>
-                  {selectedOrder.customer.email && (
-                    <a href={`mailto:${selectedOrder.customer.email}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-yellow-600">
-                      <Mail className="w-3.5 h-3.5 text-gray-400" />
-                      {selectedOrder.customer.email}
-                    </a>
-                  )}
-                </div>
-
-                {/* Shipping */}
-                <div className="bg-gray-50 rounded-2xl p-4">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">משלוח</p>
-                  {selectedOrder.shipping?.method === 'pickup' ? (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <MapPin className="w-4 h-4 text-green-500" />
-                      <div>
-                        <p className="font-semibold text-sm">איסוף עצמי</p>
-                        <p className="text-xs text-gray-500">ראשון לציון</p>
+                        <ChevronDown className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                       </div>
-                    </div>
-                  ) : selectedOrder.shipping?.address ? (
-                    <div className="flex items-start gap-2 text-gray-700">
-                      <MapPin className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-semibold text-sm">{selectedOrder.shipping.address.street} {selectedOrder.shipping.address.number}</p>
-                        <p className="text-xs text-gray-500">{selectedOrder.shipping.address.city}</p>
+                      <div className="font-bold text-base sm:text-lg whitespace-nowrap">₪{order.total}</div>
+                      <button
+                        className="h-8 rounded-md text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 hidden sm:block"
+                        title="מחק הזמנה"
+                        onClick={(e) => { e.stopPropagation(); handleDelete(order.id) }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="p-1">
+                        {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">—</p>
-                  )}
-
-                  {/* Price summary inside shipping card */}
-                  <div className="mt-4 pt-3 border-t border-gray-200 space-y-1">
-                    {selectedOrder.couponCode && (
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>קופון {selectedOrder.couponCode}</span>
-                        <span className="text-green-600">-₪{selectedOrder.discount ?? 0}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>משלוח</span>
-                      <span>{selectedOrder.shipping?.method === 'pickup' ? 'חינם' : '₪35'}</span>
-                    </div>
-                    <div className="flex justify-between font-black text-base text-gray-900 pt-1">
-                      <span>סה״כ</span>
-                      <span className="text-yellow-600">₪{selectedOrder.total}</span>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* ── Items ── */}
-              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">פריטים להזמנה</p>
-                <div className="space-y-3">
-                  {selectedOrder.items.map((item, idx) => (
-                    <div key={idx} className="border-2 border-gray-100 rounded-2xl p-4 hover:border-yellow-200 transition-colors">
-                      {/* Item header */}
-                      <div className="flex items-center justify-between mb-3">
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="p-4 sm:p-6 pt-0 border-t bg-gray-50">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 pt-4 sm:pt-6">
+                      {/* Left Column: Customer + Shipping + Status */}
+                      <div className="space-y-6">
+                        {/* Customer Details */}
                         <div>
-                          <p className="font-bold text-gray-900">{productLabels[item.productType] ?? item.productType}</p>
-                          <p className="text-sm text-gray-500">{item.color}{item.fabricType ? ` • ${item.fabricType}` : ''}</p>
-                        </div>
-                        <div className="text-left">
-                          <p className="font-bold text-gray-900">₪{item.totalPrice}</p>
-                          <p className="text-xs text-gray-400">{item.totalQuantity} יח׳ × ₪{item.pricePerUnit}</p>
-                        </div>
-                      </div>
-
-                      {/* Sizes */}
-                      {item.sizes && item.sizes.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {item.sizes.map(s => (
-                            <span key={s.size} className="text-xs bg-yellow-50 border border-yellow-200 text-yellow-800 font-semibold px-2.5 py-1 rounded-full">
-                              {s.size}: {s.quantity}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Designs */}
-                      {item.designs && item.designs.length > 0 && (
-                        <div className="pt-3 border-t border-gray-100">
-                          <p className="text-xs font-bold text-gray-400 mb-2">קבצי עיצוב:</p>
-                          <div className="flex gap-3 flex-wrap">
-                            {item.designs.map((d, di) => (
-                              <div key={di} className="bg-gray-50 rounded-xl p-2 text-center">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={d.imageUrl} alt={d.areaName ?? d.area} className="w-24 h-24 object-contain rounded-lg" />
-                                <p className="text-xs font-medium text-gray-600 mt-1.5">{d.areaName ?? d.area}</p>
-                                <a
-                                  href={d.imageUrl}
-                                  download={`עיצוב-${d.areaName ?? d.area}-הזמנה-${selectedOrder?.orderNumber ?? ''}.${d.imageUrl.startsWith('data:image/png') ? 'png' : 'jpg'}`}
-                                  className="mt-1.5 inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium h-8 rounded-md px-3 transition-colors"
-                                >
-                                  <Download className="w-4 h-4 ml-1" />
-                                  הורד
-                                </a>
-                              </div>
-                            ))}
+                          <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                            <User className="w-5 h-5 ml-2" />
+                            פרטי לקוח
+                          </h3>
+                          <div className="space-y-3 bg-white p-4 rounded-lg">
+                            <div className="flex items-center">
+                              <User className="w-4 h-4 text-gray-400 ml-2" />
+                              <span>{customerName}</span>
+                            </div>
+                            <a href={`tel:${order.customer.phone}`} className="flex items-center hover:text-blue-600">
+                              <Phone className="w-4 h-4 text-gray-400 ml-2" />
+                              <span>{order.customer.phone}</span>
+                            </a>
+                            {order.customer.email && (
+                              <a href={`mailto:${order.customer.email}`} className="flex items-center hover:text-blue-600">
+                                <Mail className="w-4 h-4 text-gray-400 ml-2" />
+                                <span>{order.customer.email}</span>
+                              </a>
+                            )}
+                            {order.customer.notes && (
+                              <p className="text-sm text-gray-500 border-t pt-2 mt-2">{order.customer.notes}</p>
+                            )}
                           </div>
                         </div>
-                      )}
+
+                        {/* Shipping */}
+                        <div>
+                          <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                            <MapPin className="w-5 h-5 ml-2" />
+                            משלוח
+                          </h3>
+                          <div className="bg-white p-4 rounded-lg">
+                            {order.shipping?.method === 'pickup' ? (
+                              <div className="space-y-2">
+                                <div className="font-medium text-green-600">איסוף עצמי</div>
+                                <div className="text-gray-600">ראשון לציון</div>
+                              </div>
+                            ) : order.shipping?.address ? (
+                              <div className="space-y-2">
+                                <div className="font-medium text-blue-600">משלוח עד הבית</div>
+                                <div className="text-gray-600">
+                                  <div>{order.shipping.address.street} {order.shipping.address.number}</div>
+                                  <div>{order.shipping.address.city}{order.shipping.address.floor ? `, קומה ${order.shipping.address.floor}` : ''}</div>
+                                  {order.shipping.address.entrance && <div>כניסה: {order.shipping.address.entrance}</div>}
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">—</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status Update */}
+                        <div>
+                          <h3 className="font-semibold text-gray-900 mb-4">עדכון סטטוס</h3>
+                          <select
+                            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                            value={order.status}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                          >
+                            {Object.entries(statusLabels).map(([val, { label }]) => (
+                              <option key={val} value={val}>{label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Right Column: Order Items */}
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                          <Package className="w-5 h-5 ml-2" />
+                          פרטי הזמנה
+                        </h3>
+                        <div className="space-y-4">
+                          {order.items.map((item, idx) => {
+                            const fabricName = item.fabricType ? (fabricLabels[item.fabricType] ?? item.fabricType) : ''
+                            const productName = `${productLabels[item.productType] ?? item.productType}${fabricName ? ` ${fabricName}` : ''} מעוצבת`
+
+                            return (
+                              <div key={idx} className="bg-white border rounded-lg p-4">
+                                {/* Item Header */}
+                                <div className="flex justify-between items-start mb-3">
+                                  <h4 className="font-medium">{productName}</h4>
+                                  <div className="text-left">
+                                    <div className="font-bold">₪{item.totalPrice}</div>
+                                    <div className="text-sm text-gray-500">{item.totalQuantity} יח&apos; &times; ₪{item.pricePerUnit}</div>
+                                  </div>
+                                </div>
+
+                                {/* Item Details Grid */}
+                                <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                                  {item.fabricType && <div><strong>סוג:</strong> {fabricName}</div>}
+                                  <div><strong>צבע:</strong> {item.color}</div>
+                                  {item.sizes && item.sizes.length > 0 && (
+                                    <div><strong>מידה:</strong> {item.sizes.map(s => `${s.size}(${s.quantity})`).join(', ')}</div>
+                                  )}
+                                  <div><strong>כמות:</strong> {item.totalQuantity}</div>
+                                </div>
+
+                                {/* Design Files */}
+                                {item.designs && item.designs.length > 0 && (
+                                  <div className="border-t pt-3">
+                                    <h5 className="font-medium text-gray-900 mb-2">קבצי עיצוב:</h5>
+                                    <div className="grid grid-cols-1 gap-2">
+                                      {item.designs.map((d, di) => (
+                                        <div key={di} className="flex items-center justify-between bg-blue-50 p-3 rounded">
+                                          <div className="flex items-center">
+                                            <div className="w-12 h-12 bg-gray-200 rounded mr-3 overflow-hidden flex-shrink-0">
+                                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                                              <img src={d.imageUrl} alt={d.areaName ?? d.area} className="w-full h-full object-cover" />
+                                            </div>
+                                            <span className="text-sm font-medium">{d.areaName ?? d.area}</span>
+                                          </div>
+                                          <a
+                                            href={d.imageUrl}
+                                            download={`עיצוב-${d.areaName ?? d.area}-${order.orderNumber}.${d.imageUrl.startsWith('data:image/png') ? 'png' : 'jpg'}`}
+                                            className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium h-8 rounded-md px-3 transition-colors"
+                                          >
+                                            <Download className="w-4 h-4 ml-1" />
+                                            הורד
+                                          </a>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+
+                          {/* Order Total */}
+                          <div className="bg-gray-100 p-4 rounded-lg">
+                            {order.couponCode && (
+                              <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                                <span>קופון {order.couponCode}</span>
+                                <span className="text-green-600">-₪{order.discount ?? 0}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                              <span>משלוח</span>
+                              <span>{order.shipping?.method === 'pickup' ? 'חינם' : `₪${order.shipping?.cost ?? 35}`}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
+                              <span>סה&quot;כ לתשלום:</span>
+                              <span>₪{order.total}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    {/* Mobile delete button */}
+                    <div className="sm:hidden pt-4 border-t mt-4">
+                      <button
+                        className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg py-3 text-sm font-medium transition-colors"
+                        onClick={() => handleDelete(order.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        מחק הזמנה
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* ── Update Status ── */}
-              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">עדכון סטטוס</p>
-                <select
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium focus:border-yellow-400 focus:outline-none text-gray-700 bg-white"
-                  value={selectedOrder.status}
-                  onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)}
-                >
-                  {Object.entries(statusLabels).map(([val, { label }]) => (
-                    <option key={val} value={val}>{label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* ── Footer ── */}
-            <div className="flex gap-3 p-6 pt-0">
-              <Button
-                variant="outline"
-                className="border-red-200 text-red-500 hover:bg-red-50 hover:border-red-400"
-                onClick={() => { handleDelete(selectedOrder.id) }}
-              >
-                <Trash2 className="w-4 h-4 ml-1.5" />
-                מחק
-              </Button>
-              <Button className="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-xl" onClick={() => setSelectedOrder(null)}>
-                סגור
-              </Button>
-            </div>
-
-          </div>
+            )
+          })}
         </div>
       )}
     </div>

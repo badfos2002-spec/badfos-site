@@ -14,10 +14,11 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
   })
 
   const isValidPhone = (phone: string) => /^05\d{8}$/.test(phone)
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
   // Auto-update parent whenever required fields are filled
   useEffect(() => {
-    if (formData.firstName && formData.lastName && formData.email && isValidPhone(formData.phone)) {
+    if (formData.firstName && formData.lastName && isValidEmail(formData.email) && isValidPhone(formData.phone)) {
       onSubmit(formData)
     }
   }, [formData])
@@ -68,8 +69,13 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               required
               value={formData.email}
               onChange={e => update('email', e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${
+                formData.email && !isValidEmail(formData.email) ? 'border-red-400' : ''
+              }`}
             />
+            {formData.email && !isValidEmail(formData.email) && (
+              <p className="text-xs text-red-500 mt-1">נא להזין כתובת אימייל תקינה</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

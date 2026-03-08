@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/hooks/useCart'
-import { createOrder } from '@/lib/db'
 import { sendGoogleAdsConversion, sendMetaPurchaseEvent } from '@/lib/tracking'
 
 export default function PaymentSuccessPage() {
@@ -22,16 +21,22 @@ export default function PaymentSuccessPage() {
     const savedShareUrl = sessionStorage.getItem('badfos_share_url')
     if (savedShareUrl) setShareUrl(savedShareUrl)
 
-    // Create order in Firestore — only now, after payment succeeded
+    // Order was already created in Firestore before payment redirect (with pending_payment status).
+    // The webhook will update its status to 'new' (paid).
+    // Here we just send notification emails and tracking events.
     const orderDataStr = sessionStorage.getItem('badfos_pending_order')
     if (orderDataStr) {
       try {
-        const orderData = JSON.parse(orderDataStr)
-        createOrder(orderData).then(orderId => {
-          // Fire-and-forget: conversion events + emails
-          sendGoogleAdsConversion(orderData.total, orderId)
-          sendMetaPurchaseEvent(orderData.total, orderId)
+        const { orderId, customer, items, total } = JSON.parse(orderDataStr)
 
+        // Fire tracking events
+        if (orderId) {
+          sendGoogleAdsConversion(total, orderId)
+          sendMetaPurchaseEvent(total, orderId)
+        }
+
+        // Send admin notification email
+        if (customer) {
           fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -39,39 +44,39 @@ export default function PaymentSuccessPage() {
               type: 'new_order',
               data: {
                 orderId,
-                customer: orderData.customer,
-                itemsCount: orderData.items?.length ?? 0,
-                total: orderData.total,
+                customer,
+                itemsCount: items?.length ?? 0,
+                total,
               },
             }),
           }).catch(console.error)
+        }
 
-          // Send design mockup email if items have designs
-          const itemsWithDesigns = (orderData.items || []).filter(
-            (item: any) => item.designs && item.designs.length > 0
-          )
-          if (itemsWithDesigns.length > 0) {
-            fetch('/api/send-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'design_mockup',
-                data: {
-                  customer: orderData.customer,
-                  items: itemsWithDesigns.map((item: any) => ({
-                    productType: item.productType,
-                    color: item.color,
-                    fabricType: item.fabricType,
-                    designs: item.designs,
-                    totalQuantity: item.totalQuantity,
-                  })),
-                },
-              }),
-            }).catch(console.error)
-          }
-        }).catch(err => console.error('Failed to create order:', err))
+        // Send design mockup email if items have designs
+        const itemsWithDesigns = (items || []).filter(
+          (item: any) => item.designs && item.designs.length > 0
+        )
+        if (itemsWithDesigns.length > 0 && customer) {
+          fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'design_mockup',
+              data: {
+                customer,
+                items: itemsWithDesigns.map((item: any) => ({
+                  productType: item.productType,
+                  color: item.color,
+                  fabricType: item.fabricType,
+                  designs: item.designs,
+                  totalQuantity: item.totalQuantity,
+                })),
+              },
+            }),
+          }).catch(console.error)
+        }
       } catch (e) {
-        console.error('Failed to parse order data:', e)
+        console.error('Failed to process success page data:', e)
       }
     }
 

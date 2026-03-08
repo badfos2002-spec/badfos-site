@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+let _openai: OpenAI | null = null
+function getOpenAI(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) return null
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  return _openai
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +41,10 @@ export async function POST(request: NextRequest) {
     - Centered composition suitable for t-shirt placement`
 
     // Generate image using DALL-E 3
+    const openai = getOpenAI()
+    if (!openai) {
+      return NextResponse.json({ error: 'OpenAI not configured' }, { status: 500 })
+    }
     const response = await openai.images.generate({
       model: 'dall-e-3',
       prompt: enhancedPrompt,
