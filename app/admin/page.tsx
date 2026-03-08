@@ -33,113 +33,111 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function fetchStats() {
-      try {
-        const [orders, leads, inventory, reviews, coupons, discounts, images, pricing] = await Promise.all([
-          getAllDocuments<Order>('orders'),
-          getAllDocuments<Lead>('leads'),
-          getAllDocuments<any>('inventory'),
-          getAllDocuments<any>('reviews'),
-          getAllDocuments<any>('coupons'),
-          getAllDocuments<any>('discounts'),
-          getAllDocuments<any>('images'),
-          getAllDocuments<any>('pricing'),
-        ])
-
-        const newOrders = orders.filter(o => o.status === 'new' || o.status === 'paid').length
-        const newLeads = leads.filter(l => l.status === 'new').length
-        const activeCoupons = coupons.filter((c: any) => c.active !== false).length
-        const activeDiscounts = discounts.filter((d: any) => d.active !== false).length
-        const activeImages = images.filter((i: any) => i.active !== false).length
-        const activePricing = pricing.filter((p: any) => p.active !== false).length
-
-        setStats([
-          {
-            label: 'הזמנות',
-            href: '/admin/orders',
-            icon: ShoppingCart,
-            bgColor: 'bg-blue-100',
-            iconColor: 'text-blue-600',
-            count: orders.length,
-            subtitle: newOrders > 0 ? `${newOrders} חדשות` : 'אין חדשות',
-          },
-          {
-            label: 'לידים',
-            href: '/admin/leads',
-            icon: PhoneIncoming,
-            bgColor: 'bg-orange-100',
-            iconColor: 'text-orange-600',
-            count: leads.length,
-            subtitle: newLeads > 0 ? `${newLeads} חדשים` : 'אין חדשים',
-          },
-          {
-            label: 'מלאי',
-            href: '/admin/inventory',
-            icon: Package,
-            bgColor: 'bg-purple-100',
-            iconColor: 'text-purple-600',
-            count: inventory.length,
-            subtitle: 'קיים מלאי',
-          },
-          {
-            label: 'ביקורות',
-            href: '/admin/reviews',
-            icon: Star,
-            bgColor: 'bg-yellow-100',
-            iconColor: 'text-yellow-600',
-            count: reviews.length,
-            subtitle: 'כולל אישור',
-          },
-          {
-            label: 'קופונים',
-            href: '/admin/coupons',
-            icon: Gift,
-            bgColor: 'bg-green-100',
-            iconColor: 'text-green-600',
-            count: coupons.length,
-            subtitle: `${activeCoupons} פעילים`,
-          },
-          {
-            label: 'הנחות',
-            href: '/admin/discounts',
-            icon: Percent,
-            bgColor: 'bg-red-100',
-            iconColor: 'text-red-600',
-            count: discounts.length,
-            subtitle: `${activeDiscounts} פעילות`,
-          },
-          {
-            label: 'תמונות',
-            href: '/admin/images',
-            icon: Image,
-            bgColor: 'bg-indigo-100',
-            iconColor: 'text-indigo-600',
-            count: images.length,
-            subtitle: `${activeImages} פעילות`,
-          },
-          {
-            label: 'תמחור',
-            href: '/admin/pricing',
-            icon: DollarSign,
-            bgColor: 'bg-emerald-100',
-            iconColor: 'text-emerald-600',
-            count: pricing.length,
-            subtitle: `${activePricing} פעילים`,
-          },
-          {
-            label: 'אנליטיקה',
-            href: '/admin/analytics',
-            icon: BarChart3,
-            bgColor: 'bg-pink-100',
-            iconColor: 'text-pink-600',
-            count: 'נתונים',
-            subtitle: 'דוחות ומגמות',
-          },
-        ])
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error)
-      } finally {
-        setLoading(false)
+      const safe = async <T,>(fn: () => Promise<T[]>): Promise<T[]> => {
+        try { return await fn() } catch { return [] }
       }
+
+      const [orders, leads, inventory, reviews, coupons, discounts, images, pricing] = await Promise.all([
+        safe(() => getAllDocuments<Order>('orders')),
+        safe(() => getAllDocuments<Lead>('leads')),
+        safe(() => getAllDocuments<any>('inventory')),
+        safe(() => getAllDocuments<any>('reviews')),
+        safe(() => getAllDocuments<any>('coupons')),
+        safe(() => getAllDocuments<any>('discounts')),
+        safe(() => getAllDocuments<any>('siteImages')),
+        safe(() => getAllDocuments<any>('pricing')),
+      ])
+
+      const newOrders = orders.filter(o => o.status === 'new' || o.status === 'paid').length
+      const newLeads = leads.filter(l => l.status === 'new').length
+      const activeCoupons = coupons.filter((c: any) => c.active !== false).length
+      const activeDiscounts = discounts.filter((d: any) => d.active !== false).length
+
+      setStats([
+        {
+          label: 'הזמנות',
+          href: '/admin/orders',
+          icon: ShoppingCart,
+          bgColor: 'bg-blue-100',
+          iconColor: 'text-blue-600',
+          count: orders.length,
+          subtitle: newOrders > 0 ? `${newOrders} חדשות` : 'אין חדשות',
+        },
+        {
+          label: 'לידים',
+          href: '/admin/leads',
+          icon: PhoneIncoming,
+          bgColor: 'bg-orange-100',
+          iconColor: 'text-orange-600',
+          count: leads.length,
+          subtitle: newLeads > 0 ? `${newLeads} חדשים` : 'אין חדשים',
+        },
+        {
+          label: 'מלאי',
+          href: '/admin/inventory',
+          icon: Package,
+          bgColor: 'bg-purple-100',
+          iconColor: 'text-purple-600',
+          count: inventory.length,
+          subtitle: 'קיים מלאי',
+        },
+        {
+          label: 'ביקורות',
+          href: '/admin/reviews',
+          icon: Star,
+          bgColor: 'bg-yellow-100',
+          iconColor: 'text-yellow-600',
+          count: reviews.length,
+          subtitle: 'כולל אישור',
+        },
+        {
+          label: 'קופונים',
+          href: '/admin/coupons',
+          icon: Gift,
+          bgColor: 'bg-green-100',
+          iconColor: 'text-green-600',
+          count: coupons.length,
+          subtitle: `${activeCoupons} פעילים`,
+        },
+        {
+          label: 'הנחות',
+          href: '/admin/discounts',
+          icon: Percent,
+          bgColor: 'bg-red-100',
+          iconColor: 'text-red-600',
+          count: discounts.length,
+          subtitle: `${activeDiscounts} פעילות`,
+        },
+        {
+          label: 'תמונות',
+          href: '/admin/images',
+          icon: Image,
+          bgColor: 'bg-indigo-100',
+          iconColor: 'text-indigo-600',
+          count: images.length,
+          subtitle: `${images.length} פעילות`,
+        },
+        {
+          label: 'תמחור',
+          href: '/admin/pricing',
+          icon: DollarSign,
+          bgColor: 'bg-emerald-100',
+          iconColor: 'text-emerald-600',
+          count: pricing.length,
+          subtitle: `${pricing.length} פעילים`,
+        },
+        {
+          label: 'אנליטיקה',
+          href: '/admin/analytics',
+          icon: BarChart3,
+          bgColor: 'bg-pink-100',
+          iconColor: 'text-pink-600',
+          count: 'נתונים',
+          subtitle: 'דוחות ומגמות',
+        },
+      ])
+
+      setLoading(false)
     }
 
     fetchStats()
