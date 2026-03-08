@@ -8,30 +8,17 @@ interface ContactFormProps {
   onSubmit: (info: CustomerInfo) => void
 }
 
-const STORAGE_KEY = 'badfos_contact_info'
-
-function loadSavedContact(): CustomerInfo {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      return { ...parsed, notes: '' } // don't restore notes
-    }
-  } catch {}
-  return { firstName: '', lastName: '', email: '', phone: '', phoneSecondary: '', notes: '' }
-}
-
 export default function ContactForm({ onSubmit }: ContactFormProps) {
-  const [formData, setFormData] = useState<CustomerInfo>(loadSavedContact)
+  const [formData, setFormData] = useState<CustomerInfo>({
+    firstName: '', lastName: '', email: '', phone: '', phoneSecondary: '', notes: ''
+  })
 
   const isValidPhone = (phone: string) => /^05\d{8}$/.test(phone)
 
-  // Auto-update parent whenever required fields are filled + save to localStorage
+  // Auto-update parent whenever required fields are filled
   useEffect(() => {
     if (formData.firstName && formData.lastName && formData.email && isValidPhone(formData.phone)) {
       onSubmit(formData)
-      const { notes, ...toSave } = formData
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
     }
   }, [formData])
 
@@ -50,6 +37,8 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               <label className="block text-sm font-medium mb-2">שם פרטי *</label>
               <input
                 type="text"
+                name="firstName"
+                autoComplete="given-name"
                 required
                 value={formData.firstName}
                 onChange={e => update('firstName', e.target.value)}
@@ -60,6 +49,8 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               <label className="block text-sm font-medium mb-2">שם משפחה *</label>
               <input
                 type="text"
+                name="lastName"
+                autoComplete="family-name"
                 required
                 value={formData.lastName}
                 onChange={e => update('lastName', e.target.value)}
@@ -72,6 +63,8 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
             <label className="block text-sm font-medium mb-2">אימייל *</label>
             <input
               type="email"
+              name="email"
+              autoComplete="email"
               required
               value={formData.email}
               onChange={e => update('email', e.target.value)}
@@ -84,6 +77,8 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               <label className="block text-sm font-medium mb-2">טלפון *</label>
               <input
                 type="tel"
+                name="phone"
+                autoComplete="tel"
                 required
                 maxLength={10}
                 value={formData.phone}
@@ -101,6 +96,8 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               <label className="block text-sm font-medium mb-2">טלפון נוסף</label>
               <input
                 type="tel"
+                name="phoneSecondary"
+                autoComplete="tel"
                 maxLength={10}
                 value={formData.phoneSecondary}
                 onChange={e => update('phoneSecondary', e.target.value.replace(/\D/g, '').slice(0, 10))}

@@ -9,29 +9,16 @@ interface ShippingFormProps {
   onSubmit: (shipping: Shipping) => void
 }
 
-const STORAGE_KEY = 'badfos_shipping_info'
-
-function loadSavedShipping(): { method: 'delivery' | 'pickup'; address: Address } {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) return JSON.parse(saved)
-  } catch {}
-  return { method: 'delivery', address: { street: '', number: '', city: '', zipCode: 'קרקע', entrance: '' } }
-}
-
 export default function ShippingForm({ onSubmit }: ShippingFormProps) {
-  const saved = loadSavedShipping()
-  const [method, setMethod] = useState<'delivery' | 'pickup'>(saved.method)
-  const [address, setAddress] = useState<Address>(saved.address)
+  const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
+  const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', zipCode: 'קרקע', entrance: '' })
 
-  // Auto-update parent whenever method/address changes + save to localStorage
+  // Auto-update parent whenever method/address changes
   useEffect(() => {
     if (method === 'pickup') {
       onSubmit({ method, cost: SHIPPING_COSTS[method] })
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ method, address }))
     } else if (address.street && address.number && address.city && address.zipCode) {
       onSubmit({ method, address, cost: SHIPPING_COSTS[method] })
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ method, address }))
     }
   }, [method, address])
 
@@ -87,6 +74,8 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                   <label className="block text-sm font-medium mb-2">רחוב *</label>
                   <input
                     type="text"
+                    name="street"
+                    autoComplete="street-address"
                     value={address.street}
                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
@@ -96,6 +85,8 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                   <label className="block text-sm font-medium mb-2">מספר בית/בניין *</label>
                   <input
                     type="text"
+                    name="houseNumber"
+                    autoComplete="address-line2"
                     value={address.number}
                     onChange={(e) => setAddress({ ...address, number: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
@@ -108,6 +99,8 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                   <label className="block text-sm font-medium mb-2">עיר *</label>
                   <input
                     type="text"
+                    name="city"
+                    autoComplete="address-level2"
                     value={address.city}
                     onChange={(e) => setAddress({ ...address, city: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
@@ -132,6 +125,8 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                 <label className="block text-sm font-medium mb-2">כניסה</label>
                 <input
                   type="text"
+                  name="entrance"
+                  autoComplete="off"
                   value={address.entrance}
                   onChange={(e) => setAddress({ ...address, entrance: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
