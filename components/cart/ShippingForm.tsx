@@ -12,6 +12,7 @@ interface ShippingFormProps {
 export default function ShippingForm({ onSubmit }: ShippingFormProps) {
   const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
   const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', zipCode: 'קרקע', entrance: '' })
+  const [touched, setTouched] = useState(false)
 
   // Auto-update parent whenever method/address changes
   useEffect(() => {
@@ -21,6 +22,13 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
       onSubmit({ method, address, cost: SHIPPING_COSTS[method] })
     }
   }, [method, address])
+
+  // Mark as touched after 3 seconds of delivery being selected
+  useEffect(() => {
+    if (method !== 'delivery') return
+    const timer = setTimeout(() => setTouched(true), 3000)
+    return () => clearTimeout(timer)
+  }, [method])
 
   return (
     <Card>
@@ -71,43 +79,49 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">רחוב *</label>
+                  <label className="block text-sm font-medium mb-2">רחוב <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     name="street"
+                    required
                     autoComplete="street-address"
                     value={address.street}
                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${!address.street && touched ? 'border-red-500' : ''}`}
                   />
+                  {!address.street && touched && <p className="text-red-500 text-sm mt-1">שדה חובה</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">מספר בית/בניין *</label>
+                  <label className="block text-sm font-medium mb-2">מספר בית/בניין <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     name="houseNumber"
+                    required
                     autoComplete="address-line2"
                     value={address.number}
                     onChange={(e) => setAddress({ ...address, number: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${!address.number && touched ? 'border-red-500' : ''}`}
                   />
+                  {!address.number && touched && <p className="text-red-500 text-sm mt-1">שדה חובה</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">עיר *</label>
+                  <label className="block text-sm font-medium mb-2">עיר <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     name="city"
+                    required
                     autoComplete="address-level2"
                     value={address.city}
                     onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${!address.city && touched ? 'border-red-500' : ''}`}
                   />
+                  {!address.city && touched && <p className="text-red-500 text-sm mt-1">שדה חובה</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">קומה *</label>
+                  <label className="block text-sm font-medium mb-2">קומה <span className="text-red-500">*</span></label>
                   <select
                     value={address.zipCode}
                     onChange={(e) => setAddress({ ...address, zipCode: e.target.value })}

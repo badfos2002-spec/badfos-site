@@ -120,14 +120,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Send email using Resend
-    const result = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: 'בדפוס <no-reply@badfos.co.il>',
       to,
       subject,
       html: emailHtml,
     })
 
-    return NextResponse.json({ success: true }, { status: 200 })
+    if (error) {
+      console.error('Resend error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    console.log('Email sent successfully:', data?.id, 'to:', to)
+    return NextResponse.json({ success: true, emailId: data?.id }, { status: 200 })
   } catch (error) {
     console.error('Email send error:', error)
     return NextResponse.json(
