@@ -6,11 +6,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getSharedCart, SharedDesignData, createShareCoupon } from '@/lib/db'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { TSHIRT_COLORS, SWEATSHIRT_COLORS, BUFF_COLORS, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
+import { TSHIRT_COLORS, SWEATSHIRT_COLORS, BUFF_COLORS, APRON_COLORS, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Loader2, X, Copy, Check, ChevronDown } from 'lucide-react'
 
-const ALL_COLORS = [...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...BUFF_COLORS]
+const ALL_COLORS = [...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...BUFF_COLORS, ...APRON_COLORS]
 
 function getColorLabel(colorId: string) {
   return ALL_COLORS.find(c => c.id === colorId)?.name || colorId

@@ -24,6 +24,11 @@ const categoryDetails: Record<string, { title: string; description: string; imag
     description: 'באפים ייחודיים עם העיצוב שלך',
     image: '/assets/רקע קטגוריית באפים.png',
   },
+  apron: {
+    title: 'סינרים',
+    description: 'סינרים מעוצבים להדפסה אישית',
+    image: '/assets/סינרים תמונת קטגוריה.png',
+  },
 }
 
 export default function ProductSelector() {

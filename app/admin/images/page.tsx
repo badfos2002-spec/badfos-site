@@ -64,6 +64,11 @@ const SEED_IMAGES: Omit<SiteImage, 'id' | 'createdAt'>[] = [
   { category: 'buff_mockups' as any, name: 'באף סגול', description: '', imageUrl: '/assets/באף סגול.png', isActive: true, sortOrder: 4 },
   { category: 'buff_mockups' as any, name: 'באף ירוק', description: '', imageUrl: '/assets/באף ירוק.png', isActive: true, sortOrder: 5 },
   { category: 'buff_mockups' as any, name: 'באף תכלת', description: '', imageUrl: '/assets/באף תכלת.png', isActive: true, sortOrder: 6 },
+  // apron_mockups
+  { category: 'apron_mockups' as any, name: 'סינר אפור', description: '', imageUrl: '/assets/סינר אפור.png', isActive: true, sortOrder: 1 },
+  { category: 'apron_mockups' as any, name: 'סינר לבן', description: '', imageUrl: '/assets/סינר לבן.png', isActive: true, sortOrder: 2 },
+  { category: 'apron_mockups' as any, name: 'סינר נייבי', description: '', imageUrl: '/assets/סינר נייבי.png', isActive: true, sortOrder: 3 },
+  { category: 'apron_mockups' as any, name: 'סינר שחור', description: '', imageUrl: '/assets/סינר שחור.png', isActive: true, sortOrder: 4 },
 ]
 
 const categoryLabels: Record<string, string> = {
@@ -74,6 +79,7 @@ const categoryLabels: Record<string, string> = {
   tshirt_mockups: 'מוקאפים חולצות',
   sweatshirt_mockups: 'מוקאפים סווטשרטים',
   buff_mockups: 'מוקאפים באפים',
+  apron_mockups: 'מוקאפים סינרים',
   about_main: 'אודות ראשי',
   about_process: 'תהליך אודות',
   video: 'וידאו',

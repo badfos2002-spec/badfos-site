@@ -23,6 +23,7 @@ const productLabels: Record<string, string> = {
   sweatshirt: 'סווטשרט',
   buff: 'באף',
   cap: 'כובע',
+  apron: 'סינר',
 }
 
 const fabricLabels: Record<string, string> = {

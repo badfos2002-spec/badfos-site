@@ -38,6 +38,14 @@ export const PRODUCT_CATEGORIES = [
     textColor: 'text-pink-900',
     popular: false,
   },
+  {
+    id: 'apron' as ProductType,
+    name: 'סינרים',
+    icon: '🧑‍🍳',
+    color: 'bg-emerald-100 border-emerald-400',
+    textColor: 'text-emerald-900',
+    popular: false,
+  },
 ] as const
 
 // ============================================================================
@@ -109,6 +117,13 @@ export const BUFF_COLORS = [
   { id: 'turquoise', name: 'טורקיז', hex: '#06B6D4' },
 ] as const
 
+export const APRON_COLORS = [
+  { id: 'gray', name: 'אפור', hex: '#9CA3AF' },
+  { id: 'white', name: 'לבן', hex: '#F9FAFB' },
+  { id: 'navy', name: 'נייבי', hex: '#1E3A8A' },
+  { id: 'black', name: 'שחור', hex: '#000000' },
+] as const
+
 // ============================================================================
 // Design Areas by Product Type
 // ============================================================================
@@ -176,6 +191,15 @@ export const BUFF_DESIGN_AREAS = [
   },
 ] as const
 
+export const APRON_DESIGN_AREAS = [
+  {
+    id: 'center' as DesignAreaType,
+    name: 'מרכזי',
+    description: 'הדפסה על הסינר',
+    price: 8,
+  },
+] as const
+
 // ============================================================================
 // Sizes and Surcharges
 // ============================================================================
@@ -200,6 +224,7 @@ export const BASE_PRICES = {
   sweatshirt: 53,
   buff: 8,
   cap: 0, // To be defined
+  apron: 20,
 } as const
 
 // ============================================================================
@@ -207,6 +232,12 @@ export const BASE_PRICES = {
 // ============================================================================
 
 export const BUFF_QUANTITIES = [
+  { value: 50, label: '50 יחידות' },
+  { value: 100, label: '100 יחידות' },
+] as const
+
+export const APRON_QUANTITIES = [
+  { value: 30, label: '30 יחידות' },
   { value: 50, label: '50 יחידות' },
   { value: 100, label: '100 יחידות' },
 ] as const
@@ -369,6 +400,8 @@ export function getColorsByProductType(productType: ProductType) {
       return SWEATSHIRT_COLORS
     case 'buff':
       return BUFF_COLORS
+    case 'apron':
+      return APRON_COLORS
     default:
       return TSHIRT_COLORS
   }
@@ -380,6 +413,7 @@ export function getDesignAreasByProductType(productType: ProductType) {
       case 'tshirt': return TSHIRT_DESIGN_AREAS
       case 'sweatshirt': return SWEATSHIRT_DESIGN_AREAS
       case 'buff': return BUFF_DESIGN_AREAS
+      case 'apron': return APRON_DESIGN_AREAS
       default: return TSHIRT_DESIGN_AREAS
     }
   })()

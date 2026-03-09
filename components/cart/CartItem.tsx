@@ -210,6 +210,7 @@ export default function CartItem({ item }: CartItemProps) {
                     sweatshirt: 'סווטשירט בעיצוב אישי',
                     buff: 'באף בעיצוב אישי',
                     cap: 'כובע בעיצוב אישי',
+                    apron: 'סינר בעיצוב אישי',
                   }[item.productType] ?? item.productType}
                 </h3>
                 <p className="text-sm text-text-gray">

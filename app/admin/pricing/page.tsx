@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { getDocument, setDocument } from '@/lib/db'
 
 const DEFAULTS = {
-  basePrices: { tshirt: 37, sweatshirt: 53, buff: 8 },
+  basePrices: { tshirt: 37, sweatshirt: 53, buff: 8, apron: 20 },
   fabricSurcharges: { cotton: 0, 'dri-fit': 0, polo: 10, oversized: 10 },
   designAreas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, center: 8 },
   sizeSurcharges: { '3XL': 12, '4XL': 12 },
@@ -101,7 +101,7 @@ export default function AdminPricingPage() {
             {(Object.keys(pricing.basePrices) as Array<keyof typeof pricing.basePrices>).map(key => (
               <div key={key}>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                  {key === 'tshirt' ? 'חולצה' : key === 'sweatshirt' ? 'סווטשרט' : 'באף'} (₪)
+                  {{ tshirt: 'חולצה', sweatshirt: 'סווטשרט', buff: 'באף', apron: 'סינר' }[key] || key} (₪)
                 </label>
                 <Input
                   type="number" min="0"
