@@ -196,7 +196,7 @@ export const APRON_DESIGN_AREAS = [
     id: 'center' as DesignAreaType,
     name: 'מרכזי',
     description: 'הדפסה על הסינר',
-    price: 8,
+    price: 10,
   },
 ] as const
 
@@ -224,7 +224,7 @@ export const BASE_PRICES = {
   sweatshirt: 53,
   buff: 8,
   cap: 0, // To be defined
-  apron: 20,
+  apron: 29,
 } as const
 
 // ============================================================================

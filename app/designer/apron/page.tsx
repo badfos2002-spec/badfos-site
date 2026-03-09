@@ -31,8 +31,8 @@ const stepConfig = [
 
 const STEP_NAMES = ['צבע', 'עיצוב', 'כמות']
 const totalSteps = 3
-const BASE_PRICE = 20
-const DESIGN_COST = 8
+const BASE_PRICE = 29
+const DESIGN_COST = 10
 const PRICE_PER_UNIT = BASE_PRICE + DESIGN_COST
 
 export default function ApronDesignerPage() {
