@@ -15,8 +15,6 @@ import {
   Gift,
   Users,
   BarChart3,
-  Megaphone,
-  PanelTop,
   Menu,
   X,
   LogOut,
@@ -35,11 +33,9 @@ const menuItems = [
   { icon: Star, label: 'ביקורות', href: '/admin/reviews' },
   { icon: Image, label: 'תמונות', href: '/admin/images' },
   { icon: Tag, label: 'קופונים', href: '/admin/coupons' },
-  { icon: Percent, label: 'הנחות', href: '/admin/discounts' },
+  { icon: Percent, label: 'הנחות ומבצעים', href: '/admin/discounts' },
   { icon: Gift, label: 'חבילות', href: '/admin/packages' },
   { icon: BarChart3, label: 'אנליטיקה', href: '/admin/analytics' },
-  { icon: PanelTop, label: 'Top Bar', href: '/admin/topbar' },
-  { icon: Megaphone, label: 'הגדרות מבצעים', href: '/admin/deals' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -13,6 +13,33 @@ export function sendGoogleAdsConversion(value = 1.0, transactionId?: string) {
   }
 }
 
+export function sendGenerateLeadEvent(source: string) {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'generate_lead', {
+      currency: 'ILS',
+      value: 1.0,
+      source,
+    })
+  }
+}
+
+export function sendPurchaseEvent(transactionId: string, value: number, items: Array<{ id: string; name: string; category: string; price: number; quantity: number }>) {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'purchase', {
+      transaction_id: transactionId,
+      value,
+      currency: 'ILS',
+      items: items.map(item => ({
+        item_id: item.id,
+        item_name: item.name,
+        item_category: item.category,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+    })
+  }
+}
+
 export function sendMetaLeadEvent() {
   if (typeof window !== 'undefined' && window.fbq) {
     window.fbq('track', 'Lead')
@@ -31,6 +58,10 @@ export function sendMetaPurchaseEvent(value = 1.0, orderId?: string) {
 
 export function trackWhatsAppClick(source: string) {
   if (typeof window === 'undefined') return
+  // Google Ads conversion
+  sendGoogleAdsConversion()
+  // GA4 generate_lead event
+  sendGenerateLeadEvent(`whatsapp_${source}`)
   // GA4 event
   window.gtag?.('event', 'click_whatsapp', { source })
   // Meta Contact event

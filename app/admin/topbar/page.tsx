@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Save, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
@@ -84,7 +84,7 @@ export default function AdminTopBarPage() {
             </div>
           )}
 
-          <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 space-y-6">
 
             {/* Active toggle */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -93,6 +93,7 @@ export default function AdminTopBarPage() {
                 <p className="text-sm text-gray-500">האם להציג את הפס העליון באתר</p>
               </div>
               <button
+                dir="ltr"
                 onClick={() => update('isActive', !settings.isActive)}
                 className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${settings.isActive ? 'bg-yellow-500' : 'bg-gray-300'}`}
               >
@@ -129,17 +130,18 @@ export default function AdminTopBarPage() {
             {/* Placement toggles */}
             <div>
               <p className="text-sm font-medium text-gray-700 mb-3">איפה להציג</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                   <div>
                     <p className="font-medium text-gray-900 text-sm">מעל הכותרת</p>
                     <p className="text-xs text-gray-500">בכל דפי האתר</p>
                   </div>
                   <button
+                    dir="ltr"
                     onClick={() => update('showInHeader', !settings.showInHeader)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.showInHeader ? 'bg-yellow-500' : 'bg-gray-300'}`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${settings.showInHeader ? 'bg-yellow-500' : 'bg-gray-300'}`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${settings.showInHeader ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${settings.showInHeader ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
                 </div>
 
@@ -149,10 +151,11 @@ export default function AdminTopBarPage() {
                     <p className="text-xs text-gray-500">שלב 4 בעיצוב</p>
                   </div>
                   <button
+                    dir="ltr"
                     onClick={() => update('showInDesigner', !settings.showInDesigner)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.showInDesigner ? 'bg-yellow-500' : 'bg-gray-300'}`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${settings.showInDesigner ? 'bg-yellow-500' : 'bg-gray-300'}`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${settings.showInDesigner ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${settings.showInDesigner ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
                 </div>
               </div>

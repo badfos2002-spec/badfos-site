@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/hooks/useCart'
-import { sendGoogleAdsConversion, sendMetaPurchaseEvent } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendPurchaseEvent, sendMetaPurchaseEvent } from '@/lib/tracking'
 
 export default function PaymentSuccessPage() {
   const clearCart = useCart((state) => state.clearCart)
@@ -32,6 +32,13 @@ export default function PaymentSuccessPage() {
         // Fire tracking events
         if (orderId) {
           sendGoogleAdsConversion(total, orderId)
+          sendPurchaseEvent(orderId, total, (items || []).map((item: any) => ({
+            id: item.productType,
+            name: item.productType,
+            category: item.productType,
+            price: item.pricePerUnit || 0,
+            quantity: item.totalQuantity || 1,
+          })))
           sendMetaPurchaseEvent(total, orderId)
         }
 

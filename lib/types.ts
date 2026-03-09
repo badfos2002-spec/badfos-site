@@ -317,6 +317,8 @@ export type EmailType =
   | 'order_in_production'
   | 'order_shipped'
   | 'new_lead'
+  | 'new_order'
+  | 'design_mockup'
 
 export interface EmailData {
   type: EmailType

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendMetaLeadEvent } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent } from '@/lib/tracking'
 import { User, Phone, ArrowLeft } from 'lucide-react'
 
 export default function NewContactFormSection() {
@@ -41,6 +41,7 @@ export default function NewContactFormSection() {
       }).catch(console.error)
 
       sendGoogleAdsConversion()
+      sendGenerateLeadEvent('bottom_form')
       sendMetaLeadEvent()
 
       setSubmitted(true)

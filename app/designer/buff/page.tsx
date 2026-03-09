@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload } from 'lucide-react'
+import { useCart } from '@/hooks/useCart'
 
 const buffMockups: Record<string, string> = {
   red: '/assets/באף אדום.png',
@@ -37,12 +39,26 @@ const DESIGN_COST = 8
 const PRICE_PER_UNIT = BASE_PRICE + DESIGN_COST
 
 export default function BuffDesignerPage() {
+  const router = useRouter()
+  const { addItem } = useCart()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedColor, setSelectedColor] = useState('')
   const [designFile, setDesignFile] = useState<File | null>(null)
   const [quantity, setQuantity] = useState<50 | 100>(50)
 
   const total = quantity * PRICE_PER_UNIT
+
+  const handleAddToCart = () => {
+    if (!designFile) return
+    const imageUrl = URL.createObjectURL(designFile)
+    addItem({
+      productType: 'buff',
+      color: selectedColor,
+      sizes: [{ size: 'ONE_SIZE', quantity }],
+      designs: [{ area: 'center', areaName: 'מרכזי', imageUrl, fileName: designFile.name }],
+    })
+    router.push('/cart')
+  }
 
   const canProceed = () => {
     switch (currentStep) {
@@ -240,6 +256,7 @@ export default function BuffDesignerPage() {
         </Button>
       ) : (
         <Button
+          onClick={handleAddToCart}
           disabled={!canProceed()}
           className={`gradient-yellow text-white ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
         >
@@ -287,6 +304,7 @@ export default function BuffDesignerPage() {
               </Button>
             ) : (
               <Button
+                onClick={handleAddToCart}
                 disabled={!canProceed()}
                 className="gradient-yellow text-white"
               >

@@ -212,14 +212,14 @@ export default function AdminPage() {
           buttonLabel: 'נהל קופונים',
         },
         {
-          title: 'ניהול הנחות',
+          title: 'הנחות ומבצעים',
           href: '/admin/discounts',
           icon: Percent,
           iconColor: 'text-red-600',
           borderColor: '',
-          description: 'הגדר הנחות אוטומטיות ומבצעים',
+          description: 'הנחות כמות, באנר מבצעים ואזור מבצעים בדף הבית',
           badge: `${activeDiscounts} פעילות`,
-          buttonLabel: 'נהל הנחות',
+          buttonLabel: 'נהל הנחות ומבצעים',
         },
         {
           title: 'ניהול תמונות האתר',

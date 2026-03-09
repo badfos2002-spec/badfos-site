@@ -5,7 +5,7 @@ import { X, User, Phone, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendMetaLeadEvent } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent } from '@/lib/tracking'
 
 export default function LeadPopup() {
   const [isOpen, setIsOpen] = useState(false)
@@ -46,6 +46,7 @@ export default function LeadPopup() {
       }).catch(console.error)
 
       sendGoogleAdsConversion()
+      sendGenerateLeadEvent('popup')
       sendMetaLeadEvent()
 
       handleClose()
