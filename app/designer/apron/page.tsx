@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
@@ -219,15 +219,35 @@ export default function ApronDesignerPage() {
     </div>
   )
 
+  const designPreviewUrl = useMemo(() => {
+    if (!designFile) return null
+    return URL.createObjectURL(designFile)
+  }, [designFile])
+
   const MockupImage = () => (
-    <Image
-      src={mockupSrc}
-      alt="תצוגה מקדימה"
-      width={0}
-      height={0}
-      sizes="100vw"
-      className="w-full h-auto"
-    />
+    <div className="relative">
+      <Image
+        src={mockupSrc}
+        alt="תצוגה מקדימה"
+        width={0}
+        height={0}
+        sizes="100vw"
+        className="w-full h-auto"
+      />
+      {designPreviewUrl && (
+        <div
+          className="absolute"
+          style={{ top: '42%', left: '50%', transform: 'translateX(-50%)', width: '22%', height: '14%' }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={designPreviewUrl}
+            alt="עיצוב"
+            className="w-full h-full object-contain"
+          />
+        </div>
+      )}
+    </div>
   )
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
