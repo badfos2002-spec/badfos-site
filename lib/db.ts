@@ -304,7 +304,12 @@ export async function getLeadsByDate(date: Date): Promise<Lead[]> {
  * Get all leads
  */
 export async function getAllLeads(): Promise<Lead[]> {
-  return await queryDocuments<Lead>('leads', [], 'createdAt')
+  const leads = await queryDocuments<Lead>('leads', [])
+  return leads.sort((a, b) => {
+    const dateA = a.createdAt?.toDate?.() ?? new Date(0)
+    const dateB = b.createdAt?.toDate?.() ?? new Date(0)
+    return dateB.getTime() - dateA.getTime()
+  })
 }
 
 /**
