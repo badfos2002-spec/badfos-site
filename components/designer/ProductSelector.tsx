@@ -33,7 +33,7 @@ const categoryDetails: Record<string, { title: string; description: string; imag
 
 export default function ProductSelector() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-none mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 max-w-none mx-auto">
       {PRODUCT_CATEGORIES.map((category) => {
         const details = categoryDetails[category.id]
         return (
