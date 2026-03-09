@@ -7,6 +7,7 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 
 const apronMockups: Record<string, string> = {
   gray: '/assets/סינר אפור.png',
@@ -224,28 +225,39 @@ export default function ApronDesignerPage() {
     return URL.createObjectURL(designFile)
   }, [designFile])
 
+  const overlay = DESIGN_AREA_OVERLAYS['center']
+
   const MockupImage = () => (
-    <div className="relative">
+    <div className="relative w-full">
       <Image
         src={mockupSrc}
         alt="תצוגה מקדימה"
         width={0}
         height={0}
         sizes="100vw"
-        className="w-full h-auto"
+        className="w-full h-auto block"
       />
-      {designPreviewUrl && (
-        <div
-          className="absolute"
-          style={{ top: '42%', left: '50%', transform: 'translateX(-50%)', width: '22%', height: '14%' }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={designPreviewUrl}
-            alt="עיצוב"
-            className="w-full h-full object-contain"
-          />
-        </div>
+      {designPreviewUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={designPreviewUrl}
+          alt={overlay.label}
+          className="absolute object-contain"
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          style={overlay.style as any}
+        />
+      ) : (
+        currentStep === 2 && (
+          <div
+            className="absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 border-green-400 bg-green-100/70"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            style={overlay.style as any}
+          >
+            <span className="text-xs font-medium text-center leading-tight px-1 text-green-700">
+              {overlay.label}
+            </span>
+          </div>
+        )
       )}
     </div>
   )
