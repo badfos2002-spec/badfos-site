@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload } from 'lucide-react'
+import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload, CheckCircle, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 
 const buffMockups: Record<string, string> = {
   red: '/assets/באף אדום.png',
@@ -47,6 +48,11 @@ export default function BuffDesignerPage() {
   const [quantity, setQuantity] = useState<50 | 100>(50)
 
   const total = quantity * PRICE_PER_UNIT
+
+  const designPreviewUrl = useMemo(() => {
+    if (!designFile) return null
+    return URL.createObjectURL(designFile)
+  }, [designFile])
 
   const handleAddToCart = () => {
     if (!designFile) return
@@ -122,35 +128,69 @@ export default function BuffDesignerPage() {
       case 2:
         return (
           <div>
-            <div className="rounded-xl border-2 border-[#fbbf24] bg-yellow-50 p-4 mb-4">
-              <h3 className="font-bold text-[#1e293b] mb-1">הדפסה מרכזית</h3>
-              <p className="text-sm text-[#f59e0b] font-bold">+{DESIGN_COST}₪</p>
+            <p className="text-sm text-gray-500 mb-4">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
+
+            {/* Area selector - single area */}
+            <div className="grid gap-2 mb-4 grid-cols-3">
+              <button className="relative text-xs h-16 px-2 py-2 rounded-md font-medium gradient-yellow text-white border-transparent shadow flex items-center justify-center">
+                <div className="flex flex-col items-center">
+                  <span>מרכזי</span>
+                  <span className="text-[10px] opacity-80">+₪{DESIGN_COST}</span>
+                </div>
+              </button>
             </div>
-            <label className="block cursor-pointer">
-              <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                designFile ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-[#fbbf24]'
-              }`}>
-                {designFile ? (
-                  <>
-                    <Check className="w-10 h-10 mx-auto text-green-500 mb-2" />
-                    <p className="font-bold text-green-700">{designFile.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">לחצו להחלפה</p>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-10 h-10 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm font-medium text-gray-600">העלאת עיצוב</p>
-                    <p className="text-xs text-gray-400 mt-1">JPG, PNG עד 10MB</p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={e => setDesignFile(e.target.files?.[0] || null)}
-                />
-              </div>
-            </label>
+
+            {/* Upload area */}
+            <div className="space-y-3">
+              {designFile ? (
+                <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                      <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{designFile.name}</span>
+                    </div>
+                    <button onClick={() => setDesignFile(null)} className="text-red-400 hover:text-red-600 shrink-0 mr-1">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="w-full aspect-video bg-white rounded-lg overflow-hidden border border-green-200 mb-3">
+                    {designPreviewUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={designPreviewUrl} alt="עיצוב" className="w-full h-full object-contain" />
+                    )}
+                  </div>
+                  <label className="cursor-pointer block">
+                    <div className="w-full text-center py-2 px-3 border border-dashed border-yellow-300 rounded-lg hover:border-yellow-400 hover:bg-yellow-50 transition-all text-xs text-gray-500 font-medium">
+                      החלף קובץ
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg"
+                      className="hidden"
+                      onChange={e => setDesignFile(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="cursor-pointer block">
+                  <div className="border-2 border-dashed border-yellow-300 rounded-lg p-4 sm:p-6 text-center hover:border-yellow-400 hover:bg-yellow-50 transition-all mx-auto w-full sm:max-w-xs">
+                    <div className="w-12 h-12 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-3">
+                      <ImagePlus className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 mb-1">לחץ להעלאת תמונה</p>
+                    <p className="text-xs text-gray-600 mb-2">JPG, PNG, JPEG עד 10MB</p>
+                    <p className="text-xs text-blue-600 font-medium">יועלה לאזור: מרכזי</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg"
+                    className="hidden"
+                    onChange={e => setDesignFile(e.target.files?.[0] || null)}
+                  />
+                </label>
+              )}
+            </div>
+
             {!designFile && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
           </div>
         )
@@ -223,15 +263,41 @@ export default function BuffDesignerPage() {
     </div>
   )
 
+  const buffOverlay = DESIGN_AREA_OVERLAYS['buff_center']
+
   const MockupImage = () => (
-    <Image
-      src={mockupSrc}
-      alt="תצוגה מקדימה"
-      width={0}
-      height={0}
-      sizes="100vw"
-      className="w-full h-auto"
-    />
+    <div className="relative w-full">
+      <Image
+        src={mockupSrc}
+        alt="תצוגה מקדימה"
+        width={0}
+        height={0}
+        sizes="100vw"
+        className="w-full h-auto block"
+      />
+      {designPreviewUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={designPreviewUrl}
+          alt={buffOverlay.label}
+          className="absolute object-contain"
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          style={buffOverlay.style as any}
+        />
+      ) : (
+        currentStep === 2 && (
+          <div
+            className="absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 border-green-400 bg-green-100/70"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            style={buffOverlay.style as any}
+          >
+            <span className="text-xs font-medium text-center leading-tight px-1 text-green-700">
+              {buffOverlay.label}
+            </span>
+          </div>
+        )
+      )}
+    </div>
   )
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (

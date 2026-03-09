@@ -58,4 +58,9 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'מרכזי',
     style: { width: '22%', aspectRatio: '140 / 100', top: '30%', left: '50%', transform: 'translateX(-50%)', borderRadius: '8px' },
   },
+  buff_center: {
+    view: 'front',
+    label: 'מרכזי',
+    style: { width: '30%', aspectRatio: '1', top: '30%', left: '50%', transform: 'translateX(-50%)', borderRadius: '8px' },
+  },
 }
