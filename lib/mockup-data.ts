@@ -56,6 +56,6 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   center: {
     view: 'front',
     label: 'מרכזי',
-    style: { width: '22%', aspectRatio: '140 / 100', top: '37%', left: '50%', transform: 'translateX(-50%)', borderRadius: '8px' },
+    style: { width: '22%', aspectRatio: '140 / 100', top: '30%', left: '50%', transform: 'translateX(-50%)', borderRadius: '8px' },
   },
 }
