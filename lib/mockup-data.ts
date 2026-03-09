@@ -61,7 +61,7 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   buff_main: {
     view: 'front',
     label: 'עיצוב באף',
-    style: { width: '22.5%', height: '35%', top: '28%', left: '31%', borderRadius: '8px', transform: 'rotate(44deg)' },
+    style: { width: '35%', height: '22.5%', top: '32%', left: '27%', borderRadius: '8px', transform: 'rotate(44deg)' },
   },
   buff_bottom: {
     view: 'front',

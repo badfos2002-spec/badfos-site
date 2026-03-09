@@ -286,7 +286,7 @@ export default function BuffDesignerPage() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style={{
               ...overlay.style as any,
-              ...(i === 0 ? { transform: 'rotate(134deg)', objectFit: 'cover' } : {}),
+              ...(i === 0 ? { transform: 'rotate(-46deg)', objectFit: 'cover' } : {}),
             } as any}
           />
         ) : (
