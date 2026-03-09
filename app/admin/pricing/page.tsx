@@ -28,7 +28,16 @@ export default function AdminPricingPage() {
 
   useEffect(() => {
     getDocument<Pricing>('settings', 'pricing')
-      .then(data => { if (data) setPricing(data) })
+      .then(data => {
+        if (data) setPricing({
+          basePrices: { ...DEFAULTS.basePrices, ...data.basePrices },
+          fabricSurcharges: { ...DEFAULTS.fabricSurcharges, ...data.fabricSurcharges },
+          designAreas: { ...DEFAULTS.designAreas, ...data.designAreas },
+          sizeSurcharges: { ...DEFAULTS.sizeSurcharges, ...data.sizeSurcharges },
+          shipping: { ...DEFAULTS.shipping, ...data.shipping },
+          quantityDiscount: { ...DEFAULTS.quantityDiscount, ...data.quantityDiscount },
+        })
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
