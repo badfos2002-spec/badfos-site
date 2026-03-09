@@ -223,7 +223,9 @@ export default function TshirtDesigner() {
   const MockupImage = () => {
     const currentView = previewView
     const designs = config.designs || []
+    const tshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
     const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
+      if (!tshirtAreaIds.includes(areaId)) return false
       if (overlay.view !== currentView) return false
       const hasDesign = designs.some(d => d.area === areaId)
       return currentStep === 3 || hasDesign
