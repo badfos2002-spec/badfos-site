@@ -247,15 +247,19 @@ export default function ApronDesignerPage() {
           <span className="text-sm text-gray-600">מחיר ליחידה</span>
           <span className="font-bold text-[#f59e0b]">{pricePerUnit}₪</span>
         </div>
-        <div className="flex justify-between items-center text-sm text-gray-600">
-          <span>כמות</span>
-          <span className="font-medium">×{quantity}</span>
-        </div>
-        <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
-          <span className="font-bold text-[#1e293b]">סה&quot;כ</span>
-          <span className="text-2xl font-bold text-[#f59e0b]">{total}₪</span>
-        </div>
-        <p className="text-xs text-gray-400 text-center pt-1">* לא כולל משלוח</p>
+        {currentStep >= 3 && (
+          <>
+            <div className="flex justify-between items-center text-sm text-gray-600">
+              <span>כמות</span>
+              <span className="font-medium">×{quantity}</span>
+            </div>
+            <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+              <span className="font-bold text-[#1e293b]">סה&quot;כ</span>
+              <span className="text-2xl font-bold text-[#f59e0b]">{total}₪</span>
+            </div>
+            <p className="text-xs text-gray-400 text-center pt-1">* לא כולל משלוח</p>
+          </>
+        )}
       </div>
     </div>
   )
