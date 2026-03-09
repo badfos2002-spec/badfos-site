@@ -14,6 +14,15 @@ export const PRODUCT_CATEGORIES = [
     popular: false,
   },
   {
+    id: 'cap' as ProductType,
+    name: 'כובעים',
+    icon: '🧢',
+    color: 'bg-blue-100 border-blue-400',
+    textColor: 'text-blue-900',
+    popular: false,
+    comingSoon: true,
+  },
+  {
     id: 'sweatshirt' as ProductType,
     name: 'סווטשרטים',
     icon: '🧥',
@@ -36,15 +45,6 @@ export const PRODUCT_CATEGORIES = [
     color: 'bg-pink-100 border-pink-400',
     textColor: 'text-pink-900',
     popular: false,
-  },
-  {
-    id: 'cap' as ProductType,
-    name: 'כובעים',
-    icon: '🧢',
-    color: 'bg-blue-100 border-blue-400',
-    textColor: 'text-blue-900',
-    popular: false,
-    comingSoon: true,
   },
 ] as const
 
