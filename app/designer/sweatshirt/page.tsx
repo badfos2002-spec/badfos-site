@@ -444,7 +444,8 @@ export default function SweatshirtDesignerPage() {
 
   const MockupImage = () => {
     const currentView = isBackView ? 'back' : 'front'
-    const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([, overlay]) => overlay.view === currentView)
+    const sweatshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
+    const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => sweatshirtAreaIds.includes(areaId) && overlay.view === currentView)
     const showAreas = currentStep === 2
     return (
       <div className="relative w-full">
