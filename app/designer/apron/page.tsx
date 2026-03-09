@@ -272,14 +272,18 @@ export default function ApronDesignerPage() {
         className="w-full h-auto block"
       />
       {designPreviewUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={designPreviewUrl}
-          alt={overlay.label}
-          className="absolute object-contain"
+        <div
+          className="absolute overflow-hidden"
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           style={overlay.style as any}
-        />
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={designPreviewUrl}
+            alt={overlay.label}
+            className="w-full h-full object-contain"
+          />
+        </div>
       ) : (
         currentStep === 2 && (
           <div

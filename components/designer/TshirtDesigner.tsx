@@ -247,15 +247,19 @@ export default function TshirtDesigner() {
           // When design uploaded: show just the image, no box
           if (design) {
             return (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <div
                 key={areaId}
-                src={design.imageUrl}
-                alt={overlay.label}
-                className="absolute object-contain"
+                className="absolute overflow-hidden"
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 style={overlay.style as any}
-              />
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={design.imageUrl}
+                  alt={overlay.label}
+                  className="w-full h-full object-contain"
+                />
+              </div>
             )
           }
           // No design yet: show dashed placeholder box (green when this area is active)

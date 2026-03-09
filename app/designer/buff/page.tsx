@@ -277,18 +277,20 @@ export default function BuffDesignerPage() {
       />
       {buffOverlays.map((overlay, i) =>
         designPreviewUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <div
             key={i}
-            src={designPreviewUrl}
-            alt={overlay.label}
-            className="absolute object-contain"
+            className="absolute overflow-hidden"
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            style={{
-              ...overlay.style as any,
-              ...(i === 0 ? { transform: 'rotate(-46deg)', objectFit: 'cover' } : {}),
-            } as any}
-          />
+            style={overlay.style as any}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={designPreviewUrl}
+              alt={overlay.label}
+              className="w-full h-full object-cover"
+              style={i === 0 ? { transform: 'rotate(-90deg)' } : undefined}
+            />
+          </div>
         ) : (
           currentStep === 2 && (
             <div
