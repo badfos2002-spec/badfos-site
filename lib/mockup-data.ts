@@ -55,7 +55,7 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   },
   center: {
     view: 'front',
-    label: 'הדפסה על הסינר',
-    style: { width: '22%', aspectRatio: '140 / 100', top: '42%', left: '50%', transform: 'translateX(-50%)', borderRadius: '8px' },
+    label: 'מרכזי',
+    style: { width: '22%', aspectRatio: '140 / 100', top: '37%', left: '50%', transform: 'translateX(-50%)', borderRadius: '8px' },
   },
 }
