@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { DollarSign, Save, Loader2, RefreshCw } from 'lucide-react'
+import { Save, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getDocument, setDocument } from '@/lib/db'
@@ -17,8 +17,15 @@ const DEFAULTS = {
 
 type Pricing = typeof DEFAULTS
 
-const FABRIC_LABELS: Record<string, string> = { cotton: 'כותנה', 'dri-fit': 'דרייפיט', polo: 'פולו', oversized: 'אוברסייז' }
-const AREA_LABELS: Record<string, string> = { front_full: 'קידמי מלא', back: 'גב', chest_logo: 'סמל כיס שמאל', chest_logo_right: 'סמל כיס ימין', center: 'מרכזי (סינר)' }
+const PRODUCT_LABELS: Record<string, string> = {
+  tshirt: 'חולצה', sweatshirt: 'סווטשרט', buff: 'באף', apron: 'סינר',
+}
+const FABRIC_LABELS: Record<string, string> = {
+  cotton: 'כותנה', 'dri-fit': 'דרייפיט', polo: 'פולו', oversized: 'אוברסייז',
+}
+const AREA_LABELS: Record<string, string> = {
+  front_full: 'קידמי מלא', back: 'גב', chest_logo: 'סמל שמאל', chest_logo_right: 'סמל ימין', center: 'מרכזי (סינר)',
+}
 
 export default function AdminPricingPage() {
   const [pricing, setPricing] = useState<Pricing>(DEFAULTS)
@@ -80,150 +87,168 @@ export default function AdminPricingPage() {
   }
 
   return (
-    <div dir="rtl">
-      <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">ניהול תמחור</h1>
-          <p className="text-gray-600">עריכת מחירים — שינויים נשמרים ב-Firestore ומשפיעים על ההזמנות החדשות</p>
-        </div>
+    <div dir="rtl" className="max-w-3xl">
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-gray-900">ניהול תמחור</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleReset} className="border-gray-400 text-gray-600">
-            <RefreshCw className="w-4 h-4 ml-2" />
+          <Button variant="outline" size="sm" onClick={handleReset} className="text-gray-500">
+            <RefreshCw className="w-3.5 h-3.5 ml-1.5" />
             אפס
           </Button>
-          <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Save className="w-4 h-4 ml-2" />}
-            {saved ? '✅ נשמר!' : saving ? 'שומר...' : 'שמור שינויים'}
+          <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin ml-1.5" /> : <Save className="w-3.5 h-3.5 ml-1.5" />}
+            {saved ? 'נשמר!' : saving ? 'שומר...' : 'שמור'}
           </Button>
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
 
-        {/* Base Prices */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-yellow-500" />
-            מחירי בסיס
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {(Object.keys(pricing.basePrices) as Array<keyof typeof pricing.basePrices>).map(key => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  {{ tshirt: 'חולצה', sweatshirt: 'סווטשרט', buff: 'באף', apron: 'סינר' }[key] || key} (₪)
-                </label>
-                <Input
-                  type="number" min="0"
-                  value={pricing.basePrices[key]}
-                  onChange={e => setNum(['basePrices', key], e.target.value)}
-                  className="font-bold text-blue-600"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* מחירי בסיס למוצר */}
+        <Section title="מחירי בסיס למוצר">
+          <table className="w-full">
+            <tbody>
+              {(Object.keys(pricing.basePrices) as Array<keyof typeof pricing.basePrices>).map(key => (
+                <Row key={key} label={PRODUCT_LABELS[key] || key}>
+                  <Input
+                    type="number" min="0"
+                    value={pricing.basePrices[key]}
+                    onChange={e => setNum(['basePrices', key], e.target.value)}
+                    className="w-24 h-8 text-sm font-semibold text-center"
+                  />
+                </Row>
+              ))}
+            </tbody>
+          </table>
+        </Section>
 
-        {/* Fabric Surcharges */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">תוספת בד (חולצות)</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {(Object.keys(pricing.fabricSurcharges) as Array<keyof typeof pricing.fabricSurcharges>).map(key => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{FABRIC_LABELS[key]} (₪)</label>
-                <Input
-                  type="number" min="0"
-                  value={pricing.fabricSurcharges[key]}
-                  onChange={e => setNum(['fabricSurcharges', key], e.target.value)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* תוספת סוג בד */}
+        <Section title="תוספת סוג בד (חולצות)">
+          <table className="w-full">
+            <tbody>
+              {(Object.keys(pricing.fabricSurcharges) as Array<keyof typeof pricing.fabricSurcharges>).map(key => (
+                <Row key={key} label={FABRIC_LABELS[key]}>
+                  <Input
+                    type="number" min="0"
+                    value={pricing.fabricSurcharges[key]}
+                    onChange={e => setNum(['fabricSurcharges', key], e.target.value)}
+                    className="w-24 h-8 text-sm font-semibold text-center"
+                  />
+                </Row>
+              ))}
+            </tbody>
+          </table>
+        </Section>
 
-        {/* Design Area Prices */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">תוספת אזור עיצוב</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {(Object.keys(pricing.designAreas) as Array<keyof typeof pricing.designAreas>).map(key => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{AREA_LABELS[key]} (₪)</label>
-                <Input
-                  type="number" min="0"
-                  value={pricing.designAreas[key]}
-                  onChange={e => setNum(['designAreas', key], e.target.value)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* תוספת אזור עיצוב */}
+        <Section title="תוספת אזור עיצוב">
+          <table className="w-full">
+            <tbody>
+              {(Object.keys(pricing.designAreas) as Array<keyof typeof pricing.designAreas>).map(key => (
+                <Row key={key} label={AREA_LABELS[key] || key}>
+                  <Input
+                    type="number" min="0"
+                    value={pricing.designAreas[key]}
+                    onChange={e => setNum(['designAreas', key], e.target.value)}
+                    className="w-24 h-8 text-sm font-semibold text-center"
+                  />
+                </Row>
+              ))}
+            </tbody>
+          </table>
+        </Section>
 
-        {/* Size Surcharges */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">תוספת מידות גדולות</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {(Object.keys(pricing.sizeSurcharges) as Array<keyof typeof pricing.sizeSurcharges>).map(key => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{key} (₪)</label>
-                <Input
-                  type="number" min="0"
-                  value={pricing.sizeSurcharges[key]}
-                  onChange={e => setNum(['sizeSurcharges', key], e.target.value)}
-                />
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-gray-400 mt-3">XS–XXL: ללא תוספת</p>
-        </div>
+        {/* תוספת מידות + משלוח + הנחה - שורה אחת */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Section title="מידות גדולות">
+            <table className="w-full">
+              <tbody>
+                {(Object.keys(pricing.sizeSurcharges) as Array<keyof typeof pricing.sizeSurcharges>).map(key => (
+                  <Row key={key} label={key}>
+                    <Input
+                      type="number" min="0"
+                      value={pricing.sizeSurcharges[key]}
+                      onChange={e => setNum(['sizeSurcharges', key], e.target.value)}
+                      className="w-20 h-8 text-sm font-semibold text-center"
+                    />
+                  </Row>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-[10px] text-gray-400 mt-2 px-3">XS–XXL: ללא תוספת</p>
+          </Section>
 
-        {/* Shipping */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">מחירי משלוח</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">משלוח עד הבית (₪)</label>
-              <Input
-                type="number" min="0"
-                value={pricing.shipping.delivery}
-                onChange={e => setNum(['shipping', 'delivery'], e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">איסוף עצמי (₪)</label>
-              <Input
-                type="number" min="0"
-                value={pricing.shipping.pickup}
-                onChange={e => setNum(['shipping', 'pickup'], e.target.value)}
-                disabled
-              />
-              <p className="text-xs text-gray-400 mt-1">תמיד חינם</p>
-            </div>
-          </div>
-        </div>
+          <Section title="משלוח">
+            <table className="w-full">
+              <tbody>
+                <Row label="עד הבית">
+                  <Input
+                    type="number" min="0"
+                    value={pricing.shipping.delivery}
+                    onChange={e => setNum(['shipping', 'delivery'], e.target.value)}
+                    className="w-20 h-8 text-sm font-semibold text-center"
+                  />
+                </Row>
+                <Row label="איסוף עצמי">
+                  <span className="text-sm font-semibold text-green-600">חינם</span>
+                </Row>
+              </tbody>
+            </table>
+          </Section>
 
-        {/* Quantity Discount */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">הנחת כמות</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">מינימום יחידות</label>
-              <Input
-                type="number" min="1"
-                value={pricing.quantityDiscount.minQuantity}
-                onChange={e => setNum(['quantityDiscount', 'minQuantity'], e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">אחוז הנחה (%)</label>
-              <Input
-                type="number" min="0" max="100"
-                value={pricing.quantityDiscount.discountPercent}
-                onChange={e => setNum(['quantityDiscount', 'discountPercent'], e.target.value)}
-              />
-            </div>
-          </div>
+          <Section title="הנחת כמות">
+            <table className="w-full">
+              <tbody>
+                <Row label="מינימום יחידות">
+                  <Input
+                    type="number" min="1"
+                    value={pricing.quantityDiscount.minQuantity}
+                    onChange={e => setNum(['quantityDiscount', 'minQuantity'], e.target.value)}
+                    className="w-20 h-8 text-sm font-semibold text-center"
+                  />
+                </Row>
+                <Row label="אחוז הנחה">
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number" min="0" max="100"
+                      value={pricing.quantityDiscount.discountPercent}
+                      onChange={e => setNum(['quantityDiscount', 'discountPercent'], e.target.value)}
+                      className="w-20 h-8 text-sm font-semibold text-center"
+                    />
+                    <span className="text-xs text-gray-400">%</span>
+                  </div>
+                </Row>
+              </tbody>
+            </table>
+          </Section>
         </div>
 
       </div>
     </div>
+  )
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+        <h2 className="text-sm font-bold text-gray-800">{title}</h2>
+      </div>
+      <div className="p-3">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <tr className="border-b border-gray-50 last:border-0">
+      <td className="py-2 pr-1 text-sm text-gray-600">{label}</td>
+      <td className="py-2 pl-1 text-left">
+        <div className="flex justify-end">{children}</div>
+      </td>
+    </tr>
   )
 }
