@@ -263,7 +263,7 @@ export default function BuffDesignerPage() {
     </div>
   )
 
-  const buffOverlay = DESIGN_AREA_OVERLAYS['buff_center']
+  const buffOverlays = [DESIGN_AREA_OVERLAYS['buff_main'], DESIGN_AREA_OVERLAYS['buff_bottom']]
 
   const MockupImage = () => (
     <div className="relative w-full">
@@ -275,26 +275,30 @@ export default function BuffDesignerPage() {
         sizes="100vw"
         className="w-full h-auto block"
       />
-      {designPreviewUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={designPreviewUrl}
-          alt={buffOverlay.label}
-          className="absolute object-contain"
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          style={buffOverlay.style as any}
-        />
-      ) : (
-        currentStep === 2 && (
-          <div
-            className="absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 border-green-400 bg-green-100/70"
+      {buffOverlays.map((overlay, i) =>
+        designPreviewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src={designPreviewUrl}
+            alt={overlay.label}
+            className="absolute object-contain"
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            style={buffOverlay.style as any}
-          >
-            <span className="text-xs font-medium text-center leading-tight px-1 text-green-700">
-              {buffOverlay.label}
-            </span>
-          </div>
+            style={overlay.style as any}
+          />
+        ) : (
+          currentStep === 2 && (
+            <div
+              key={i}
+              className="absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 border-green-400 bg-green-100/70"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              style={overlay.style as any}
+            >
+              <span className="text-xs font-medium text-center leading-tight px-1 text-green-700">
+                {overlay.label}
+              </span>
+            </div>
+          )
         )
       )}
     </div>
