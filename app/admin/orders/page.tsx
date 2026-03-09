@@ -32,6 +32,13 @@ const fabricLabels: Record<string, string> = {
   oversized: 'אוברסייז',
 }
 
+const colorLabels: Record<string, string> = {
+  white: 'לבן', black: 'שחור', gray: 'אפור', red: 'אדום',
+  navy: 'נייבי', beige: 'בז׳', burgundy: 'בורדו', olive: 'זית',
+  blue: 'כחול', green: 'ירוק', purple: 'סגול', orange: 'כתום',
+  turquoise: 'טורקיז', lightblue: 'תכלת',
+}
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -361,7 +368,7 @@ export default function AdminOrdersPage() {
                                 {/* Item Details Grid */}
                                 <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                                   {item.fabricType && <div><strong>סוג:</strong> {fabricName}</div>}
-                                  <div><strong>צבע:</strong> {item.color}</div>
+                                  <div><strong>צבע:</strong> {colorLabels[item.color] ?? item.color}</div>
                                   {item.sizes && item.sizes.length > 0 && (
                                     <div><strong>מידה:</strong> {item.sizes.map(s => `${s.size}(${s.quantity})`).join(', ')}</div>
                                   )}
