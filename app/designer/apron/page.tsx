@@ -33,8 +33,6 @@ const STEP_NAMES = ['צבע', 'עיצוב', 'כמות']
 const totalSteps = 3
 const BASE_PRICE = 29
 const DESIGN_COST = 10
-const PRICE_PER_UNIT = BASE_PRICE + DESIGN_COST
-
 export default function ApronDesignerPage() {
   const router = useRouter()
   const { addItem } = useCart()
@@ -43,7 +41,8 @@ export default function ApronDesignerPage() {
   const [designFile, setDesignFile] = useState<File | null>(null)
   const [quantity, setQuantity] = useState(30)
 
-  const total = quantity * PRICE_PER_UNIT
+  const pricePerUnit = designFile ? BASE_PRICE + DESIGN_COST : BASE_PRICE
+  const total = quantity * pricePerUnit
 
   const designPreviewUrl = useMemo(() => {
     if (!designFile) return null
@@ -206,7 +205,7 @@ export default function ApronDesignerPage() {
                   }`}
                 >
                   <div className="text-4xl font-bold text-[#1e293b] mb-2">{qty}</div>
-                  <div className="text-sm font-bold text-[#f59e0b] mb-1">{PRICE_PER_UNIT}₪ ליחידה</div>
+                  <div className="text-sm font-bold text-[#f59e0b] mb-1">{pricePerUnit}₪ ליחידה</div>
                   <div className="text-xs text-gray-500">
                     {qty === 30 ? 'מתאים לצוות קטן' : qty === 50 ? 'מתאים לעסק בינוני' : 'מתאים לעסק גדול'}
                   </div>
@@ -237,14 +236,16 @@ export default function ApronDesignerPage() {
             <span>מחיר בסיס</span>
             <span className="font-medium">{BASE_PRICE}₪</span>
           </div>
-          <div className="flex justify-between text-gray-600">
-            <span>הדפסה</span>
-            <span className="font-medium">+{DESIGN_COST}₪</span>
-          </div>
+          {designFile && (
+            <div className="flex justify-between text-gray-600">
+              <span>הדפסה</span>
+              <span className="font-medium">+{DESIGN_COST}₪</span>
+            </div>
+          )}
         </div>
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">מחיר ליחידה</span>
-          <span className="font-bold text-[#f59e0b]">{PRICE_PER_UNIT}₪</span>
+          <span className="font-bold text-[#f59e0b]">{pricePerUnit}₪</span>
         </div>
         <div className="flex justify-between items-center text-sm text-gray-600">
           <span>כמות</span>
