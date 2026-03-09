@@ -160,7 +160,7 @@ export default function AdminPricingPage() {
         </Section>
 
         {/* תוספת מידות + משלוח + הנחה - שורה אחת */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Section title="מידות גדולות">
             <table className="w-full">
               <tbody>
@@ -197,31 +197,6 @@ export default function AdminPricingPage() {
             </table>
           </Section>
 
-          <Section title="הנחת כמות">
-            <table className="w-full">
-              <tbody>
-                <Row label="מינימום יחידות">
-                  <Input
-                    type="number" min="1"
-                    value={pricing.quantityDiscount.minQuantity}
-                    onChange={e => setNum(['quantityDiscount', 'minQuantity'], e.target.value)}
-                    className="w-20 h-8 text-sm font-semibold text-center"
-                  />
-                </Row>
-                <Row label="אחוז הנחה">
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number" min="0" max="100"
-                      value={pricing.quantityDiscount.discountPercent}
-                      onChange={e => setNum(['quantityDiscount', 'discountPercent'], e.target.value)}
-                      className="w-20 h-8 text-sm font-semibold text-center"
-                    />
-                    <span className="text-xs text-gray-400">%</span>
-                  </div>
-                </Row>
-              </tbody>
-            </table>
-          </Section>
         </div>
 
       </div>
