@@ -284,7 +284,10 @@ export default function BuffDesignerPage() {
             alt={overlay.label}
             className="absolute object-contain"
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            style={overlay.style as any}
+            style={{
+              ...overlay.style as any,
+              ...(i === 0 ? { transform: 'rotate(134deg)', objectFit: 'cover' } : {}),
+            } as any}
           />
         ) : (
           currentStep === 2 && (
