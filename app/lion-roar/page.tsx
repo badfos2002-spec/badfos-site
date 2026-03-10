@@ -64,6 +64,17 @@ export default function LionRoarPage() {
     <div className="bg-gray-50 min-h-screen" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
+        {/* ── Product Info Header ── */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e293b] mb-2">{PRODUCT_NAME}</h1>
+          <p className="text-gray-500 text-sm sm:text-base">
+            &quot;עם ישראל חי וקיים&quot; — חולצה איכותית עם הדפס ייחודי
+            <span className="mx-1">•</span>
+            <strong className="text-blue-600">10% מההכנסות נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
+          </p>
+          <p className="mt-2 text-xl font-bold text-[#f59e0b]">₪{PRODUCT_PRICE} ליחידה</p>
+        </div>
+
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8">
           {/* Sticky mockup */}
