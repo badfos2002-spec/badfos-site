@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, User, Phone, Loader2, Check } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ export default function LeadPopup() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [hasConsentedCookies, setHasConsentedCookies] = useState(false)
+  const overlayRef = useRef<HTMLDivElement>(null)
 
   // Check cookie consent
   useEffect(() => {
@@ -64,6 +65,17 @@ export default function LeadPopup() {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      const el = overlayRef.current
+      if (el) {
+        const block = (e: Event) => e.preventDefault()
+        el.addEventListener('wheel', block, { passive: false })
+        el.addEventListener('touchmove', block, { passive: false })
+        return () => {
+          document.body.style.overflow = 'unset'
+          el.removeEventListener('wheel', block)
+          el.removeEventListener('touchmove', block)
+        }
+      }
     } else {
       document.body.style.overflow = 'unset'
     }
@@ -126,10 +138,9 @@ export default function LeadPopup() {
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-[10000] flex items-center justify-center"
-      style={{ direction: 'ltr', touchAction: 'none', overscrollBehavior: 'none' }}
-      onTouchMove={(e) => e.preventDefault()}
-      onWheel={(e) => e.preventDefault()}
+      style={{ direction: 'ltr' }}
     >
       {/* Overlay — no click to dismiss */}
       <div

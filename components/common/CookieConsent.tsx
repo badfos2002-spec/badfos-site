@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false)
+  const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const consent = localStorage.getItem('cookie_consent')
@@ -12,6 +13,22 @@ export default function CookieConsent() {
       document.body.style.overflow = 'hidden'
     }
   }, [])
+
+  // Block scroll with non-passive listeners
+  useEffect(() => {
+    if (!visible) return
+    const el = overlayRef.current
+    if (!el) return
+
+    const block = (e: Event) => e.preventDefault()
+    el.addEventListener('wheel', block, { passive: false })
+    el.addEventListener('touchmove', block, { passive: false })
+
+    return () => {
+      el.removeEventListener('wheel', block)
+      el.removeEventListener('touchmove', block)
+    }
+  }, [visible])
 
   const handleAccept = () => {
     localStorage.setItem('cookie_consent', 'accepted')
@@ -25,10 +42,9 @@ export default function CookieConsent() {
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-[11000] flex items-center justify-center"
-      style={{ direction: 'ltr', touchAction: 'none', overscrollBehavior: 'none' }}
-      onTouchMove={(e) => e.preventDefault()}
-      onWheel={(e) => e.preventDefault()}
+      style={{ direction: 'ltr' }}
     >
       {/* Overlay — blocks everything */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
