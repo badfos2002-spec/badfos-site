@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid, sendToZapier } from '@/lib/tracking'
 import { User, Phone, ArrowLeft } from 'lucide-react'
 
 export default function NewContactFormSection() {
@@ -22,13 +22,17 @@ export default function NewContactFormSection() {
     setLoading(true)
 
     try {
+      const gclid = getGclid()
+      const message = `מספר זהות: ${formData.idNumber}\nהערות: ${formData.comments}`
+
       await createLead({
         name: formData.name,
         phone: formData.phone,
         email: '',
-        message: `מספר זהות: ${formData.idNumber}\nהערות: ${formData.comments}`,
+        message,
         source: 'bottom_form' as any,
         status: 'new',
+        ...(gclid && { gclid }),
       })
 
       fetch('/api/send-email', {
@@ -36,13 +40,16 @@ export default function NewContactFormSection() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'new_lead',
-          data: { name: formData.name, phone: formData.phone, email: '', source: 'bottom_form', status: 'new', message: `מספר זהות: ${formData.idNumber}\nהערות: ${formData.comments}` },
+          data: { name: formData.name, phone: formData.phone, email: '', source: 'bottom_form', status: 'new', message },
         }),
       }).catch(console.error)
 
-      sendGoogleAdsConversion()
-      sendGenerateLeadEvent('bottom_form')
-      sendMetaLeadEvent()
+      const zapierOk = await sendToZapier({ name: formData.name, phone: formData.phone, email: '', source: 'bottom_form', gclid, message })
+      if (zapierOk) {
+        sendGoogleAdsConversion()
+        sendGenerateLeadEvent('bottom_form')
+        sendMetaLeadEvent()
+      }
 
       setSubmitted(true)
       setFormData({ name: '', phone: '', idNumber: '', comments: '' })

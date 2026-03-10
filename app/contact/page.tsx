@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CONTACT_INFO } from '@/lib/constants'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, trackWhatsAppClick, trackPhoneClick } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, trackWhatsAppClick, trackPhoneClick, getGclid, sendToZapier } from '@/lib/tracking'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -24,13 +24,17 @@ export default function ContactPage() {
     setIsSubmitting(true)
 
     try {
+      const gclid = getGclid()
+      const message = formData.message ? `${formData.subject ? `נושא: ${formData.subject}\n` : ''}${formData.message}` : formData.subject
+
       await createLead({
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
-        message: formData.message ? `${formData.subject ? `נושא: ${formData.subject}\n` : ''}${formData.message}` : formData.subject,
+        message,
         source: 'contact_form',
         status: 'new',
+        ...(gclid && { gclid }),
       })
 
       fetch('/api/send-email', {
@@ -38,13 +42,16 @@ export default function ContactPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'new_lead',
-          data: { name: formData.name, phone: formData.phone, email: formData.email, source: 'contact_form', status: 'new', message: formData.message },
+          data: { name: formData.name, phone: formData.phone, email: formData.email, source: 'contact_form', status: 'new', message },
         }),
       }).catch(console.error)
 
-      sendGoogleAdsConversion()
-      sendGenerateLeadEvent('contact_form')
-      sendMetaLeadEvent()
+      const zapierOk = await sendToZapier({ name: formData.name, phone: formData.phone, email: formData.email, source: 'contact_form', gclid, message })
+      if (zapierOk) {
+        sendGoogleAdsConversion()
+        sendGenerateLeadEvent('contact_form')
+        sendMetaLeadEvent()
+      }
 
       setSubmitted(true)
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' })

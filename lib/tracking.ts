@@ -2,42 +2,47 @@
  * Google Ads & Meta Pixel conversion tracking helpers
  */
 
-export function sendGoogleAdsConversion(value = 1.0, transactionId?: string) {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'conversion', {
-      send_to: 'AW-17871272500/cEpjCIyrqOobELT018lC',
-      value,
-      currency: 'ILS',
-      ...(transactionId && { transaction_id: transactionId }),
-    })
+/** Push to dataLayer even if gtag not loaded yet — GTM will pick it up */
+function gtagSafe(...args: any[]) {
+  if (typeof window === 'undefined') return
+  if (window.gtag) {
+    window.gtag(...args)
+  } else {
+    window.dataLayer = window.dataLayer || []
+    window.dataLayer.push(args)
   }
+}
+
+export function sendGoogleAdsConversion(value = 1.0, transactionId?: string) {
+  gtagSafe('event', 'conversion', {
+    send_to: 'AW-17871272500/cEpjCIyrqOobELT018lC',
+    value,
+    currency: 'ILS',
+    ...(transactionId && { transaction_id: transactionId }),
+  })
 }
 
 export function sendGenerateLeadEvent(source: string) {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'generate_lead', {
-      currency: 'ILS',
-      value: 1.0,
-      source,
-    })
-  }
+  gtagSafe('event', 'generate_lead', {
+    currency: 'ILS',
+    value: 1.0,
+    source,
+  })
 }
 
 export function sendPurchaseEvent(transactionId: string, value: number, items: Array<{ id: string; name: string; category: string; price: number; quantity: number }>) {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'purchase', {
-      transaction_id: transactionId,
-      value,
-      currency: 'ILS',
-      items: items.map(item => ({
-        item_id: item.id,
-        item_name: item.name,
-        item_category: item.category,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-    })
-  }
+  gtagSafe('event', 'purchase', {
+    transaction_id: transactionId,
+    value,
+    currency: 'ILS',
+    items: items.map(item => ({
+      item_id: item.id,
+      item_name: item.name,
+      item_category: item.category,
+      price: item.price,
+      quantity: item.quantity,
+    })),
+  })
 }
 
 export function sendMetaLeadEvent() {
@@ -58,18 +63,45 @@ export function sendMetaPurchaseEvent(value = 1.0, orderId?: string) {
 
 export function trackWhatsAppClick(source: string) {
   if (typeof window === 'undefined') return
-  // Google Ads conversion
   sendGoogleAdsConversion()
-  // GA4 generate_lead event
   sendGenerateLeadEvent(`whatsapp_${source}`)
-  // GA4 event
-  window.gtag?.('event', 'click_whatsapp', { source })
-  // Meta Contact event
+  gtagSafe('event', 'click_whatsapp', { source })
   window.fbq?.('track', 'Contact')
 }
 
 export function trackPhoneClick() {
   if (typeof window === 'undefined') return
-  window.gtag?.('event', 'click_phone')
+  gtagSafe('event', 'click_phone')
   window.fbq?.('track', 'Contact')
+}
+
+/** Get stored GCLID from localStorage or URL */
+export function getGclid(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  return (
+    localStorage.getItem('gclid') ||
+    new URLSearchParams(window.location.search).get('gclid') ||
+    undefined
+  )
+}
+
+/** Send lead data to Zapier webhook */
+export async function sendToZapier(data: {
+  name: string
+  phone: string
+  email?: string
+  source: string
+  gclid?: string
+  message?: string
+}): Promise<boolean> {
+  try {
+    const res = await fetch('https://hooks.zapier.com/hooks/catch/26080632/ulxg2e6/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+    return res.ok
+  } catch (e) {
+    console.error('Zapier webhook error:', e)
+    return false
+  }
 }

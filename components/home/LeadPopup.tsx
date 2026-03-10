@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid, sendToZapier } from '@/lib/tracking'
 
 const validatePhone = (p: string) => {
   const clean = p.replace(/\D/g, '')
@@ -88,11 +88,7 @@ export default function LeadPopup() {
     setIsSubmitting(true)
 
     try {
-      // Capture gclid if available
-      const gclid =
-        localStorage.getItem('gclid') ||
-        new URLSearchParams(window.location.search).get('gclid') ||
-        undefined
+      const gclid = getGclid()
 
       await createLead({
         name,
@@ -103,15 +99,20 @@ export default function LeadPopup() {
         ...(gclid && { gclid }),
       })
 
+      // Send email notification
       fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'new_lead', data: { name, phone, email: '', source: 'popup', status: 'new' } }),
       }).catch(console.error)
 
-      sendGoogleAdsConversion()
-      sendGenerateLeadEvent('popup')
-      sendMetaLeadEvent()
+      // Send to Zapier — fire conversion only after successful webhook
+      const zapierOk = await sendToZapier({ name, phone, email: '', source: 'popup', gclid })
+      if (zapierOk) {
+        sendGoogleAdsConversion()
+        sendGenerateLeadEvent('popup')
+        sendMetaLeadEvent()
+      }
 
       setIsSuccess(true)
       setTimeout(() => {
