@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid, sendToZapier } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid } from '@/lib/tracking'
 
 const validatePhone = (p: string) => {
   const clean = p.replace(/\D/g, '')
@@ -106,13 +106,9 @@ export default function LeadPopup() {
         body: JSON.stringify({ type: 'new_lead', data: { name, phone, email: '', source: 'popup', status: 'new' } }),
       }).catch(console.error)
 
-      // Send to Zapier — fire conversion only after successful webhook
-      const zapierOk = await sendToZapier({ name, phone, email: '', source: 'popup', gclid })
-      if (zapierOk) {
-        sendGoogleAdsConversion()
-        sendGenerateLeadEvent('popup')
-        sendMetaLeadEvent()
-      }
+      sendGoogleAdsConversion()
+      sendGenerateLeadEvent('popup')
+      sendMetaLeadEvent()
 
       setIsSuccess(true)
       setTimeout(() => {

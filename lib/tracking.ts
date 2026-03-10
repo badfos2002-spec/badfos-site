@@ -96,17 +96,13 @@ export async function sendToZapier(data: {
 }): Promise<boolean> {
   console.log('[Zapier] Sending lead:', data)
   try {
-    const res = await fetch('https://hooks.zapier.com/hooks/catch/26080632/ulxg2e6/', {
+    await fetch('https://hooks.zapier.com/hooks/catch/26080632/ulxg2e6/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      mode: 'no-cors',
       body: JSON.stringify(data),
     })
-    if (res.ok) {
-      console.log('[Zapier] Success:', res.status)
-    } else {
-      console.error('[Zapier] Failed:', res.status, res.statusText)
-    }
-    return res.ok
+    console.log('[Zapier] Request sent (no-cors)')
+    return true
   } catch (e) {
     console.error('[Zapier] Error:', e)
     return false

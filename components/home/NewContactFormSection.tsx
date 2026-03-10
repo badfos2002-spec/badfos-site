@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid, sendToZapier } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid } from '@/lib/tracking'
 import { User, Phone, ArrowLeft } from 'lucide-react'
 
 export default function NewContactFormSection() {
@@ -43,12 +43,9 @@ export default function NewContactFormSection() {
         }),
       }).catch(console.error)
 
-      const zapierOk = await sendToZapier({ name: formData.name, phone: formData.phone, email: '', source: 'bottom_form', gclid, message })
-      if (zapierOk) {
-        sendGoogleAdsConversion()
-        sendGenerateLeadEvent('bottom_form')
-        sendMetaLeadEvent()
-      }
+      sendGoogleAdsConversion()
+      sendGenerateLeadEvent('bottom_form')
+      sendMetaLeadEvent()
 
       setSubmitted(true)
       setFormData({ name: '', phone: '', comments: '' })
