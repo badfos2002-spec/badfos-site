@@ -84,27 +84,3 @@ export function getGclid(): string | undefined {
     undefined
   )
 }
-
-/** Send lead data to Zapier webhook */
-export async function sendToZapier(data: {
-  name: string
-  phone: string
-  email?: string
-  source: string
-  gclid?: string
-  message?: string
-}): Promise<boolean> {
-  console.log('[Zapier] Sending lead:', data)
-  try {
-    await fetch('https://hooks.zapier.com/hooks/catch/26080632/ulxg2e6/', {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify(data),
-    })
-    console.log('[Zapier] Request sent (no-cors)')
-    return true
-  } catch (e) {
-    console.error('[Zapier] Error:', e)
-    return false
-  }
-}
