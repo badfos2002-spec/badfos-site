@@ -170,10 +170,10 @@ export default function LeadPopup() {
             height={80}
             className="h-20 w-auto mb-4 object-contain"
           />
-          <h3 className="text-gray-900 font-bold text-2xl">
+          <h3 className="text-gray-900 font-bold text-3xl">
             רוצים שנחזור אליכם?
           </h3>
-          <p className="text-gray-500 text-base mt-2">
+          <p className="text-gray-500 text-lg mt-2">
             השאירו פרטים ונחזור בהקדם עם הצעה משתלמת!
           </p>
         </div>
