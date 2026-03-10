@@ -16,12 +16,12 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Menu Panel (slides from right in RTL) */}
-      <div className="fixed top-0 right-0 z-50 h-full w-80 max-w-full bg-white shadow-xl">
+      <div className="fixed top-0 right-0 z-[110] h-full w-80 max-w-full bg-white shadow-xl">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between border-b p-4">

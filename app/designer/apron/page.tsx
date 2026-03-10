@@ -386,7 +386,7 @@ export default function ApronDesignerPage() {
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="lg:hidden space-y-6 pb-8">
+        <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
           {/* Sticky mockup */}
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">

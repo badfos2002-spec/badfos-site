@@ -25,7 +25,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm" dir="rtl">
+      <header className="sticky top-0 z-[100] w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm" dir="rtl">
         <div className="mx-auto max-w-[1536px] px-4 md:px-0">
 
           {/* Mobile Row */}
