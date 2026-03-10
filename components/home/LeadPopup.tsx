@@ -55,7 +55,7 @@ export default function LeadPopup() {
     const timer = setTimeout(() => {
       setIsOpen(true)
       sessionStorage.setItem('lead_popup_shown', 'true')
-    }, 4000)
+    }, 300)
 
     return () => clearTimeout(timer)
   }, [hasConsentedCookies])
