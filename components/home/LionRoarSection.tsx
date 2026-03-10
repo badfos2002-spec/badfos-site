@@ -9,27 +9,27 @@ export default function LionRoarSection() {
       <div className="mx-auto max-w-5xl px-4">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-10 items-center">
           {/* Text Content */}
-          <div className="order-2 lg:order-1 text-center lg:text-right space-y-4">
-            <div className="inline-flex items-center gap-2 bg-white/15 text-white px-3 py-1 rounded-full text-xs font-medium">
+          <div className="order-2 lg:order-1 text-center lg:text-right space-y-5">
+            <div className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide">
               🇮🇱 מהדורה מיוחדת
             </div>
 
-            <h2 className="text-2xl lg:text-4xl font-bold leading-tight text-white">
+            <h2 className="text-3xl lg:text-5xl font-extrabold leading-snug text-white">
               חולצת{' '}
-              <span className="text-yellow-300">
+              <span className="text-white/90">
                 שאגת הארי
               </span>
             </h2>
 
-            <p className="text-base text-blue-100 leading-relaxed max-w-md mx-auto lg:mx-0">
+            <p className="text-lg lg:text-xl text-white/80 leading-relaxed max-w-md mx-auto lg:mx-0 font-medium">
               &quot;עם ישראל חי וקיים&quot; — חולצה איכותית עם הדפס ייחודי.
               <br />
-              <strong className="text-yellow-300">10% מההכנסות נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
+              <strong className="text-white font-bold">10% מההכנסות נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
             </p>
 
             <div className="flex items-center gap-3 justify-center lg:justify-start">
-              <span className="text-3xl font-bold text-white">₪50</span>
-              <span className="text-sm text-blue-200">ליחידה</span>
+              <span className="text-4xl font-extrabold text-white">₪50</span>
+              <span className="text-base text-white/60 font-medium">ליחידה</span>
             </div>
 
             <Link
