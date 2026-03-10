@@ -11,7 +11,6 @@ export default function NewContactFormSection() {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    idNumber: '',
     comments: '',
   })
   const [loading, setLoading] = useState(false)
@@ -23,7 +22,7 @@ export default function NewContactFormSection() {
 
     try {
       const gclid = getGclid()
-      const message = `מספר זהות: ${formData.idNumber}\nהערות: ${formData.comments}`
+      const message = formData.comments || ''
 
       await createLead({
         name: formData.name,
@@ -52,7 +51,7 @@ export default function NewContactFormSection() {
       }
 
       setSubmitted(true)
-      setFormData({ name: '', phone: '', idNumber: '', comments: '' })
+      setFormData({ name: '', phone: '', comments: '' })
       setTimeout(() => setSubmitted(false), 5000)
     } catch (error) {
       console.error('Error:', error)
@@ -132,21 +131,6 @@ export default function NewContactFormSection() {
                       placeholder="050-0000000"
                       className="text-right h-10 text-sm bg-gray-50 border-gray-200 focus:ring-yellow-400 pr-8"
                       dir="ltr"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <label className="block text-xs font-medium mb-1 text-right text-gray-700">
-                      תעודת זהות
-                    </label>
-                    <Input
-                      type="text"
-                      value={formData.idNumber}
-                      onChange={(e) =>
-                        setFormData({ ...formData, idNumber: e.target.value })
-                      }
-                      placeholder="000-0000000"
-                      className="text-right h-10 text-sm bg-gray-50 border-gray-200 focus:ring-yellow-400"
                     />
                   </div>
 
