@@ -105,6 +105,26 @@ export default function LionRoarPage() {
           </div>
         </div>
 
+        {/* ── Navigation Buttons (below step bar) ── */}
+        <div className="flex justify-center items-center gap-3 mb-8">
+          <Button
+            variant="outline"
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 px-6"
+          >
+            דף הבית
+          </Button>
+          <Button
+            onClick={handleAddToCart}
+            disabled={totalQuantity === 0 || added}
+            className={`flex items-center gap-2 px-6 text-white ${
+              added ? 'bg-green-500 hover:bg-green-500' : 'gradient-yellow'
+            }`}
+          >
+            {added ? 'נוסף לעגלה ✓' : 'הוסף לעגלה 🛒'}
+          </Button>
+        </div>
+
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8">
           {/* Sticky mockup */}
@@ -216,25 +236,6 @@ export default function LionRoarPage() {
             </div>
           </div>
 
-          {/* Mobile bottom nav */}
-          <div className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/')}
-              className="flex-1 h-10 rounded-md px-8 flex items-center justify-center gap-2"
-            >
-              חזרה לדף הבית
-            </Button>
-            <Button
-              onClick={handleAddToCart}
-              disabled={totalQuantity === 0 || added}
-              className={`flex-1 h-10 rounded-md px-8 text-white ${
-                added ? 'bg-green-500 hover:bg-green-500' : 'gradient-yellow'
-              }`}
-            >
-              {added ? 'נוסף לעגלה ✓' : 'הוסף לעגלה 🛒'}
-            </Button>
-          </div>
         </div>
 
         {/* ── DESKTOP LAYOUT ── */}
@@ -335,23 +336,6 @@ export default function LionRoarPage() {
               </div>
             </div>
 
-            {/* Desktop nav buttons */}
-            <div className="flex justify-between items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => router.push('/')}
-                className="flex items-center gap-2"
-              >
-                חזרה לדף הבית
-              </Button>
-              <Button
-                onClick={handleAddToCart}
-                disabled={totalQuantity === 0 || added}
-                className={`text-white ${added ? 'bg-green-500 hover:bg-green-500' : 'gradient-yellow'}`}
-              >
-                {added ? 'נוסף לעגלה ✓' : 'הוסף לעגלה 🛒'}
-              </Button>
-            </div>
           </div>
 
           {/* Right: sticky preview */}
