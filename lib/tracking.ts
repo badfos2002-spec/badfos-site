@@ -94,14 +94,21 @@ export async function sendToZapier(data: {
   gclid?: string
   message?: string
 }): Promise<boolean> {
+  console.log('[Zapier] Sending lead:', data)
   try {
     const res = await fetch('https://hooks.zapier.com/hooks/catch/26080632/ulxg2e6/', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
+    if (res.ok) {
+      console.log('[Zapier] Success:', res.status)
+    } else {
+      console.error('[Zapier] Failed:', res.status, res.statusText)
+    }
     return res.ok
   } catch (e) {
-    console.error('Zapier webhook error:', e)
+    console.error('[Zapier] Error:', e)
     return false
   }
 }
