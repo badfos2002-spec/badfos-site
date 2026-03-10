@@ -24,7 +24,12 @@ export default function CookieConsent() {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-[11000] flex items-center justify-center" style={{ direction: 'ltr' }}>
+    <div
+      className="fixed inset-0 z-[11000] flex items-center justify-center"
+      style={{ direction: 'ltr', touchAction: 'none', overscrollBehavior: 'none' }}
+      onTouchMove={(e) => e.preventDefault()}
+      onWheel={(e) => e.preventDefault()}
+    >
       {/* Overlay — blocks everything */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
