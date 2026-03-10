@@ -18,6 +18,12 @@ export default function NewContactFormSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!/^(05\d{8}|0[23489]\d{7})$/.test(formData.phone.replace(/\D/g, ''))) {
+      alert('מספר טלפון לא חוקי')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -29,7 +35,7 @@ export default function NewContactFormSection() {
         phone: formData.phone,
         email: '',
         message,
-        source: 'bottom_form' as any,
+        source: 'bottom_form',
         status: 'new',
         ...(gclid && { gclid }),
       })

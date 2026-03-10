@@ -12,6 +12,7 @@ export default function CookieConsent() {
       setVisible(true)
       document.body.style.overflow = 'hidden'
     }
+    return () => { document.body.style.overflow = 'unset' }
   }, [])
 
   // Block scroll with non-passive listeners

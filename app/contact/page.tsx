@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Phone, Mail, MessageCircle, Instagram, Facebook, Send } from 'lucide-react'
+import { Phone, Mail, MessageCircle, Instagram, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CONTACT_INFO } from '@/lib/constants'
@@ -21,6 +21,12 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (formData.phone && !/^(05\d{8}|0[23489]\d{7})$/.test(formData.phone.replace(/\D/g, ''))) {
+      alert('מספר טלפון לא חוקי')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -68,6 +74,7 @@ export default function ContactPage() {
       value: '050-7794277',
       link: `tel:${CONTACT_INFO.phone}`,
       gradient: 'from-green-500 to-emerald-600',
+      external: false,
     },
     {
       icon: Mail,
@@ -75,13 +82,15 @@ export default function ContactPage() {
       value: 'badfos2002@gmail.com',
       link: `mailto:${CONTACT_INFO.email}`,
       gradient: 'from-blue-500 to-indigo-600',
+      external: false,
     },
     {
       icon: MessageCircle,
       title: 'וואטסאפ',
       value: 'שלח הודעה',
-      link: `https://wa.me/${CONTACT_INFO.phone}`,
+      link: `https://wa.me/${CONTACT_INFO.whatsapp}`,
       gradient: 'from-green-500 to-teal-600',
+      external: true,
     },
     {
       icon: Instagram,
@@ -89,6 +98,7 @@ export default function ContactPage() {
       value: 'עקבו אחרינו',
       link: CONTACT_INFO.instagram,
       gradient: 'from-pink-500 to-rose-600',
+      external: true,
     },
   ]
 
@@ -237,8 +247,7 @@ export default function ContactPage() {
                 <a
                   key={index}
                   href={method.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...(method.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   onClick={handleMethodClick}
                   className="flex items-center gap-4 bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 group"
                 >

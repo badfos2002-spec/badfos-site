@@ -123,6 +123,7 @@ export default function LeadPopup() {
       sendMetaLeadEvent()
 
       setIsSuccess(true)
+      localStorage.setItem('lead_popup_closed', 'true')
       setTimeout(() => {
         setIsOpen(false)
       }, 3000)

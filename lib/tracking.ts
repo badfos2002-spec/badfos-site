@@ -9,7 +9,7 @@ function gtagSafe(...args: any[]) {
     window.gtag(...args)
   } else {
     window.dataLayer = window.dataLayer || []
-    window.dataLayer.push(args)
+    window.dataLayer.push(arguments)
   }
 }
 
