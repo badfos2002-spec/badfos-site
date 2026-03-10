@@ -43,21 +43,30 @@ export default function OrderSummary({
   }, [])
 
   // Compute quantity discount from Firestore rules (fallback to hardcoded if none)
+  // Exclude noDiscount items (special products) from discount calculations
+  const discountableItems = items.filter(item => !item.noDiscount)
+  const discountableQuantity = discountableItems.reduce((sum, item) => sum + item.totalQuantity, 0)
+  const discountableSubtotal = discountableItems.reduce((sum, item) => sum + item.totalPrice, 0)
   const totalQuantity = items.reduce((sum, item) => sum + item.totalQuantity, 0)
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0)
   const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
   const firestoreQuantityDiscount = activeDiscounts.length > 0
     ? (() => {
         const match = activeDiscounts
-          .filter(d => d.type === 'quantity' && totalQuantity >= d.minQuantity)
+          .filter(d => d.type === 'quantity' && discountableQuantity >= d.minQuantity)
           .sort((a, b) => b.discountPercent - a.discountPercent)[0]
-        return match ? Math.round(subtotal * match.discountPercent / 100) : 0
+        return match ? Math.round(discountableSubtotal * match.discountPercent / 100) : 0
       })()
     : undefined // undefined = use hardcoded fallback in calculateOrderTotal
 
   // Use 'pickup' (₪0) when shipping not yet selected, to avoid phantom shipping cost in total
   const shippingMethod = shipping?.method || 'pickup'
-  const orderTotal = calculateOrderTotal(items, shippingMethod, couponDiscount, firestoreQuantityDiscount)
+  const orderTotal = calculateOrderTotal(discountableItems, shippingMethod, couponDiscount, firestoreQuantityDiscount)
+  // Add back non-discountable items to the totals
+  const noDiscountTotal = items.filter(i => i.noDiscount).reduce((sum, item) => sum + item.totalPrice, 0)
+  orderTotal.subtotal += noDiscountTotal
+  orderTotal.total += noDiscountTotal
+  orderTotal.totalQuantity = totalQuantity
   // Include packages in totals
   orderTotal.subtotal += packagesTotal
   orderTotal.total += packagesTotal
@@ -69,7 +78,7 @@ export default function OrderSummary({
     try {
       const coupon = await validateCoupon(couponCode.trim().toUpperCase())
       if (coupon) {
-        const itemsSubtotal = items.reduce((sum, item) => sum + item.totalPrice, 0)
+        const itemsSubtotal = items.filter(i => !i.noDiscount).reduce((sum, item) => sum + item.totalPrice, 0)
         const pkgSubtotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
         const discount = Math.round((itemsSubtotal + pkgSubtotal) * coupon.discountPercent / 100)
         setCouponDiscount(discount)
@@ -109,9 +118,10 @@ export default function OrderSummary({
               buff: 'באף בעיצוב אישי',
               cap: 'כובע בעיצוב אישי',
             }
+            const label = item.specialProductName || productLabel[item.productType] || item.productType
             return (
               <div key={item.id} className="flex justify-between text-sm">
-                <span>{index + 1}. {productLabel[item.productType] ?? item.productType} ×{item.totalQuantity}</span>
+                <span>{index + 1}. {label} ×{item.totalQuantity}</span>
                 <span className="font-bold text-black">{formatPrice(item.totalPrice)}</span>
               </div>
             )

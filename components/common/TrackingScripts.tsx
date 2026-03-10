@@ -15,13 +15,13 @@ declare global {
 export default function TrackingScripts() {
   // Capture GCLID from URL and save to localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    try {
       const params = new URLSearchParams(window.location.search)
       const gclid = params.get('gclid')
       if (gclid) {
         localStorage.setItem('gclid', gclid)
       }
-    }
+    } catch {}
   }, [])
 
   // Load GTM, Google Ads (gtag.js), Meta Pixel, AdSense - Gated by Cookie Consent
@@ -53,8 +53,8 @@ export default function TrackingScripts() {
       document.head.appendChild(gtagScript)
 
       window.dataLayer = window.dataLayer || []
-      function gtag(...args: any[]) {
-        window.dataLayer.push(args)
+      function gtag(..._args: any[]) {
+        window.dataLayer.push(arguments)
       }
       window.gtag = gtag
       gtag('js', new Date())
@@ -70,8 +70,8 @@ export default function TrackingScripts() {
         }
         const gtagFn =
           window.gtag ||
-          function (...args: any[]) {
-            ;(window.dataLayer = window.dataLayer || []).push(args)
+          function (..._args: any[]) {
+            ;(window.dataLayer = window.dataLayer || []).push(arguments)
           }
 
         gtagFn('event', 'ads_conversion___1', {
@@ -127,8 +127,10 @@ export default function TrackingScripts() {
 
     // Check for consent
     const checkConsentAndLoad = () => {
+      let storedConsent: string | null = null
+      try { storedConsent = localStorage.getItem('cookie_consent') } catch {}
       const hasConsent =
-        localStorage.getItem('cookie_consent') === 'accepted' ||
+        storedConsent === 'accepted' ||
         document.cookie
           .split('; ')
           .find((row) => row.startsWith('cookie_consent=accepted'))

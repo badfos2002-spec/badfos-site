@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
@@ -15,9 +15,15 @@ export default function NewContactFormSection() {
   })
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const lastSubmitRef = useRef(0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (Date.now() - lastSubmitRef.current < 60000) {
+      alert('נא להמתין לפני שליחה נוספת')
+      return
+    }
 
     if (!/^(05\d{8}|0[23489]\d{7})$/.test(formData.phone.replace(/\D/g, ''))) {
       alert('מספר טלפון לא חוקי')
@@ -25,6 +31,7 @@ export default function NewContactFormSection() {
     }
 
     setLoading(true)
+    lastSubmitRef.current = Date.now()
 
     try {
       const gclid = getGclid()
@@ -91,7 +98,7 @@ export default function NewContactFormSection() {
               </div>
 
               {submitted ? (
-                <div className="bg-green-50 border-2 border-green-500 rounded-xl p-4 text-center">
+                <div className="bg-green-50 border-2 border-green-500 rounded-xl p-4 text-center" role="status" aria-live="polite">
                   <div className="text-3xl mb-2">✅</div>
                   <h4 className="font-bold text-base text-green-800 mb-1">
                     תודה רבה!

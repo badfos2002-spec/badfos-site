@@ -78,9 +78,13 @@ export function trackPhoneClick() {
 /** Get stored GCLID from localStorage or URL */
 export function getGclid(): string | undefined {
   if (typeof window === 'undefined') return undefined
-  return (
-    localStorage.getItem('gclid') ||
-    new URLSearchParams(window.location.search).get('gclid') ||
-    undefined
-  )
+  try {
+    return (
+      localStorage.getItem('gclid') ||
+      new URLSearchParams(window.location.search).get('gclid') ||
+      undefined
+    )
+  } catch {
+    return new URLSearchParams(window.location.search).get('gclid') || undefined
+  }
 }

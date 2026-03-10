@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { safeGetItem, safeSetItem } from '@/lib/safe-storage'
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const consent = localStorage.getItem('cookie_consent')
+    const consent = safeGetItem('cookie_consent')
     if (!consent) {
       setVisible(true)
       document.body.style.overflow = 'hidden'
@@ -32,7 +33,7 @@ export default function CookieConsent() {
   }, [visible])
 
   const handleAccept = () => {
-    localStorage.setItem('cookie_consent', 'accepted')
+    safeSetItem('cookie_consent', 'accepted')
     document.cookie = 'cookie_consent=accepted; max-age=31536000; path=/'
     document.body.style.overflow = 'unset'
     setVisible(false)

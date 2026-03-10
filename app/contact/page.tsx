@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Phone, Mail, MessageCircle, Instagram, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,9 +18,15 @@ export default function ContactPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const lastSubmitRef = useRef(0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (Date.now() - lastSubmitRef.current < 60000) {
+      alert('נא להמתין לפני שליחה נוספת')
+      return
+    }
 
     if (formData.phone && !/^(05\d{8}|0[23489]\d{7})$/.test(formData.phone.replace(/\D/g, ''))) {
       alert('מספר טלפון לא חוקי')
@@ -28,6 +34,7 @@ export default function ContactPage() {
     }
 
     setIsSubmitting(true)
+    lastSubmitRef.current = Date.now()
 
     try {
       const gclid = getGclid()
@@ -133,7 +140,7 @@ export default function ContactPage() {
             </h2>
 
             {submitted ? (
-              <div className="bg-green-50 border-2 border-green-500 rounded-2xl p-8 text-center">
+              <div className="bg-green-50 border-2 border-green-500 rounded-2xl p-8 text-center" role="status" aria-live="polite">
                 <div className="text-6xl mb-4">✅</div>
                 <h3 className="text-2xl font-bold text-green-800 mb-2">
                   תודה רבה!

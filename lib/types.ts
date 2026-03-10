@@ -28,6 +28,9 @@ export interface ProductConfig {
   color: string
   designs: DesignArea[]
   sizes: SizeQuantity[]
+  noDiscount?: boolean
+  specialProductName?: string
+  fixedPrice?: number
 }
 
 // ============================================================================

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
 import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid } from '@/lib/tracking'
+import { safeGetItem, safeSetItem, safeSessionGet, safeSessionSet } from '@/lib/safe-storage'
 
 const validatePhone = (p: string) => {
   const clean = p.replace(/\D/g, '')
@@ -22,12 +23,13 @@ export default function LeadPopup() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [hasConsentedCookies, setHasConsentedCookies] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
+  const lastSubmitRef = useRef(0)
 
   // Check cookie consent
   useEffect(() => {
     const checkConsent = () => {
       const consent =
-        localStorage.getItem('cookie_consent') === 'accepted' ||
+        safeGetItem('cookie_consent') === 'accepted' ||
         document.cookie.includes('cookie_consent=accepted')
       setHasConsentedCookies(consent)
     }
@@ -48,14 +50,14 @@ export default function LeadPopup() {
   useEffect(() => {
     if (!hasConsentedCookies) return
 
-    const isClosed = localStorage.getItem('lead_popup_closed')
-    const wasShown = sessionStorage.getItem('lead_popup_shown')
+    const isClosed = safeGetItem('lead_popup_closed')
+    const wasShown = safeSessionGet('lead_popup_shown')
 
     if (isClosed || wasShown) return
 
     const timer = setTimeout(() => {
       setIsOpen(true)
-      sessionStorage.setItem('lead_popup_shown', 'true')
+      safeSessionSet('lead_popup_shown', 'true')
     }, 300)
 
     return () => clearTimeout(timer)
@@ -83,13 +85,18 @@ export default function LeadPopup() {
   }, [isOpen])
 
   const handleClose = () => {
-    localStorage.setItem('lead_popup_closed', 'true')
+    safeSetItem('lead_popup_closed', 'true')
     setIsOpen(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name || !phone) return
+
+    if (Date.now() - lastSubmitRef.current < 60000) {
+      alert('נא להמתין לפני שליחה נוספת')
+      return
+    }
 
     if (!validatePhone(phone)) {
       setPhoneError('מספר לא חוקי')
@@ -98,6 +105,7 @@ export default function LeadPopup() {
     setPhoneError('')
 
     setIsSubmitting(true)
+    lastSubmitRef.current = Date.now()
 
     try {
       const gclid = getGclid()
@@ -123,7 +131,7 @@ export default function LeadPopup() {
       sendMetaLeadEvent()
 
       setIsSuccess(true)
-      localStorage.setItem('lead_popup_closed', 'true')
+      safeSetItem('lead_popup_closed', 'true')
       setTimeout(() => {
         setIsOpen(false)
       }, 3000)
@@ -181,7 +189,7 @@ export default function LeadPopup() {
 
         {/* Form / Success */}
         {isSuccess ? (
-          <div className="text-center py-4 animate-in fade-in zoom-in-95 duration-300">
+          <div className="text-center py-4 animate-in fade-in zoom-in-95 duration-300" role="status" aria-live="polite">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Check className="w-8 h-8 text-green-600" />
             </div>

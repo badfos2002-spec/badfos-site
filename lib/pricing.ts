@@ -18,6 +18,9 @@ import {
  * Formula: basePrice + fabricSurcharge + designAreaPrices + sizeSurcharge
  */
 export function calculateItemPrice(config: ProductConfig): number {
+  // Special products with a fixed price bypass all calculation
+  if (config.fixedPrice !== undefined) return config.fixedPrice
+
   const { productType, fabricType, designs, sizes } = config
 
   // 1. Base price
@@ -168,6 +171,11 @@ export function formatPriceDetailed(price: number): string {
  * This allows us to detect duplicate items in the cart
  */
 export function generateCartItemId(config: ProductConfig): string {
+  // Special products get a unique ID based on their name
+  if (config.specialProductName) {
+    return `special-${config.specialProductName}`
+  }
+
   const { productType, fabricType, color, designs } = config
 
   const designIds = designs
@@ -203,6 +211,10 @@ export function getPriceBreakdown(config: ProductConfig): {
   sizeSurcharge: number
   total: number
 } {
+  if (config.fixedPrice !== undefined) {
+    return { basePrice: config.fixedPrice, fabricSurcharge: 0, designAreaPrices: 0, sizeSurcharge: 0, total: config.fixedPrice }
+  }
+
   const { productType, fabricType, designs, sizes } = config
 
   const basePrice = getBasePrice(productType)

@@ -183,7 +183,12 @@ export default function CartItem({ item }: CartItemProps) {
         <div className="flex gap-4">
           {/* Mockup Previews */}
           <div className="flex flex-col gap-1.5 flex-shrink-0">
-            {item.designs.length > 0 ? (
+            {item.specialProductName && item.designs[0]?.imageUrl ? (
+              <div className="relative w-24 h-24 bg-gray-50 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.designs[0].imageUrl} alt={item.specialProductName} className="w-full h-full object-contain" />
+              </div>
+            ) : item.designs.length > 0 ? (
               <>
                 {hasFrontDesigns && (
                   <MockupView view="front" color={item.color} designs={item.designs} />
@@ -205,28 +210,30 @@ export default function CartItem({ item }: CartItemProps) {
             <div className="flex items-start justify-between mb-2">
               <div>
                 <h3 className="font-bold text-lg">
-                  {{
+                  {item.specialProductName || {
                     tshirt: 'חולצה בעיצוב אישי',
                     sweatshirt: 'סווטשירט בעיצוב אישי',
                     buff: 'באף בעיצוב אישי',
                     cap: 'כובע בעיצוב אישי',
                     apron: 'סינר בעיצוב אישי',
-                  }[item.productType] ?? item.productType}
+                  }[item.productType] || item.productType}
                 </h3>
                 <p className="text-sm text-text-gray">
                   {item.fabricType} • {item.color}
                 </p>
               </div>
               <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleEdit}
-                  className="text-gray-500 hover:text-yellow-600 hover:bg-yellow-50"
-                  title="ערוך פריט"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                {!item.specialProductName && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleEdit}
+                    className="text-gray-500 hover:text-yellow-600 hover:bg-yellow-50"
+                    title="ערוך פריט"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
