@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { STANDARD_SIZES } from '@/lib/constants'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
-import { Minus, Plus, Ruler, Eye } from 'lucide-react'
+import { Minus, Plus, Ruler, Eye, ShoppingCart } from 'lucide-react'
 import type { SizeQuantity } from '@/lib/types'
 
 const PRODUCT_NAME = 'חולצת שאגת הארי'
@@ -72,6 +72,37 @@ export default function LionRoarPage() {
             <span className="mx-1">•</span>
             <strong className="text-blue-600">10% מההכנסות נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
           </p>
+        </div>
+
+        {/* ── Step Bar ── */}
+        <div className="flex items-start w-full mb-8 px-2">
+          {/* Step 1: מידות וכמויות */}
+          <div className="flex items-start flex-1">
+            <div className="flex flex-col items-center text-center flex-shrink-0 w-16">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                added ? 'bg-green-500 border-green-500 text-white' : 'bg-yellow-500 border-yellow-500 text-white'
+              }`}>
+                <span className="text-sm font-semibold">{added ? '✓' : '1'}</span>
+              </div>
+              <p className={`mt-2 text-xs sm:text-sm font-semibold ${added ? 'text-green-600' : 'text-yellow-600'}`}>
+                מידות וכמויות
+              </p>
+            </div>
+            <div className={`flex-1 h-1 mt-[19px] mx-1 sm:mx-2 transition-colors duration-300 ${added ? 'bg-green-400' : 'bg-gray-200'}`} />
+          </div>
+          {/* Step 2: הוסף לעגלה */}
+          <div className="flex items-start flex-none">
+            <div className="flex flex-col items-center text-center flex-shrink-0 w-16">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                added ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-300 text-gray-500'
+              }`}>
+                <span className="text-sm font-semibold">{added ? '✓' : <ShoppingCart className="w-4 h-4" />}</span>
+              </div>
+              <p className={`mt-2 text-xs sm:text-sm font-semibold ${added ? 'text-green-600' : 'text-gray-500'}`}>
+                הוסף לעגלה
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
