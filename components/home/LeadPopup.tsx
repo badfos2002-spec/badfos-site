@@ -126,10 +126,9 @@ export default function LeadPopup() {
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center" style={{ direction: 'ltr' }}>
-      {/* Overlay */}
+      {/* Overlay — no click to dismiss */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
-        onClick={handleClose}
       />
 
       {/* Popup Window */}

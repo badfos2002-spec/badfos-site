@@ -8,43 +8,53 @@ export default function CookieConsent() {
   useEffect(() => {
     const consent = localStorage.getItem('cookie_consent')
     if (!consent) {
-      const timer = setTimeout(() => setVisible(true), 1500)
-      return () => clearTimeout(timer)
+      setVisible(true)
+      document.body.style.overflow = 'hidden'
     }
   }, [])
 
   const handleAccept = () => {
     localStorage.setItem('cookie_consent', 'accepted')
     document.cookie = 'cookie_consent=accepted; max-age=31536000; path=/'
+    document.body.style.overflow = 'unset'
     setVisible(false)
     window.dispatchEvent(new Event('cookieConsentAccepted'))
-  }
-
-  const handleDecline = () => {
-    localStorage.setItem('cookie_consent', 'declined')
-    setVisible(false)
   }
 
   if (!visible) return null
 
   return (
-    <div
-      className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 z-[9999] bg-white rounded-2xl shadow-2xl border border-gray-100 px-6 py-5 md:max-w-sm animate-in slide-in-from-bottom duration-300"
-      dir="rtl"
-    >
-      <h3 className="text-lg font-bold text-gray-900 mb-2">
-        🍪 עוגיות ופרטיות
-      </h3>
-      <p className="text-sm text-gray-600 leading-relaxed mb-4">
-        אנו משתמשים בקובצי Cookie כדי לשפר את החוויה שלך באתר, לנתח תנועה
-        ולהציג תוכן מותאם אישית. למידע נוסף, קרא את מדיניות הפרטיות שלנו.
-      </p>
-      <button
-        onClick={handleAccept}
-        className="w-full px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] rounded-full shadow-md transition-all"
+    <div className="fixed inset-0 z-[11000] flex items-center justify-center" style={{ direction: 'ltr' }}>
+      {/* Overlay — blocks everything */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+      {/* Popup */}
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-[85%] p-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 z-10"
+        dir="rtl"
       >
-        אני מסכים/ה
-      </button>
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="text-5xl mb-4">🍪</div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            עוגיות ופרטיות
+          </h3>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            אנו משתמשים בקובצי Cookie כדי לשפר את החוויה שלך באתר, לנתח תנועה
+            ולהציג תוכן מותאם אישית.
+          </p>
+        </div>
+
+        <button
+          onClick={handleAccept}
+          className="w-full px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] rounded-full shadow-lg transition-all"
+        >
+          אני מסכים/ה
+        </button>
+
+        <p className="text-xs text-gray-400 text-center mt-3">
+          בלחיצה על &quot;אני מסכים/ה&quot; אתה מאשר את השימוש בעוגיות
+        </p>
+      </div>
     </div>
   )
 }
