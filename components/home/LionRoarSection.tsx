@@ -18,7 +18,7 @@ export default function LionRoarSection() {
               חולצת
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800">
-                שאגת האריה
+                שאגת הארי
               </span>
             </h2>
 
@@ -46,7 +46,7 @@ export default function LionRoarSection() {
             <div className="relative w-[300px] h-[300px] lg:w-[420px] lg:h-[420px]">
               <Image
                 src="/assets/lion-roar-shirt.png"
-                alt="חולצת שאגת האריה"
+                alt="חולצת שאגת הארי"
                 fill
                 className="object-contain drop-shadow-xl"
               />

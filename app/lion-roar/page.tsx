@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Minus, Plus, Ruler, Eye } from 'lucide-react'
 import type { SizeQuantity } from '@/lib/types'
 
-const PRODUCT_NAME = 'חולצת שאגת האריה'
+const PRODUCT_NAME = 'חולצת שאגת הארי'
 const PRODUCT_PRICE = 50
 const PRODUCT_IMAGE = '/assets/lion-roar-shirt.png'
 
@@ -66,13 +66,12 @@ export default function LionRoarPage() {
 
         {/* ── Product Info Header ── */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e293b] mb-2">{PRODUCT_NAME}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e293b] mb-2">{PRODUCT_NAME} 🇮🇱</h1>
           <p className="text-gray-500 text-sm sm:text-base">
             &quot;עם ישראל חי וקיים&quot; — חולצה איכותית עם הדפס ייחודי
             <span className="mx-1">•</span>
             <strong className="text-blue-600">10% מההכנסות נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
           </p>
-          <p className="mt-2 text-xl font-bold text-[#f59e0b]">₪{PRODUCT_PRICE} ליחידה</p>
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
