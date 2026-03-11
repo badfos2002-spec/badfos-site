@@ -65,7 +65,23 @@ export default function TrackingScripts() {
       window.gtagSendEvent = function (url?: string) {
         const callback = function () {
           if (typeof url === 'string') {
-            window.location.href = url
+            try {
+              const parsed = new URL(url, window.location.origin)
+              // Allow same-origin relative URLs and whitelisted external domains
+              const isSameOrigin = parsed.origin === window.location.origin
+              const isAllowed = parsed.protocol === 'https:' && [
+                'badfos.co.il', 'make.com', 'grow.business',
+                'cardcom.solutions', 'meshulam.co.il',
+                'pay.google.com', 'checkout.stripe.com',
+              ].some(d => parsed.hostname === d || parsed.hostname.endsWith('.' + d))
+              if (isSameOrigin || isAllowed) {
+                window.location.href = url
+              } else {
+                console.warn('Blocked unauthorized redirect in gtagSendEvent:', url)
+              }
+            } catch {
+              console.warn('Invalid URL in gtagSendEvent:', url)
+            }
           }
         }
         const gtagFn =

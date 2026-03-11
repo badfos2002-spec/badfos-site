@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isAuthorizedRedirect } from '@/lib/url-validation'
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,6 +62,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (paymentUrl) {
+      if (!isAuthorizedRedirect(paymentUrl)) {
+        console.error('Blocked unauthorized payment redirect:', paymentUrl)
+        return NextResponse.json({ error: 'Unauthorized payment URL' }, { status: 403 })
+      }
       return NextResponse.json({ url: paymentUrl })
     }
 

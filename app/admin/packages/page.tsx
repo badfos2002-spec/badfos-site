@@ -8,9 +8,9 @@ import { getAllDocuments, deleteDocument, updateDocument, createDocument } from 
 import type { Package } from '@/lib/types'
 
 const DEFAULT_PACKAGES: Omit<Package, 'id'>[] = [
-  { name: 'עד 10 חולצות', tag: 'חדש', minQuantity: 1, maxQuantity: 10, pricePerUnit: 42, graphicDesignerCost: 250, isActive: true, sortOrder: 0, image: 'https://base44.app/api/apps/68626ca21a08e364608a704b/files/ddc5d7f82_10.png' },
-  { name: '11-20 חולצות', tag: 'חסכוני', minQuantity: 11, maxQuantity: 20, pricePerUnit: 40, graphicDesignerCost: 250, isActive: true, sortOrder: 1, image: 'https://base44.app/api/apps/68626ca21a08e364608a704b/files/0181cec14_11-20.png' },
-  { name: '21-50 חולצות', tag: 'הכי משתלם', minQuantity: 21, maxQuantity: 50, pricePerUnit: 38, graphicDesignerCost: 0, isActive: true, sortOrder: 2, image: 'https://base44.app/api/apps/68626ca21a08e364608a704b/files/056e4ce29_21-50.png' },
+  { name: 'עד 10 חולצות', tag: 'חדש', minQuantity: 1, maxQuantity: 10, pricePerUnit: 42, graphicDesignerCost: 250, isActive: true, sortOrder: 0, image: '/images/packages/package-10.png' },
+  { name: '11-20 חולצות', tag: 'חסכוני', minQuantity: 11, maxQuantity: 20, pricePerUnit: 40, graphicDesignerCost: 250, isActive: true, sortOrder: 1, image: '/images/packages/package-11-20.png' },
+  { name: '21-50 חולצות', tag: 'הכי משתלם', minQuantity: 21, maxQuantity: 50, pricePerUnit: 38, graphicDesignerCost: 0, isActive: true, sortOrder: 2, image: '/images/packages/package-21-50.png' },
 ]
 
 const EMPTY_FORM: Omit<Package, 'id'> = {

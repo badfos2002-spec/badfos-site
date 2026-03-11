@@ -14,6 +14,7 @@ import { createSharedCart, createOrder } from '@/lib/db'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { calculateOrderTotal } from '@/lib/pricing'
 import type { CustomerInfo, Shipping } from '@/lib/types'
+import { isAuthorizedRedirect } from '@/lib/url-validation'
 
 async function blobToBase64(blobUrl: string): Promise<string> {
   if (!blobUrl.startsWith('blob:')) return blobUrl
@@ -297,6 +298,9 @@ export default function CartPage() {
         }
 
         setLoadingMessage('מעביר לעמוד תשלום...')
+        if (!isAuthorizedRedirect(paymentData.url)) {
+          throw new Error('כתובת התשלום אינה מאושרת')
+        }
         window.location.href = paymentData.url
         return
       } else {
