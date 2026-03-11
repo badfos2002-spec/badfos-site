@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Star, User } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { getFeaturedReviews } from '@/lib/db'
+import { getApprovedReviews } from '@/lib/db'
 
 type GoogleReview = {
   author: string
@@ -26,7 +26,7 @@ const GoogleIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
 
 function ReviewCard({ review, isGoogle }: { review: GoogleReview; isGoogle: boolean }) {
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 h-full flex flex-col">
+    <div className="bg-white rounded-2xl shadow-lg p-6 h-full flex flex-col min-w-0">
       <div className="flex items-center gap-3 mb-4">
         {review.authorPhoto ? (
           <img src={review.authorPhoto} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
@@ -35,8 +35,8 @@ function ReviewCard({ review, isGoogle }: { review: GoogleReview; isGoogle: bool
             <User className="w-5 h-5 text-blue-600" />
           </div>
         )}
-        <div className="flex-1 text-right">
-          <p className="font-semibold text-sm text-gray-900">{review.author}</p>
+        <div className="flex-1 text-right min-w-0">
+          <p className="font-semibold text-sm text-gray-900 truncate">{review.author}</p>
           {review.time && <p className="text-xs text-gray-400">{review.time}</p>}
         </div>
         {isGoogle && <GoogleIcon className="w-5 h-5 flex-shrink-0" />}
@@ -57,7 +57,7 @@ export default function NewTestimonialsSection() {
   const [googleReviewCount, setGoogleReviewCount] = useState(0)
   const [isGoogle, setIsGoogle] = useState(false)
   const [page, setPage] = useState(0)
-  const [fade, setFade] = useState(true)
+  const [slideDir, setSlideDir] = useState<'in' | 'out' | 'idle'>('idle')
   const timerRef = useRef<ReturnType<typeof setInterval>>()
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function NewTestimonialsSection() {
 
     Promise.all([
       fetch('/api/google-business').then(r => r.json()).catch(() => null),
-      getFeaturedReviews().catch(() => []),
+      getApprovedReviews().catch(() => []),
     ]).then(([googleData, firestoreReviews]) => {
       const combined: GoogleReview[] = []
 
@@ -79,7 +79,7 @@ export default function NewTestimonialsSection() {
         setIsGoogle(true)
       }
 
-      // Fill up to TARGET with Firestore reviews
+      // Fill up to TARGET with Firestore reviews (all approved, not just featured)
       const googleNames = new Set(combined.map(r => r.author))
       for (const r of firestoreReviews) {
         if (combined.length >= TARGET) break
@@ -98,25 +98,36 @@ export default function NewTestimonialsSection() {
     })
   }, [])
 
-  // Auto-rotate every 7 seconds
+  // Auto-rotate every 7 seconds with slide animation
   const totalPages = Math.ceil(allReviews.length / 3)
 
   useEffect(() => {
     if (totalPages <= 1) return
     timerRef.current = setInterval(() => {
-      setFade(false)
+      // Slide out to the right
+      setSlideDir('out')
       setTimeout(() => {
         setPage(prev => (prev + 1) % totalPages)
-        setFade(true)
-      }, 400)
+        // Slide in from the left
+        setSlideDir('in')
+        // Reset to idle after animation
+        setTimeout(() => setSlideDir('idle'), 500)
+      }, 500)
     }, 7000)
     return () => clearInterval(timerRef.current)
   }, [totalPages])
 
   const visibleReviews = allReviews.slice(page * 3, page * 3 + 3)
 
+  const slideClass =
+    slideDir === 'out'
+      ? 'translate-x-full opacity-0'
+      : slideDir === 'in'
+        ? '-translate-x-full opacity-0'
+        : 'translate-x-0 opacity-100'
+
   return (
-    <section className="w-full bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-20" dir="rtl">
+    <section className="w-full bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-20 overflow-hidden" dir="rtl">
       <div className="mx-auto max-w-[1536px] px-4 md:px-0">
         {/* Heading */}
         <div className="text-center mb-12">
@@ -141,9 +152,9 @@ export default function NewTestimonialsSection() {
           )}
         </div>
 
-        {/* Carousel */}
+        {/* Carousel with slide animation */}
         <div
-          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8 transition-opacity duration-400 ${fade ? 'opacity-100' : 'opacity-0'}`}
+          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8 transition-all duration-500 ease-in-out ${slideClass}`}
         >
           {visibleReviews.map((review, index) => (
             <ReviewCard key={`${page}-${index}`} review={review} isGoogle={isGoogle} />
