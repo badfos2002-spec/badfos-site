@@ -30,7 +30,7 @@ export default function Error({
             <RefreshCw className="w-5 h-5 ml-2" />
             נסה שוב
           </Button>
-          <Link href="/" className="block">
+          <Link href="/home" className="block">
             <Button variant="outline" className="w-full h-12 rounded-xl">
               <Home className="w-5 h-5 ml-2" />
               חזרה לדף הבית

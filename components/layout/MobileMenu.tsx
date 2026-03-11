@@ -36,7 +36,7 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
           <nav className="flex-1 overflow-y-auto p-4">
             <div className="flex flex-col gap-2">
               <Link
-                href="/"
+                href="/home"
                 className="rounded-lg px-4 py-3 text-right text-base font-medium hover:bg-gray-100 transition-colors"
                 onClick={onClose}
               >

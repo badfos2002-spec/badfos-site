@@ -21,7 +21,7 @@ export default function PaymentFailurePage() {
               חזרה לעגלה — נסה שוב
             </Button>
           </Link>
-          <Link href="/" className="block">
+          <Link href="/home" className="block">
             <Button variant="outline" className="w-full h-12">חזור לדף הבית</Button>
           </Link>
         </div>

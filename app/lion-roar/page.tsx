@@ -109,7 +109,7 @@ export default function LionRoarPage() {
         <div className="flex justify-center items-center gap-3 mb-8">
           <Button
             variant="outline"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/home')}
             className="flex items-center gap-2 px-6"
           >
             דף הבית

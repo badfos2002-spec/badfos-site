@@ -16,7 +16,7 @@ export default function NotFound() {
           מצטערים, העמוד שחיפשת לא קיים או שהוסר.
         </p>
         <div className="space-y-3">
-          <Link href="/" className="block">
+          <Link href="/home" className="block">
             <Button className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl">
               <Home className="w-5 h-5 ml-2" />
               חזרה לדף הבית

@@ -17,7 +17,7 @@ export default function Header() {
   const pathname = usePathname()
 
   const navLinkClass = (href: string) => {
-    const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
+    const isActive = href === '/home' ? (pathname === '/' || pathname === '/home') : pathname.startsWith(href)
     return isActive
       ? 'flex items-center space-x-2 space-x-reverse px-3 py-2 rounded-lg transition-all duration-200 hover-lift bg-yellow-100 text-yellow-600'
       : 'flex items-center space-x-2 space-x-reverse px-3 py-2 rounded-lg transition-all duration-200 hover-lift text-gray-700 hover:text-yellow-600 hover:bg-yellow-50'
@@ -41,7 +41,7 @@ export default function Header() {
               </Button>
             </div>
             <div className="flex justify-center">
-              <Link href="/">
+              <Link href="/home">
                 <img src="/logo.png" alt="בדפוס - הדפסת חולצות" className="h-12 w-auto" />
               </Link>
             </div>
@@ -63,13 +63,13 @@ export default function Header() {
           <div className="hidden lg:flex justify-between items-center h-16">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center">
+            <Link href="/home" className="flex items-center">
               <img src="/logo.png" alt="בדפוס - הדפסת חולצות" className="h-12 w-auto" />
             </Link>
 
             {/* Navigation */}
             <nav className="flex items-center space-x-8 space-x-reverse" role="navigation">
-              <Link href="/" className={navLinkClass('/')}>
+              <Link href="/home" className={navLinkClass('/home')}>
                 <Home className="w-4 h-4" />
                 <span className="font-medium">בית</span>
               </Link>

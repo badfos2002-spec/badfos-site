@@ -202,7 +202,7 @@ function DealPageContent() {
           <p className="text-gray-600 mb-8">
             ניצור איתך קשר בהקדם לאישור ההזמנה ופרטי תשלום.
           </p>
-          <Link href="/">
+          <Link href="/home">
             <Button className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 text-white font-bold px-8">
               חזרה לעמוד הבית
             </Button>

@@ -246,7 +246,7 @@ export default function ShareCartPage() {
       {/* Header */}
       <header className="sticky top-0 z-30 w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm">
         <div className="mx-auto max-w-[1536px] px-4 md:px-6 h-16 flex items-center justify-between">
-          <Link href="/">
+          <Link href="/home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="בדפוס" className="h-10 w-auto" />
           </Link>

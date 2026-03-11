@@ -400,7 +400,7 @@ export default function CartPage() {
               <Share2 className="w-5 h-5 ml-2" />
               שתף את העיצוב עם חברים
             </Button>
-            <Link href="/" className="block">
+            <Link href="/home" className="block">
               <Button variant="outline" className="w-full">חזור לדף הבית</Button>
             </Link>
           </div>

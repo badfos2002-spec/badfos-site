@@ -28,7 +28,7 @@ export default function Footer() {
             <h3 className="text-white text-lg font-bold mb-4">קישורים מהירים</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/" className="hover:text-yellow-400 transition-colors">
+                <Link href="/home" className="hover:text-yellow-400 transition-colors">
                   דף הבית
                 </Link>
               </li>
