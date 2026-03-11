@@ -70,8 +70,8 @@ export default function TrackingScripts() {
               // Allow same-origin relative URLs and whitelisted external domains
               const isSameOrigin = parsed.origin === window.location.origin
               const isAllowed = parsed.protocol === 'https:' && [
-                'badfos.co.il', 'make.com', 'grow.business',
-                'cardcom.solutions', 'meshulam.co.il',
+                'badfos.co.il', 'make.com', 'grow.business', 'grow.link',
+                'cardcom.solutions', 'meshulam.co.il', 'hyp.co.il',
                 'pay.google.com', 'checkout.stripe.com',
               ].some(d => parsed.hostname === d || parsed.hostname.endsWith('.' + d))
               if (isSameOrigin || isAllowed) {

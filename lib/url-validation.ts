@@ -7,10 +7,15 @@ const ALLOWED_DOMAINS = [
   'badfos.co.il',
   'make.com',
   'grow.business',
+  'grow.link',
   'cardcom.solutions',
   'meshulam.co.il',
+  'hyp.co.il',
   'pay.google.com',
   'checkout.stripe.com',
+  'payplus.co.il',
+  'tranzila.com',
+  'icount.co.il',
 ]
 
 /**
