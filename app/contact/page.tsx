@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Phone, Mail, MessageCircle, Instagram, Send } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Phone, Mail, MessageCircle, Instagram, Send, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CONTACT_INFO } from '@/lib/constants'
@@ -19,6 +19,23 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const lastSubmitRef = useRef(0)
+  const [businessInfo, setBusinessInfo] = useState<{ address: string; phone: string; isOpenNow: boolean; openingHours: { day: number; open: string; close: string }[] } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/google-business')
+      .then(r => r.json())
+      .then(data => {
+        if (data.address) {
+          setBusinessInfo({
+            address: data.address,
+            phone: data.phone,
+            isOpenNow: data.isOpenNow,
+            openingHours: data.openingHours,
+          })
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -273,14 +290,49 @@ export default function ContactPage() {
               )
             })}
 
+            {/* Address */}
+            {businessInfo?.address && (
+              <div className="flex items-center gap-4 bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-md">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1 text-right">
+                  <h3 className="font-bold text-gray-900 mb-1">כתובת</h3>
+                  <p className="text-gray-600">{businessInfo.address}</p>
+                </div>
+              </div>
+            )}
+
             {/* Info Box */}
             <div className="bg-gradient-to-br from-teal-600 to-cyan-600 rounded-2xl p-8 text-white shadow-xl mt-8">
-              <h3 className="text-xl font-bold mb-3">שעות פעילות</h3>
-              <p className="mb-4">
-                ראשון-חמישי: 9:00-18:00
-                <br />
-                שישי: 9:00-13:00
-              </p>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xl font-bold">שעות פעילות</h3>
+                {businessInfo && (
+                  <span className={`text-xs px-3 py-1 rounded-full ${businessInfo.isOpenNow ? 'bg-green-500' : 'bg-red-400'}`}>
+                    {businessInfo.isOpenNow ? 'פתוח עכשיו' : 'סגור'}
+                  </span>
+                )}
+              </div>
+              {businessInfo?.openingHours && businessInfo.openingHours.length > 0 ? (
+                <div className="space-y-1 mb-4">
+                  {(() => {
+                    const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
+                    const seen = new Set<number>()
+                    return businessInfo.openingHours
+                      .filter(h => { if (seen.has(h.day)) return false; seen.add(h.day); return true })
+                      .sort((a, b) => a.day - b.day)
+                      .map(h => (
+                        <p key={h.day} className="text-sm">
+                          {dayNames[h.day]}: {h.open}–{h.close}
+                        </p>
+                      ))
+                  })()}
+                </div>
+              ) : (
+                <p className="mb-4">
+                  ראשון-חמישי: 9:00-23:00
+                </p>
+              )}
               <p className="text-sm opacity-90">
                 זמן מענה ממוצע: תוך 24 שעות
               </p>
