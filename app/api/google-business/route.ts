@@ -59,7 +59,37 @@ export async function GET() {
     }
 
     const raw = await mainRes.json()
-    const allReviews = mapReviews(raw.reviews)
+
+    // Fetch newest reviews separately to get more unique reviews
+    let newestReviews: ReviewData[] = []
+    try {
+      const newestRes = await fetch(
+        `https://places.googleapis.com/v1/places/${PLACE_ID}?languageCode=he`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': API_KEY,
+            'X-Goog-FieldMask': 'reviews',
+          },
+        }
+      )
+      if (newestRes.ok) {
+        const newestRaw = await newestRes.json()
+        newestReviews = mapReviews(newestRaw.reviews)
+      }
+    } catch { /* ignore secondary fetch failure */ }
+
+    // Merge and deduplicate
+    const mainReviews = mapReviews(raw.reviews)
+    const seen = new Set<string>()
+    const allReviews: ReviewData[] = []
+    for (const r of [...mainReviews, ...newestReviews]) {
+      const key = r.author + r.text.slice(0, 30)
+      if (!seen.has(key)) {
+        seen.add(key)
+        allReviews.push(r)
+      }
+    }
 
     const data = {
       name: raw.displayName?.text || 'בדפוס הדפסת חולצות',

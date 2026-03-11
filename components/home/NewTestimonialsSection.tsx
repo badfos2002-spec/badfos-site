@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Star, User } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { getFeaturedReviews } from '@/lib/db'
-import type { Review } from '@/lib/types'
 
 type GoogleReview = {
   author: string
@@ -15,38 +14,67 @@ type GoogleReview = {
   time: string
 }
 
-const FALLBACK = [
-  { name: 'רועי אבירבוך', text: 'אחלה חוויה! השירות מהיר, המחיר הוגן וההדפסה באיכות ברמה גבוהה. הזמנו חולצות לאירוע של החברה ונהננו מכל שלב בתהליך.', rating: 5 },
-  { name: 'אורי קארה',    text: 'השתמשתי בשירות הזמנת חולצות בעבר אצל מתחרים, אבל בדפוס היו הכי מקצועיים והכי נעימים לעבוד איתם. ממליץ בחום!', rating: 5 },
-  { name: 'דניאל שטופל',  text: 'הזמנתי 30 חולצות עם הדפסה מותאמת אישית. התהליך היה פשוט וקל, איכות ההדפסה מדהימה והמשלוח הגיע בזמן. בהחלט נזמין שוב!', rating: 5 },
+const FALLBACK: GoogleReview[] = [
+  { author: 'רועי אבירבוך', authorPhoto: '', text: 'אחלה חוויה! השירות מהיר, המחיר הוגן וההדפסה באיכות ברמה גבוהה. הזמנו חולצות לאירוע של החברה ונהננו מכל שלב בתהליך.', rating: 5, time: '' },
+  { author: 'אורי קארה', authorPhoto: '', text: 'השתמשתי בשירות הזמנת חולצות בעבר אצל מתחרים, אבל בדפוס היו הכי מקצועיים והכי נעימים לעבוד איתם. ממליץ בחום!', rating: 5, time: '' },
+  { author: 'דניאל שטופל', authorPhoto: '', text: 'הזמנתי 30 חולצות עם הדפסה מותאמת אישית. התהליך היה פשוט וקל, איכות ההדפסה מדהימה והמשלוח הגיע בזמן. בהחלט נזמין שוב!', rating: 5, time: '' },
 ]
 
 const GoogleIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
 )
 
+function ReviewCard({ review, isGoogle }: { review: GoogleReview; isGoogle: boolean }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6 h-full flex flex-col">
+      <div className="flex items-center gap-3 mb-4">
+        {review.authorPhoto ? (
+          <img src={review.authorPhoto} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <User className="w-5 h-5 text-blue-600" />
+          </div>
+        )}
+        <div className="flex-1 text-right">
+          <p className="font-semibold text-sm text-gray-900">{review.author}</p>
+          {review.time && <p className="text-xs text-gray-400">{review.time}</p>}
+        </div>
+        {isGoogle && <GoogleIcon className="w-5 h-5 flex-shrink-0" />}
+      </div>
+      <div className="flex gap-0.5 mb-3 justify-end">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
+        ))}
+      </div>
+      <p className="text-gray-600 text-sm leading-relaxed text-right flex-1">{review.text}</p>
+    </div>
+  )
+}
+
 export default function NewTestimonialsSection() {
-  const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
-  const [fallbackReviews, setFallbackReviews] = useState<{ name: string; text: string; rating: number }[]>(FALLBACK)
+  const [allReviews, setAllReviews] = useState<GoogleReview[]>(FALLBACK)
   const [googleRating, setGoogleRating] = useState<number | null>(null)
   const [googleReviewCount, setGoogleReviewCount] = useState(0)
-  const [googleMapsUrl, setGoogleMapsUrl] = useState('')
-  const [useGoogle, setUseGoogle] = useState(false)
+  const [isGoogle, setIsGoogle] = useState(false)
+  const [page, setPage] = useState(0)
+  const [fade, setFade] = useState(true)
+  const timerRef = useRef<ReturnType<typeof setInterval>>()
 
   useEffect(() => {
     fetch('/api/google-business')
       .then(r => r.json())
       .then(data => {
         if (data.reviews?.length > 0) {
-          setGoogleReviews(data.reviews.slice(0, 3))
+          setAllReviews(data.reviews)
           setGoogleRating(data.rating)
           setGoogleReviewCount(data.reviewCount)
-          setGoogleMapsUrl(data.googleMapsUrl)
-          setUseGoogle(true)
+          setIsGoogle(true)
         } else {
           getFeaturedReviews()
             .then(reviews => {
-              if (reviews.length > 0) setFallbackReviews(reviews.map(r => ({ name: r.name, text: r.text, rating: r.rating })))
+              if (reviews.length > 0) {
+                setAllReviews(reviews.map(r => ({ author: r.name, authorPhoto: '', text: r.text, rating: r.rating, time: '' })))
+              }
             })
             .catch(console.error)
         }
@@ -54,11 +82,30 @@ export default function NewTestimonialsSection() {
       .catch(() => {
         getFeaturedReviews()
           .then(reviews => {
-            if (reviews.length > 0) setFallbackReviews(reviews.map(r => ({ name: r.name, text: r.text, rating: r.rating })))
+            if (reviews.length > 0) {
+              setAllReviews(reviews.map(r => ({ author: r.name, authorPhoto: '', text: r.text, rating: r.rating, time: '' })))
+            }
           })
           .catch(console.error)
       })
   }, [])
+
+  // Auto-rotate every 7 seconds
+  const totalPages = Math.ceil(allReviews.length / 3)
+
+  useEffect(() => {
+    if (totalPages <= 1) return
+    timerRef.current = setInterval(() => {
+      setFade(false)
+      setTimeout(() => {
+        setPage(prev => (prev + 1) % totalPages)
+        setFade(true)
+      }, 400)
+    }, 7000)
+    return () => clearInterval(timerRef.current)
+  }, [totalPages])
+
+  const visibleReviews = allReviews.slice(page * 3, page * 3 + 3)
 
   return (
     <section className="w-full bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-20" dir="rtl">
@@ -86,55 +133,23 @@ export default function NewTestimonialsSection() {
           )}
         </div>
 
-        {/* Google Reviews Grid */}
-        {useGoogle ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            {googleReviews.map((review, index) => (
+        {/* Carousel */}
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8 transition-opacity duration-400 ${fade ? 'opacity-100' : 'opacity-0'}`}
+        >
+          {visibleReviews.map((review, index) => (
+            <ReviewCard key={`${page}-${index}`} review={review} isGoogle={isGoogle} />
+          ))}
+        </div>
+
+        {/* Dots indicator */}
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mb-8">
+            {[...Array(totalPages)].map((_, i) => (
               <div
-                key={index}
-                className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all duration-200"
-              >
-                {/* Author row */}
-                <div className="flex items-center gap-3 mb-4">
-                  {review.authorPhoto ? (
-                    <img src={review.authorPhoto} alt="" className="w-10 h-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-blue-600" />
-                    </div>
-                  )}
-                  <div className="flex-1 text-right">
-                    <p className="font-semibold text-sm text-gray-900">{review.author}</p>
-                    <p className="text-xs text-gray-400">{review.time}</p>
-                  </div>
-                  <GoogleIcon className="w-5 h-5 flex-shrink-0" />
-                </div>
-                {/* Stars */}
-                <div className="flex gap-0.5 mb-3 justify-end">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
-                  ))}
-                </div>
-                {/* Text */}
-                <p className="text-gray-600 text-sm leading-relaxed text-right">{review.text}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            {fallbackReviews.map((review, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all duration-200"
-              >
-                <div className="flex gap-0.5 mb-4 justify-end">
-                  {[...Array(review.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-600 text-sm leading-relaxed mb-4 text-right">{review.text}</p>
-                <p className="font-semibold text-sm text-gray-900 text-right">{review.name}</p>
-              </div>
+                key={i}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${i === page ? 'bg-purple-500 w-6' : 'bg-gray-300'}`}
+              />
             ))}
           </div>
         )}
