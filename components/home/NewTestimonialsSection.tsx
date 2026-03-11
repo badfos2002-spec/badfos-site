@@ -61,33 +61,41 @@ export default function NewTestimonialsSection() {
   const timerRef = useRef<ReturnType<typeof setInterval>>()
 
   useEffect(() => {
-    fetch('/api/google-business')
-      .then(r => r.json())
-      .then(data => {
-        if (data.reviews?.length > 0) {
-          setAllReviews(data.reviews)
-          setGoogleRating(data.rating)
-          setGoogleReviewCount(data.reviewCount)
-          setIsGoogle(true)
-        } else {
-          getFeaturedReviews()
-            .then(reviews => {
-              if (reviews.length > 0) {
-                setAllReviews(reviews.map(r => ({ author: r.name, authorPhoto: '', text: r.text, rating: r.rating, time: '' })))
-              }
-            })
-            .catch(console.error)
+    const TARGET = 15
+
+    Promise.all([
+      fetch('/api/google-business').then(r => r.json()).catch(() => null),
+      getFeaturedReviews().catch(() => []),
+    ]).then(([googleData, firestoreReviews]) => {
+      const combined: GoogleReview[] = []
+
+      // Add Google reviews first
+      if (googleData?.reviews?.length > 0) {
+        for (const r of googleData.reviews) {
+          combined.push(r)
         }
-      })
-      .catch(() => {
-        getFeaturedReviews()
-          .then(reviews => {
-            if (reviews.length > 0) {
-              setAllReviews(reviews.map(r => ({ author: r.name, authorPhoto: '', text: r.text, rating: r.rating, time: '' })))
-            }
-          })
-          .catch(console.error)
-      })
+        setGoogleRating(googleData.rating)
+        setGoogleReviewCount(googleData.reviewCount)
+        setIsGoogle(true)
+      }
+
+      // Fill up to TARGET with Firestore reviews
+      const googleNames = new Set(combined.map(r => r.author))
+      for (const r of firestoreReviews) {
+        if (combined.length >= TARGET) break
+        if (googleNames.has(r.name)) continue
+        combined.push({ author: r.name, authorPhoto: '', text: r.text, rating: r.rating, time: '' })
+      }
+
+      // If still not enough, pad with fallback
+      for (const r of FALLBACK) {
+        if (combined.length >= TARGET) break
+        const exists = combined.some(c => c.author === r.author)
+        if (!exists) combined.push(r)
+      }
+
+      if (combined.length > 0) setAllReviews(combined)
+    })
   }, [])
 
   // Auto-rotate every 7 seconds
@@ -141,18 +149,6 @@ export default function NewTestimonialsSection() {
             <ReviewCard key={`${page}-${index}`} review={review} isGoogle={isGoogle} />
           ))}
         </div>
-
-        {/* Dots indicator */}
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mb-8">
-            {[...Array(totalPages)].map((_, i) => (
-              <div
-                key={i}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${i === page ? 'bg-purple-500 w-6' : 'bg-gray-300'}`}
-              />
-            ))}
-          </div>
-        )}
 
         {/* CTA */}
         <div className="text-center">
