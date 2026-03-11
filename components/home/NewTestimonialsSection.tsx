@@ -132,7 +132,7 @@ function ReviewCard({ review, index }: { review: ReviewItem; index: number }) {
               <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
             ))}
           </div>
-          {review.isGoogle && <GoogleIcon className="w-4 h-4 mr-1" />}
+          <GoogleIcon className="w-4 h-4 mr-1" />
         </div>
       </div>
       {/* Review text */}
