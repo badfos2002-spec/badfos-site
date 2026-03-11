@@ -143,6 +143,7 @@ export interface Lead {
   message?: string
   source: LeadSource
   status: LeadStatus
+  gclid?: string
   createdAt: Timestamp
 }
 

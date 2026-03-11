@@ -23,7 +23,7 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (Date.now() - lastSubmitRef.current < 60000) {
+    if (Date.now() - lastSubmitRef.current < 15000) {
       alert('נא להמתין לפני שליחה נוספת')
       return
     }
@@ -50,14 +50,18 @@ export default function ContactPage() {
         ...(gclid && { gclid }),
       })
 
-      fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'new_lead',
-          data: { name: formData.name, phone: formData.phone, email: formData.email, source: 'contact_form', status: 'new', message },
-        }),
-      }).catch(console.error)
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'new_lead',
+            data: { name: formData.name, phone: formData.phone, email: formData.email, source: 'contact_form', status: 'new', message },
+          }),
+        })
+      } catch (emailErr) {
+        console.error('Email notification failed:', emailErr)
+      }
 
       sendGoogleAdsConversion()
       sendGenerateLeadEvent('contact_form')

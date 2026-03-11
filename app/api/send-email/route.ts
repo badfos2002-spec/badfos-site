@@ -17,7 +17,7 @@ function getResend(): Resend | null {
 
 // Simple in-memory rate limiter (per IP, resets on redeploy)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_MAX = 15
 const RATE_LIMIT_WINDOW = 60_000 // 1 minute
 
 function isRateLimited(ip: string): boolean {

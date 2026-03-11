@@ -93,7 +93,7 @@ export default function LeadPopup() {
     e.preventDefault()
     if (!name || !phone) return
 
-    if (Date.now() - lastSubmitRef.current < 60000) {
+    if (Date.now() - lastSubmitRef.current < 15000) {
       alert('נא להמתין לפני שליחה נוספת')
       return
     }
@@ -113,18 +113,21 @@ export default function LeadPopup() {
       await createLead({
         name,
         phone,
-        email: '',
         source: 'popup',
         status: 'new',
         ...(gclid && { gclid }),
       })
 
-      // Send email notification
-      fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'new_lead', data: { name, phone, email: '', source: 'popup', status: 'new' } }),
-      }).catch(console.error)
+      // Send email notification (await to catch errors)
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'new_lead', data: { name, phone, source: 'popup', status: 'new' } }),
+        })
+      } catch (emailErr) {
+        console.error('Email notification failed:', emailErr)
+      }
 
       sendGoogleAdsConversion()
       sendGenerateLeadEvent('popup')
