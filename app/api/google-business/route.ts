@@ -28,7 +28,7 @@ function mapReviews(reviews: any[]): ReviewData[] {
 }
 
 async function fetchPlace(fieldMask: string) {
-  const url = `https://places.googleapis.com/v1/places/${PLACE_ID}`
+  const url = `https://places.googleapis.com/v1/places/${PLACE_ID}?languageCode=he`
   return fetch(url, {
     headers: {
       'Content-Type': 'application/json',
