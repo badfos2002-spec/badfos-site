@@ -15,77 +15,79 @@ type ReviewItem = {
   isGoogle?: boolean
 }
 
-// ---------- 10 manual reviews ----------
+// ---------- Real Google reviews (hardcoded as fallback + supplement) ----------
 const MANUAL_REVIEWS: ReviewItem[] = [
   {
-    author_name: 'רועי אבירבוך',
+    author_name: 'ג\'רדן פרי',
     rating: 5,
-    text: 'אחלה חוויה! השירות מהיר, המחיר הוגן וההדפסה באיכות ברמה גבוהה. הזמנו חולצות לאירוע של החברה ונהננו מכל שלב בתהליך. בהחלט נחזור.',
-    relative_time_description: 'לפני יומיים',
-    profile_photo_url: '',
-  },
-  {
-    author_name: 'אורי קארה',
-    rating: 5,
-    text: 'ממליץ בחום! מקצועיים, נעימים ומהירים.',
-    relative_time_description: 'לפני חודשיים',
-    profile_photo_url: '',
-  },
-  {
-    author_name: 'דניאל שטופל',
-    rating: 5,
-    text: 'הזמנתי 30 חולצות עם הדפסה מותאמת אישית. התהליך היה פשוט וקל, איכות ההדפסה מדהימה והמשלוח הגיע בזמן. בהחלט נזמין שוב!',
-    relative_time_description: 'לפני 4 חודשים',
-    profile_photo_url: '',
-  },
-  {
-    author_name: 'שירה כהן',
-    rating: 5,
-    text: 'הצבעים חיים ומדויקים והבד נעים מאוד. הזמנתי לצוות בעבודה וכולם התלהבו!',
-    relative_time_description: 'לפני שבוע',
-    profile_photo_url: '',
-  },
-  {
-    author_name: 'יוסי לוי',
-    rating: 5,
-    text: 'הגרפיקאי עזר לי לעצב בדיוק את מה שרציתי. החולצות יצאו מהממות, הגיעו תוך 3 ימים. לא ציפיתי לשירות כזה טוב מאתר הדפסה.',
+    text: 'שירות מעולה!!! ואיכות מדהימה באמת!!! גבוהה מאוד!\nששאלתי אם אפשר להביא לי אחרי שעשיתי באתר איסוף עצמי ולא יכלתי בסוף כי אני עם תינוק זה היה אצלי תוך פחות משעה!\nמומלץ מאוד!!\nהדפסה באמת מהיום למחר בלי בולשיט',
     relative_time_description: 'לפני 3 שבועות',
-    profile_photo_url: '',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a/ACg8ocKbo07cA8ZdiqLL6Y33cqF2YPAQ3M7XuJFjMZxbxDdwCUjR5Q=s128-c0x00000000-cc-rp-mo',
+    isGoogle: true,
   },
   {
-    author_name: 'מיכל אברהם',
+    author_name: 'talia Habany',
     rating: 5,
-    text: 'מחיר מעולה ואיכות מדהימה. נזמין שוב!',
-    relative_time_description: 'לפני חצי שנה',
-    profile_photo_url: '',
+    text: 'פשוט וואו!\nהתקשרתי ברגע האחרון להזמין פוטרים לטיול בית הספר וקיבלתי שירות פשוט יוצא דופן. המענה היה מהיר, הסבלנות הייתה אינסופית, איכות החולצות מדהים, והמחיר היה מעולה.\nהכי מדהים, תוך יומיים הפוטרים כבר היו אצלי!\nמזמן לא נתקלתי בשירות כזה בארץ – אדיב, מקצועי ומתוקתק. ממליצה בחום לכל מי שצריך!',
+    relative_time_description: 'לפני 4 שבועות',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a-/ALV-UjXhTgqKXVA1X2vK49XkVGtGrwSvWqP0tB96S4wjqGIBHRf3M8xOWA=s128-c0x00000000-cc-rp-mo',
+    isGoogle: true,
   },
   {
-    author_name: 'אלון דוד',
+    author_name: 'guy lerman',
     rating: 5,
-    text: 'לקוח חוזר כבר בפעם השלישית. הפעם הזמנתי סווטשרטים והם יצאו מושלמים. כל פעם מחדש אני מופתע מהאיכות ומהיחס האישי. אין כמוכם!',
+    text: 'שירות שלא רואים בכל יום! הייתה לי בקשה לא רגילה, ומעבר למה שהחברה מספקת. הם ישר נענו בחיוב וסיפקו לי פתרון מהיר ויעיל להדפסה על חולצות שהייתי צריך. האיכות הייתה ברמה הגבוהה ביותר והשירות, אפילו יותר! ממליץ בחום!!',
+    relative_time_description: 'לפני שבועיים',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a-/ALV-UjXadf8udHEblyt5yVJrbXfk5SGWrDFJf5h-IildLG-v8qsmPfpt=s128-c0x00000000-cc-rp-mo-ba2',
+    isGoogle: true,
+  },
+  {
+    author_name: 'הדר פדידה',
+    rating: 5,
+    text: 'ואוו! שירות מושלם! יחס אישי ומקצועי! ממליצה בחום וללא ספק לא הפעם האחרונה שאזמין מהם',
+    relative_time_description: 'לפני שבועיים',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a/ACg8ocJCdfm8N4pv97iWQ_3NkYEDtDfbl4YiTm1Dl3sJ0Dw7Oq4X7Q=s128-c0x00000000-cc-rp-mo',
+    isGoogle: true,
+  },
+  {
+    author_name: 'אודי מילנר',
+    rating: 5,
+    text: 'הזמנתי מוצרים בעיצוב אישי\nהאיכות מועלה\nוהשירות עם הגרפיקאי היה הכי טוב שקיבלתי שירות אישי',
     relative_time_description: 'לפני חודש',
-    profile_photo_url: '',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a/ACg8ocKKBKQYeMXwfwMh9h5hJqu9iBwu1F8JFKQJbRDjr3jjHXapzA=s128-c0x00000000-cc-rp-mo',
+    isGoogle: true,
   },
   {
-    author_name: 'נועה גולן',
+    author_name: 'אורלי חלפון',
     rating: 5,
-    text: 'עיצבתי חולצה עם תמונה אישית במתנה ליום הולדת. חברה שלי התרגשה! האיכות הרבה מעבר למצופה.',
-    relative_time_description: 'לפני 5 ימים',
-    profile_photo_url: '',
+    text: 'מקצועיות ואיכות בלתי מתפשרים\nשירות מהיר לכל חלקי הארץ\nמחירים נוחים ביותר! מומלץ בחום!',
+    relative_time_description: 'בשבוע האחרון',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a-/ALV-UjWDmgvNeXcCp3PguA4w2u1qdOHgZZDMMOtHuyheG_mpukb2qV61Uw=s128-c0x00000000-cc-rp-mo',
+    isGoogle: true,
   },
   {
-    author_name: 'תומר ברק',
+    author_name: 'תומר ישראלי',
     rating: 5,
-    text: 'הזמנו 50 חולצות לאירוע חברה. מהרגע שפנינו ועד שקיבלנו הכל היה חלק ומקצועי — תקשורת מהירה, עיצוב מדויק, משלוח בזמן. התוצאה עלתה על כל הציפיות. כבר מתכננים הזמנה נוספת.',
-    relative_time_description: 'לפני חודשיים',
-    profile_photo_url: '',
+    text: 'שירות ברמה גבוהה הכי טובים בתחום!!!\nמקצוענים והכי מהירים שיש',
+    relative_time_description: 'לפני שבוע',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a/ACg8ocIcRqMhz2Fq6SszEjTEf7-zce3dVNs9SWAicqXMDCO3h2k0gw=s128-c0x00000000-cc-rp-mo',
+    isGoogle: true,
   },
   {
-    author_name: 'ליאת מזרחי',
+    author_name: 'אלי קסלמן',
     rating: 5,
-    text: 'הדפסתי חולצות לחתונה וכולם שאלו מאיפה. תודה בדפוס!',
-    relative_time_description: 'לפני 3 חודשים',
-    profile_photo_url: '',
+    text: 'שירות מעולה זה קודם כל אחלה של אנשים, והאיכות של החולצות שמקבלים פשוט ואוו, נוחות פיצוצים נראים טוב והמדבקה נראת ממש כחלק מהחולצה ממש אהבתי וממליץ בחום ואהבה',
+    relative_time_description: 'לפני שבועיים',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a-/ALV-UjUhPVUFBrsJspXsFRMDsM0QRJO3feJ9ApLpozQ2pz4QjjZOxnQ=s128-c0x00000000-cc-rp-mo-ba2',
+    isGoogle: true,
+  },
+  {
+    author_name: 'רויטל נתנוב',
+    rating: 5,
+    text: 'שירות הכי טוב שיש יצאנו מרוצים ממש! הכל היה זריז, מקצועי, מחירים פצצה\nממליצה בחום',
+    relative_time_description: 'לפני שבועיים',
+    profile_photo_url: 'https://lh3.googleusercontent.com/a/ACg8ocIHy5ngxCSjfTG1ZyxMuiosLz7-xa4SBO3P3pFLcWTb_MLNqA=s128-c0x00000000-cc-rp-mo',
+    isGoogle: true,
   },
 ]
 
@@ -143,7 +145,7 @@ function ReviewCard({ review, index }: { review: ReviewItem; index: number }) {
 
 // ---------- Main section ----------
 export default function NewTestimonialsSection() {
-  const [allReviews, setAllReviews] = useState<ReviewItem[]>(MANUAL_REVIEWS.slice(0, 15))
+  const [allReviews, setAllReviews] = useState<ReviewItem[]>(MANUAL_REVIEWS)
   const [googleRating, setGoogleRating] = useState<number | null>(null)
   const [googleReviewCount, setGoogleReviewCount] = useState(0)
   const [page, setPage] = useState(0)
@@ -168,18 +170,17 @@ export default function NewTestimonialsSection() {
           setGoogleRating(data.rating)
           setGoogleReviewCount(data.reviewCount)
 
-          // Merge: Google first, then manual reviews to fill up to 15
+          // Merge: API reviews first (freshest data), then unique manual reviews
           const combined: ReviewItem[] = [...googleReviews]
           const usedNames = new Set(combined.map(r => r.author_name))
 
           for (const r of MANUAL_REVIEWS) {
-            if (combined.length >= 15) break
             if (usedNames.has(r.author_name)) continue
             usedNames.add(r.author_name)
             combined.push(r)
           }
 
-          setAllReviews(combined.slice(0, 15))
+          setAllReviews(combined)
         }
         // If API fails — MANUAL_REVIEWS are already the default state
       })
