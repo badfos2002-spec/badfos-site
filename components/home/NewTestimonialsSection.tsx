@@ -241,7 +241,7 @@ export default function NewTestimonialsSection() {
         </div>
 
         {/* Carousel — fixed-height container */}
-        <div className="relative min-h-[280px] mb-8 overflow-hidden">
+        <div className="relative min-h-[280px] mb-4 overflow-hidden">
           <div
             className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start transition-all duration-500 ease-in-out ${slideClass}`}
           >
