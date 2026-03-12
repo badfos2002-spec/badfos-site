@@ -240,13 +240,15 @@ export default function NewTestimonialsSection() {
           )}
         </div>
 
-        {/* Carousel */}
-        <div
-          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8 transition-all duration-500 ease-in-out ${slideClass}`}
-        >
-          {visibleReviews.map((review, index) => (
-            <ReviewCard key={`${page}-${index}`} review={review} index={page * 3 + index} />
-          ))}
+        {/* Carousel — fixed-height container */}
+        <div className="relative min-h-[280px] mb-8 overflow-hidden">
+          <div
+            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start transition-all duration-500 ease-in-out ${slideClass}`}
+          >
+            {visibleReviews.map((review, index) => (
+              <ReviewCard key={`${page}-${index}`} review={review} index={page * 3 + index} />
+            ))}
+          </div>
         </div>
 
         {/* CTA */}
