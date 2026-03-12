@@ -189,8 +189,14 @@ export default function NewTestimonialsSection() {
       })
   }, [])
 
+  // Sort: longest 3 reviews first (they set the container height)
+  const sortedReviews = [...allReviews].sort((a, b) => b.text.length - a.text.length)
+  const firstPage = sortedReviews.slice(0, 3)
+  const rest = sortedReviews.slice(3)
+  const orderedReviews = [...firstPage, ...rest]
+
   // Auto-rotate every 7 seconds
-  const totalPages = Math.ceil(allReviews.length / 3)
+  const totalPages = Math.ceil(orderedReviews.length / 3)
 
   useEffect(() => {
     if (totalPages <= 1) return
@@ -205,7 +211,7 @@ export default function NewTestimonialsSection() {
     return () => clearInterval(timerRef.current)
   }, [totalPages])
 
-  const visibleReviews = allReviews.slice(page * 3, page * 3 + 3)
+  const visibleReviews = orderedReviews.slice(page * 3, page * 3 + 3)
 
   const slideClass =
     slideDir === 'out'
@@ -243,7 +249,7 @@ export default function NewTestimonialsSection() {
         {/* Carousel — fixed-height container */}
         <div className="relative min-h-[280px] overflow-hidden">
           <div
-            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start transition-all duration-500 ease-in-out ${slideClass}`}
+            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start justify-center transition-all duration-500 ease-in-out ${slideClass}`}
           >
             {visibleReviews.map((review, index) => (
               <ReviewCard key={`${page}-${index}`} review={review} index={page * 3 + index} />
