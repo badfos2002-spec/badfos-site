@@ -224,7 +224,7 @@ export default function NewTestimonialsSection() {
     <section className="w-full bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-20 overflow-hidden" dir="rtl">
       <div className="mx-auto max-w-[1536px] px-4 md:px-0">
         {/* Heading */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-5">
           <h2 className="text-3xl lg:text-4xl font-bold text-[#1e293b] mb-4">
             מה הלקוחות שלנו חושבים
           </h2>
