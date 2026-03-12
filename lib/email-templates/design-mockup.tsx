@@ -1,4 +1,5 @@
 import type { CustomerInfo, DesignArea } from '../types'
+import { escapeHtml } from '../utils'
 
 interface DesignMockupEmailProps {
   customer: CustomerInfo
@@ -176,7 +177,7 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
   <div class="container">
     <div class="header">
       <h1>הדמיית העיצוב שלך</h1>
-      <p>היי ${customer.firstName}, הנה התצוגה המקדימה של ההזמנה שלך</p>
+      <p>היי ${escapeHtml(customer.firstName)}, הנה התצוגה המקדימה של ההזמנה שלך</p>
     </div>
 
     <div class="content">
@@ -191,8 +192,8 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
         return `
       <div class="item-block">
         <div class="item-header">
-          <h2>פריט ${items.length > 1 ? `#${index + 1} - ` : ''}${item.productType === 'tshirt' ? 'חולצה' : item.productType}</h2>
-          <p>צבע: ${item.color} ${item.fabricType ? `• ${item.fabricType}` : ''} • ${item.totalQuantity} יחידות</p>
+          <h2>פריט ${items.length > 1 ? `#${index + 1} - ` : ''}${item.productType === 'tshirt' ? 'חולצה' : escapeHtml(item.productType)}</h2>
+          <p>צבע: ${escapeHtml(item.color)} ${item.fabricType ? `• ${escapeHtml(item.fabricType)}` : ''} • ${item.totalQuantity} יחידות</p>
         </div>
 
         <div class="mockup-row">
@@ -217,8 +218,8 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
           <h3>העיצובים שהועלו:</h3>
           ${item.designs.map(design => `
             <div class="design-item">
-              <img src="${design.imageUrl}" alt="${design.areaName}" class="design-img" />
-              <div class="design-name">${design.areaName}</div>
+              <img src="${escapeHtml(design.imageUrl)}" alt="${escapeHtml(design.areaName)}" class="design-img" />
+              <div class="design-name">${escapeHtml(design.areaName)}</div>
             </div>
           `).join('')}
         </div>

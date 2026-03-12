@@ -16,7 +16,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // Validate amount
     const verifiedAmount = Number(amount)
+    if (isNaN(verifiedAmount) || verifiedAmount <= 0) {
+      return NextResponse.json({ error: 'Amount must be a positive number' }, { status: 400 })
+    }
+    if (verifiedAmount > 50000) {
+      return NextResponse.json({ error: 'Amount exceeds maximum allowed (50000)' }, { status: 400 })
+    }
+
+    // Validate email format if provided
+    if (email != null && email !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (typeof email !== 'string' || !emailRegex.test(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
+      }
+    }
+
+    // Validate phone format if provided
+    if (phone != null && phone !== '') {
+      const phoneRegex = /^[\d\s\-+()]{7,20}$/
+      if (typeof phone !== 'string' || !phoneRegex.test(phone)) {
+        return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+      }
+    }
+
+    // Validate description length
+    if (description != null && typeof description === 'string' && description.length > 500) {
+      return NextResponse.json({ error: 'Description too long (max 500 characters)' }, { status: 400 })
+    }
 
     const res = await fetch(MAKE_WEBHOOK_URL, {
       method: 'POST',

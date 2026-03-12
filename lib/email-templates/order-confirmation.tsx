@@ -1,4 +1,5 @@
 import { Order } from '../types'
+import { escapeHtml } from '../utils'
 
 interface OrderConfirmationEmailProps {
   order: Order
@@ -132,15 +133,15 @@ export function OrderConfirmationEmail({
         <h2>פרטי לקוח</h2>
         <div class="info-row">
           <span class="info-label">שם:</span>
-          <span class="info-value">${order.customer.firstName} ${order.customer.lastName}</span>
+          <span class="info-value">${escapeHtml(order.customer.firstName)} ${escapeHtml(order.customer.lastName)}</span>
         </div>
         <div class="info-row">
           <span class="info-label">אימייל:</span>
-          <span class="info-value">${order.customer.email}</span>
+          <span class="info-value">${escapeHtml(order.customer.email)}</span>
         </div>
         <div class="info-row">
           <span class="info-label">טלפון:</span>
-          <span class="info-value">${order.customer.phone}</span>
+          <span class="info-value">${escapeHtml(order.customer.phone)}</span>
         </div>
       </div>
 

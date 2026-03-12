@@ -1,4 +1,5 @@
 import { Lead } from '../types'
+import { escapeHtml } from '../utils'
 
 interface NewLeadEmailProps {
   lead: Lead
@@ -114,7 +115,7 @@ export function NewLeadEmail({ lead }: NewLeadEmailProps) {
           lead.source === 'popup' ? 'פופ-אפ' :
           lead.source === 'bottom_form' ? 'טופס תחתון' :
           lead.source === 'contact_form' ? 'טופס יצירת קשר' :
-          lead.source
+          escapeHtml(lead.source)
         }</span>
       </div>
 
@@ -123,14 +124,14 @@ export function NewLeadEmail({ lead }: NewLeadEmailProps) {
 
         <div class="info-row">
           <span class="info-label">שם:</span>
-          <span class="info-value">${lead.name}</span>
+          <span class="info-value">${escapeHtml(lead.name)}</span>
         </div>
 
         <div class="info-row">
           <span class="info-label">טלפון:</span>
           <span class="info-value">
-            <a href="tel:${lead.phone}" style="color: #2196F3; text-decoration: none;">
-              ${lead.phone}
+            <a href="tel:${escapeHtml(lead.phone)}" style="color: #2196F3; text-decoration: none;">
+              ${escapeHtml(lead.phone)}
             </a>
           </span>
         </div>
@@ -141,8 +142,8 @@ export function NewLeadEmail({ lead }: NewLeadEmailProps) {
         <div class="info-row">
           <span class="info-label">אימייל:</span>
           <span class="info-value">
-            <a href="mailto:${lead.email}" style="color: #2196F3; text-decoration: none;">
-              ${lead.email}
+            <a href="mailto:${escapeHtml(lead.email!)}" style="color: #2196F3; text-decoration: none;">
+              ${escapeHtml(lead.email!)}
             </a>
           </span>
         </div>
@@ -155,7 +156,7 @@ export function NewLeadEmail({ lead }: NewLeadEmailProps) {
             ? `
         <div class="info-row">
           <span class="info-label">נושא:</span>
-          <span class="info-value">${lead.subject}</span>
+          <span class="info-value">${escapeHtml(lead.subject!)}</span>
         </div>
         `
             : ''
@@ -166,7 +167,7 @@ export function NewLeadEmail({ lead }: NewLeadEmailProps) {
             ? `
         <div class="info-row">
           <span class="info-label">הודעה:</span>
-          <span class="info-value">${lead.message}</span>
+          <span class="info-value">${escapeHtml(lead.message!)}</span>
         </div>
         `
             : ''
@@ -185,7 +186,7 @@ export function NewLeadEmail({ lead }: NewLeadEmailProps) {
       </div>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="https://wa.me/${lead.phone.replace(/\D/g, '')}" class="cta-button">
+        <a href="https://wa.me/${escapeHtml(lead.phone.replace(/\D/g, ''))}" class="cta-button">
           צור קשר עכשיו דרך WhatsApp
         </a>
       </div>
