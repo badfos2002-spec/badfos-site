@@ -247,9 +247,9 @@ export default function NewTestimonialsSection() {
         </div>
 
         {/* Carousel — fixed-height container */}
-        <div className="relative min-h-[280px] overflow-hidden">
+        <div className="relative min-h-[280px] overflow-hidden flex items-center">
           <div
-            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start justify-center transition-all duration-500 ease-in-out ${slideClass}`}
+            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start w-full transition-all duration-500 ease-in-out ${slideClass}`}
           >
             {visibleReviews.map((review, index) => (
               <ReviewCard key={`${page}-${index}`} review={review} index={page * 3 + index} />
