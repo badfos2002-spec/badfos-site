@@ -118,7 +118,7 @@ function ReviewCard({ review, index }: { review: ReviewItem; index: number }) {
             className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: bgColor }}
           >
-            <span className="text-white font-medium text-lg leading-none">{initial}</span>
+            <span className="text-white font-medium leading-none" style={{ fontSize: '1.18rem' }}>{initial}</span>
           </div>
         )}
         <div className="flex-1 text-right min-w-0">
