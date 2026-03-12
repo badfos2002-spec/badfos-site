@@ -18,8 +18,16 @@ import {
  * Formula: basePrice + fabricSurcharge + designAreaPrices + sizeSurcharge
  */
 export function calculateItemPrice(config: ProductConfig): number {
-  // Special products with a fixed price bypass all calculation
-  if (config.fixedPrice !== undefined) return config.fixedPrice
+  // Special products with a fixed price — still apply size surcharges
+  if (config.fixedPrice !== undefined) {
+    let sizeSurcharge = 0
+    if (config.sizes && config.sizes.length > 0) {
+      const totalQty = config.sizes.reduce((sum, s) => sum + s.quantity, 0)
+      const weighted = config.sizes.reduce((sum, s) => sum + getSizeSurcharge(s.size) * s.quantity, 0)
+      sizeSurcharge = totalQty > 0 ? weighted / totalQty : 0
+    }
+    return config.fixedPrice + sizeSurcharge
+  }
 
   const { productType, fabricType, designs, sizes } = config
 

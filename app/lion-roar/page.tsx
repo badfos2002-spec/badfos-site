@@ -21,7 +21,11 @@ export default function LionRoarPage() {
 
   const getQuantity = (sizeId: string) => sizes.find(s => s.size === sizeId)?.quantity || 0
   const totalQuantity = sizes.reduce((sum, s) => sum + s.quantity, 0)
-  const totalPrice = totalQuantity * PRODUCT_PRICE
+  const totalPrice = sizes.reduce((sum, s) => {
+    const sizeInfo = STANDARD_SIZES.find(sz => sz.id === s.size)
+    const surcharge = sizeInfo?.surcharge || 0
+    return sum + s.quantity * (PRODUCT_PRICE + surcharge)
+  }, 0)
 
   const setQuantity = (sizeId: string, value: number) => {
     const clamped = Math.max(0, value)
