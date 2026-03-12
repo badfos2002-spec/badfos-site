@@ -161,7 +161,7 @@ export default function LeadPopup() {
 
       {/* Popup Window */}
       <div
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-[85%] md:w-96 p-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 z-10"
+        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-[85%] md:w-96 p-4 sm:p-6 md:p-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 z-10"
         style={{ direction: 'rtl' }}
       >
         {/* Close Button */}

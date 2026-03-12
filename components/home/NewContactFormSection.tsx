@@ -84,7 +84,7 @@ export default function NewContactFormSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Right Side - Form Card */}
           <div className="order-2 lg:order-2" dir="rtl">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 text-gray-900 hover:scale-[1.01] transition-transform duration-200 relative">
+            <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-5 md:p-6 text-gray-900 hover:scale-[1.01] transition-transform duration-200 relative">
               {/* Floating Decorative Icon */}
               <div className="absolute -top-3 -left-3 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
                 <Phone className="w-6 h-6 text-white" />

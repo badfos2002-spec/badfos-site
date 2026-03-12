@@ -39,8 +39,8 @@ export default function NewWhyChooseSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Video Section */}
           <div className="relative flex justify-center lg:justify-end">
-            <div className="absolute w-96 h-[36rem] rounded-3xl bg-[#ffc32e]/20" style={{ transform: 'rotate(35deg)' }}></div>
-            <div className="relative w-96 h-[36rem] rounded-3xl shadow-2xl overflow-hidden">
+            <div className="absolute w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl bg-[#ffc32e]/20" style={{ transform: 'rotate(35deg)' }}></div>
+            <div className="relative w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl shadow-2xl overflow-hidden">
               <iframe
                 src={c.why_videoUrl}
                 title="למה לבחור בנו"

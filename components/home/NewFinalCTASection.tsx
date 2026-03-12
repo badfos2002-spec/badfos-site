@@ -35,7 +35,7 @@ export default function NewFinalCTASection() {
             {c.cta_subtitle}
           </p>
           <Link href="/designer">
-            <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold px-12 py-6 h-auto text-2xl rounded-full shadow-2xl hover:shadow-3xl transition-all hover:scale-105 duration-200">
+            <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold px-6 sm:px-8 md:px-12 py-6 h-auto text-base sm:text-lg md:text-2xl rounded-full shadow-2xl hover:shadow-3xl transition-all hover:scale-105 duration-200">
               {c.cta_buttonText}
             </Button>
           </Link>

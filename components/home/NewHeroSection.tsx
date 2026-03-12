@@ -41,7 +41,7 @@ export default function NewHeroSection() {
               <Sparkles className="w-3.5 h-3.5" />
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-bold text-[#1e293b] leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-[#1e293b] leading-tight">
               {c.hero_title1}
               <br />
               <span className="text-[#f59e0b]">{c.hero_title2}</span>

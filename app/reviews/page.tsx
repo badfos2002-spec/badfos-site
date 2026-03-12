@@ -117,9 +117,9 @@ export default function ReviewsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 py-20 relative overflow-hidden" dir="rtl">
       {/* Floating Background Blobs */}
-      <div className="absolute top-20 right-20 w-72 h-72 bg-yellow-300/30 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 left-20 w-96 h-96 bg-orange-300/30 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '3s' }}></div>
-      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-red-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+      <div className="hidden md:block absolute top-20 right-20 w-72 h-72 bg-yellow-300/30 rounded-full blur-3xl animate-pulse"></div>
+      <div className="hidden md:block absolute bottom-20 left-20 w-96 h-96 bg-orange-300/30 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '3s' }}></div>
+      <div className="hidden md:block absolute top-1/2 left-1/2 w-64 h-64 bg-red-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
 
       <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
         {/* Header */}

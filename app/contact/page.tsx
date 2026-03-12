@@ -133,8 +133,8 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 py-20 relative overflow-hidden" dir="rtl">
       {/* Decorative Background Circles */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 bg-gradient-to-br from-teal-300/30 to-cyan-300/30 rounded-full blur-3xl"></div>
-      <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-gradient-to-tr from-blue-300/30 to-indigo-300/30 rounded-full blur-3xl"></div>
+      <div className="hidden md:block absolute -top-32 -right-32 w-96 h-96 bg-gradient-to-br from-teal-300/30 to-cyan-300/30 rounded-full blur-3xl"></div>
+      <div className="hidden md:block absolute -bottom-32 -left-32 w-96 h-96 bg-gradient-to-tr from-blue-300/30 to-indigo-300/30 rounded-full blur-3xl"></div>
 
       <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
         {/* Header */}
@@ -153,7 +153,7 @@ export default function ContactPage() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-start">
           {/* Contact Form */}
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl" dir="rtl">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
