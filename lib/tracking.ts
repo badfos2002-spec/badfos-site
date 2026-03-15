@@ -164,20 +164,30 @@ export function sendLeadWebhook(data: {
   }).catch(err => console.error('Lead webhook failed:', err))
 }
 
+/** Validate GCLID format — must be base64-like string, typically starts with EAI */
+function isValidGclid(gclid: string): boolean {
+  return gclid.length >= 30 && /^[A-Za-z0-9_-]+$/.test(gclid)
+}
+
 /** Get stored GCLID from localStorage, cookie, or URL */
 export function getGclid(): string | undefined {
   if (typeof window === 'undefined') return undefined
   try {
     const fromStorage = localStorage.getItem('gclid')
-    if (fromStorage) return fromStorage
+    if (fromStorage && isValidGclid(fromStorage)) return fromStorage
 
     const fromUrl = new URLSearchParams(window.location.search).get('gclid')
-    if (fromUrl) return fromUrl
+    if (fromUrl && isValidGclid(fromUrl)) return fromUrl
 
     // Fallback: read from cookie (survives localStorage clearing)
     const match = document.cookie.match(/(?:^|; )gclid=([^;]+)/)
-    return match ? decodeURIComponent(match[1]) : undefined
+    if (match) {
+      const decoded = decodeURIComponent(match[1])
+      if (isValidGclid(decoded)) return decoded
+    }
+    return undefined
   } catch {
-    return new URLSearchParams(window.location.search).get('gclid') || undefined
+    const fromUrl = new URLSearchParams(window.location.search).get('gclid') || undefined
+    return fromUrl && isValidGclid(fromUrl) ? fromUrl : undefined
   }
 }
