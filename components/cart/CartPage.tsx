@@ -15,6 +15,7 @@ import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { calculateOrderTotal } from '@/lib/pricing'
 import type { CustomerInfo, Shipping } from '@/lib/types'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
+import { getGclid } from '@/lib/tracking'
 
 async function blobToBase64(blobUrl: string): Promise<string> {
   if (!blobUrl.startsWith('blob:')) return blobUrl
@@ -254,6 +255,7 @@ export default function CartPage() {
           discount: couponDiscount + orderCalc.quantityDiscount,
           ...(couponCode && { couponCode }),
           total: orderCalc.total,
+          ...(getGclid() && { gclid: getGclid() }),
         })
 
         const orderId = await createOrder(orderData as any)

@@ -5,21 +5,22 @@ import { useEffect } from 'react'
 declare global {
   interface Window {
     dataLayer: any[]
-    gtag: (...args: any[]) => void
-    gtagSendEvent: (url?: string) => boolean
-    fbq: (...args: any[]) => void
-    _fbq: any
+    gtag?: (...args: any[]) => void
+    gtagSendEvent?: (url?: string) => boolean
+    fbq?: (...args: any[]) => void
+    _fbq?: any
   }
 }
 
 export default function TrackingScripts() {
-  // Capture GCLID from URL and save to localStorage
+  // Capture GCLID from URL and save to localStorage + cookie (90 day expiry)
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search)
       const gclid = params.get('gclid')
       if (gclid) {
         localStorage.setItem('gclid', gclid)
+        document.cookie = `gclid=${encodeURIComponent(gclid)}; max-age=${90 * 24 * 60 * 60}; path=/; SameSite=Lax`
       }
     } catch {}
   }, [])
@@ -129,8 +130,8 @@ export default function TrackingScripts() {
         'script',
         'https://connect.facebook.net/en_US/fbevents.js'
       )
-      window.fbq('init', '877576361459806')
-      window.fbq('track', 'PageView')
+      window.fbq!('init', '877576361459806')
+      window.fbq!('track', 'PageView')
 
       // Google AdSense
       const adsenseScript = document.createElement('script')

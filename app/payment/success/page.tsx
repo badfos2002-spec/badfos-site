@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/hooks/useCart'
-import { sendGoogleAdsConversion, sendPurchaseEvent, sendMetaPurchaseEvent } from '@/lib/tracking'
+import { ensureGtagLoaded, sendGoogleAdsConversion, sendPurchaseEvent, sendMetaPurchaseEvent } from '@/lib/tracking'
 
 export default function PaymentSuccessPage() {
   const clearCart = useCart((state) => state.clearCart)
@@ -22,24 +22,26 @@ export default function PaymentSuccessPage() {
     if (savedShareUrl) setShareUrl(savedShareUrl)
 
     // Order was already created in Firestore before payment redirect (with pending_payment status).
-    // The webhook will update its status to 'new' (paid).
+    // The webhook will update its status to 'paid'.
     // Here we just send notification emails and tracking events.
     const orderDataStr = sessionStorage.getItem('badfos_pending_order')
     if (orderDataStr) {
       try {
         const { orderId, customer, items, total } = JSON.parse(orderDataStr)
 
-        // Fire tracking events
+        // Ensure gtag.js is loaded before firing conversions (don't wait for cookie consent)
         if (orderId) {
-          sendGoogleAdsConversion(total, orderId)
-          sendPurchaseEvent(orderId, total, (items || []).map((item: any) => ({
-            id: item.productType,
-            name: item.productType,
-            category: item.productType,
-            price: item.pricePerUnit || 0,
-            quantity: item.totalQuantity || 1,
-          })))
-          sendMetaPurchaseEvent(total, orderId)
+          ensureGtagLoaded().then(() => {
+            sendGoogleAdsConversion(total, orderId)
+            sendPurchaseEvent(orderId, total, (items || []).map((item: any) => ({
+              id: item.productType,
+              name: item.productType,
+              category: item.productType,
+              price: item.pricePerUnit || 0,
+              quantity: item.totalQuantity || 1,
+            })))
+            sendMetaPurchaseEvent(total, orderId)
+          })
         }
 
         // Send admin notification email
