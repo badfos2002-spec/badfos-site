@@ -147,6 +147,23 @@ export function trackPhoneClick() {
   window.fbq?.('track', 'Contact')
 }
 
+/** Send lead data to Zapier/Make via server-side webhook */
+export function sendLeadWebhook(data: {
+  name: string
+  phone: string
+  email?: string
+  message?: string
+  source: string
+  gclid?: string
+}) {
+  if (typeof window === 'undefined') return
+  fetch('/api/lead-webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).catch(err => console.error('Lead webhook failed:', err))
+}
+
 /** Get stored GCLID from localStorage, cookie, or URL */
 export function getGclid(): string | undefined {
   if (typeof window === 'undefined') return undefined

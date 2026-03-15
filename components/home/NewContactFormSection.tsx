@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, sendLeadWebhook, getGclid } from '@/lib/tracking'
 import { User, Phone, ArrowLeft } from 'lucide-react'
 
 export default function NewContactFormSection() {
@@ -62,6 +62,7 @@ export default function NewContactFormSection() {
       sendGoogleAdsConversion()
       sendGenerateLeadEvent('bottom_form')
       sendMetaLeadEvent()
+      sendLeadWebhook({ name: formData.name, phone: formData.phone, message, source: 'bottom_form', ...(gclid && { gclid }) })
 
       setSubmitted(true)
       setFormData({ name: '', phone: '', comments: '' })

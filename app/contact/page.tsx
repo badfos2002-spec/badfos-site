@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CONTACT_INFO } from '@/lib/constants'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, trackWhatsAppClick, trackPhoneClick, getGclid } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, sendLeadWebhook, trackWhatsAppClick, trackPhoneClick, getGclid } from '@/lib/tracking'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -83,6 +83,7 @@ export default function ContactPage() {
       sendGoogleAdsConversion()
       sendGenerateLeadEvent('contact_form')
       sendMetaLeadEvent()
+      sendLeadWebhook({ name: formData.name, phone: formData.phone, email: formData.email, message, source: 'contact_form', ...(gclid && { gclid }) })
 
       setSubmitted(true)
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' })

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, getGclid } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, sendLeadWebhook, getGclid } from '@/lib/tracking'
 import { safeGetItem, safeSetItem, safeSessionGet, safeSessionSet } from '@/lib/safe-storage'
 
 const validatePhone = (p: string) => {
@@ -132,6 +132,7 @@ export default function LeadPopup() {
       sendGoogleAdsConversion()
       sendGenerateLeadEvent('popup')
       sendMetaLeadEvent()
+      sendLeadWebhook({ name, phone, source: 'popup', ...(gclid && { gclid }) })
 
       setIsSuccess(true)
       safeSetItem('lead_popup_closed', 'true')
