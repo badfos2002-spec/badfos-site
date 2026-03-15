@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       email: body.email || '',
       message: body.message || '',
       source: body.source || '',
-      gclid: body.gclid || '',
+      ...(body.gclid ? { gclid: body.gclid } : {}),
       timestamp: new Date().toISOString(),
     }
 
