@@ -65,34 +65,22 @@ function MockupView({ view, color, designs }: {
  *  JPEG/JPG → canvas resize + JPEG compression (background stays as uploaded). */
 async function blobToBase64(blobUrl: string): Promise<string> {
   if (!blobUrl.startsWith('blob:')) return blobUrl
-  const response = await fetch(blobUrl)
-  const blob = await response.blob()
-  const isPng = blob.type === 'image/png'
 
-  if (isPng) {
-    // Read PNG directly without canvas to guarantee transparency is preserved
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
-    })
-  }
-
-  // JPEG: resize via canvas for compression
-  const img = new Image()
-  img.src = blobUrl
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve()
-    img.onerror = () => reject(new Error('Image load failed'))
+  // Fallback for legacy blob URLs: use XHR (Safari-compatible)
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', blobUrl, true)
+    xhr.responseType = 'blob'
+    xhr.onload = () => resolve(xhr.response as Blob)
+    xhr.onerror = () => reject(new Error('Failed to read blob URL'))
+    xhr.send()
   })
-  const MAX = 800
-  const scale = Math.min(1, MAX / Math.max(img.width, img.height))
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(img.width * scale)
-  canvas.height = Math.round(img.height * scale)
-  canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/jpeg', 0.7)
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
 }
 
 export default function CartItem({ item }: CartItemProps) {

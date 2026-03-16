@@ -18,32 +18,24 @@ import { isAuthorizedRedirect } from '@/lib/url-validation'
 import { getGclid } from '@/lib/tracking'
 
 async function blobToBase64(blobUrl: string): Promise<string> {
+  // All designs are now base64 from upload time, so this is a passthrough
   if (!blobUrl.startsWith('blob:')) return blobUrl
-  const response = await fetch(blobUrl)
-  const blob = await response.blob()
-  if (blob.type === 'image/png') {
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
-    })
-  }
-  const img = new Image()
-  img.src = blobUrl
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve()
-    img.onerror = () => reject(new Error('Image load failed'))
+
+  // Fallback for any legacy blob URLs: use XHR (Safari-compatible)
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', blobUrl, true)
+    xhr.responseType = 'blob'
+    xhr.onload = () => resolve(xhr.response as Blob)
+    xhr.onerror = () => reject(new Error('Failed to read blob URL'))
+    xhr.send()
   })
-  const MAX = 800
-  const scale = Math.min(1, MAX / Math.max(img.width, img.height))
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(img.width * scale)
-  canvas.height = Math.round(img.height * scale)
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return blobUrl
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/jpeg', 0.7)
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
 }
 
 /** Recursively strip undefined values — Firestore rejects them */

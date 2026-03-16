@@ -79,9 +79,13 @@ export async function uploadBase64Image(
 ): Promise<string> {
   ensureFirebase()
 
-  // Convert data URL → Blob
-  const res = await fetch(base64DataUrl)
-  const blob = await res.blob()
+  // Convert data URL → Blob (Safari doesn't support fetch() on data: URLs)
+  const [header, b64] = base64DataUrl.split(',')
+  const mime = header.match(/:(.*?);/)?.[1] || 'image/png'
+  const binary = atob(b64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  const blob = new Blob([bytes], { type: mime })
 
   const filePath = `designs/${orderId}/${fileName}`
   const storageRef = ref(storage!, filePath)
