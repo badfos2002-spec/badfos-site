@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
     const orderDoc = snapshot.docs[0]
     const order = orderDoc.data()
 
-    // Only update if order is still pending payment (idempotency + status guard)
-    if (order.status !== 'pending_payment') {
+    // Only update if order is pending or abandoned (idempotency + status guard)
+    if (order.status !== 'pending_payment' && order.status !== 'cart_abandoned') {
       return NextResponse.json({
         success: true,
         message: `Order already processed (status: ${order.status})`,

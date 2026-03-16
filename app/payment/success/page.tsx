@@ -6,6 +6,7 @@ import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/hooks/useCart'
 import { ensureGtagLoaded, sendGoogleAdsConversion, sendPurchaseEvent, sendMetaPurchaseEvent } from '@/lib/tracking'
+import { updateOrderStatus } from '@/lib/db'
 
 export default function PaymentSuccessPage() {
   const clearCart = useCart((state) => state.clearCart)
@@ -21,13 +22,15 @@ export default function PaymentSuccessPage() {
     const savedShareUrl = sessionStorage.getItem('badfos_share_url')
     if (savedShareUrl) setShareUrl(savedShareUrl)
 
-    // Order was already created in Firestore before payment redirect (with pending_payment status).
-    // The webhook will update its status to 'paid'.
-    // Here we just send notification emails and tracking events.
     const orderDataStr = sessionStorage.getItem('badfos_pending_order')
     if (orderDataStr) {
       try {
         const { orderId, customer, items, total } = JSON.parse(orderDataStr)
+
+        // Update status to 'paid' (backup for webhook — idempotent)
+        if (orderId) {
+          updateOrderStatus(orderId, 'paid').catch(console.error)
+        }
 
         // Ensure gtag.js is loaded before firing conversions (don't wait for cookie consent)
         if (orderId) {

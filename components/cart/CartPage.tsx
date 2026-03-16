@@ -16,6 +16,7 @@ import { calculateOrderTotal } from '@/lib/pricing'
 import type { CustomerInfo, Shipping } from '@/lib/types'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
 import { getGclid } from '@/lib/tracking'
+import { updateOrderStatus } from '@/lib/db'
 
 async function blobToBase64(blobUrl: string): Promise<string> {
   // All designs are now base64 from upload time, so this is a passthrough
@@ -68,6 +69,21 @@ export default function CartPage() {
 
   // Mark hydrated after first client-side render (Zustand persist loads synchronously)
   useEffect(() => { setHydrated(true) }, [])
+
+  // If user returns to cart with a pending order (abandoned payment), mark it as abandoned
+  useEffect(() => {
+    try {
+      const pendingStr = sessionStorage.getItem('badfos_pending_order')
+      if (pendingStr) {
+        const { orderId } = JSON.parse(pendingStr)
+        if (orderId) {
+          updateOrderStatus(orderId, 'cart_abandoned').catch(console.error)
+        }
+        sessionStorage.removeItem('badfos_pending_order')
+        sessionStorage.removeItem('badfos_payment_cache')
+      }
+    } catch {}
+  }, [])
 
   // Pre-upload cache: base64 hash → Firebase Storage URL
   const uploadCacheRef = useRef<Map<string, Promise<string>>>(new Map())

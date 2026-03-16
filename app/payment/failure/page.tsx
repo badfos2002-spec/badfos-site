@@ -1,10 +1,32 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { updateOrderStatus } from '@/lib/db'
 
 export default function PaymentFailurePage() {
+  const didProcess = useRef(false)
+
+  useEffect(() => {
+    if (didProcess.current) return
+    didProcess.current = true
+
+    // Mark order as abandoned if we have a pending order
+    const orderDataStr = sessionStorage.getItem('badfos_pending_order')
+    if (orderDataStr) {
+      try {
+        const { orderId } = JSON.parse(orderDataStr)
+        if (orderId) {
+          updateOrderStatus(orderId, 'cart_abandoned').catch(console.error)
+        }
+      } catch (e) {
+        console.error('Failed to update abandoned order:', e)
+      }
+    }
+  }, [])
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-16" dir="rtl">
       <div className="max-w-md mx-auto text-center p-8 bg-white rounded-2xl shadow-xl">

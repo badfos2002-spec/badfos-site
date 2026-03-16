@@ -62,6 +62,7 @@ export interface PackageCartItem {
 
 export type OrderStatus =
   | 'pending_payment'
+  | 'cart_abandoned'
   | 'new'
   | 'paid'
   | 'in_production'
