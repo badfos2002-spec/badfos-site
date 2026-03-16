@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import type { ProductConfig, SizeQuantity, DesignArea } from '@/lib/types'
@@ -85,6 +85,38 @@ const stepConfig = [
   { title: 'בחר מידות וכמויות', icon: Ruler },
 ]
 
+const DESIGNER_SESSION_KEY = 'designer_session'
+
+function saveDesignerSession(step: number, config: Partial<ProductConfig>) {
+  try {
+    // Convert designs: keep base64, skip blob URLs (they'll be persisted async)
+    const designs = (config.designs || []).map(d => ({
+      ...d,
+      imageUrl: d.imageUrl.startsWith('data:') ? d.imageUrl : '',
+    })).filter(d => d.imageUrl) // only save designs that are already base64
+    const data = { step, config: { ...config, designs }, timestamp: Date.now() }
+    sessionStorage.setItem(DESIGNER_SESSION_KEY, JSON.stringify(data))
+  } catch { /* quota exceeded — ignore */ }
+}
+
+function loadDesignerSession(): { step: number; config: Partial<ProductConfig> } | null {
+  try {
+    const raw = sessionStorage.getItem(DESIGNER_SESSION_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    // Expire after 30 minutes
+    if (Date.now() - data.timestamp > 30 * 60 * 1000) {
+      sessionStorage.removeItem(DESIGNER_SESSION_KEY)
+      return null
+    }
+    return { step: data.step, config: data.config }
+  } catch { return null }
+}
+
+function clearDesignerSession() {
+  try { sessionStorage.removeItem(DESIGNER_SESSION_KEY) } catch { /* ignore */ }
+}
+
 export default function TshirtDesigner() {
   const router = useRouter()
   const addItem = useCart((state) => state.addItem)
@@ -99,7 +131,11 @@ export default function TshirtDesigner() {
     ? useCart.getState().items.find((i) => i.id === editingItemId) ?? null
     : null
 
-  const [currentStep, setCurrentStep] = useState(() => editingItem ? totalSteps : 1)
+  const savedSession = useRef(editingItem ? null : loadDesignerSession())
+
+  const [currentStep, setCurrentStep] = useState(() =>
+    editingItem ? totalSteps : (savedSession.current?.step || 1)
+  )
   const [activeDesignArea, setActiveDesignArea] = useState<string>('front_full')
   const [previewView, setPreviewView] = useState<'front' | 'back'>('front')
   const [config, setConfig] = useState<Partial<ProductConfig>>(() =>
@@ -111,14 +147,35 @@ export default function TshirtDesigner() {
           designs: editingItem.designs,
           sizes: editingItem.sizes,
         }
-      : {
-          productType: 'tshirt',
-          fabricType: undefined,
-          color: '',
-          designs: [],
-          sizes: [],
-        }
+      : savedSession.current?.config
+        ? { ...savedSession.current.config }
+        : {
+            productType: 'tshirt',
+            fabricType: undefined,
+            color: '',
+            designs: [],
+            sizes: [],
+          }
   )
+
+  // Persist step + config to sessionStorage on every change
+  useEffect(() => {
+    if (editingItemId) return // don't persist editing sessions
+    saveDesignerSession(currentStep, config)
+
+    // Async: convert any blob URLs to base64 and re-save with full designs
+    const blobDesigns = (config.designs || []).filter(d => d.imageUrl.startsWith('blob:'))
+    if (blobDesigns.length > 0) {
+      Promise.all(
+        (config.designs || []).map(async (d) => ({
+          ...d,
+          imageUrl: d.imageUrl.startsWith('blob:') ? await blobToBase64(d.imageUrl) : d.imageUrl,
+        }))
+      ).then((persistedDesigns) => {
+        saveDesignerSession(currentStep, { ...config, designs: persistedDesigns })
+      }).catch(() => { /* ignore conversion errors */ })
+    }
+  }, [currentStep, config, editingItemId])
 
   const updateConfig = (updates: Partial<ProductConfig>) => {
     setConfig((prev) => {
@@ -158,6 +215,7 @@ export default function TshirtDesigner() {
     setCurrentStep(1)
     setConfig({ productType: 'tshirt', fabricType: undefined, color: '', designs: [], sizes: [] })
     setEditingItem(null)
+    clearDesignerSession()
   }
 
   const [addingToCart, setAddingToCart] = useState(false)
@@ -181,6 +239,7 @@ export default function TshirtDesigner() {
         } else {
           addItem(persistedConfig)
         }
+        clearDesignerSession()
         router.push('/cart')
       } catch (err) {
         console.error('Add to cart failed:', err)
