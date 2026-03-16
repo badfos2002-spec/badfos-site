@@ -390,8 +390,19 @@ export default function TshirtDesigner() {
 
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
-          {/* Sticky mockup */}
-          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
+          {/* Step content card — above mockup on mobile */}
+          <div className="rounded-xl border bg-white border-yellow-200 shadow-sm">
+            <div className="p-6">
+              <div className="font-semibold leading-none tracking-tight flex items-center mb-6 text-[#1e293b]">
+                <StepIcon className="w-5 h-5 ml-2 text-yellow-500" />
+                {stepTitle}
+              </div>
+              {stepContent}
+            </div>
+          </div>
+
+          {/* Mockup preview — below step content on mobile */}
+          <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
             <div className="relative mx-auto max-w-sm">
               <MockupImage />
               {config.designs && config.designs.length > 0 && (
@@ -401,17 +412,6 @@ export default function TshirtDesigner() {
               )}
             </div>
             <ViewTabs />
-          </div>
-
-          {/* Step content card */}
-          <div className="rounded-xl border bg-white border-yellow-200 shadow-sm">
-            <div className="p-6">
-              <div className="font-semibold leading-none tracking-tight flex items-center mb-6 text-[#1e293b]">
-                <StepIcon className="w-5 h-5 ml-2 text-yellow-500" />
-                {stepTitle}
-              </div>
-              {stepContent}
-            </div>
           </div>
 
           {/* Price summary on mobile */}

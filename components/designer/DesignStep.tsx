@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { TSHIRT_DESIGN_AREAS } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
@@ -14,6 +14,7 @@ interface DesignStepProps {
 
 export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignStepProps) {
   const [selectedAreaId, setSelectedAreaId] = useState<string>(TSHIRT_DESIGN_AREAS[0].id)
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const selectedArea = TSHIRT_DESIGN_AREAS.find(a => a.id === selectedAreaId)!
   const getDesign = (areaId: string) => designs.find(d => d.area === areaId)
@@ -24,15 +25,16 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
     onAreaFocus?.(areaId)
   }
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelectForArea = (areaId: string, file: File) => {
+    const area = TSHIRT_DESIGN_AREAS.find(a => a.id === areaId)!
     const imageUrl = URL.createObjectURL(file)
     const newDesign: DesignArea = {
-      area: selectedAreaId as DesignArea['area'],
-      areaName: selectedArea.name,
+      area: areaId as DesignArea['area'],
+      areaName: area.name,
       imageUrl,
       fileName: file.name,
     }
-    const existingIndex = designs.findIndex(d => d.area === selectedAreaId)
+    const existingIndex = designs.findIndex(d => d.area === areaId)
     if (existingIndex >= 0) {
       const updated = [...designs]
       updated[existingIndex] = newDesign
@@ -40,7 +42,12 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
     } else {
       onUpdate([...designs, newDesign])
     }
-    onAreaFocus?.(selectedAreaId)
+    setSelectedAreaId(areaId)
+    onAreaFocus?.(areaId)
+  }
+
+  const handleFileSelect = (file: File) => {
+    handleFileSelectForArea(selectedAreaId, file)
   }
 
   const removeDesign = (areaId: string) => onUpdate(designs.filter(d => d.area !== areaId))
@@ -51,57 +58,134 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
     <div>
       <p className="text-sm text-gray-500 mb-4">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
 
-      {/* Area selector buttons */}
-      <div className="grid gap-2 mb-4 grid-cols-2">
+      {/* ── MOBILE: merged area + upload buttons ── */}
+      <div className="lg:hidden grid gap-3 mb-4 grid-cols-2">
         {TSHIRT_DESIGN_AREAS.map((area) => {
-          const isActive = selectedAreaId === area.id
           const uploaded = hasDesign(area.id)
+          const design = getDesign(area.id)
           return (
-            <button
-              key={area.id}
-              onClick={() => handleAreaSelect(area.id)}
-              className={`relative text-xs h-16 px-2 py-2 rounded-md border font-medium transition-all flex items-center justify-center ${
-                isActive
-                  ? 'gradient-yellow text-white border-transparent shadow'
-                  : 'bg-background shadow-sm border-yellow-200 hover:bg-yellow-50 hover:text-accent-foreground'
-              }`}
-            >
-              {uploaded && !isActive && (
-                <span className="absolute top-1 right-1">
-                  <CheckCircle className="w-3 h-3 text-green-500" />
-                </span>
+            <div key={area.id} className="relative">
+              <label
+                className={`cursor-pointer block border-2 border-dashed rounded-xl p-3 text-center transition-all ${
+                  uploaded
+                    ? 'border-green-400 bg-green-50'
+                    : 'border-yellow-300 bg-white hover:border-yellow-400 hover:bg-yellow-50'
+                }`}
+                onClick={() => handleAreaSelect(area.id)}
+              >
+                {uploaded ? (
+                  <>
+                    <div className="w-full aspect-square bg-white rounded-lg overflow-hidden border border-green-200 mb-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={design!.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
+                    </div>
+                    <p className="text-xs font-medium text-green-700">{area.name}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{design!.fileName}</p>
+                    <p className="text-[10px] text-yellow-600 mt-1">לחץ להחלפה</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-10 h-10 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-2">
+                      <ImagePlus className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-900">{area.name}</p>
+                    <p className="text-[10px] text-gray-500">+₪{area.price}</p>
+                    <p className="text-[10px] text-yellow-600 mt-1">לחץ להעלאה</p>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
+                  className="hidden"
+                  ref={(el) => { fileInputRefs.current[area.id] = el }}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelectForArea(area.id, f); if (e.target) e.target.value = '' }}
+                />
+              </label>
+              {uploaded && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeDesign(area.id) }}
+                  className="absolute top-1 left-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center z-10"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               )}
-              <div className="flex flex-col items-center">
-                <span>{area.name}</span>
-                <span className="text-[10px] opacity-80">+₪{area.price}</span>
-              </div>
-            </button>
+            </div>
           )
         })}
       </div>
 
-      {/* Upload area */}
-      <div className="space-y-3">
-        {currentDesign ? (
-          /* Uploaded state */
-          <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{currentDesign.fileName}</span>
-              </div>
-              <button onClick={() => removeDesign(selectedAreaId)} className="text-red-400 hover:text-red-600 shrink-0 mr-1">
-                <X className="w-4 h-4" />
+      {/* ── DESKTOP: original area selector + upload area ── */}
+      <div className="hidden lg:block">
+        {/* Area selector buttons */}
+        <div className="grid gap-2 mb-4 grid-cols-2">
+          {TSHIRT_DESIGN_AREAS.map((area) => {
+            const isActive = selectedAreaId === area.id
+            const uploaded = hasDesign(area.id)
+            return (
+              <button
+                key={area.id}
+                onClick={() => handleAreaSelect(area.id)}
+                className={`relative text-xs h-16 px-2 py-2 rounded-md border font-medium transition-all flex items-center justify-center ${
+                  isActive
+                    ? 'gradient-yellow text-white border-transparent shadow'
+                    : 'bg-background shadow-sm border-yellow-200 hover:bg-yellow-50 hover:text-accent-foreground'
+                }`}
+              >
+                {uploaded && !isActive && (
+                  <span className="absolute top-1 right-1">
+                    <CheckCircle className="w-3 h-3 text-green-500" />
+                  </span>
+                )}
+                <div className="flex flex-col items-center">
+                  <span>{area.name}</span>
+                  <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                </div>
               </button>
+            )
+          })}
+        </div>
+
+        {/* Upload area */}
+        <div className="space-y-3">
+          {currentDesign ? (
+            /* Uploaded state */
+            <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                  <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{currentDesign.fileName}</span>
+                </div>
+                <button onClick={() => removeDesign(selectedAreaId)} className="text-red-400 hover:text-red-600 shrink-0 mr-1">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Preview thumbnail */}
+              <div className="w-full aspect-video bg-white rounded-lg overflow-hidden border border-green-200 mb-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={currentDesign.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
+              </div>
+              <label className="cursor-pointer block">
+                <div className="w-full text-center py-2 px-3 border border-dashed border-yellow-300 rounded-lg hover:border-yellow-400 hover:bg-yellow-50 transition-all text-xs text-gray-500 font-medium">
+                  החלף קובץ
+                </div>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+                />
+              </label>
             </div>
-            {/* Preview thumbnail */}
-            <div className="w-full aspect-video bg-white rounded-lg overflow-hidden border border-green-200 mb-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={currentDesign.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
-            </div>
+          ) : (
+            /* Upload prompt */
             <label className="cursor-pointer block">
-              <div className="w-full text-center py-2 px-3 border border-dashed border-yellow-300 rounded-lg hover:border-yellow-400 hover:bg-yellow-50 transition-all text-xs text-gray-500 font-medium">
-                החלף קובץ
+              <div className="border-2 border-dashed border-yellow-300 rounded-lg p-6 text-center hover:border-yellow-400 hover:bg-yellow-50 transition-all mx-auto max-w-xs">
+                <div className="w-12 h-12 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-3">
+                  <ImagePlus className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-sm font-medium text-gray-900 mb-1">לחץ להעלאת תמונה</p>
+                <p className="text-xs text-gray-600 mb-2">JPG, PNG, JPEG עד 10MB</p>
+                <p className="text-xs text-blue-600 font-medium">יועלה לאזור: {selectedArea.name}</p>
               </div>
               <input
                 type="file"
@@ -110,28 +194,33 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
               />
             </label>
-          </div>
-        ) : (
-          /* Upload prompt */
-          <label className="cursor-pointer block">
-            <div className="border-2 border-dashed border-yellow-300 rounded-lg p-4 sm:p-6 text-center hover:border-yellow-400 hover:bg-yellow-50 transition-all mx-auto w-full sm:max-w-xs">
-              <div className="w-12 h-12 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-3">
-                <ImagePlus className="w-6 h-6 text-white" />
-              </div>
-              <p className="text-sm font-medium text-gray-900 mb-1">לחץ להעלאת תמונה</p>
-              <p className="text-xs text-gray-600 mb-2">JPG, PNG, JPEG עד 10MB</p>
-              <p className="text-xs text-blue-600 font-medium">יועלה לאזור: {selectedArea.name}</p>
-            </div>
-            <input
-              type="file"
-              accept="image/png, image/jpeg, image/jpg"
-              className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
-            />
-          </label>
-        )}
+          )}
 
-        {/* Divider */}
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-400">או</span>
+            </div>
+          </div>
+
+          {/* AI button */}
+          <Button
+            variant="outline"
+            className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
+            type="button"
+            disabled
+          >
+            <Sparkles className="w-4 h-4 ml-2" />
+            עוזר עיצוב AI
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile: AI button + divider (outside desktop block) */}
+      <div className="lg:hidden mt-4 space-y-3">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
@@ -140,8 +229,6 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
             <span className="bg-white px-2 text-gray-400">או</span>
           </div>
         </div>
-
-        {/* AI button */}
         <Button
           variant="outline"
           className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
@@ -157,9 +244,9 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
         <p className="text-sm text-red-500 mt-4">יש להעלות לפחות קובץ אחד כדי להמשיך.</p>
       )}
 
-      {/* Uploaded areas summary */}
+      {/* Uploaded areas summary — desktop only (mobile shows inline) */}
       {designs.length > 0 && (
-        <div className="mt-4 space-y-1">
+        <div className="mt-4 space-y-1 hidden lg:block">
           {designs.map(d => (
             <div key={d.area} className="flex items-center justify-between text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
               <div className="flex items-center gap-1.5">
