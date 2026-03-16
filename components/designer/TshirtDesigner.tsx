@@ -16,11 +16,20 @@ import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { FABRIC_COLOR_FILTER } from '@/lib/constants'
 
-/** Convert blob URL to base64 so it survives localStorage persistence */
+/** Convert blob URL to base64 so it survives localStorage persistence.
+ *  Uses XMLHttpRequest instead of fetch() for Safari compatibility with blob: URLs. */
 async function blobToBase64(blobUrl: string): Promise<string> {
   if (!blobUrl.startsWith('blob:')) return blobUrl
-  const response = await fetch(blobUrl)
-  const blob = await response.blob()
+
+  // Safari doesn't support fetch() on blob: URLs — use XHR instead
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', blobUrl, true)
+    xhr.responseType = 'blob'
+    xhr.onload = () => resolve(xhr.response as Blob)
+    xhr.onerror = () => reject(new Error('Failed to read blob URL'))
+    xhr.send()
+  })
   const isPng = blob.type === 'image/png'
 
   const img = new window.Image()
@@ -242,71 +251,66 @@ export default function TshirtDesigner() {
     </div>
   ) : null
 
-  const MockupImage = () => {
-    const currentView = previewView
-    const designs = config.designs || []
-    const tshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
-    const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
-      if (!tshirtAreaIds.includes(areaId)) return false
-      if (overlay.view !== currentView) return false
-      const hasDesign = designs.some(d => d.area === areaId)
-      return currentStep === 3 || hasDesign
-    })
-    return (
-      <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
-        {mockupSrc ? (
-          <Image
-            src={mockupSrc}
-            alt="תצוגה מקדימה"
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-contain"
-          />
-        ) : (
-          <div className="aspect-square bg-gray-100 rounded-xl flex items-center justify-center text-7xl">👕</div>
-        )}
-        {visibleAreas.map(([areaId, overlay]) => {
-          const design = designs.find(d => d.area === areaId)
-          // When design uploaded: show just the image, no box
-          if (design) {
-            return (
-              <div
-                key={areaId}
-                className="absolute overflow-hidden"
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                style={overlay.style as any}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={design.imageUrl}
-                  alt={overlay.label}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            )
-          }
-          // No design yet: show dashed placeholder box (green when this area is active)
-          const isActive = areaId === activeDesignArea && currentStep === 3
+  const mockupDesigns = config.designs || []
+  const tshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
+  const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
+    if (!tshirtAreaIds.includes(areaId)) return false
+    if (overlay.view !== previewView) return false
+    const hasDesign = mockupDesigns.some(d => d.area === areaId)
+    return currentStep === 3 || hasDesign
+  })
+  const mockupElement = (
+    <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+      {mockupSrc ? (
+        <Image
+          src={mockupSrc}
+          alt="תצוגה מקדימה"
+          fill
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          className="object-contain"
+        />
+      ) : (
+        <div className="aspect-square bg-gray-100 rounded-xl flex items-center justify-center text-7xl">👕</div>
+      )}
+      {visibleAreas.map(([areaId, overlay]) => {
+        const design = mockupDesigns.find(d => d.area === areaId)
+        if (design) {
           return (
             <div
               key={areaId}
-              className={`absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 ${
-                isActive
-                  ? 'border-green-400 bg-green-100/70'
-                  : 'border-gray-300 bg-gray-200/75'
-              }`}
+              className="absolute overflow-hidden"
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               style={overlay.style as any}
             >
-              <span className={`text-xs font-medium text-center leading-tight px-1 ${isActive ? 'text-green-700' : 'text-gray-600'}`}>
-                {overlay.label}
-              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={design.imageUrl}
+                alt={overlay.label}
+                className="w-full h-full object-contain"
+              />
             </div>
           )
-        })}
-      </div>
-    )
-  }
+        }
+        const isActive = areaId === activeDesignArea && currentStep === 3
+        return (
+          <div
+            key={areaId}
+            className={`absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 ${
+              isActive
+                ? 'border-green-400 bg-green-100/70'
+                : 'border-gray-300 bg-gray-200/75'
+            }`}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            style={overlay.style as any}
+          >
+            <span className={`text-xs font-medium text-center leading-tight px-1 ${isActive ? 'text-green-700' : 'text-gray-600'}`}>
+              {overlay.label}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
@@ -390,7 +394,22 @@ export default function TshirtDesigner() {
 
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
-          {/* Step content card — above mockup on mobile */}
+          {/* Step 3 (design): mockup ABOVE step content so user sees preview */}
+          {currentStep === 3 && (
+            <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
+              <div className="relative mx-auto max-w-sm">
+                {mockupElement}
+                {config.designs && config.designs.length > 0 && (
+                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    ✓ {config.designs.length} עיצובים
+                  </span>
+                )}
+              </div>
+              <ViewTabs />
+            </div>
+          )}
+
+          {/* Step content card */}
           <div className="rounded-xl border bg-white border-yellow-200 shadow-sm">
             <div className="p-6">
               <div className="font-semibold leading-none tracking-tight flex items-center mb-6 text-[#1e293b]">
@@ -401,18 +420,20 @@ export default function TshirtDesigner() {
             </div>
           </div>
 
-          {/* Mockup preview — below step content on mobile */}
-          <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
-            <div className="relative mx-auto max-w-sm">
-              <MockupImage />
-              {config.designs && config.designs.length > 0 && (
-                <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  ✓ {config.designs.length} עיצובים
-                </span>
-              )}
+          {/* Steps 1,2,4: mockup BELOW step content */}
+          {currentStep !== 3 && (
+            <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
+              <div className="relative mx-auto max-w-sm">
+                {mockupElement}
+                {config.designs && config.designs.length > 0 && (
+                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    ✓ {config.designs.length} עיצובים
+                  </span>
+                )}
+              </div>
+              <ViewTabs />
             </div>
-            <ViewTabs />
-          </div>
+          )}
 
           {/* Price summary on mobile */}
           <PriceSummary config={config as ProductConfig} />
@@ -458,7 +479,7 @@ export default function TshirtDesigner() {
               </div>
               <div className="p-6 pt-0">
                 <div className="relative mx-auto max-w-md">
-                  <MockupImage />
+                  {mockupElement}
                 </div>
                 <ViewTabs />
               </div>

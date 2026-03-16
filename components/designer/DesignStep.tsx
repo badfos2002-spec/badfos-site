@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Button } from '@/components/ui/button'
 import { TSHIRT_DESIGN_AREAS } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
-import { ImagePlus, Sparkles, CheckCircle, X } from 'lucide-react'
+import { ImagePlus, CheckCircle, X } from 'lucide-react'
 
 interface DesignStepProps {
   designs: DesignArea[]
@@ -62,7 +61,6 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
       <div className="lg:hidden grid gap-3 mb-4 grid-cols-2">
         {TSHIRT_DESIGN_AREAS.map((area) => {
           const uploaded = hasDesign(area.id)
-          const design = getDesign(area.id)
           return (
             <div key={area.id} className="relative">
               <label
@@ -75,12 +73,8 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
               >
                 {uploaded ? (
                   <>
-                    <div className="w-full aspect-square bg-white rounded-lg overflow-hidden border border-green-200 mb-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={design!.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
-                    </div>
+                    <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
                     <p className="text-xs font-medium text-green-700">{area.name}</p>
-                    <p className="text-[10px] text-gray-400 truncate">{design!.fileName}</p>
                     <p className="text-[10px] text-yellow-600 mt-1">לחץ להחלפה</p>
                   </>
                 ) : (
@@ -148,7 +142,6 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
         {/* Upload area */}
         <div className="space-y-3">
           {currentDesign ? (
-            /* Uploaded state */
             <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -159,7 +152,6 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              {/* Preview thumbnail */}
               <div className="w-full aspect-video bg-white rounded-lg overflow-hidden border border-green-200 mb-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={currentDesign.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
@@ -177,7 +169,6 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
               </label>
             </div>
           ) : (
-            /* Upload prompt */
             <label className="cursor-pointer block">
               <div className="border-2 border-dashed border-yellow-300 rounded-lg p-6 text-center hover:border-yellow-400 hover:bg-yellow-50 transition-all mx-auto max-w-xs">
                 <div className="w-12 h-12 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-3">
@@ -195,49 +186,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
               />
             </label>
           )}
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-400">או</span>
-            </div>
-          </div>
-
-          {/* AI button */}
-          <Button
-            variant="outline"
-            className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
-            type="button"
-            disabled
-          >
-            <Sparkles className="w-4 h-4 ml-2" />
-            עוזר עיצוב AI
-          </Button>
         </div>
-      </div>
-
-      {/* Mobile: AI button + divider (outside desktop block) */}
-      <div className="lg:hidden mt-4 space-y-3">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-400">או</span>
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
-          type="button"
-          disabled
-        >
-          <Sparkles className="w-4 h-4 ml-2" />
-          עוזר עיצוב AI
-        </Button>
       </div>
 
       {designs.length === 0 && (
