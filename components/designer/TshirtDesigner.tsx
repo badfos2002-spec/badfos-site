@@ -89,12 +89,7 @@ const DESIGNER_SESSION_KEY = 'designer_session'
 
 function saveDesignerSession(step: number, config: Partial<ProductConfig>) {
   try {
-    // Convert designs: keep base64, skip blob URLs (they'll be persisted async)
-    const designs = (config.designs || []).map(d => ({
-      ...d,
-      imageUrl: d.imageUrl.startsWith('data:') ? d.imageUrl : '',
-    })).filter(d => d.imageUrl) // only save designs that are already base64
-    const data = { step, config: { ...config, designs }, timestamp: Date.now() }
+    const data = { step, config, timestamp: Date.now() }
     sessionStorage.setItem(DESIGNER_SESSION_KEY, JSON.stringify(data))
   } catch { /* quota exceeded — ignore */ }
 }
@@ -159,22 +154,10 @@ export default function TshirtDesigner() {
   )
 
   // Persist step + config to sessionStorage on every change
+  // Designs are already base64 (converted at upload time), so no async needed
   useEffect(() => {
-    if (editingItemId) return // don't persist editing sessions
+    if (editingItemId) return
     saveDesignerSession(currentStep, config)
-
-    // Async: convert any blob URLs to base64 and re-save with full designs
-    const blobDesigns = (config.designs || []).filter(d => d.imageUrl.startsWith('blob:'))
-    if (blobDesigns.length > 0) {
-      Promise.all(
-        (config.designs || []).map(async (d) => ({
-          ...d,
-          imageUrl: d.imageUrl.startsWith('blob:') ? await blobToBase64(d.imageUrl) : d.imageUrl,
-        }))
-      ).then((persistedDesigns) => {
-        saveDesignerSession(currentStep, { ...config, designs: persistedDesigns })
-      }).catch(() => { /* ignore conversion errors */ })
-    }
   }, [currentStep, config, editingItemId])
 
   const updateConfig = (updates: Partial<ProductConfig>) => {

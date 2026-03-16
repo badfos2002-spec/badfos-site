@@ -26,23 +26,29 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
 
   const handleFileSelectForArea = (areaId: string, file: File) => {
     const area = TSHIRT_DESIGN_AREAS.find(a => a.id === areaId)!
-    const imageUrl = URL.createObjectURL(file)
-    const newDesign: DesignArea = {
-      area: areaId as DesignArea['area'],
-      areaName: area.name,
-      imageUrl,
-      fileName: file.name,
+
+    // Convert to base64 immediately — avoids blob URL issues on Safari/iOS
+    const reader = new FileReader()
+    reader.onload = () => {
+      const imageUrl = reader.result as string
+      const newDesign: DesignArea = {
+        area: areaId as DesignArea['area'],
+        areaName: area.name,
+        imageUrl,
+        fileName: file.name,
+      }
+      const existingIndex = designs.findIndex(d => d.area === areaId)
+      if (existingIndex >= 0) {
+        const updated = [...designs]
+        updated[existingIndex] = newDesign
+        onUpdate(updated)
+      } else {
+        onUpdate([...designs, newDesign])
+      }
+      setSelectedAreaId(areaId)
+      onAreaFocus?.(areaId)
     }
-    const existingIndex = designs.findIndex(d => d.area === areaId)
-    if (existingIndex >= 0) {
-      const updated = [...designs]
-      updated[existingIndex] = newDesign
-      onUpdate(updated)
-    } else {
-      onUpdate([...designs, newDesign])
-    }
-    setSelectedAreaId(areaId)
-    onAreaFocus?.(areaId)
+    reader.readAsDataURL(file)
   }
 
   const handleFileSelect = (file: File) => {
