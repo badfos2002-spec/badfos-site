@@ -94,9 +94,9 @@ export default function SharePage() {
   return (
     <div className="min-h-screen bg-[#fffdf5] relative overflow-hidden" dir="rtl">
       {/* Background blobs */}
-      <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-gradient-radial from-[#fef08a]/60 to-transparent rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -top-48 -left-48 w-[600px] h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-radial from-[#fef08a]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 -right-32 w-[250px] h-[250px] md:w-[500px] md:h-[500px] bg-gradient-radial from-[#fef08a]/60 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-48 -left-48 w-[250px] h-[250px] md:w-[600px] md:h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[350px] h-[200px] md:w-[800px] md:h-[400px] bg-gradient-radial from-[#fef08a]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 gap-6">
 

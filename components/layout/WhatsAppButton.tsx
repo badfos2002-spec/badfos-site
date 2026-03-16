@@ -101,7 +101,7 @@ export default function WhatsAppButton() {
       {showAccessibility && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowAccessibility(false)}>
           <div
-            className="bg-white rounded-2xl shadow-2xl w-[340px] max-h-[80vh] overflow-y-auto p-6"
+            className="bg-white rounded-2xl shadow-2xl w-[90vw] sm:w-[340px] max-h-[80vh] overflow-y-auto p-5 sm:p-6"
             dir="rtl"
             onClick={e => e.stopPropagation()}
           >
@@ -207,23 +207,23 @@ export default function WhatsAppButton() {
       )}
 
       {/* Floating Buttons */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col gap-2 sm:gap-3">
         <button
           onClick={() => setShowAccessibility(true)}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:scale-110 transition-transform"
+          className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:scale-110 transition-transform"
           aria-label="כלי נגישות"
         >
-          <Accessibility className="h-7 w-7" />
+          <Accessibility className="h-6 w-6 sm:h-7 sm:w-7" />
         </button>
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
           onClick={handleWhatsAppClick}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-whatsapp text-white shadow-lg hover:scale-110 transition-transform pulse-green"
+          className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-accent-whatsapp text-white shadow-lg hover:scale-110 transition-transform pulse-green"
           aria-label="פתח WhatsApp"
         >
-          <MessageCircle className="h-7 w-7" />
+          <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
         </a>
       </div>
     </>

@@ -25,8 +25,8 @@ export default function NewPackagesSection() {
 
   return (
     <section className="w-full bg-white py-16 md:py-20 relative overflow-hidden" dir="rtl">
-      <div className="absolute -top-20 -left-20 w-96 h-96 bg-gradient-to-br from-blue-300 to-indigo-300 rounded-full opacity-40 blur-3xl"></div>
-      <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-200 rounded-full opacity-30 blur-2xl"></div>
+      <div className="absolute -top-20 -left-20 w-48 h-48 md:w-96 md:h-96 bg-gradient-to-br from-blue-300 to-indigo-300 rounded-full opacity-40 blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-20 -right-20 w-40 h-40 md:w-80 md:h-80 bg-gradient-to-tr from-cyan-200 to-blue-200 rounded-full opacity-30 blur-2xl pointer-events-none"></div>
 
       <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
         <div className="bg-white rounded-3xl shadow-xl py-10 px-8">

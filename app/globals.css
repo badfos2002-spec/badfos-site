@@ -37,14 +37,25 @@
     /* Set RTL direction globally */
     direction: rtl;
     overflow-x: hidden;
+    overflow-y: auto;
   }
 
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
-    max-width: 100%;
+    max-width: 100vw;
     position: relative;
+  }
+
+  /* Global mobile fix — prevent horizontal overflow */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  #__next, main {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 }
 
