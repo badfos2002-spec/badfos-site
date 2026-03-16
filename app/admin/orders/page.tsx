@@ -267,7 +267,7 @@ export default function AdminOrdersPage() {
                           value={order.status}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                         >
-                          {Object.entries(statusLabels).map(([val, { label }]) => (
+                          {Object.entries(statusLabels).filter(([val]) => val !== 'pending_payment').map(([val, { label }]) => (
                             <option key={val} value={val}>{label}</option>
                           ))}
                         </select>
@@ -356,7 +356,7 @@ export default function AdminOrdersPage() {
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           >
-                            {Object.entries(statusLabels).map(([val, { label }]) => (
+                            {Object.entries(statusLabels).filter(([val]) => val !== 'pending_payment').map(([val, { label }]) => (
                               <option key={val} value={val}>{label}</option>
                             ))}
                           </select>
