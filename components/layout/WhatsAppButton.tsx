@@ -1,8 +1,9 @@
 'use client'
 
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, Accessibility } from 'lucide-react'
 import { CONTACT_INFO } from '@/lib/constants'
 import { trackWhatsAppClick } from '@/lib/tracking'
+import Link from 'next/link'
 
 export default function WhatsAppButton() {
   const whatsappUrl = `https://wa.me/${CONTACT_INFO.whatsapp}`
@@ -12,15 +13,24 @@ export default function WhatsAppButton() {
   }
 
   return (
-    <a
-      href={whatsappUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={handleClick}
-      className="fixed bottom-6 left-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent-whatsapp text-white shadow-lg hover:scale-110 transition-transform pulse-green"
-      aria-label="פתח WhatsApp"
-    >
-      <MessageCircle className="h-7 w-7" />
-    </a>
+    <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
+      <Link
+        href="/accessibility"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:scale-110 transition-transform"
+        aria-label="הצהרת נגישות"
+      >
+        <Accessibility className="h-7 w-7" />
+      </Link>
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={handleClick}
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-whatsapp text-white shadow-lg hover:scale-110 transition-transform pulse-green"
+        aria-label="פתח WhatsApp"
+      >
+        <MessageCircle className="h-7 w-7" />
+      </a>
+    </div>
   )
 }

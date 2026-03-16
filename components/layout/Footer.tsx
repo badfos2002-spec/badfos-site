@@ -137,7 +137,7 @@ export default function Footer() {
           <p className="text-sm text-gray-500">
             © {currentYear} בדפוס. כל הזכויות שמורות.
           </p>
-          <div className="flex flex-wrap justify-center gap-4 text-xs text-gray-600">
+          <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400">
             <Link href="/terms" className="hover:text-yellow-400 transition-colors">
               תקנון
             </Link>
