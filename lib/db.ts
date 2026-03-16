@@ -259,6 +259,27 @@ export async function getOrderByPaymentId(paymentId: string): Promise<Order | nu
   return orders.length > 0 ? orders[0] : null
 }
 
+/**
+ * Mark all old pending_payment orders as cart_abandoned.
+ * Returns the number of orders updated.
+ */
+export async function markAbandonedOrders(olderThanMinutes: number = 60): Promise<number> {
+  ensureFirebase()
+  const pendingOrders = await queryDocuments<Order>('orders', [
+    { field: 'status', operator: '==', value: 'pending_payment' },
+  ])
+  const cutoff = Date.now() - olderThanMinutes * 60 * 1000
+  let count = 0
+  for (const order of pendingOrders) {
+    const createdAt = order.createdAt?.toDate?.() ?? new Date(0)
+    if (createdAt.getTime() < cutoff) {
+      await updateOrderStatus(order.id, 'cart_abandoned')
+      count++
+    }
+  }
+  return count
+}
+
 // ============================================================================
 // Leads
 // ============================================================================

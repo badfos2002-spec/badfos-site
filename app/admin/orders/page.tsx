@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react'
 import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, deductInventory } from '@/lib/db'
+import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, deductInventory, markAbandonedOrders } from '@/lib/db'
 import { deleteFile } from '@/lib/storage'
 import type { Order } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-800' },
+  cart_abandoned:  { label: 'נטש עגלה',      color: 'bg-orange-100 text-orange-800' },
   new:             { label: 'חדשה',           color: 'bg-emerald-100 text-emerald-700' },
   paid:            { label: 'שולם',           color: 'bg-green-100 text-green-700' },
   in_production:   { label: 'בייצור',         color: 'bg-blue-100 text-blue-700' },
@@ -184,10 +185,28 @@ export default function AdminOrdersPage() {
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
-          <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={handleExportCSV}>
-            <Download className="w-4 h-4 ml-2" />
-            ייצוא לCSV
-          </Button>
+          <div className="flex gap-2">
+            <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={handleExportCSV}>
+              <Download className="w-4 h-4 ml-2" />
+              ייצוא לCSV
+            </Button>
+            <Button
+              variant="outline"
+              className="border-orange-300 text-orange-700 hover:bg-orange-50"
+              onClick={async () => {
+                const count = await markAbandonedOrders(60)
+                if (count > 0) {
+                  alert(`${count} הזמנות סומנו כנטושות`)
+                  const refreshed = await getAllOrders()
+                  setOrders(refreshed)
+                } else {
+                  alert('אין הזמנות ממתינות ישנות לסימון')
+                }
+              }}
+            >
+              סמן נטושים
+            </Button>
+          </div>
         </div>
       </div>
 
