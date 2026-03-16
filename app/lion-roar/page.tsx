@@ -109,8 +109,8 @@ export default function LionRoarPage() {
           </div>
         </div>
 
-        {/* ── Navigation Buttons (below step bar) ── */}
-        <div className="flex justify-center items-center gap-3 mb-8">
+        {/* ── Desktop Navigation Buttons (below step bar) ── */}
+        <div className="hidden lg:flex justify-center items-center gap-3 mb-8">
           <Button
             variant="outline"
             onClick={() => router.push('/home')}
@@ -131,21 +131,6 @@ export default function LionRoarPage() {
 
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
-          {/* Sticky mockup */}
-          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
-            <div className="relative mx-auto max-w-sm">
-              <Image
-                src={PRODUCT_IMAGE}
-                alt={PRODUCT_NAME}
-                width={0}
-                height={0}
-                sizes="100vw"
-                className="w-full h-auto block"
-                priority
-              />
-            </div>
-          </div>
-
           {/* Step content card */}
           <div className="rounded-xl border bg-white border-yellow-200 shadow-sm">
             <div className="p-6">
@@ -238,6 +223,41 @@ export default function LionRoarPage() {
               )}
               <p className="text-xs text-gray-400 text-center pt-1">* לא כולל משלוח</p>
             </div>
+          </div>
+
+          {/* Mockup preview — below content on mobile */}
+          <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
+            <div className="relative mx-auto max-w-sm">
+              <Image
+                src={PRODUCT_IMAGE}
+                alt={PRODUCT_NAME}
+                width={0}
+                height={0}
+                sizes="100vw"
+                className="w-full h-auto block"
+                priority
+              />
+            </div>
+          </div>
+
+          {/* Mobile bottom nav */}
+          <div className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border relative z-20">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/home')}
+              className="flex-1 h-10"
+            >
+              דף הבית
+            </Button>
+            <Button
+              onClick={handleAddToCart}
+              disabled={totalQuantity === 0 || added}
+              className={`flex-1 h-10 text-white ${
+                added ? 'bg-green-500 hover:bg-green-500' : 'gradient-yellow'
+              }`}
+            >
+              {added ? 'נוסף לעגלה ✓' : 'הוסף לעגלה 🛒'}
+            </Button>
           </div>
 
         </div>
