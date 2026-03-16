@@ -258,7 +258,7 @@ export default function NewTestimonialsSection() {
         </div>
 
         {/* CTA */}
-        <div className="text-center">
+        <div className="text-center mt-6 md:mt-0">
           <Link href="/reviews">
             <Button
               variant="outline"

@@ -125,12 +125,24 @@ export default function TshirtDesigner() {
     })
   }
 
+  const scrollToTopMobile = () => {
+    if (window.innerWidth < 1024) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   const goToNextStep = () => {
-    if (currentStep < totalSteps) setCurrentStep(currentStep + 1)
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1)
+      scrollToTopMobile()
+    }
   }
 
   const goToPreviousStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1)
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+      scrollToTopMobile()
+    }
   }
 
   const resetDesign = () => {
@@ -139,23 +151,33 @@ export default function TshirtDesigner() {
     setEditingItem(null)
   }
 
-  const handleAddToCart = async () => {
-    if (config.productType && config.fabricType && config.color && config.designs && config.sizes && config.sizes.length > 0) {
-      // Convert blob URLs to base64 NOW — blob URLs expire after page navigation
-      const persistedDesigns = await Promise.all(
-        config.designs.map(async (d) => ({
-          ...d,
-          imageUrl: await blobToBase64(d.imageUrl),
-        }))
-      )
-      const persistedConfig = { ...config, designs: persistedDesigns } as ProductConfig
+  const [addingToCart, setAddingToCart] = useState(false)
 
-      if (editingItemId) {
-        replaceItem(editingItemId, persistedConfig)
-      } else {
-        addItem(persistedConfig)
+  const handleAddToCart = async () => {
+    if (addingToCart) return
+    if (config.productType && config.fabricType && config.color && config.designs && config.sizes && config.sizes.length > 0) {
+      setAddingToCart(true)
+      try {
+        // Convert blob URLs to base64 NOW — blob URLs expire after page navigation
+        const persistedDesigns = await Promise.all(
+          config.designs.map(async (d) => ({
+            ...d,
+            imageUrl: await blobToBase64(d.imageUrl),
+          }))
+        )
+        const persistedConfig = { ...config, designs: persistedDesigns } as ProductConfig
+
+        if (editingItemId) {
+          replaceItem(editingItemId, persistedConfig)
+        } else {
+          addItem(persistedConfig)
+        }
+        router.push('/cart')
+      } catch (err) {
+        console.error('Add to cart failed:', err)
+        alert('אירעה שגיאה. אנא נסו שוב.')
+        setAddingToCart(false)
       }
-      router.push('/cart')
     }
   }
 
@@ -231,15 +253,14 @@ export default function TshirtDesigner() {
       return currentStep === 3 || hasDesign
     })
     return (
-      <div className="relative w-full">
+      <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
         {mockupSrc ? (
           <Image
             src={mockupSrc}
             alt="תצוגה מקדימה"
-            width={0}
-            height={0}
-            sizes="100vw"
-            className="w-full h-auto block"
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-contain"
           />
         ) : (
           <div className="aspect-square bg-gray-100 rounded-xl flex items-center justify-center text-7xl">👕</div>
@@ -310,10 +331,10 @@ export default function TshirtDesigner() {
       ) : (
         <Button
           onClick={handleAddToCart}
-          disabled={!canProceed()}
+          disabled={!canProceed() || addingToCart}
           className={`gradient-yellow text-white ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
         >
-          {editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
+          {addingToCart ? 'מוסיף...' : editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
         </Button>
       )}
     </>
@@ -358,10 +379,10 @@ export default function TshirtDesigner() {
             ) : (
               <Button
                 onClick={handleAddToCart}
-                disabled={!canProceed()}
+                disabled={!canProceed() || addingToCart}
                 className="gradient-yellow text-white"
               >
-                {editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
+                {addingToCart ? 'מוסיף...' : editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
               </Button>
             )}
           </div>
@@ -397,7 +418,7 @@ export default function TshirtDesigner() {
           <PriceSummary config={config as ProductConfig} />
 
           {/* Mobile bottom nav */}
-          <div className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border">
+          <div className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border relative z-20">
             <NavButtons fullWidth />
           </div>
         </div>
