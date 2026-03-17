@@ -81,13 +81,7 @@ export async function POST(request: NextRequest) {
       paymentUrl = responseText.trim()
     }
 
-    // Fallback: extract URL from text using regex
-    if (!paymentUrl) {
-      const urlMatch = responseText.match(/https?:\/\/[^\s"'<>]+/)
-      if (urlMatch) {
-        paymentUrl = urlMatch[0]
-      }
-    }
+    // No regex fallback — only accept structured URL responses
 
     if (paymentUrl) {
       if (!isAuthorizedRedirect(paymentUrl)) {

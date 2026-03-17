@@ -42,7 +42,7 @@ export default function NewWhyChooseSection() {
             <div className="absolute w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl bg-[#ffc32e]/20" style={{ transform: 'rotate(35deg)' }}></div>
             <div className="relative w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl shadow-2xl overflow-hidden">
               <iframe
-                src={c.why_videoUrl}
+                src={c.why_videoUrl?.startsWith('https://www.youtube.com/') ? c.why_videoUrl : D.why_videoUrl}
                 title="למה לבחור בנו"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
