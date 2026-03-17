@@ -248,7 +248,7 @@ export default function LeadPopup() {
         )}
 
         <p className="text-xs text-[#64748b] text-center mt-4">
-          נשמור על הפרטים שלכם ולא נשתף אותם עם צד שלישי
+          הפרטים שלכם מאובטחים בהתאם ל<a href="/privacy" target="_blank" className="underline hover:text-yellow-500">מדיניות הפרטיות</a>
         </p>
       </div>
     </div>

@@ -177,7 +177,7 @@ export default function NewContactFormSection() {
                   </Button>
 
                   <p className="text-[10px] text-center text-gray-400 mt-2">
-                    * שדות חובה | הפרטים שלך מאובטחים אצלנו
+                    * שדות חובה | הפרטים שלך מאובטחים בהתאם ל<a href="/privacy" target="_blank" className="underline hover:text-yellow-500">מדיניות הפרטיות</a>
                   </p>
                 </form>
               )}
