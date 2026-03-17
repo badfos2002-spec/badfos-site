@@ -19,6 +19,7 @@ interface OrderSummaryProps {
   onCheckout: () => void
   loading: boolean
   canCheckout: boolean
+  paymentReady?: boolean
 }
 
 export default function OrderSummary({
@@ -31,6 +32,7 @@ export default function OrderSummary({
   onCheckout,
   loading,
   canCheckout,
+  paymentReady = false,
 }: OrderSummaryProps) {
   const [applying, setApplying] = useState(false)
   const [couponStatus, setCouponStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
@@ -238,8 +240,11 @@ export default function OrderSummary({
             {loading ? 'מעבד...' : 'המשך לתשלום 💳'}
           </Button>
 
-          <p className="text-xs text-center text-text-gray mt-3">
-            תשלום מאובטח בכרטיס אשראי
+          <p className="text-xs text-center text-text-gray mt-3 flex items-center justify-center gap-1.5">
+            {canCheckout && acceptedTerms && paymentReady && (
+              <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            )}
+            <span>תשלום מאובטח בכרטיס אשראי</span>
           </p>
         </div>
       </CardContent>

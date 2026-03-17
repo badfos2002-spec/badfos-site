@@ -91,6 +91,7 @@ export default function CartPage() {
 
   // Pre-fetch payment link cache
   const paymentCacheRef = useRef<{ promise: Promise<any>; amount: number; key: string } | null>(null)
+  const [paymentReady, setPaymentReady] = useState(false)
 
   // Pre-upload design images in background while user fills contact/shipping
   useEffect(() => {
@@ -129,6 +130,8 @@ export default function CartPage() {
     // Skip if already fetching same data
     if (paymentCacheRef.current?.key === cacheKey) return
 
+    setPaymentReady(false)
+
     // Check sessionStorage for a cached payment URL (from a previous attempt)
     try {
       const cached = sessionStorage.getItem('badfos_payment_cache')
@@ -136,6 +139,7 @@ export default function CartPage() {
         const parsed = JSON.parse(cached)
         if (parsed.key === cacheKey && parsed.url) {
           paymentCacheRef.current = { promise: Promise.resolve({ url: parsed.url }), amount: total, key: cacheKey }
+          setPaymentReady(true)
           return
         }
       }
@@ -153,9 +157,9 @@ export default function CartPage() {
         description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
       }),
     }).then(r => r.json()).then(data => {
-      // Cache the URL in sessionStorage for instant reuse
       if (data?.url) {
         try { sessionStorage.setItem('badfos_payment_cache', JSON.stringify({ key: cacheKey, url: data.url })) } catch {}
+        setPaymentReady(true)
       }
       return data
     }).catch(() => null)
@@ -239,10 +243,13 @@ export default function CartPage() {
       const paymentData = await paymentPromise
 
       if (paymentData.url) {
+        if (!isAuthorizedRedirect(paymentData.url)) {
+          throw new Error('כתובת התשלום אינה מאושרת')
+        }
+
         setLoadingMessage('שומר הזמנה...')
 
         // Create order in Firestore BEFORE redirecting to payment (pending_payment status)
-        // This ensures the order is never lost even if the user closes the browser after paying
         const orderData = stripUndefined({
           status: 'pending_payment' as const,
           paymentId: tempOrderId,
@@ -266,19 +273,13 @@ export default function CartPage() {
           ...(getGclid() && { gclid: getGclid() }),
         })
 
-        const orderId = await createOrder(orderData as any)
+        // Run order creation + share link in parallel for speed
+        const orderPromise = createOrder(orderData as any)
 
-        // Save orderId + minimal data to sessionStorage for the success page
-        sessionStorage.setItem('badfos_pending_order', JSON.stringify({
-          orderId,
-          customer: customerInfo,
-          items: itemsForOrder,
-          total: orderCalc.total,
-        }))
-
-        // Pre-create shared design link for the success page share button
-        const itemsWithDesigns2 = items.filter(item => item.designs.length > 0)
-        if (itemsWithDesigns2.length > 0) {
+        // Share link creation — non-blocking, runs in parallel
+        const sharePromise = (async () => {
+          const itemsWithDesigns2 = items.filter(item => item.designs.length > 0)
+          if (itemsWithDesigns2.length === 0) return
           try {
             const sharedItems = itemsWithDesigns2.map((item) => {
               const base: Record<string, unknown> = {
@@ -293,7 +294,6 @@ export default function CartPage() {
               if (item.fabricType) base.fabricType = item.fabricType
               return base
             })
-
             if (sharedItems.length === 1) {
               const { createSharedDesign } = await import('@/lib/db')
               const shareId = await createSharedDesign(sharedItems[0] as any)
@@ -305,13 +305,24 @@ export default function CartPage() {
           } catch (e) {
             console.warn('Failed to create share link:', e)
           }
-        }
+        })()
 
+        // Wait for order (critical) — share link can finish in background
+        const orderId = await orderPromise
+
+        sessionStorage.setItem('badfos_pending_order', JSON.stringify({
+          orderId,
+          customer: customerInfo,
+          items: itemsForOrder,
+          total: orderCalc.total,
+        }))
+
+        // Redirect immediately — don't wait for share link
         setLoadingMessage('מעביר לעמוד תשלום...')
-        if (!isAuthorizedRedirect(paymentData.url)) {
-          throw new Error('כתובת התשלום אינה מאושרת')
-        }
         window.location.href = paymentData.url
+
+        // Let share link finish in background (best effort)
+        sharePromise.catch(() => {})
         return
       } else {
         throw new Error(paymentData.error || 'No payment URL')
@@ -562,6 +573,7 @@ export default function CartPage() {
               onCheckout={handleCheckout}
               loading={loading}
               canCheckout={!!customerInfo && !!shipping && (items.length > 0 || packageItems.length > 0)}
+              paymentReady={paymentReady}
             />
           </div>
         </div>
