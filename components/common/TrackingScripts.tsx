@@ -153,7 +153,7 @@ export default function TrackingScripts() {
           .find((row) => row.startsWith('cookie_consent=accepted'))
 
       if (hasConsent) {
-        timer = setTimeout(loadScripts, 3500)
+        timer = setTimeout(loadScripts, 500)
       }
     }
 
