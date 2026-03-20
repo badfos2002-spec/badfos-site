@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload, CheckCircle, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const apronMockups: Record<string, string> = {
   gray: '/assets/סינר אפור.png',
@@ -340,6 +341,11 @@ export default function ApronDesignerPage() {
   return (
     <div className="bg-gray-50 min-h-screen" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Breadcrumbs items={[
+          { label: 'בית', href: '/home' },
+          { label: 'עיצוב אישי', href: '/designer' },
+          { label: 'סינר' },
+        ]} />
 
         {/* ── Header ── */}
         <div className="text-center mb-6">

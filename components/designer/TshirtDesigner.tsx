@@ -112,7 +112,7 @@ function clearDesignerSession() {
   try { sessionStorage.removeItem(DESIGNER_SESSION_KEY) } catch { /* ignore */ }
 }
 
-export default function TshirtDesigner() {
+export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.ReactNode } = {}) {
   const router = useRouter()
   const addItem = useCart((state) => state.addItem)
   const replaceItem = useCart((state) => state.replaceItem)
@@ -389,6 +389,7 @@ export default function TshirtDesigner() {
   return (
     <div className="bg-gray-50 min-h-screen" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {breadcrumbs}
 
         {/* ── Header ── */}
         <div className="text-center mb-6">

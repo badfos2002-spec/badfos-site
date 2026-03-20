@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import TshirtDesigner from '@/components/designer/TshirtDesigner'
+import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 export const metadata: Metadata = {
   title: 'עיצוב חולצה | בדפוס',
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function TshirtDesignerPage() {
-  return <TshirtDesigner />
+  return <TshirtDesigner breadcrumbs={<Breadcrumbs items={[
+    { label: 'בית', href: '/home' },
+    { label: 'עיצוב אישי', href: '/designer' },
+    { label: 'חולצה' },
+  ]} />} />
 }
