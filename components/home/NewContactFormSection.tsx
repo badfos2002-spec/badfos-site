@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createLead } from '@/lib/db'
-import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, sendLeadWebhook, getGclid } from '@/lib/tracking'
+import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, sendLeadWebhook, setEnhancedConversionData, getGclid } from '@/lib/tracking'
 import { User, Phone, ArrowLeft } from 'lucide-react'
 
 export default function NewContactFormSection() {
@@ -59,6 +59,7 @@ export default function NewContactFormSection() {
         console.error('Email notification failed:', emailErr)
       }
 
+      setEnhancedConversionData({ phone: formData.phone })
       sendGoogleAdsConversion()
       sendGenerateLeadEvent('bottom_form')
       sendMetaLeadEvent()

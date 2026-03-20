@@ -57,6 +57,28 @@ export function ensureGtagLoaded(): Promise<void> {
   })
 }
 
+/**
+ * Set user data for Enhanced Conversions — gtag hashes automatically.
+ * Must be called BEFORE the conversion event.
+ */
+export function setEnhancedConversionData(data: { email?: string; phone?: string; firstName?: string; lastName?: string }) {
+  const userData: Record<string, any> = {}
+  if (data.email) userData.email = data.email.trim().toLowerCase()
+  if (data.phone) {
+    // Normalize to E.164 format (+972...)
+    let phone = data.phone.replace(/[\s\-()]/g, '')
+    if (phone.startsWith('0')) phone = '+972' + phone.slice(1)
+    else if (!phone.startsWith('+')) phone = '+972' + phone
+    userData.phone_number = phone
+  }
+  if (data.firstName) userData.address = { ...userData.address, first_name: data.firstName.trim() }
+  if (data.lastName) userData.address = { ...userData.address, last_name: data.lastName.trim() }
+
+  if (Object.keys(userData).length > 0) {
+    gtagSafe('set', 'user_data', userData)
+  }
+}
+
 export function sendGoogleAdsConversion(value = 1.0, transactionId?: string) {
   const gclid = getGclid()
   gtagSafe('event', 'conversion', {

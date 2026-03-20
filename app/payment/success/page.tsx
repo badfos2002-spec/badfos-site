@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/hooks/useCart'
-import { ensureGtagLoaded, sendGoogleAdsConversion, sendPurchaseEvent, sendMetaPurchaseEvent } from '@/lib/tracking'
+import { ensureGtagLoaded, sendGoogleAdsConversion, sendPurchaseEvent, sendMetaPurchaseEvent, setEnhancedConversionData } from '@/lib/tracking'
 import { updateOrderStatus } from '@/lib/db'
 
 export default function PaymentSuccessPage() {
@@ -35,6 +35,15 @@ export default function PaymentSuccessPage() {
         // Ensure gtag.js is loaded before firing conversions (don't wait for cookie consent)
         if (orderId) {
           ensureGtagLoaded().then(() => {
+            // Set user data for Enhanced Conversions before firing conversion
+            if (customer) {
+              setEnhancedConversionData({
+                email: customer.email,
+                phone: customer.phone,
+                firstName: customer.firstName,
+                lastName: customer.lastName,
+              })
+            }
             sendGoogleAdsConversion(total, orderId)
             sendPurchaseEvent(orderId, total, (items || []).map((item: any) => ({
               id: item.productType,
