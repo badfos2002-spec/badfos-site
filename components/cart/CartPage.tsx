@@ -71,18 +71,27 @@ export default function CartPage() {
   useEffect(() => { setHydrated(true) }, [])
 
   // If user returns to cart with a pending order (abandoned payment), mark it as abandoned
+  // BUT only if the order is still pending_payment (not already paid by webhook)
   useEffect(() => {
-    try {
-      const pendingStr = sessionStorage.getItem('badfos_pending_order')
-      if (pendingStr) {
-        const { orderId } = JSON.parse(pendingStr)
-        if (orderId) {
-          updateOrderStatus(orderId, 'cart_abandoned').catch(console.error)
+    async function checkAndMarkAbandoned() {
+      try {
+        const pendingStr = sessionStorage.getItem('badfos_pending_order')
+        if (pendingStr) {
+          const { orderId } = JSON.parse(pendingStr)
+          if (orderId) {
+            // Check current status before marking as abandoned
+            const { getDocument } = await import('@/lib/db')
+            const order = await getDocument<{ status: string }>('orders', orderId)
+            if (order && order.status === 'pending_payment') {
+              updateOrderStatus(orderId, 'cart_abandoned').catch(console.error)
+            }
+          }
+          sessionStorage.removeItem('badfos_pending_order')
+          sessionStorage.removeItem('badfos_payment_cache')
         }
-        sessionStorage.removeItem('badfos_pending_order')
-        sessionStorage.removeItem('badfos_payment_cache')
-      }
-    } catch {}
+      } catch {}
+    }
+    checkAndMarkAbandoned()
   }, [])
 
   // Pre-upload cache: base64 hash → Firebase Storage URL
