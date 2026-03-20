@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { ShoppingCart, Menu, Home, Shirt, Package, Star, Info, Phone, HelpCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
@@ -42,7 +43,7 @@ export default function Header() {
             </div>
             <div className="flex justify-center">
               <Link href="/home">
-                <img src="/logo.png" alt="בדפוס - הדפסת חולצות" className="h-12 w-auto" />
+                <Image src="/logo.png" alt="בדפוס - הדפסת חולצות" width={48} height={48} className="h-12 w-auto" priority />
               </Link>
             </div>
             <div className="flex justify-end">
@@ -64,7 +65,7 @@ export default function Header() {
 
             {/* Logo */}
             <Link href="/home" className="flex items-center">
-              <img src="/logo.png" alt="בדפוס - הדפסת חולצות" className="h-12 w-auto" />
+              <Image src="/logo.png" alt="בדפוס - הדפסת חולצות" width={48} height={48} className="h-12 w-auto" priority />
             </Link>
 
             {/* Navigation */}

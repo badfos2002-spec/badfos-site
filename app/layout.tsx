@@ -47,6 +47,41 @@ export default function RootLayout({
 }) {
   return (
     <html lang="he" dir="rtl">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'LocalBusiness',
+              name: 'בדפוס',
+              image: 'https://badfos.co.il/logo.png',
+              url: 'https://badfos.co.il',
+              telephone: '+972507794277',
+              email: 'badfos2002@gmail.com',
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: 'ראשון לציון',
+                addressCountry: 'IL',
+              },
+              description: 'הדפסת חולצות בעיצוב אישי – חולצות, סווטשירטים, באפים ועוד. משלוח מהיר לכל הארץ.',
+              priceRange: '₪₪',
+              openingHoursSpecification: [
+                { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'], opens: '09:00', closes: '23:00' },
+              ],
+              sameAs: [
+                'https://www.instagram.com/badfos_il/',
+              ],
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: '5.0',
+                reviewCount: '30',
+                bestRating: '5',
+              },
+            }),
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-background antialiased">
         {/* Google Tag Manager (noscript) */}
         <noscript>

@@ -54,7 +54,7 @@ export default function HeroCarousel() {
     <Image
       key={slide.id}
       src={slide.image}
-      alt=""
+      alt="בדפוס - הדפסת חולצות בעיצוב אישי"
       fill
       className="object-cover rounded-[1.5rem] animate-fadeIn"
       priority

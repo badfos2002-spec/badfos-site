@@ -338,7 +338,7 @@ export default function ReviewsPage() {
                 >
                   <div className="flex items-center gap-3 mb-4">
                     {review.authorPhoto ? (
-                      <img src={review.authorPhoto} alt="" className="w-12 h-12 rounded-full object-cover" />
+                      <img src={review.authorPhoto} alt={review.author} className="w-12 h-12 rounded-full object-cover" />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
                         <User className="w-6 h-6 text-white" />
