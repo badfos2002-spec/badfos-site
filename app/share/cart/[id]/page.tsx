@@ -247,8 +247,7 @@ export default function ShareCartPage() {
       <header className="sticky top-0 z-30 w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm">
         <div className="mx-auto max-w-[1536px] px-4 md:px-6 h-16 flex items-center justify-between">
           <Link href="/home">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="בדפוס" className="h-10 w-auto" />
+            <Image src="/logo.png" alt="בדפוס" width={40} height={40} className="h-10 w-auto" />
           </Link>
           <Link href="/designer">
             <Button className="bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold rounded-full px-6 shadow-md hover:shadow-lg transition-all hover:scale-105 duration-200">

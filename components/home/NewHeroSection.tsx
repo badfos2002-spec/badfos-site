@@ -65,6 +65,17 @@ export default function NewHeroSection() {
                 </Button>
               </Link>
             </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-500 mt-3">
+              <div className="flex -space-x-1 rtl:space-x-reverse">
+                {['#4285F4', '#34A853', '#E91E63', '#FF8F00'].map((bg, i) => (
+                  <div key={i} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: bg }}>
+                    {['ג', 'ת', 'א', 'ר'][i]}
+                  </div>
+                ))}
+              </div>
+              <span>4.8 מתוך 5 | 30+ ביקורות מאומתות בגוגל</span>
+            </div>
           </div>
 
           {/* Carousel + Mobile Button */}
