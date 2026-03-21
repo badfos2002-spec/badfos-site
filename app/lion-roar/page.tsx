@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { STANDARD_SIZES } from '@/lib/constants'
@@ -18,6 +18,16 @@ export default function LionRoarPage() {
   const { addItem } = useCart()
   const [sizes, setSizes] = useState<SizeQuantity[]>([])
   const [added, setAdded] = useState(false)
+  const [donationTotal, setDonationTotal] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch('/api/donation-total')
+      .then(res => res.json())
+      .then(data => {
+        if (data.total > 0) setDonationTotal(data.total)
+      })
+      .catch(() => {})
+  }, [])
 
   const getQuantity = (sizeId: string) => sizes.find(s => s.size === sizeId)?.quantity || 0
   const totalQuantity = sizes.reduce((sum, s) => sum + s.quantity, 0)
@@ -76,6 +86,12 @@ export default function LionRoarPage() {
             <span className="mx-1">•</span>
             <strong className="text-blue-600">10% מההכנסות נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
           </p>
+          {donationTotal !== null && (
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold border border-blue-200">
+              <span>תרמנו עד כה:</span>
+              <span className="text-lg font-extrabold">₪{donationTotal.toLocaleString()}</span>
+            </div>
+          )}
         </div>
 
         {/* ── Step Bar ── */}
