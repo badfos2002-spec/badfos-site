@@ -21,12 +21,31 @@ export default function LionRoarPage() {
   const [donationTotal, setDonationTotal] = useState<number | null>(null)
 
   useEffect(() => {
-    fetch('/api/donation-total')
-      .then(res => res.json())
-      .then(data => {
-        if (data.total > 0) setDonationTotal(data.total)
-      })
-      .catch(() => {})
+    async function calcDonation() {
+      try {
+        const { collection, getDocs, query, where } = await import('firebase/firestore')
+        const { db } = await import('@/lib/firebase')
+        if (!db) return
+        const paidStatuses = ['paid', 'in_production', 'shipped', 'completed']
+        let total = 0
+        for (const status of paidStatuses) {
+          const q = query(collection(db, 'orders'), where('status', '==', status))
+          const snapshot = await getDocs(q)
+          for (const doc of snapshot.docs) {
+            const order = doc.data()
+            if (!order.items) continue
+            for (const item of order.items) {
+              const isLionRoar = item.designs?.some(
+                (d: any) => d.areaName === 'שאגת האריה' || d.fileName === 'lion-roar.png'
+              )
+              if (isLionRoar) total += item.totalPrice * 0.1
+            }
+          }
+        }
+        if (total > 0) setDonationTotal(Math.round(total))
+      } catch {}
+    }
+    calcDonation()
   }, [])
 
   const getQuantity = (sizeId: string) => sizes.find(s => s.size === sizeId)?.quantity || 0
