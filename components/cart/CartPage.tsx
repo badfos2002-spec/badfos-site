@@ -164,6 +164,7 @@ export default function CartPage() {
         phone: customerInfo.phone,
         email: customerInfo.email,
         description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
+        ...(getGclid() && { gclid: getGclid() }),
       }),
     }).then(r => r.json()).then(data => {
       if (data?.url) {
@@ -245,6 +246,7 @@ export default function CartPage() {
             phone: customerInfo.phone,
             email: customerInfo.email,
             description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
+            ...(getGclid() && { gclid: getGclid() }),
           }),
         }).then(r => r.json())
       }

@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, phone, email, amount, description, orderId } = body
+    const { name, phone, email, amount, description, orderId, gclid } = body
 
     if (amount == null || !name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
         amount: verifiedAmount,
         description,
         orderId,
+        ...(gclid && { gclid }),
       }),
     })
 
