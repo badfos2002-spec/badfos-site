@@ -91,7 +91,7 @@ export default function LionRoarSection() {
             <p className="text-lg lg:text-xl text-white/80 leading-relaxed max-w-md mx-auto lg:mx-0 font-medium">
               &quot;עם ישראל חי וקיים&quot; — חולצה איכותית עם הדפס ייחודי.
               <br />
-              <strong className="text-white font-bold">10% מההכנסות נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
+              <strong className="text-white font-bold">10% ממחיר כל חולצה שנמכרת נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
             </p>
 
             {/* Donation Counter - clean single line */}

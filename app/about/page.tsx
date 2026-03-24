@@ -12,8 +12,8 @@ export default function AboutPage() {
   const values = [
     {
       icon: Award,
-      title: 'איכות ללא פשרות',
-      description: 'כל חולצה צריכה להיות מושלמת',
+      title: 'איכות גבוהה',
+      description: 'הדפסה מקצועית על בדים איכותיים',
       gradient: 'from-blue-500 to-indigo-600',
     },
     {
@@ -25,7 +25,7 @@ export default function AboutPage() {
     {
       icon: Zap,
       title: 'שירות מהיר',
-      description: 'זמן יקר - אנו מבטיחים עמידה בזמנים',
+      description: 'זמן יקר - אנו שואפים לעמוד בזמנים',
       gradient: 'from-yellow-500 to-orange-600',
     },
     {
@@ -39,7 +39,7 @@ export default function AboutPage() {
   const process = [
     {
       title: 'עיצוב דיגיטלי',
-      description: 'אתם מעלים תמונה ורואים בדיוק איך החולצה תיראה',
+      description: 'אתם מעלים תמונה ורואים תצוגה מקדימה של החולצה',
     },
     {
       title: 'הדפסה איכותית',
@@ -52,9 +52,9 @@ export default function AboutPage() {
   ]
 
   const features = [
-    { icon: Award, text: 'איכות מובטחת' },
+    { icon: Award, text: 'הדפסה איכותית' },
     { icon: Zap, text: 'משלוח מהיר' },
-    { icon: Shield, text: 'אחריות מלאה' },
+    { icon: Shield, text: 'אחריות על פגמי ייצור' },
     { icon: Heart, text: 'שירות אישי' },
   ]
 
@@ -91,7 +91,7 @@ export default function AboutPage() {
                   <p className="text-lg text-gray-700 leading-relaxed">
                     אנו שמים דגש על איכות בלתי מתפשרת ושירות לקוחות אישי ומקצועי. הטכנולוגיה
                     המתקדמת שלנו מאפשרת הדפסה עמידה ואיכותית על מגוון רחב של בדים ומוצרים,
-                    תוך שמירה על צבעים חיים ומדויקים שלא דועכים או מתקלפים.
+                    תוך שמירה על צבעים חיים ועמידים בשימוש נכון לפי הוראות הטיפול.
                   </p>
                 </div>
               </div>
@@ -178,7 +178,7 @@ export default function AboutPage() {
                 איך אנחנו עובדים
               </h2>
               <p className="text-xl text-gray-600 mb-8">
-                תהליך מתקדם שמבטיח תוצאה מושלמת
+                תהליך מתקדם לתוצאות איכותיות
               </p>
 
               {process.map((step, index) => (

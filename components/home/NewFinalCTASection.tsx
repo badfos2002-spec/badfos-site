@@ -8,8 +8,8 @@ import { getDocument } from '@/lib/db'
 const D = {
   cta_title: 'מוכן ליצור את החולצה הבאה שלך?',
   cta_subtitle: 'צרו עיצובים ייחודיים, הזמינו בקלות, וקבלו משלוח מהיר עד הבית',
-  cta_buttonText: '⚡ התחל עכשיו - זה בחינם!',
-  cta_footnote: 'ללא התחייבות • ללא עלות • תמיכה 24/7',
+  cta_buttonText: '⚡ התחל לעצב עכשיו',
+  cta_footnote: 'עיצוב חינם • ללא התחייבות • תמיכה 24/7',
 }
 
 export default function NewFinalCTASection() {
