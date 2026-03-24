@@ -21,68 +21,48 @@ export default function LeadPopup() {
   const [phoneError, setPhoneError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
-  const [hasConsentedCookies, setHasConsentedCookies] = useState(false)
-  const overlayRef = useRef<HTMLDivElement>(null)
   const lastSubmitRef = useRef(0)
+  const triggeredRef = useRef(false)
 
-  // Check cookie consent
+  // Show popup after BOTH: 8 seconds elapsed AND user scrolled 30% of page
+  // Google Ads compliant: not on page load, not blocking, user-initiated scroll
   useEffect(() => {
-    const checkConsent = () => {
-      const consent =
-        safeGetItem('cookie_consent') === 'accepted' ||
-        document.cookie.includes('cookie_consent=accepted')
-      setHasConsentedCookies(consent)
-    }
-
-    checkConsent()
-    window.addEventListener('storage', checkConsent)
-
-    const handleConsentAccepted = () => setHasConsentedCookies(true)
-    window.addEventListener('cookieConsentAccepted', handleConsentAccepted)
-
-    return () => {
-      window.removeEventListener('storage', checkConsent)
-      window.removeEventListener('cookieConsentAccepted', handleConsentAccepted)
-    }
-  }, [])
-
-  // Show popup after delay (only if consented and not dismissed)
-  useEffect(() => {
-    if (!hasConsentedCookies) return
-
     const isClosed = safeGetItem('lead_popup_closed')
     const wasShown = safeSessionGet('lead_popup_shown')
-
     if (isClosed || wasShown) return
 
-    const timer = setTimeout(() => {
-      setIsOpen(true)
-      safeSessionSet('lead_popup_shown', 'true')
-    }, 300)
+    let timeElapsed = false
+    let scrollReached = false
 
-    return () => clearTimeout(timer)
-  }, [hasConsentedCookies])
-
-  // Lock body scroll when open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      const el = overlayRef.current
-      if (el) {
-        const block = (e: Event) => e.preventDefault()
-        el.addEventListener('wheel', block, { passive: false })
-        el.addEventListener('touchmove', block, { passive: false })
-        return () => {
-          document.body.style.overflow = 'unset'
-          el.removeEventListener('wheel', block)
-          el.removeEventListener('touchmove', block)
-        }
+    const tryShow = () => {
+      if (timeElapsed && scrollReached && !triggeredRef.current) {
+        triggeredRef.current = true
+        setIsOpen(true)
+        safeSessionSet('lead_popup_shown', 'true')
+        window.removeEventListener('scroll', onScroll)
       }
-    } else {
-      document.body.style.overflow = 'unset'
     }
-    return () => { document.body.style.overflow = 'unset' }
-  }, [isOpen])
+
+    const timer = setTimeout(() => {
+      timeElapsed = true
+      tryShow()
+    }, 8000)
+
+    const onScroll = () => {
+      const scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight)
+      if (scrollPercent >= 0.3) {
+        scrollReached = true
+        tryShow()
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('scroll', onScroll)
+    }
+  }, [])
 
   const handleClose = () => {
     safeSetItem('lead_popup_closed', 'true')
@@ -118,7 +98,6 @@ export default function LeadPopup() {
         ...(gclid && { gclid }),
       })
 
-      // Send email notification (await to catch errors)
       try {
         await fetch('/api/send-email', {
           method: 'POST',
@@ -137,12 +116,10 @@ export default function LeadPopup() {
 
       setIsSuccess(true)
       safeSetItem('lead_popup_closed', 'true')
-      setTimeout(() => {
-        setIsOpen(false)
-      }, 3000)
+      setTimeout(() => setIsOpen(false), 3000)
     } catch (error) {
       console.error('Error submitting lead:', error)
-      alert('אירעה שגיאה. נסה שוב מאוחר יותר.')
+      alert('אירעה שגיאה. נסו שוב מאוחר יותר.')
     } finally {
       setIsSubmitting(false)
     }
@@ -151,107 +128,98 @@ export default function LeadPopup() {
   if (!isOpen) return null
 
   return (
-    <div
-      ref={overlayRef}
-      className="fixed inset-0 z-[10000] flex items-center justify-center"
-      style={{ direction: 'ltr' }}
-    >
-      {/* Overlay — no click to dismiss */}
+    <>
+      {/* Semi-transparent backdrop — click to dismiss */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-[9999] bg-black/30 animate-in fade-in duration-200"
+        onClick={handleClose}
       />
 
-      {/* Popup Window */}
+      {/* Popup — slides up from bottom, doesn't block scrolling */}
       <div
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-[85%] md:w-96 p-4 sm:p-6 md:p-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 z-10"
-        style={{ direction: 'rtl' }}
+        className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:w-96 z-[10000] animate-in slide-in-from-bottom-4 duration-300"
+        dir="rtl"
       >
-        {/* Close Button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
-          aria-label="סגור"
-        >
-          <X className="w-6 h-6" />
-        </button>
+        <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-100">
+          {/* Close Button */}
+          <button
+            onClick={handleClose}
+            className="absolute top-3 left-3 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="סגור"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        {/* Content */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <Image
-            src="/logo.png"
-            alt="בדפוס"
-            width={80}
-            height={80}
-            className="h-20 w-auto mb-4 object-contain"
-          />
-          <h3 className="text-gray-900 font-bold text-3xl">
-            רוצים שנחזור אליכם?
-          </h3>
-          <p className="text-gray-500 text-lg mt-2">
-            השאירו פרטים ונחזור בהקדם עם הצעה משתלמת!
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <Image src="/logo.png" alt="בדפוס" width={40} height={40} className="h-10 w-auto" />
+            <div>
+              <h3 className="text-gray-900 font-bold text-lg">רוצים שנחזור אליכם?</h3>
+              <p className="text-gray-500 text-sm">השאירו פרטים ונחזור בהקדם</p>
+            </div>
+          </div>
+
+          {/* Form / Success */}
+          {isSuccess ? (
+            <div className="text-center py-4 animate-in fade-in duration-300" role="status" aria-live="polite">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Check className="w-6 h-6 text-green-600" />
+              </div>
+              <h4 className="text-lg font-bold text-gray-900 mb-1">תודה רבה!</h4>
+              <p className="text-gray-500 text-sm">נחזור אליכם בהקדם</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="relative">
+                <User className="absolute top-3 right-3 w-4 h-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="שם מלא *"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full h-10 text-right pr-9 text-sm"
+                />
+              </div>
+
+              <div className="relative">
+                <Phone className="absolute top-3 right-3 w-4 h-4 text-gray-400" />
+                <Input
+                  type="tel"
+                  placeholder="טלפון *"
+                  value={phone}
+                  onChange={(e) => { setPhone(e.target.value); setPhoneError('') }}
+                  required
+                  className={`w-full h-10 text-right pr-9 text-sm ${phoneError ? 'border-red-500' : ''}`}
+                  dir="ltr"
+                />
+                {phoneError && (
+                  <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold h-10 rounded-full shadow-lg inline-flex items-center justify-center gap-2 text-sm"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    שולח...
+                  </>
+                ) : (
+                  'שלחו לי הצעה!'
+                )}
+              </Button>
+            </form>
+          )}
+
+          <p className="text-xs text-gray-400 text-center mt-3">
+            הפרטים שלכם מאובטחים בהתאם ל<a href="/privacy" target="_blank" className="underline hover:text-indigo-500">מדיניות הפרטיות</a>
           </p>
         </div>
-
-        {/* Form / Success */}
-        {isSuccess ? (
-          <div className="text-center py-4 animate-in fade-in zoom-in-95 duration-300" role="status" aria-live="polite">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check className="w-8 h-8 text-green-600" />
-            </div>
-            <h4 className="text-xl font-bold text-gray-900 mb-2">תודה רבה!</h4>
-            <p className="text-gray-500">נחזור אליכם בהקדם</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <User className="absolute top-3 right-3 w-5 h-5 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="שם מלא *"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full h-12 text-right pr-10"
-              />
-            </div>
-
-            <div className="relative">
-              <Phone className="absolute top-3 right-3 w-5 h-5 text-gray-400" />
-              <Input
-                type="tel"
-                placeholder="טלפון *"
-                value={phone}
-                onChange={(e) => { setPhone(e.target.value); setPhoneError('') }}
-                required
-                className={`w-full h-12 text-right pr-10 ${phoneError ? 'border-red-500' : ''}`}
-                dir="ltr"
-              />
-              {phoneError && (
-                <p className="text-xs text-red-500 mt-1">{phoneError}</p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold h-12 rounded-full shadow-lg inline-flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  שולח...
-                </>
-              ) : (
-                'שלחו לי הצעה!'
-              )}
-            </Button>
-          </form>
-        )}
-
-        <p className="text-xs text-[#64748b] text-center mt-4">
-          הפרטים שלכם מאובטחים בהתאם ל<a href="/privacy" target="_blank" className="underline hover:text-yellow-500">מדיניות הפרטיות</a>
-        </p>
       </div>
-    </div>
+    </>
   )
 }
