@@ -237,7 +237,7 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
       <p>יש שאלות? צרו קשר:</p>
       <p>
         <a href="mailto:badfos2002@gmail.com">badfos2002@gmail.com</a> |
-        <a href="tel:0507794277">050-779-4277</a>
+        <a href="tel:0559885954">055-988-5954</a>
       </p>
       <p style="margin-top: 15px; font-size: 12px; color: #9CA3AF;">
         בדפוס - הדפסת חולצות בעיצוב אישי<br>

@@ -336,13 +336,13 @@ export const UPLOAD_CONSTRAINTS = {
 // ============================================================================
 
 export const CONTACT_INFO = {
-  phone: '050-7794277',
+  phone: '055-988-5954',
   whatsapp: '972559885954',
   email: 'badfos2002@gmail.com',
   instagram: 'https://instagram.com/badfos',
   facebook: 'https://facebook.com/badfos',
   tiktok: 'https://www.tiktok.com/@badfos',
-  address: 'ראשון לציון, ישראל',
+  address: 'דובנוב 10, ראשון לציון',
 } as const
 
 // ============================================================================

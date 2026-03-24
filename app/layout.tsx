@@ -64,10 +64,11 @@ export default function RootLayout({
               name: 'בדפוס',
               image: 'https://badfos.co.il/logo.png',
               url: 'https://badfos.co.il',
-              telephone: '+972507794277',
+              telephone: '+972559885954',
               email: 'badfos2002@gmail.com',
               address: {
                 '@type': 'PostalAddress',
+                streetAddress: 'דובנוב 10',
                 addressLocality: 'ראשון לציון',
                 addressCountry: 'IL',
               },

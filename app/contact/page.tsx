@@ -101,7 +101,7 @@ export default function ContactPage() {
     {
       icon: Phone,
       title: 'טלפון',
-      value: '050-7794277',
+      value: '055-988-5954',
       link: `tel:${CONTACT_INFO.phone}`,
       gradient: 'from-green-500 to-emerald-600',
       external: false,
