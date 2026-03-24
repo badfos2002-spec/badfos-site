@@ -220,6 +220,20 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Donation Disclaimer */}
+      <section className="py-12">
+        <div className="mx-auto max-w-[1536px] px-4 md:px-0">
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-8 text-right" dir="rtl">
+            <h3 className="text-xl font-bold text-blue-900 mb-3">מדיניות תרומות — חולצת שאגת הארי</h3>
+            <p className="text-blue-800 leading-relaxed">
+              10% ממחיר כל חולצת &quot;שאגת הארי&quot; שנמכרת באתר נתרם לעמותת &quot;האגודה למען החייל&quot; (ע.ר. 580018423).
+              התרומה מחושבת מהמחיר ששילם הלקוח עבור החולצה (לפני משלוח), ומועברת לעמותה מדי חודש.
+              רכישת החולצה אינה מקנה ללקוח קבלה על תרומה — התרומה מבוצעת על ידי בדפוס בשם העסק.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20">
         <div className="mx-auto max-w-[1536px] px-4 md:px-0">
