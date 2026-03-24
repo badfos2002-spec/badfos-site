@@ -70,25 +70,39 @@ export default function CartPage() {
   // Mark hydrated after first client-side render (Zustand persist loads synchronously)
   useEffect(() => { setHydrated(true) }, [])
 
-  // If user returns to cart with a pending order (abandoned payment), mark it as abandoned
-  // BUT only if the order is still pending_payment (not already paid by webhook)
+  // If user returns to cart with a pending order, check if it was paid or abandoned.
+  // Wait 30 seconds before marking as abandoned — the webhook might still be in transit.
+  // NEVER mark as abandoned if already paid.
   useEffect(() => {
     async function checkAndMarkAbandoned() {
       try {
         const pendingStr = sessionStorage.getItem('badfos_pending_order')
-        if (pendingStr) {
-          const { orderId } = JSON.parse(pendingStr)
-          if (orderId) {
-            // Check current status before marking as abandoned
-            const { getDocument } = await import('@/lib/db')
-            const order = await getDocument<{ status: string }>('orders', orderId)
-            if (order && order.status === 'pending_payment') {
-              updateOrderStatus(orderId, 'cart_abandoned').catch(console.error)
-            }
-          }
+        if (!pendingStr) return
+
+        const { orderId, timestamp } = JSON.parse(pendingStr)
+        if (!orderId) {
           sessionStorage.removeItem('badfos_pending_order')
-          sessionStorage.removeItem('badfos_payment_cache')
+          return
         }
+
+        // Wait at least 2 minutes from order creation before considering it abandoned
+        // (gives webhook time to arrive from Grow → Make → our API)
+        const orderAge = Date.now() - (timestamp || 0)
+        if (orderAge < 2 * 60 * 1000) {
+          // Too early — don't mark as abandoned yet, keep in sessionStorage
+          return
+        }
+
+        const { getDocument } = await import('@/lib/db')
+        const order = await getDocument<{ status: string }>('orders', orderId)
+
+        // Only mark as abandoned if still pending_payment
+        if (order && order.status === 'pending_payment') {
+          updateOrderStatus(orderId, 'cart_abandoned').catch(console.error)
+        }
+
+        sessionStorage.removeItem('badfos_pending_order')
+        sessionStorage.removeItem('badfos_payment_cache')
       } catch {}
     }
     checkAndMarkAbandoned()
@@ -326,6 +340,7 @@ export default function CartPage() {
           customer: customerInfo,
           items: itemsForOrder,
           total: orderCalc.total,
+          timestamp: Date.now(),
         }))
 
         // Redirect immediately — don't wait for share link

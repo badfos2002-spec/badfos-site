@@ -261,9 +261,10 @@ export async function getOrderByPaymentId(paymentId: string): Promise<Order | nu
 
 /**
  * Mark all old pending_payment orders as cart_abandoned.
+ * Default: 30 minutes (gives Grow/Make webhook time to arrive).
  * Returns the number of orders updated.
  */
-export async function markAbandonedOrders(olderThanMinutes: number = 60): Promise<number> {
+export async function markAbandonedOrders(olderThanMinutes: number = 30): Promise<number> {
   ensureFirebase()
   const pendingOrders = await queryDocuments<Order>('orders', [
     { field: 'status', operator: '==', value: 'pending_payment' },

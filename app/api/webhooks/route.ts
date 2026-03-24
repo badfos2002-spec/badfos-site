@@ -64,6 +64,9 @@ export async function POST(request: NextRequest) {
     // Update status to 'paid' (payment confirmed, ready for processing)
     await adminDb.collection('orders').doc(orderDoc.id).update({
       status: 'paid',
+      ...(transactionCode && { transactionCode }),
+      ...(paymentSum && { paymentSum: Number(paymentSum) }),
+      paidAt: new Date(),
       updatedAt: new Date(),
     })
 

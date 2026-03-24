@@ -6,7 +6,6 @@ import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/hooks/useCart'
 import { ensureGtagLoaded, sendGoogleAdsConversion, sendPurchaseEvent, sendMetaPurchaseEvent, setEnhancedConversionData } from '@/lib/tracking'
-import { updateOrderStatus } from '@/lib/db'
 
 export default function PaymentSuccessPage() {
   const clearCart = useCart((state) => state.clearCart)
@@ -27,9 +26,13 @@ export default function PaymentSuccessPage() {
       try {
         const { orderId, customer, items, total } = JSON.parse(orderDataStr)
 
-        // Update status to 'paid' (backup for webhook — idempotent)
+        // Fallback: update to 'paid' via server API (in case webhook hasn't arrived yet)
         if (orderId) {
-          updateOrderStatus(orderId, 'paid').catch(console.error)
+          fetch('/api/payment/client-confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+          }).catch(console.error)
         }
 
         // Ensure gtag.js is loaded before firing conversions (don't wait for cookie consent)
