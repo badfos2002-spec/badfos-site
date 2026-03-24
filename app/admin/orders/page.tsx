@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, deductInventory, markAbandonedOrders } from '@/lib/db'
+import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
 import { deleteFile } from '@/lib/storage'
 import type { Order } from '@/lib/types'
 
@@ -12,7 +12,7 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-800' },
   cart_abandoned:  { label: 'נטש עגלה',      color: 'bg-orange-100 text-orange-800' },
   new:             { label: 'חדשה',           color: 'bg-emerald-100 text-emerald-700' },
-  paid:            { label: 'שולם',           color: 'bg-green-100 text-green-700' },
+  paid:            { label: '✓ שולם',          color: 'bg-green-100 text-green-700 ring-2 ring-green-400' },
   in_production:   { label: 'בייצור',         color: 'bg-blue-100 text-blue-700' },
   shipped:         { label: 'נשלח',           color: 'bg-purple-100 text-purple-700' },
   completed:       { label: 'הושלם',          color: 'bg-gray-100 text-gray-700' },
@@ -49,11 +49,13 @@ export default function AdminOrdersPage() {
   const [filterShipping, setFilterShipping] = useState<'all' | 'delivery' | 'pickup'>('all')
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
 
+  // Real-time listener — orders update automatically when payment confirmed
   useEffect(() => {
-    getAllOrders()
-      .then(setOrders)
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    const unsubscribe = onOrdersSnapshot((updatedOrders) => {
+      setOrders(updatedOrders)
+      setLoading(false)
+    })
+    return () => unsubscribe()
   }, [])
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {

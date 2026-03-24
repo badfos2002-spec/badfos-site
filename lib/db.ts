@@ -16,6 +16,7 @@ import {
   DocumentData,
   QueryConstraint,
   increment,
+  onSnapshot,
 } from 'firebase/firestore'
 import { db, isFirebaseConfigured } from './firebase'
 import type {
@@ -257,6 +258,25 @@ export async function getOrderByPaymentId(paymentId: string): Promise<Order | nu
     { field: 'paymentId', operator: '==', value: paymentId },
   ])
   return orders.length > 0 ? orders[0] : null
+}
+
+/**
+ * Real-time listener for orders collection.
+ * Returns an unsubscribe function to stop listening.
+ */
+export function onOrdersSnapshot(callback: (orders: Order[]) => void): () => void {
+  ensureFirebase()
+  const q = query(
+    collection(db!, 'orders'),
+    orderBy('createdAt', 'desc')
+  )
+  return onSnapshot(q, (snapshot) => {
+    const orders = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as Order[]
+    callback(orders)
+  })
 }
 
 /**
