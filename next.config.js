@@ -1,4 +1,83 @@
 /** @type {import('next').NextConfig} */
+
+const ContentSecurityPolicy = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline'
+    https://*.google.com
+    https://*.google.co.il
+    https://*.gstatic.com
+    https://*.googletagmanager.com
+    https://*.google-analytics.com
+    https://*.googleadservices.com
+    https://googleads.g.doubleclick.net
+    https://pagead2.googlesyndication.com
+    https://googlesyndication.com
+    https://ep1.adtrafficquality.google
+    https://ep2.adtrafficquality.google
+    https://connect.facebook.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com data:;
+  img-src 'self' data: blob: https:;
+  connect-src 'self'
+    https://*.google.com
+    https://*.google.co.il
+    https://*.google.ie
+    https://*.googleapis.com
+    https://*.google-analytics.com
+    https://*.googletagmanager.com
+    https://*.googleadservices.com
+    https://googleads.g.doubleclick.net
+    https://region1.analytics.google.com
+    https://pagead2.googlesyndication.com
+    https://ep1.adtrafficquality.google
+    https://ep2.adtrafficquality.google
+    https://connect.facebook.net
+    https://www.facebook.com
+    https://ui-avatars.com;
+  frame-src 'self'
+    https://*.google.com
+    https://*.googletagmanager.com
+    https://*.doubleclick.net
+    https://*.googlesyndication.com
+    https://ep1.adtrafficquality.google
+    https://ep2.adtrafficquality.google
+    https://www.youtube.com
+    https://www.facebook.com;
+  object-src 'none';
+  base-uri 'self';
+`.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
+
+const securityHeaders = [
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains; preload',
+  },
+  {
+    key: 'X-Frame-Options',
+    value: 'SAMEORIGIN',
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff',
+  },
+  {
+    key: 'Referrer-Policy',
+    value: 'strict-origin-when-cross-origin',
+  },
+  {
+    key: 'X-XSS-Protection',
+    value: '1; mode=block',
+  },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=()',
+  },
+  {
+    key: 'Content-Security-Policy',
+    value: ContentSecurityPolicy,
+  },
+]
+
 const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['@google-cloud/firestore', 'firebase-admin'],
@@ -15,7 +94,6 @@ const nextConfig = {
       },
     ],
   },
-  // Enable React strict mode
   reactStrictMode: true,
   async redirects() {
     return [
@@ -30,32 +108,7 @@ const nextConfig = {
     return [
       {
         source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://pagead2.googlesyndication.com https://www.google-analytics.com https://googleads.g.doubleclick.net https://www.google.com https://www.googleadservices.com https://googlesyndication.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: https://www.google.com https://www.google.co.il https://googleads.g.doubleclick.net; connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://firebasestorage.googleapis.com https://firestore.googleapis.com https://*.googleapis.com https://connect.facebook.net https://www.facebook.com https://pagead2.googlesyndication.com https://ui-avatars.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://region1.analytics.google.com https://www.google.com https://www.google.ie https://www.google.co.il https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google; frame-src 'self' https://www.googletagmanager.com https://www.youtube.com https://td.doubleclick.net https://www.facebook.com https://www.google.com https://bid.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google; object-src 'none'; base-uri 'self';",
-          },
-        ],
+        headers: securityHeaders,
       },
     ]
   },
