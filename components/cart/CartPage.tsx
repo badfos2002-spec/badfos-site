@@ -85,10 +85,10 @@ export default function CartPage() {
           return
         }
 
-        // Wait at least 2 minutes from order creation before considering it abandoned
-        // (gives webhook time to arrive from Grow → Make → our API)
+        // Wait at least 10 minutes from order creation before considering it abandoned
+        // (gives customer time to complete 3DS verification + webhook transit time)
         const orderAge = Date.now() - (timestamp || 0)
-        if (orderAge < 2 * 60 * 1000) {
+        if (orderAge < 10 * 60 * 1000) {
           // Too early — don't mark as abandoned yet, keep in sessionStorage
           return
         }
