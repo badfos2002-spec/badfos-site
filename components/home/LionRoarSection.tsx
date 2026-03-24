@@ -94,15 +94,17 @@ export default function LionRoarSection() {
               <strong className="text-white font-bold">10% ממחיר כל חולצה שנמכרת נתרם לעמותת &quot;האגודה למען החייל&quot;</strong>
             </p>
 
-            {/* Donation Counter - clean single line */}
-            {donationTotal !== null && (
-              <div ref={counterRef} className="flex items-center gap-2 justify-center lg:justify-start text-white/90">
-                <span className="text-base font-medium">נתרמו עד כה</span>
-                <span className="text-2xl font-black text-yellow-300">
-                  ₪{animatedAmount.toLocaleString()}
-                </span>
-              </div>
-            )}
+            {/* Donation Counter - clean single line, min-height reserved to prevent CLS */}
+            <div ref={counterRef} className="flex items-center gap-2 justify-center lg:justify-start text-white/90 min-h-[36px]">
+              {donationTotal !== null && (
+                <>
+                  <span className="text-base font-medium">נתרמו עד כה</span>
+                  <span className="text-2xl font-black text-yellow-300">
+                    ₪{animatedAmount.toLocaleString()}
+                  </span>
+                </>
+              )}
+            </div>
 
             <div className="flex items-center gap-3 justify-center lg:justify-start">
               <span className="text-4xl font-extrabold text-white">₪50</span>

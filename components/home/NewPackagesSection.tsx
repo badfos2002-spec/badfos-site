@@ -33,7 +33,7 @@ export default function NewPackagesSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* RIGHT - Carousel */}
             <div>
-              <div className="relative w-full h-48 md:h-64 lg:h-80 rounded-2xl border border-yellow-200 shadow-md overflow-hidden">
+              <div className="relative w-full aspect-[4/3] rounded-2xl border border-yellow-200 shadow-md overflow-hidden">
                 <Image
                   key={slide.id}
                   src={slide.image}

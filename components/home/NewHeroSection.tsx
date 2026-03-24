@@ -35,7 +35,7 @@ export default function NewHeroSection() {
         <div className="flex flex-col-reverse md:grid md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 items-center mt-4 md:mt-6">
 
           {/* Text Content */}
-          <div className="text-center w-full px-4 space-y-5 flex flex-col items-center hero-text-rounded">
+          <div className="text-center w-full px-4 space-y-5 flex flex-col items-center hero-text-rounded min-h-[320px] md:min-h-[380px]">
             <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-[#fef9c3] rounded-full text-[#854d0e] text-sm font-medium border border-[#fef08a]">
               {c.hero_badge}
               <Sparkles className="w-3.5 h-3.5" />

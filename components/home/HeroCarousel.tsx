@@ -66,7 +66,7 @@ export default function HeroCarousel() {
       className="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem] relative"
       style={{ boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.08)' }}
     >
-      <div className="relative w-full md:w-[550px] aspect-square md:aspect-auto md:h-[550px] mx-auto overflow-hidden rounded-[2rem]">
+      <div className="relative w-full md:w-[550px] aspect-square mx-auto overflow-hidden rounded-[2rem]">
         {slide.link ? (
           <Link href={slide.link} className="block w-full h-full">
             {imageContent}
