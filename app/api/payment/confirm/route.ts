@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
+import { sendServerConversions } from '@/lib/server-tracking'
 
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
 
@@ -122,6 +123,18 @@ export async function POST(request: NextRequest) {
         }),
       }).catch(err => console.error('Failed to send confirmation email:', err))
     }
+
+    // Server-side conversion tracking (backup for when client doesn't fire)
+    // GA4 Measurement Protocol + Meta Conversions API
+    sendServerConversions({
+      orderId: orderDoc.id,
+      total: order.total || Number(paymentSum) || 0,
+      email: order.customer?.email,
+      phone: order.customer?.phone,
+      firstName: order.customer?.firstName,
+      lastName: order.customer?.lastName,
+      items: order.items,
+    }).catch(err => console.error('Server conversion tracking error:', err))
 
     return NextResponse.json({
       success: true,
