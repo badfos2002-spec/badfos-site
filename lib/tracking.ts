@@ -191,25 +191,27 @@ function isValidGclid(gclid: string): boolean {
   return gclid.length >= 30 && /^[A-Za-z0-9_-]+$/.test(gclid)
 }
 
-/** Get stored GCLID from localStorage, cookie, or URL */
+/** Get stored GCLID from localStorage, cookie, or URL — always returns clean trimmed value */
 export function getGclid(): string | undefined {
   if (typeof window === 'undefined') return undefined
   try {
-    const fromStorage = localStorage.getItem('gclid')
+    const fromStorage = localStorage.getItem('gclid')?.trim()
     if (fromStorage && isValidGclid(fromStorage)) return fromStorage
 
-    const fromUrl = new URLSearchParams(window.location.search).get('gclid')
+    const fromUrl = new URLSearchParams(window.location.search).get('gclid')?.trim()
     if (fromUrl && isValidGclid(fromUrl)) return fromUrl
 
     // Fallback: read from cookie (survives localStorage clearing)
     const match = document.cookie.match(/(?:^|; )gclid=([^;]+)/)
     if (match) {
-      const decoded = decodeURIComponent(match[1])
-      if (isValidGclid(decoded)) return decoded
+      // Try decodeURIComponent for backwards compat, but also handle raw values
+      let val: string
+      try { val = decodeURIComponent(match[1]).trim() } catch { val = match[1].trim() }
+      if (isValidGclid(val)) return val
     }
     return undefined
   } catch {
-    const fromUrl = new URLSearchParams(window.location.search).get('gclid') || undefined
+    const fromUrl = new URLSearchParams(window.location.search).get('gclid')?.trim()
     return fromUrl && isValidGclid(fromUrl) ? fromUrl : undefined
   }
 }

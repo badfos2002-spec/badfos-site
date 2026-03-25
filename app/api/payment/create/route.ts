@@ -10,7 +10,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, phone, email, amount, description, orderId, gclid } = body
+    const { name, phone, email, amount, description, orderId, gclid: rawGclid } = body
+    // Clean GCLID: trim whitespace, strip "gclid=" prefix if accidentally included
+    const gclid = typeof rawGclid === 'string'
+      ? rawGclid.trim().replace(/^gclid=/i, '')
+      : undefined
 
     if (amount == null || !name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })

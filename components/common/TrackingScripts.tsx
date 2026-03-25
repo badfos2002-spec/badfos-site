@@ -17,10 +17,15 @@ export default function TrackingScripts() {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search)
-      const gclid = params.get('gclid')
-      if (gclid) {
-        localStorage.setItem('gclid', gclid)
-        document.cookie = `gclid=${encodeURIComponent(gclid)}; max-age=${90 * 24 * 60 * 60}; path=/; SameSite=Lax`
+      const raw = params.get('gclid')
+      if (raw) {
+        // Clean: trim whitespace, no encoding — store raw value only
+        const gclid = raw.trim()
+        if (gclid) {
+          localStorage.setItem('gclid', gclid)
+          // Store raw in cookie too (no encodeURIComponent — GCLID is already URL-safe)
+          document.cookie = `gclid=${gclid}; max-age=${90 * 24 * 60 * 60}; path=/; SameSite=Lax`
+        }
       }
     } catch {}
   }, [])
