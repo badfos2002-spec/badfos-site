@@ -70,6 +70,20 @@ export default function CartPage() {
   // Mark hydrated after first client-side render (Zustand persist loads synchronously)
   useEffect(() => { setHydrated(true) }, [])
 
+  // Reset loading state when user navigates back from payment page (bfcache/pageshow)
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        // Page was restored from bfcache (user pressed Back from payment)
+        setLoading(false)
+        setLoadingMessage('')
+        checkoutInProgress.current = false
+      }
+    }
+    window.addEventListener('pageshow', handlePageShow)
+    return () => window.removeEventListener('pageshow', handlePageShow)
+  }, [])
+
   // If user returns to cart with a pending order, check if it was paid or abandoned.
   // Wait 30 seconds before marking as abandoned — the webhook might still be in transit.
   // NEVER mark as abandoned if already paid.
