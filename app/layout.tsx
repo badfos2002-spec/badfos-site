@@ -11,8 +11,8 @@ const rubik = Rubik({
   variable: '--font-rubik',
 })
 
-const ConditionalHeader = dynamic(() => import('@/components/layout/ConditionalHeader'), { ssr: false })
-const ConditionalFooter = dynamic(() => import('@/components/layout/ConditionalFooter'), { ssr: false })
+const ConditionalHeader = dynamic(() => import('@/components/layout/ConditionalHeader'))
+const ConditionalFooter = dynamic(() => import('@/components/layout/ConditionalFooter'))
 
 export const metadata: Metadata = {
   title: 'בדפוס - הדפסת חולצות בעיצוב אישי',

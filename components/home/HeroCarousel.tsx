@@ -25,19 +25,22 @@ export default function HeroCarousel() {
   const [slides, setSlides] = useState<Slide[]>(FALLBACK_SLIDES)
   const [index, setIndex] = useState(0)
 
+  // Defer Firestore fetch — show fallback images instantly, load custom ones later
   useEffect(() => {
-    getAllDocuments<SiteImage>('siteImages')
-      .then(docs => {
-        const carousel = docs
-          .filter(d => d.category === 'hero_carousel' && d.isActive)
-          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-        if (carousel.length > 0) {
-          // Always keep lion-roar slide first, then Firestore slides
-          const lionRoar = FALLBACK_SLIDES.find(s => s.id === 'lion-roar')!
-          setSlides([lionRoar, ...carousel.map(d => ({ id: d.id, image: d.imageUrl }))])
-        }
-      })
-      .catch(() => {/* keep fallback */})
+    const timer = setTimeout(() => {
+      getAllDocuments<SiteImage>('siteImages')
+        .then(docs => {
+          const carousel = docs
+            .filter(d => d.category === 'hero_carousel' && d.isActive)
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+          if (carousel.length > 0) {
+            const lionRoar = FALLBACK_SLIDES.find(s => s.id === 'lion-roar')!
+            setSlides([lionRoar, ...carousel.map(d => ({ id: d.id, image: d.imageUrl }))])
+          }
+        })
+        .catch(() => {/* keep fallback */})
+    }, 3000)
+    return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export default function HeroCarousel() {
       src={slide.image}
       alt="בדפוס - הדפסת חולצות בעיצוב אישי"
       fill
+      sizes="(max-width: 768px) 100vw, 550px"
       className="object-cover rounded-[1.5rem] animate-fadeIn"
       priority
     />
