@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { getAllDocuments } from '@/lib/db'
 import type { SiteImage } from '@/lib/types'
 
 interface Slide {
@@ -25,20 +24,22 @@ export default function HeroCarousel() {
   const [slides, setSlides] = useState<Slide[]>(FALLBACK_SLIDES)
   const [index, setIndex] = useState(0)
 
-  // Defer Firestore fetch — show fallback images instantly, load custom ones later
+  // Dynamic import — Firebase not bundled with carousel, loaded on demand
   useEffect(() => {
     const timer = setTimeout(() => {
-      getAllDocuments<SiteImage>('siteImages')
-        .then(docs => {
-          const carousel = docs
-            .filter(d => d.category === 'hero_carousel' && d.isActive)
-            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-          if (carousel.length > 0) {
-            const lionRoar = FALLBACK_SLIDES.find(s => s.id === 'lion-roar')!
-            setSlides([lionRoar, ...carousel.map(d => ({ id: d.id, image: d.imageUrl }))])
-          }
-        })
-        .catch(() => {/* keep fallback */})
+      import('@/lib/db').then(({ getAllDocuments }) => {
+        getAllDocuments<SiteImage>('siteImages')
+          .then(docs => {
+            const carousel = docs
+              .filter(d => d.category === 'hero_carousel' && d.isActive)
+              .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+            if (carousel.length > 0) {
+              const lionRoar = FALLBACK_SLIDES.find(s => s.id === 'lion-roar')!
+              setSlides([lionRoar, ...carousel.map(d => ({ id: d.id, image: d.imageUrl }))])
+            }
+          })
+          .catch(() => {/* keep fallback */})
+      })
     }, 3000)
     return () => clearTimeout(timer)
   }, [])

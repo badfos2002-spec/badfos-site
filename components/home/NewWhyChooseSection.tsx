@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Award, Truck, ShieldCheck } from 'lucide-react'
-import { getDocument } from '@/lib/db'
 
 const D = {
   why_title: 'למה לבחור בנו?',
@@ -22,9 +21,11 @@ export default function NewWhyChooseSection() {
   const [c, setC] = useState(D)
 
   useEffect(() => {
-    getDocument<Record<string, string>>('settings', 'homepage')
-      .then((data) => { if (data) setC({ ...D, ...data }) })
-      .catch(() => {})
+    import('@/lib/db').then(({ getDocument }) => {
+      getDocument<Record<string, string>>('settings', 'homepage')
+        .then((data) => { if (data) setC({ ...D, ...data }) })
+        .catch(() => {})
+    })
   }, [])
 
   const benefits = [1, 2, 3].map((i) => ({

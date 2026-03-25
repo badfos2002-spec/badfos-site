@@ -23,7 +23,7 @@ const isFirebaseConfigured = !!(
   firebaseConfig.appId
 )
 
-// Initialize Firebase
+// Initialize Firebase — only on client side
 let app: FirebaseApp | undefined
 let auth: Auth | undefined
 let db: Firestore | undefined
@@ -31,17 +31,13 @@ let storage: FirebaseStorage | undefined
 
 if (typeof window !== 'undefined' && isFirebaseConfigured) {
   try {
-    // Client-side initialization
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
     auth = getAuth(app)
     db = getFirestore(app)
     storage = getStorage(app)
-    console.log('✅ Firebase initialized successfully')
   } catch (error) {
-    console.error('❌ Firebase initialization failed:', error)
+    console.error('Firebase initialization failed:', error)
   }
-} else if (typeof window !== 'undefined') {
-  console.warn('⚠️ Firebase not configured. Running in development mode without backend.')
 }
 
 export { app, auth, db, storage, isFirebaseConfigured }

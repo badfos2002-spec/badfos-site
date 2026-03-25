@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Sparkles } from 'lucide-react'
 import HeroCarousel from './HeroCarousel'
-import { getDocument } from '@/lib/db'
 
 const D = {
   hero_badge: 'עיצובים אישיים ייחודיים',
@@ -20,13 +19,15 @@ const D = {
 export default function NewHeroSection() {
   const [c, setC] = useState(D)
 
-  // Defer Firestore fetch — don't block LCP with network request
+  // Dynamic import — Firebase SDK not bundled with hero, loaded on demand
   useEffect(() => {
     const timer = setTimeout(() => {
-      getDocument<Record<string, string>>('settings', 'homepage')
-        .then((data) => { if (data) setC({ ...D, ...data }) })
-        .catch(() => {})
-    }, 2000) // Load custom text after page is interactive
+      import('@/lib/db').then(({ getDocument }) => {
+        getDocument<Record<string, string>>('settings', 'homepage')
+          .then((data) => { if (data) setC({ ...D, ...data }) })
+          .catch(() => {})
+      })
+    }, 2000)
     return () => clearTimeout(timer)
   }, [])
 

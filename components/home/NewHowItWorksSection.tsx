@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Upload, Palette, Shirt, ArrowLeft } from 'lucide-react'
-import { getDocument } from '@/lib/db'
 
 const D = {
   hiw_title: 'איך זה עובד?',
@@ -25,9 +24,11 @@ export default function NewHowItWorksSection() {
   const [c, setC] = useState(D)
 
   useEffect(() => {
-    getDocument<Record<string, string>>('settings', 'homepage')
-      .then((data) => { if (data) setC({ ...D, ...data }) })
-      .catch(() => {})
+    import('@/lib/db').then(({ getDocument }) => {
+      getDocument<Record<string, string>>('settings', 'homepage')
+        .then((data) => { if (data) setC({ ...D, ...data }) })
+        .catch(() => {})
+    })
   }, [])
 
   const steps = [1, 2, 3].map((i, idx) => ({

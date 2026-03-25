@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { collection, getDocs, query, where } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
 
 export default function LionRoarSection() {
   const [donationTotal, setDonationTotal] = useState<number | null>(null)
@@ -12,12 +10,16 @@ export default function LionRoarSection() {
   const [isVisible, setIsVisible] = useState(false)
   const counterRef = useRef<HTMLDivElement>(null)
 
-  // Defer heavy Firestore query — don't block initial paint
+  // Dynamic import — Firebase not bundled with this component, loaded on demand
   useEffect(() => {
     const timer = setTimeout(() => {
       async function calcDonation() {
-        if (!db) return
         try {
+          const [{ collection, getDocs, query, where }, { db }] = await Promise.all([
+            import('firebase/firestore'),
+            import('@/lib/firebase'),
+          ])
+          if (!db) return
           const paidStatuses = ['paid', 'in_production', 'shipped', 'completed']
           let total = 0
           for (const status of paidStatuses) {
@@ -38,7 +40,7 @@ export default function LionRoarSection() {
         } catch {}
       }
       calcDonation()
-    }, 4000) // Load after page is interactive
+    }, 4000)
     return () => clearTimeout(timer)
   }, [])
 

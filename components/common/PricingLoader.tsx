@@ -1,18 +1,20 @@
 'use client'
 
 import { useEffect } from 'react'
-import { getDocument } from '@/lib/db'
-import { applyPricingOverrides } from '@/lib/constants'
 
 export default function PricingLoader() {
   useEffect(() => {
-    // Defer pricing fetch — not needed for initial paint
+    // Dynamic import — Firebase not bundled in initial load
     const timer = setTimeout(() => {
-      getDocument<Record<string, any>>('settings', 'pricing')
-        .then(data => {
-          if (data) applyPricingOverrides(data as any)
+      import('@/lib/db').then(({ getDocument }) => {
+        import('@/lib/constants').then(({ applyPricingOverrides }) => {
+          getDocument<Record<string, any>>('settings', 'pricing')
+            .then(data => {
+              if (data) applyPricingOverrides(data as any)
+            })
+            .catch(() => {})
         })
-        .catch(() => {})
+      })
     }, 2000)
     return () => clearTimeout(timer)
   }, [])
