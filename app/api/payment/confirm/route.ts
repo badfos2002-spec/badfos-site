@@ -60,20 +60,32 @@ export async function POST(request: NextRequest) {
 
     console.log(`Payment confirm: orderId=${orderId}, tx=${transactionCode}, sum=${paymentSum}`)
 
-    // Find order by paymentId field
+    // Find order — try paymentId field first, then document ID
+    let orderDoc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot | null = null
+    let order: any = null
+
     const snapshot = await adminDb
       .collection('orders')
       .where('paymentId', '==', orderId)
       .limit(1)
       .get()
 
-    if (snapshot.empty) {
-      console.error(`Payment confirm: order not found for paymentId=${orderId}`)
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    if (!snapshot.empty) {
+      orderDoc = snapshot.docs[0]
+      order = orderDoc.data()
+    } else {
+      // Fallback: try as document ID
+      const docRef = await adminDb.collection('orders').doc(orderId).get()
+      if (docRef.exists) {
+        orderDoc = docRef
+        order = docRef.data()
+      }
     }
 
-    const orderDoc = snapshot.docs[0]
-    const order = orderDoc.data()
+    if (!orderDoc || !order) {
+      console.error(`Payment confirm: order not found for ${orderId}`)
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
 
     // Idempotency: if already paid or beyond, don't touch
     if (order.status !== 'pending_payment' && order.status !== 'cart_abandoned') {
