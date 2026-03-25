@@ -55,6 +55,42 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={rubik.variable}>
       <head>
+        {/* Auto-reload on ChunkLoadError — prevents stale JS after deploy */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('error', function(e) {
+                if (e.message && (
+                  e.message.includes('ChunkLoadError') ||
+                  e.message.includes('Loading chunk') ||
+                  e.message.includes('Failed to fetch dynamically imported module') ||
+                  e.message.includes('Importing a module script failed')
+                )) {
+                  if (!sessionStorage.getItem('chunk_reload')) {
+                    sessionStorage.setItem('chunk_reload', '1');
+                    window.location.reload();
+                  }
+                }
+              });
+              window.addEventListener('unhandledrejection', function(e) {
+                if (e.reason && e.reason.message && (
+                  e.reason.message.includes('ChunkLoadError') ||
+                  e.reason.message.includes('Loading chunk') ||
+                  e.reason.message.includes('Failed to fetch dynamically imported module')
+                )) {
+                  if (!sessionStorage.getItem('chunk_reload')) {
+                    sessionStorage.setItem('chunk_reload', '1');
+                    window.location.reload();
+                  }
+                }
+              });
+              // Clear reload flag on successful page load
+              if (sessionStorage.getItem('chunk_reload')) {
+                sessionStorage.removeItem('chunk_reload');
+              }
+            `,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
