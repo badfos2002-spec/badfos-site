@@ -21,7 +21,14 @@ export default function PaymentSuccessPage() {
     const savedShareUrl = sessionStorage.getItem('badfos_share_url')
     if (savedShareUrl) setShareUrl(savedShareUrl)
 
-    const orderDataStr = sessionStorage.getItem('badfos_pending_order')
+    // Try sessionStorage first, fallback to cookie (survives cross-origin redirect from Grow)
+    let orderDataStr = sessionStorage.getItem('badfos_pending_order')
+    if (!orderDataStr) {
+      const match = document.cookie.match(/(?:^|; )badfos_pending_order=([^;]+)/)
+      if (match) {
+        try { orderDataStr = decodeURIComponent(match[1]) } catch {}
+      }
+    }
     if (orderDataStr) {
       try {
         const { orderId, customer, items, total } = JSON.parse(orderDataStr)
@@ -105,6 +112,8 @@ export default function PaymentSuccessPage() {
     }
 
     sessionStorage.removeItem('badfos_pending_order')
+    // Clean up cookie too
+    document.cookie = 'badfos_pending_order=; max-age=0; path=/'
     sessionStorage.removeItem('badfos_payment_cache')
     sessionStorage.removeItem('badfos_share_url')
   }, [clearCart])

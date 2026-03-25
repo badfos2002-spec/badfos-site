@@ -302,13 +302,10 @@ export default function CartPage() {
         // Skip creating order if one already exists (user pressed back and retried)
         if (existingOrderId) {
           const orderId = existingOrderId
-          sessionStorage.setItem('badfos_pending_order', JSON.stringify({
-            orderId,
-            customer: customerInfo,
-            items: itemsForOrder,
-            total: orderCalc.total,
-            timestamp: Date.now(),
-          }))
+          const orderJson = JSON.stringify({ orderId, customer: customerInfo, items: itemsForOrder, total: orderCalc.total, timestamp: Date.now() })
+          sessionStorage.setItem('badfos_pending_order', orderJson)
+          // Also save to cookie — survives cross-origin redirect from Grow
+          document.cookie = `badfos_pending_order=${encodeURIComponent(orderJson)}; max-age=3600; path=/; SameSite=Lax`
           setLoadingMessage('מעביר לעמוד תשלום...')
           window.location.href = paymentData.url
           return
@@ -375,13 +372,10 @@ export default function CartPage() {
         // Wait for order (critical) — share link can finish in background
         const orderId = await orderPromise
 
-        sessionStorage.setItem('badfos_pending_order', JSON.stringify({
-          orderId,
-          customer: customerInfo,
-          items: itemsForOrder,
-          total: orderCalc.total,
-          timestamp: Date.now(),
-        }))
+        const orderJson = JSON.stringify({ orderId, customer: customerInfo, items: itemsForOrder, total: orderCalc.total, timestamp: Date.now() })
+        sessionStorage.setItem('badfos_pending_order', orderJson)
+        // Also save to cookie — survives cross-origin redirect from Grow
+        document.cookie = `badfos_pending_order=${encodeURIComponent(orderJson)}; max-age=3600; path=/; SameSite=Lax`
 
         // Redirect immediately — don't wait for share link
         setLoadingMessage('מעביר לעמוד תשלום...')
