@@ -124,7 +124,18 @@ export default function CartPage() {
 
   // Pre-upload cache: base64 hash → Firebase Storage URL
   const uploadCacheRef = useRef<Map<string, Promise<string>>>(new Map())
-  const tempOrderIdRef = useRef(`order-${Date.now()}`)
+  // Reuse existing orderId if returning from payment (prevents duplicate orders)
+  const existingOrderId = (() => {
+    try {
+      const pending = sessionStorage.getItem('badfos_pending_order')
+      if (pending) {
+        const { orderId } = JSON.parse(pending)
+        if (orderId) return orderId as string
+      }
+    } catch {}
+    return null
+  })()
+  const tempOrderIdRef = useRef(existingOrderId || `order-${Date.now()}`)
 
   // Pre-fetch payment link cache
   const paymentCacheRef = useRef<{ promise: Promise<any>; amount: number; key: string } | null>(null)
@@ -287,6 +298,21 @@ export default function CartPage() {
         }
 
         setLoadingMessage('שומר הזמנה...')
+
+        // Skip creating order if one already exists (user pressed back and retried)
+        if (existingOrderId) {
+          const orderId = existingOrderId
+          sessionStorage.setItem('badfos_pending_order', JSON.stringify({
+            orderId,
+            customer: customerInfo,
+            items: itemsForOrder,
+            total: orderCalc.total,
+            timestamp: Date.now(),
+          }))
+          setLoadingMessage('מעביר לעמוד תשלום...')
+          window.location.href = paymentData.url
+          return
+        }
 
         // Create order in Firestore BEFORE redirecting to payment (pending_payment status)
         const orderData = stripUndefined({
