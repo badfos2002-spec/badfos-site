@@ -500,7 +500,7 @@ export default function CartPage() {
         </div>
       </div>
     )}
-    <div className="container-rtl py-8">
+    <div className="container-rtl py-8 pb-28 sm:pb-8">
       <h1 className="text-3xl md:text-4xl font-bold mb-2">עגלת קניות</h1>
       <p className="text-sm text-gray-400 mb-6">העגלה נשמרת אוטומטית גם אם תסגרו את הדף</p>
 
