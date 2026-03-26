@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Tag, ArrowLeft, Check } from 'lucide-react'
 import Link from 'next/link'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
 
 interface DealSettings {
   isActive: boolean
@@ -35,13 +33,17 @@ export default function NewDealsSection() {
   const [settings, setSettings] = useState<DealSettings | null>(null)
 
   useEffect(() => {
-    if (!db) return
-    getDoc(doc(db, 'settings', 'deals'))
-      .then((snap) => {
-        const data = snap.exists() ? { ...defaults, ...snap.data() } : defaults
-        setSettings(data as DealSettings)
+    import('@/lib/firebase').then(({ db }) => {
+      if (!db) { setSettings(defaults); return }
+      import('firebase/firestore').then(({ doc, getDoc }) => {
+        getDoc(doc(db, 'settings', 'deals'))
+          .then((snap) => {
+            const data = snap.exists() ? { ...defaults, ...snap.data() } : defaults
+            setSettings(data as DealSettings)
+          })
+          .catch(() => setSettings(defaults))
       })
-      .catch(() => setSettings(defaults))
+    }).catch(() => setSettings(defaults))
   }, [])
 
   if (!settings || !settings.isActive) return null

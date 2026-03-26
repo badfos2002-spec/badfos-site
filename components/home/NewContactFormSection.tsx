@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { createLead } from '@/lib/db'
 import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, sendLeadWebhook, setEnhancedConversionData, getGclid } from '@/lib/tracking'
 import { User, Phone, ArrowLeft } from 'lucide-react'
 
@@ -37,6 +36,7 @@ export default function NewContactFormSection() {
       const gclid = getGclid()
       const message = formData.comments || ''
 
+      const { createLead } = await import('@/lib/db')
       await createLead({
         name: formData.name,
         phone: formData.phone,
