@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import ProductSelector from '@/components/designer/ProductSelector'
+import PageViewTracker from '@/components/common/PageViewTracker'
 
 export const metadata: Metadata = {
   title: 'מעצב חולצות | בדפוס',
@@ -19,6 +20,7 @@ export default function DesignerPage() {
       </div>
 
       <ProductSelector />
+      <PageViewTracker pageName="designer" />
     </div>
   )
 }

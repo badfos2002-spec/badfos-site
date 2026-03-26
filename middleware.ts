@@ -19,6 +19,14 @@ function getClientIp(request: NextRequest): string {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Redirect uppercase URLs to lowercase (Google Tag Assistant sends /Designer/Designer)
+  if (pathname !== pathname.toLowerCase() && !pathname.startsWith('/api/')) {
+    const url = request.nextUrl.clone()
+    url.pathname = pathname.toLowerCase()
+    return NextResponse.redirect(url, 301)
+  }
+
   const limit = RATE_LIMITS[pathname]
 
   if (!limit) return NextResponse.next()
@@ -52,5 +60,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/send-email', '/api/generate-design'],
+  matcher: ['/api/send-email', '/api/generate-design', '/((?!_next|favicon|icon|assets|logo).*)'],
 }
