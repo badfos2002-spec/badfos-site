@@ -275,7 +275,7 @@ export default function AdminOrdersPage() {
                         </select>
                         <ChevronDown className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                       </div>
-                      <div className="font-bold text-base sm:text-lg whitespace-nowrap">₪{order.total}</div>
+                      <div className="font-bold text-base sm:text-lg whitespace-nowrap">₪{(order as any).paymentSum || order.total}</div>
                       <button
                         className="h-8 rounded-md text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 hidden sm:block"
                         title="מחק הזמנה"
@@ -440,9 +440,15 @@ export default function AdminOrdersPage() {
                               <span>משלוח</span>
                               <span>{order.shipping?.method === 'pickup' ? 'חינם' : `₪${order.shipping?.cost ?? 35}`}</span>
                             </div>
+                            {(order as any).paymentSum && (order as any).paymentSum !== order.total && (
+                              <div className="flex justify-between items-center text-sm text-gray-400 line-through">
+                                <span>מחיר לפני הנחה:</span>
+                                <span>₪{order.total}</span>
+                              </div>
+                            )}
                             <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
-                              <span>סה&quot;כ לתשלום:</span>
-                              <span>₪{order.total}</span>
+                              <span>סה&quot;כ ששולם:</span>
+                              <span>₪{(order as any).paymentSum || order.total}</span>
                             </div>
                           </div>
                         </div>

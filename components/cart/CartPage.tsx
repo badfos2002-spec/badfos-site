@@ -233,8 +233,10 @@ export default function CartPage() {
     setLoadingMessage('מכין את ההזמנה...')
 
     try {
-      // Calculate correct totals (including quantity discount)
+      // Calculate correct totals (including quantity discount + coupon)
+      console.log('Checkout: couponDiscount=', couponDiscount, 'couponCode=', couponCode)
       const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount)
+      console.log('Checkout: orderCalc.total=', orderCalc.total, 'subtotal=', orderCalc.subtotal)
       // Add package totals
       const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
       orderCalc.subtotal += packagesTotal
