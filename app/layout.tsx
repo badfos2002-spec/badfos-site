@@ -45,6 +45,15 @@ export const metadata: Metadata = {
       'facebook-domain-verification': 'geeq14rohskfx37jq8rwknrn167zkg',
     },
   },
+  icons: {
+    icon: [
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon-48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/icon-96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/icon-144.png', sizes: '144x144', type: 'image/png' },
+    ],
+    apple: '/icon-144.png',
+  },
 }
 
 export default function RootLayout({
