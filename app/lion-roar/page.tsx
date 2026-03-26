@@ -11,7 +11,7 @@ import type { SizeQuantity } from '@/lib/types'
 
 const PRODUCT_NAME = 'חולצת שאגת הארי'
 const PRODUCT_PRICE = 50
-const PRODUCT_IMAGE = '/assets/lion-roar-shirt.png'
+const PRODUCT_IMAGE = '/assets/lion-roar-shirt.webp'
 
 export default function LionRoarPage() {
   const router = useRouter()

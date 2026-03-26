@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { X, Copy, Check, Tag } from 'lucide-react'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
 
 interface CouponBannerSettings {
   isActive: boolean
@@ -36,14 +34,19 @@ export default function AnnouncementBar({ placement }: AnnouncementBarProps) {
       setDismissed(true)
       return
     }
-    if (!db) return
-    getDoc(doc(db, 'settings', 'couponBanner'))
-      .then(snap => {
-        if (snap.exists()) {
-          setSettings({ ...DEFAULTS, ...snap.data() as CouponBannerSettings })
-        }
+    // Dynamic import — don't pull Firebase into initial bundle
+    import('@/lib/firebase').then(({ db }) => {
+      if (!db) return
+      import('firebase/firestore').then(({ doc, getDoc }) => {
+        getDoc(doc(db, 'settings', 'couponBanner'))
+          .then(snap => {
+            if (snap.exists()) {
+              setSettings({ ...DEFAULTS, ...snap.data() as CouponBannerSettings })
+            }
+          })
+          .catch(console.error)
       })
-      .catch(console.error)
+    })
   }, [placement])
 
   const handleDismiss = () => {

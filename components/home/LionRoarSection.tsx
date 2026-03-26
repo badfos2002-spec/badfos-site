@@ -129,7 +129,7 @@ export default function LionRoarSection() {
           <div className="order-1 lg:order-2 flex justify-center">
             <div className="relative w-[180px] h-[180px] sm:w-[240px] sm:h-[240px] lg:w-[320px] lg:h-[320px]">
               <Image
-                src="/assets/lion-roar-shirt.png"
+                src="/assets/lion-roar-shirt.webp"
                 alt="חולצת שאגת הארי"
                 fill
                 className="object-contain drop-shadow-xl"

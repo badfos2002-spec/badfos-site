@@ -12,12 +12,12 @@ interface Slide {
 }
 
 const FALLBACK_SLIDES: Slide[] = [
-  { id: 'lion-roar', image: '/assets/lion-roar-banner.png', link: '/lion-roar' },
-  { id: '1', image: '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.jpg' },
-  { id: '2', image: '/assets/64ab08d41_IMG_3252.jpg' },
-  { id: '3', image: '/assets/a189e74e3_IMG_0490.jpg' },
-  { id: '4', image: '/assets/c4660170b_IMG_6179.jpg' },
-  { id: '5', image: '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.jpg' },
+  { id: 'lion-roar', image: '/assets/lion-roar-banner.webp', link: '/lion-roar' },
+  { id: '1', image: '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp' },
+  { id: '2', image: '/assets/64ab08d41_IMG_3252.webp' },
+  { id: '3', image: '/assets/a189e74e3_IMG_0490.webp' },
+  { id: '4', image: '/assets/c4660170b_IMG_6179.webp' },
+  { id: '5', image: '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.webp' },
 ]
 
 export default function HeroCarousel() {
