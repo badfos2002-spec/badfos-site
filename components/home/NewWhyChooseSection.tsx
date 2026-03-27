@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Award, Truck, ShieldCheck } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Award, Truck, ShieldCheck, Play } from 'lucide-react'
 
 const D = {
   why_title: 'למה לבחור בנו?',
@@ -16,6 +16,65 @@ const D = {
 }
 
 const ICONS = [Award, Truck, ShieldCheck]
+
+/** Lazy YouTube — shows thumbnail, loads iframe only on click/viewport */
+function LazyYouTube({ videoUrl }: { videoUrl: string }) {
+  const [loaded, setLoaded] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Extract video ID for thumbnail
+  const videoId = videoUrl.match(/embed\/([^?]+)/)?.[1] || 'ZBnLtKpF3l8'
+
+  useEffect(() => {
+    if (!ref.current) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setLoaded(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '200px' }
+    )
+    observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div className="relative flex justify-center lg:justify-end">
+      <div className="absolute w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl bg-[#ffc32e]/20" style={{ transform: 'rotate(35deg)' }}></div>
+      <div
+        ref={ref}
+        className="relative w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl shadow-2xl overflow-hidden cursor-pointer group"
+        onClick={() => setLoaded(true)}
+      >
+        {loaded ? (
+          <iframe
+            src={videoUrl}
+            title="למה לבחור בנו"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full h-full"
+          />
+        ) : (
+          <>
+            <img
+              src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+              alt="למה לבחור בנו"
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+              <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                <Play className="w-8 h-8 text-white fill-white ml-1" />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function NewWhyChooseSection() {
   const [c, setC] = useState(D)
@@ -38,19 +97,8 @@ export default function NewWhyChooseSection() {
     <section className="w-full bg-gradient-to-br from-gray-50 via-white to-gray-50 pt-4 pb-20" dir="rtl">
       <div className="mx-auto max-w-[1536px] px-4 md:px-0">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Video Section */}
-          <div className="relative flex justify-center lg:justify-end">
-            <div className="absolute w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl bg-[#ffc32e]/20" style={{ transform: 'rotate(35deg)' }}></div>
-            <div className="relative w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl shadow-2xl overflow-hidden">
-              <iframe
-                src={c.why_videoUrl?.startsWith('https://www.youtube.com/') ? c.why_videoUrl : D.why_videoUrl}
-                title="למה לבחור בנו"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full"
-              />
-            </div>
-          </div>
+          {/* Video Section — lazy-loaded YouTube (saves ~900KB + 960ms CPU) */}
+          <LazyYouTube videoUrl={c.why_videoUrl?.startsWith('https://www.youtube.com/') ? c.why_videoUrl : D.why_videoUrl} />
 
           {/* Text Section */}
           <div className="text-right space-y-8" dir="rtl">

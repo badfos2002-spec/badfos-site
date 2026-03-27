@@ -16,7 +16,10 @@ export default function Footer() {
             <img
               src="/logo.png"
               alt="בדפוס"
+              width={48}
+              height={48}
               className="h-12 w-auto mx-auto md:mx-0 mb-4"
+              loading="lazy"
             />
             <p className="text-sm leading-relaxed">
               בדפוס - הדפסת חולצות ומוצרי טקסטיל באיכות גבוהה. עיצוב אישי, מחירים הוגנים, ושירות מעולה.
