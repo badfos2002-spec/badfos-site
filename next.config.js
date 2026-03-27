@@ -39,7 +39,6 @@ const ContentSecurityPolicy = `
     https://*.googletagmanager.com
     https://*.doubleclick.net
     https://*.googlesyndication.com
-    https://*.firebaseapp.com
     https://ep1.adtrafficquality.google
     https://ep2.adtrafficquality.google
     https://www.youtube.com
