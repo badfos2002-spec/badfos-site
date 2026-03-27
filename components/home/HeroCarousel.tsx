@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -10,7 +10,6 @@ interface Slide {
   link?: string
 }
 
-// Static WebP slides — no Firestore fetch needed, loads instantly
 const SLIDES: Slide[] = [
   { id: 'lion-roar', image: '/assets/lion-roar-banner.webp', link: '/lion-roar' },
   { id: '1', image: '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp' },
@@ -21,28 +20,30 @@ const SLIDES: Slide[] = [
 ]
 
 export default function HeroCarousel() {
-  const [index, setIndex] = useState(0)
+  const [current, setCurrent] = useState(0)
+  const [next, setNext] = useState<number | null>(null)
+  const [fading, setFading] = useState(false)
+
+  const goTo = useCallback((i: number) => {
+    if (i === current || fading) return
+    setNext(i)
+    setFading(true)
+    setTimeout(() => {
+      setCurrent(i)
+      setNext(null)
+      setFading(false)
+    }, 500)
+  }, [current, fading])
 
   useEffect(() => {
     const id = setInterval(() => {
-      setIndex((i) => (i + 1) % SLIDES.length)
+      goTo((current + 1) % SLIDES.length)
     }, 5000)
     return () => clearInterval(id)
-  }, [])
+  }, [current, goTo])
 
-  const slide = SLIDES[index]
-
-  const imageContent = (
-    <Image
-      key={slide.id}
-      src={slide.image}
-      alt="בדפוס - הדפסת חולצות בעיצוב אישי"
-      fill
-      sizes="(max-width: 768px) 100vw, 550px"
-      className="object-cover rounded-[1.5rem] animate-fadeIn"
-      priority={index === 0}
-    />
-  )
+  const slide = SLIDES[current]
+  const nextSlide = next !== null ? SLIDES[next] : null
 
   return (
     <div
@@ -50,12 +51,20 @@ export default function HeroCarousel() {
       style={{ boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.08)' }}
     >
       <div className="relative w-full md:w-[550px] aspect-square mx-auto overflow-hidden rounded-[2rem]">
-        {slide.link ? (
-          <Link href={slide.link} className="block w-full h-full">
-            {imageContent}
-          </Link>
-        ) : (
-          imageContent
+        {/* Current slide */}
+        <SlideImage
+          slide={slide}
+          className={`transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}
+          priority={current === 0}
+        />
+
+        {/* Next slide (fades in on top) */}
+        {nextSlide && (
+          <SlideImage
+            slide={nextSlide}
+            className={`transition-opacity duration-500 ${fading ? 'opacity-100' : 'opacity-0'}`}
+            priority={false}
+          />
         )}
       </div>
 
@@ -63,9 +72,9 @@ export default function HeroCarousel() {
         {SLIDES.map((_, i) => (
           <button
             key={i}
-            onClick={() => setIndex(i)}
+            onClick={() => goTo(i)}
             className={`transition-all duration-300 rounded-full ${
-              i === index
+              i === current
                 ? 'bg-white w-2.5 h-2.5 scale-110 shadow-sm'
                 : 'bg-white/50 w-2.5 h-2.5'
             }`}
@@ -75,4 +84,22 @@ export default function HeroCarousel() {
       </div>
     </div>
   )
+}
+
+function SlideImage({ slide, className, priority }: { slide: Slide; className: string; priority: boolean }) {
+  const img = (
+    <Image
+      src={slide.image}
+      alt="בדפוס - הדפסת חולצות בעיצוב אישי"
+      fill
+      sizes="(max-width: 768px) 100vw, 550px"
+      className={`object-cover rounded-[1.5rem] absolute inset-0 ${className}`}
+      priority={priority}
+    />
+  )
+
+  if (slide.link) {
+    return <Link href={slide.link} className="block absolute inset-0 z-10">{img}</Link>
+  }
+  return <div className="absolute inset-0">{img}</div>
 }
