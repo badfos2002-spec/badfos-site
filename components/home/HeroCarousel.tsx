@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { SiteImage } from '@/lib/types'
 
 interface Slide {
   id: string
@@ -11,7 +10,8 @@ interface Slide {
   link?: string
 }
 
-const FALLBACK_SLIDES: Slide[] = [
+// Static WebP slides — no Firestore fetch needed, loads instantly
+const SLIDES: Slide[] = [
   { id: 'lion-roar', image: '/assets/lion-roar-banner.webp', link: '/lion-roar' },
   { id: '1', image: '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp' },
   { id: '2', image: '/assets/64ab08d41_IMG_3252.webp' },
@@ -21,38 +21,16 @@ const FALLBACK_SLIDES: Slide[] = [
 ]
 
 export default function HeroCarousel() {
-  const [slides, setSlides] = useState<Slide[]>(FALLBACK_SLIDES)
   const [index, setIndex] = useState(0)
-
-  // Dynamic import — Firebase not bundled with carousel, loaded on demand
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      import('@/lib/db').then(({ getAllDocuments }) => {
-        getAllDocuments<SiteImage>('siteImages')
-          .then(docs => {
-            const carousel = docs
-              .filter(d => d.category === 'hero_carousel' && d.isActive)
-              .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-            if (carousel.length > 0) {
-              const lionRoar = FALLBACK_SLIDES.find(s => s.id === 'lion-roar')!
-              setSlides([lionRoar, ...carousel.map(d => ({ id: d.id, image: d.imageUrl }))])
-            }
-          })
-          .catch(() => {/* keep fallback */})
-      })
-    }, 3000)
-    return () => clearTimeout(timer)
-  }, [])
 
   useEffect(() => {
     const id = setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length)
+      setIndex((i) => (i + 1) % SLIDES.length)
     }, 5000)
     return () => clearInterval(id)
-  }, [slides.length])
+  }, [])
 
-  const slide = slides[index]
-  if (!slide) return null
+  const slide = SLIDES[index]
 
   const imageContent = (
     <Image
@@ -62,7 +40,7 @@ export default function HeroCarousel() {
       fill
       sizes="(max-width: 768px) 100vw, 550px"
       className="object-cover rounded-[1.5rem] animate-fadeIn"
-      priority
+      priority={index === 0}
     />
   )
 
@@ -82,7 +60,7 @@ export default function HeroCarousel() {
       </div>
 
       <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20">
-        {slides.map((_, i) => (
+        {SLIDES.map((_, i) => (
           <button
             key={i}
             onClick={() => setIndex(i)}

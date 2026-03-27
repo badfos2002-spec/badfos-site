@@ -6,9 +6,9 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 
 const packageSlides = [
-  { id: 1, title: 'עד 10 חולצות', image: '/assets/ddc5d7f82_10.png' },
-  { id: 2, title: '11-20 חולצות', image: '/assets/0181cec14_11-20.png' },
-  { id: 3, title: '21-50 חולצות', image: '/assets/056e4ce29_21-50.png' },
+  { id: 1, title: 'עד 10 חולצות', image: '/assets/ddc5d7f82_10.webp' },
+  { id: 2, title: '11-20 חולצות', image: '/assets/0181cec14_11-20.webp' },
+  { id: 3, title: '21-50 חולצות', image: '/assets/056e4ce29_21-50.webp' },
 ]
 
 export default function NewPackagesSection() {
