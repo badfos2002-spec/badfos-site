@@ -64,6 +64,24 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={rubik.variable}>
       <head>
+        {/* GCLID capture — runs immediately, no consent needed (first-party URL param) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var p = new URLSearchParams(window.location.search);
+                var g = p.get('gclid');
+                if (g) {
+                  g = g.trim();
+                  if (g) {
+                    localStorage.setItem('gclid', g);
+                    document.cookie = 'gclid=' + g + '; max-age=7776000; path=/; SameSite=Lax';
+                  }
+                }
+              } catch(e) {}
+            `,
+          }}
+        />
         {/* Auto-reload on ChunkLoadError — prevents stale JS after deploy */}
         <script
           dangerouslySetInnerHTML={{
