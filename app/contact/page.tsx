@@ -54,7 +54,7 @@ export default function ContactPage() {
     lastSubmitRef.current = Date.now()
 
     try {
-      const gclid = getGclid()
+      const gclid = getGclid() || localStorage.getItem('gclid') || ''
       const message = formData.message ? `${formData.subject ? `נושא: ${formData.subject}\n` : ''}${formData.message}` : formData.subject
 
       await createLead({
@@ -64,7 +64,7 @@ export default function ContactPage() {
         message,
         source: 'contact_form',
         status: 'new',
-        ...(gclid && { gclid }),
+        gclid,
       })
 
       try {

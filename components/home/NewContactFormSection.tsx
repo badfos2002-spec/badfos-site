@@ -33,7 +33,7 @@ export default function NewContactFormSection() {
     lastSubmitRef.current = Date.now()
 
     try {
-      const gclid = getGclid()
+      const gclid = getGclid() || localStorage.getItem('gclid') || ''
       const message = formData.comments || ''
 
       const { createLead } = await import('@/lib/db')
@@ -43,7 +43,7 @@ export default function NewContactFormSection() {
         message,
         source: 'bottom_form',
         status: 'new',
-        ...(gclid && { gclid }),
+        gclid,
       })
 
       try {
