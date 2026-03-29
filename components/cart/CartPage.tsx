@@ -333,7 +333,8 @@ export default function CartPage() {
           subtotal: orderCalc.subtotal,
           discount: couponDiscount + orderCalc.quantityDiscount,
           ...(couponCode && { couponCode }),
-          total: orderCalc.total,
+          // Use the payment amount (includes coupon) as the authoritative total
+          total: paymentCacheRef.current?.amount ?? orderCalc.total,
           ...(getGclid() && { gclid: getGclid() }),
         })
 
