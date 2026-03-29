@@ -285,6 +285,8 @@ export default function CartPage() {
             phone: customerInfo.phone,
             email: customerInfo.email,
             description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
+            items: items.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
+            couponDiscount,
             ...(getGclid() && { gclid: getGclid() }),
           }),
         }).then(r => r.json())

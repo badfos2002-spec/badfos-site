@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
         const lead = data as Lead
         emailHtml = NewLeadEmail({ lead })
         subject = `🔔 ליד חדש מ-${lead.source} - ${lead.name}`
-        to = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'badfos2002@gmail.com'
+        to = process.env.NEXT_PUBLIC_ADMIN_EMAIL!
+        if (!to) return NextResponse.json({ error: 'Admin email not configured' }, { status: 500 })
         break
 
       case 'new_order':
@@ -125,7 +126,8 @@ export async function POST(request: NextRequest) {
           </div>
         `
         subject = `🛒 הזמנה חדשה — ${escapeHtml(newOrderCustomer.firstName)} ${escapeHtml(newOrderCustomer.lastName)} — ₪${newOrderTotal}`
-        to = 'badfos2002@gmail.com'
+        to = process.env.NEXT_PUBLIC_ADMIN_EMAIL!
+        if (!to) return NextResponse.json({ error: 'Admin email not configured' }, { status: 500 })
         break
 
       case 'design_mockup':

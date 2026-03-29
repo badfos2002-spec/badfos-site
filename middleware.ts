@@ -22,6 +22,15 @@ function getClientIp(request: NextRequest): string {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // CSRF protection — reject cross-origin POST to non-webhook API routes
+  if (request.method === 'POST' && pathname.startsWith('/api/') && !pathname.includes('/webhooks')) {
+    const origin = request.headers.get('origin')
+    const host = request.headers.get('host')
+    if (origin && host && !origin.includes(host) && !origin.includes('badfos.co.il')) {
+      return NextResponse.json({ error: 'CSRF rejected' }, { status: 403 })
+    }
+  }
+
   // Redirect uppercase URLs to lowercase (Google Tag Assistant sends /Designer/Designer)
   if (pathname !== pathname.toLowerCase() && !pathname.startsWith('/api/')) {
     const url = request.nextUrl.clone()

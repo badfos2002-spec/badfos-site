@@ -91,7 +91,13 @@ function saveDesignerSession(step: number, config: Partial<ProductConfig>) {
   try {
     const data = { step, config, timestamp: Date.now() }
     sessionStorage.setItem(DESIGNER_SESSION_KEY, JSON.stringify(data))
-  } catch { /* quota exceeded — ignore */ }
+  } catch {
+    // Quota exceeded — clear old data and retry once
+    try {
+      sessionStorage.removeItem(DESIGNER_SESSION_KEY)
+      sessionStorage.setItem(DESIGNER_SESSION_KEY, JSON.stringify({ step, config, timestamp: Date.now() }))
+    } catch { /* truly full — nothing we can do */ }
+  }
 }
 
 function loadDesignerSession(): { step: number; config: Partial<ProductConfig> } | null {
