@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, sendLeadWebhook, setEnhancedConversionData, getGclid } from '@/lib/tracking'
@@ -14,6 +14,13 @@ export default function NewContactFormSection() {
   })
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+  // Auto-reset submitted state with cleanup (prevents memory leak)
+  useEffect(() => {
+    if (!submitted) return
+    const timer = setTimeout(() => setSubmitted(false), 5000)
+    return () => clearTimeout(timer)
+  }, [submitted])
   const lastSubmitRef = useRef(0)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,7 +74,6 @@ export default function NewContactFormSection() {
 
       setSubmitted(true)
       setFormData({ name: '', phone: '', comments: '' })
-      setTimeout(() => setSubmitted(false), 5000)
     } catch (error) {
       console.error('Error:', error)
       alert('אירעה שגיאה. אנא נסו שוב.')

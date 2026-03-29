@@ -22,11 +22,11 @@ export async function POST(request: NextRequest) {
 
     // Validate amount
     const verifiedAmount = Number(amount)
-    if (isNaN(verifiedAmount) || verifiedAmount <= 0) {
-      return NextResponse.json({ error: 'Amount must be a positive number' }, { status: 400 })
+    if (isNaN(verifiedAmount) || verifiedAmount < 1) {
+      return NextResponse.json({ error: 'Amount must be at least ₪1' }, { status: 400 })
     }
-    if (verifiedAmount > 50000) {
-      return NextResponse.json({ error: 'Amount exceeds maximum allowed (50000)' }, { status: 400 })
+    if (verifiedAmount > 10000) {
+      return NextResponse.json({ error: 'Amount exceeds maximum allowed (₪10,000)' }, { status: 400 })
     }
 
     // Validate email format if provided
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Validate phone format if provided
     if (phone != null && phone !== '') {
-      const phoneRegex = /^[\d\s\-+()]{7,20}$/
+      const phoneRegex = /^(?:0\d{1,2}[-\s]?\d{7,8}|\+?\d{10,15})$/
       if (typeof phone !== 'string' || !phoneRegex.test(phone)) {
         return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
       }

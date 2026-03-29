@@ -8,7 +8,7 @@ const LEAD_WEBHOOK_URL = process.env.LEAD_WEBHOOK_URL
  */
 export async function POST(request: NextRequest) {
   if (!LEAD_WEBHOOK_URL) {
-    return NextResponse.json({ error: 'Webhook not configured' }, { status: 200 })
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 })
   }
 
   try {

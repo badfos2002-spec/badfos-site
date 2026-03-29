@@ -21,7 +21,8 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
     if (formData.firstName && formData.lastName && isValidEmail(formData.email) && isValidPhone(formData.phone)) {
       onSubmit(formData)
     }
-  }, [formData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.firstName, formData.lastName, formData.email, formData.phone, formData.phoneSecondary, formData.notes])
 
   const update = (key: keyof CustomerInfo, value: string) =>
     setFormData(prev => ({ ...prev, [key]: value }))
