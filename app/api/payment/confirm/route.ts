@@ -85,18 +85,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback: find by phone
+    // Fallback: find by phone (simple query — no composite index needed)
     if (!order && payerPhone) {
       const snapshot = await adminDb
         .collection('orders')
         .where('customer.phone', '==', payerPhone)
-        .where('status', 'in', ['pending_payment', 'cart_abandoned'])
-        .orderBy('createdAt', 'desc')
-        .limit(1)
+        .limit(10)
         .get()
-      if (!snapshot.empty) {
-        orderDoc = snapshot.docs[0]
-        order = orderDoc.data()
+      // Find most recent pending/abandoned
+      const pending = snapshot.docs
+        .map(d => ({ doc: d, data: d.data() }))
+        .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
+        .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
+      if (pending.length > 0) {
+        orderDoc = pending[0].doc
+        order = pending[0].data
       }
     }
 
@@ -105,13 +108,15 @@ export async function POST(request: NextRequest) {
       const snapshot = await adminDb
         .collection('orders')
         .where('customer.email', '==', payerEmail.toLowerCase())
-        .where('status', 'in', ['pending_payment', 'cart_abandoned'])
-        .orderBy('createdAt', 'desc')
-        .limit(1)
+        .limit(10)
         .get()
-      if (!snapshot.empty) {
-        orderDoc = snapshot.docs[0]
-        order = orderDoc.data()
+      const pending = snapshot.docs
+        .map(d => ({ doc: d, data: d.data() }))
+        .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
+        .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
+      if (pending.length > 0) {
+        orderDoc = pending[0].doc
+        order = pending[0].data
       }
     }
 

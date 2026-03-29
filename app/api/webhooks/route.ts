@@ -89,20 +89,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback: find most recent pending_payment order by phone
+    // Fallback: find by phone (simple query — no composite index needed)
     if (!order && payerPhone) {
-      const cleanPhone = payerPhone.replace(/^0/, '0')
       const snapshot = await adminDb
         .collection('orders')
-        .where('customer.phone', '==', cleanPhone)
-        .where('status', 'in', ['pending_payment', 'cart_abandoned'])
-        .orderBy('createdAt', 'desc')
-        .limit(1)
+        .where('customer.phone', '==', payerPhone)
+        .limit(10)
         .get()
-      if (!snapshot.empty) {
-        orderDoc = snapshot.docs[0]
-        order = orderDoc.data()
-        console.log(`Webhook: found order by phone ${cleanPhone}, #${order.orderNumber}`)
+      const pending = snapshot.docs
+        .map(d => ({ doc: d, data: d.data() }))
+        .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
+        .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
+      if (pending.length > 0) {
+        orderDoc = pending[0].doc as FirebaseFirestore.QueryDocumentSnapshot
+        order = pending[0].data
+        console.log(`Webhook: found order by phone ${payerPhone}, #${order.orderNumber}`)
       }
     }
 
@@ -111,13 +112,15 @@ export async function POST(request: NextRequest) {
       const snapshot = await adminDb
         .collection('orders')
         .where('customer.email', '==', payerEmail.toLowerCase())
-        .where('status', 'in', ['pending_payment', 'cart_abandoned'])
-        .orderBy('createdAt', 'desc')
-        .limit(1)
+        .limit(10)
         .get()
-      if (!snapshot.empty) {
-        orderDoc = snapshot.docs[0]
-        order = orderDoc.data()
+      const pending = snapshot.docs
+        .map(d => ({ doc: d, data: d.data() }))
+        .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
+        .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
+      if (pending.length > 0) {
+        orderDoc = pending[0].doc as FirebaseFirestore.QueryDocumentSnapshot
+        order = pending[0].data
         console.log(`Webhook: found order by email ${payerEmail}, #${order.orderNumber}`)
       }
     }
