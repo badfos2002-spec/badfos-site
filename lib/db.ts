@@ -200,6 +200,18 @@ export async function getNextOrderNumber(): Promise<number> {
 export async function createOrder(
   orderData: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
+  // Server-side validation
+  const c = orderData.customer
+  if (!c?.firstName?.trim() || !c?.lastName?.trim()) throw new Error('Missing customer name')
+  if (!c?.phone || !/^05\d{8}$/.test(c.phone)) throw new Error('Invalid phone number')
+  if (!c?.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) throw new Error('Invalid email')
+  if (!orderData.items || orderData.items.length === 0) {
+    if (!(orderData as any).packages || ((orderData as any).packages as any[])?.length === 0) {
+      throw new Error('Order must have at least one item')
+    }
+  }
+  if (orderData.total <= 0) throw new Error('Invalid order total')
+
   const orderNumber = await getNextOrderNumber()
 
   const order: Omit<Order, 'id'> = {

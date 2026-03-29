@@ -50,16 +50,17 @@ export const useCart = create<CartStore>()(
           const existingItem = items[existingItemIndex]
           const updatedSizes = [...existingItem.sizes]
 
-          // Merge quantities
+          // Merge quantities (validate min 1, max 999)
           config.sizes.forEach((newSize) => {
+            if (newSize.quantity < 1) return
             const existingSizeIndex = updatedSizes.findIndex(
               (s) => s.size === newSize.size
             )
 
             if (existingSizeIndex >= 0) {
-              updatedSizes[existingSizeIndex].quantity += newSize.quantity
+              updatedSizes[existingSizeIndex].quantity = Math.min(999, updatedSizes[existingSizeIndex].quantity + newSize.quantity)
             } else {
-              updatedSizes.push(newSize)
+              updatedSizes.push({ ...newSize, quantity: Math.min(999, newSize.quantity) })
             }
           })
 

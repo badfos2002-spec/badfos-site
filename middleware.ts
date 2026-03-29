@@ -29,6 +29,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301)
   }
 
+  // Protect admin routes — require auth cookie (set by Firebase Auth on login)
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+    const authCookie = request.cookies.get('__session') || request.cookies.get('firebase-auth')
+    if (!authCookie?.value) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+  }
+
   const limit = RATE_LIMITS[pathname]
 
   if (!limit) return NextResponse.next()

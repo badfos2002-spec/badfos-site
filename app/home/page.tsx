@@ -2,13 +2,14 @@ import dynamic from 'next/dynamic'
 import NewHeroSection from '@/components/home/NewHeroSection'
 import LionRoarSection from '@/components/home/LionRoarSection'
 
-// Lazy-load below-the-fold sections — reduces initial JS bundle by ~60%
-const NewWhyChooseSection = dynamic(() => import('@/components/home/NewWhyChooseSection'))
-const NewPackagesSection = dynamic(() => import('@/components/home/NewPackagesSection'))
-const NewHowItWorksSection = dynamic(() => import('@/components/home/NewHowItWorksSection'))
-const NewContactFormSection = dynamic(() => import('@/components/home/NewContactFormSection'))
-const NewTestimonialsSection = dynamic(() => import('@/components/home/NewTestimonialsSection'))
-const NewFinalCTASection = dynamic(() => import('@/components/home/NewFinalCTASection'))
+const SectionLoader = () => <div className="min-h-[200px]" />
+
+const NewWhyChooseSection = dynamic(() => import('@/components/home/NewWhyChooseSection'), { loading: SectionLoader })
+const NewPackagesSection = dynamic(() => import('@/components/home/NewPackagesSection'), { loading: SectionLoader })
+const NewHowItWorksSection = dynamic(() => import('@/components/home/NewHowItWorksSection'), { loading: SectionLoader })
+const NewContactFormSection = dynamic(() => import('@/components/home/NewContactFormSection'), { loading: SectionLoader })
+const NewTestimonialsSection = dynamic(() => import('@/components/home/NewTestimonialsSection'), { loading: SectionLoader })
+const NewFinalCTASection = dynamic(() => import('@/components/home/NewFinalCTASection'), { loading: SectionLoader })
 
 export default function Home() {
   return (
