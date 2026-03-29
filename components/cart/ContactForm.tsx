@@ -16,10 +16,11 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
   const isValidPhone = (phone: string) => /^05\d{8}$/.test(phone)
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
-  // Auto-update parent whenever required fields are filled
+  // Auto-update parent with debounce (300ms) to avoid spamming re-renders
   useEffect(() => {
     if (formData.firstName && formData.lastName && isValidEmail(formData.email) && isValidPhone(formData.phone)) {
-      onSubmit(formData)
+      const timer = setTimeout(() => onSubmit(formData), 300)
+      return () => clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.firstName, formData.lastName, formData.email, formData.phone, formData.phoneSecondary, formData.notes])

@@ -50,6 +50,12 @@ export default function AdminPricingPage() {
   }, [])
 
   const handleSave = async () => {
+    // Validate no negative values
+    const values = Object.values(pricing).flatMap(v => typeof v === 'object' ? Object.values(v) : [v])
+    if (values.some(v => typeof v === 'number' && v < 0)) {
+      alert('לא ניתן לשמור ערכים שליליים')
+      return
+    }
     setSaving(true)
     try {
       await setDocument('settings', 'pricing', pricing)

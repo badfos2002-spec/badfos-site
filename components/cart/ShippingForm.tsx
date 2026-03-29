@@ -14,14 +14,17 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
   const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', floor: 'קרקע', entrance: '' })
   const [touched, setTouched] = useState(false)
 
-  // Auto-update parent whenever method/address changes
+  // Auto-update parent with debounce (300ms)
   useEffect(() => {
     if (method === 'pickup') {
-      onSubmit({ method, cost: SHIPPING_COSTS[method] })
+      const timer = setTimeout(() => onSubmit({ method, cost: SHIPPING_COSTS[method] }), 300)
+      return () => clearTimeout(timer)
     } else if (address.street && address.number && address.city && address.floor) {
-      onSubmit({ method, address, cost: SHIPPING_COSTS[method] })
+      const timer = setTimeout(() => onSubmit({ method, address, cost: SHIPPING_COSTS[method] }), 300)
+      return () => clearTimeout(timer)
     }
-  }, [method, address])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [method, address.street, address.number, address.city, address.floor, address.entrance])
 
   // Mark as touched after 3 seconds of delivery being selected
   useEffect(() => {

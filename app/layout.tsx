@@ -15,6 +15,8 @@ const ConditionalHeader = dynamic(() => import('@/components/layout/ConditionalH
 const ConditionalFooter = dynamic(() => import('@/components/layout/ConditionalFooter'))
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://badfos.co.il'),
+  alternates: { canonical: '/' },
   title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
   description: 'עצבו חולצות מותאמות אישית עם הדפסה איכותית. משלוח מהיר, מחירים משתלמים, עיצוב קל ונוח.',
   keywords: 'הדפסת חולצות, עיצוב חולצות, חולצות מודפסות, הדפסה על חולצות, חולצות בהתאמה אישית',

@@ -131,40 +131,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // Only update if order is pending or abandoned (idempotency + status guard)
-    if (order.status !== 'pending_payment' && order.status !== 'cart_abandoned') {
+    // Atomic transaction — prevents race condition between webhook/confirm/client-confirm
+    const orderRef = adminDb.collection('orders').doc(orderDoc.id)
+    let alreadyProcessed = false
+
+    await adminDb.runTransaction(async (transaction) => {
+      const freshDoc = await transaction.get(orderRef)
+      const freshData = freshDoc.data()
+      if (!freshData) throw new Error('Order disappeared')
+
+      if (freshData.status !== 'pending_payment' && freshData.status !== 'cart_abandoned') {
+        alreadyProcessed = true
+        return
+      }
+
+      transaction.update(orderRef, {
+        status: 'paid',
+        ...(transactionCode && { transactionCode }),
+        ...(paymentSum && { paymentSum: Number(paymentSum) }),
+        paidAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      // Mark coupon as used atomically
+      if (freshData.couponCode) {
+        const couponSnap = await adminDb
+          .collection('coupons')
+          .where('code', '==', freshData.couponCode)
+          .limit(1)
+          .get()
+        if (!couponSnap.empty) {
+          transaction.update(couponSnap.docs[0].ref, {
+            isUsed: true,
+            updatedAt: new Date(),
+          })
+        }
+      }
+    })
+
+    if (alreadyProcessed) {
       return NextResponse.json({
         success: true,
-        message: `Order already processed (status: ${order.status})`,
+        message: `Order already processed`,
         orderId: orderDoc.id,
       }, { status: 200 })
     }
 
-    // Update status to 'paid'
-    await adminDb.collection('orders').doc(orderDoc.id).update({
-      status: 'paid',
-      ...(transactionCode && { transactionCode }),
-      ...(paymentSum && { paymentSum: Number(paymentSum) }),
-      paidAt: new Date(),
-      updatedAt: new Date(),
-    })
-
     console.log(`Webhook: order ${orderDoc.id} (#${order.orderNumber}) → paid`)
-
-    // Mark coupon as used if order has one
-    if (order.couponCode) {
-      const couponSnap = await adminDb
-        .collection('coupons')
-        .where('code', '==', order.couponCode)
-        .limit(1)
-        .get()
-      if (!couponSnap.empty) {
-        await adminDb.collection('coupons').doc(couponSnap.docs[0].id).update({
-          isUsed: true,
-          updatedAt: new Date(),
-        })
-      }
-    }
 
     // Send confirmation email
     const email = order.customer?.email || body.payerEmail
