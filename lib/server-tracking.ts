@@ -66,7 +66,7 @@ async function sendGA4Purchase(data: PurchaseData): Promise<void> {
   })
 
   if (!res.ok) {
-    console.error('Server tracking: GA4 purchase failed', res.status, await res.text())
+    console.error('Server tracking: GA4 purchase failed, status:', res.status)
   } else {
     console.log(`Server tracking: GA4 purchase sent for order ${data.orderId}`)
   }
@@ -129,7 +129,7 @@ async function sendMetaPurchase(data: PurchaseData): Promise<void> {
   })
 
   if (!res.ok) {
-    console.error('Server tracking: Meta purchase failed', res.status, await res.text())
+    console.error('Server tracking: Meta purchase failed, status:', res.status)
   } else {
     console.log(`Server tracking: Meta purchase sent for order ${data.orderId}`)
   }

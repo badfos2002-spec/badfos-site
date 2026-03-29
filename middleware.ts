@@ -7,6 +7,8 @@ const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMITS: Record<string, number> = {
   '/api/send-email': 10,
   '/api/generate-design': 5,
+  '/api/payment/create': 5,
+  '/api/lead-webhook': 10,
 }
 
 function getClientIp(request: NextRequest): string {

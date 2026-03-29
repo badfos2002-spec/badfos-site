@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing orderId' }, { status: 400 })
     }
 
-    console.log(`Payment confirm: orderId=${orderId || 'NONE'}, phone=${payerPhone}, email=${payerEmail}`)
+    console.log(`Payment confirm: orderId=${orderId || 'NONE'}, hasPhone=${!!payerPhone}, hasEmail=${!!payerEmail}`)
 
     // Find order — try paymentId, then doc ID, then phone/email
     let orderDoc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot | null = null

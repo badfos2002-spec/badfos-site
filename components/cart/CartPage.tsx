@@ -234,9 +234,7 @@ export default function CartPage() {
 
     try {
       // Calculate correct totals (including quantity discount + coupon)
-      console.log('Checkout: couponDiscount=', couponDiscount, 'couponCode=', couponCode)
       const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount)
-      console.log('Checkout: orderCalc.total=', orderCalc.total, 'subtotal=', orderCalc.subtotal)
       // Add package totals
       const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
       orderCalc.subtotal += packagesTotal
@@ -394,6 +392,8 @@ export default function CartPage() {
     } catch (error: any) {
       console.error('Checkout error:', error?.message || error)
       alert(`אירעה שגיאה: ${error?.message || 'אנא נסו שוב.'}`)
+    } finally {
+      // Guarantee loading state resets (prevents infinite spinner)
       checkoutInProgress.current = false
       setLoading(false)
     }

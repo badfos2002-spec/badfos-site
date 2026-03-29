@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const payerPhone = body.payerPhone || ''
     const payerEmail = body.payerEmail || ''
 
-    console.log(`Webhook: paymentId=${paymentId || 'NONE'}, phone=${payerPhone}, email=${payerEmail}`)
+    console.log(`Webhook: paymentId=${paymentId || 'NONE'}, hasPhone=${!!payerPhone}, hasEmail=${!!payerEmail}`)
 
     // Find order — try paymentId first, then by phone/email (Grow doesn't return cField1)
     let orderDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null
