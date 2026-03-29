@@ -66,29 +66,66 @@ export async function POST(request: NextRequest) {
       body.orderId ||
       body.paymentId
 
-    const transactionCode = body.transactionCode
+    const transactionCode = body.transactionCode || body.asmachta
     const paymentSum = body.paymentSum || body.amount
+    const payerPhone = body.payerPhone || ''
+    const payerEmail = body.payerEmail || ''
 
-    if (!paymentId) {
-      console.error('Webhook missing paymentId. Body keys:', Object.keys(body).join(','))
-      return NextResponse.json({ error: 'Missing paymentId' }, { status: 400 })
+    console.log(`Webhook: paymentId=${paymentId || 'NONE'}, phone=${payerPhone}, email=${payerEmail}`)
+
+    // Find order — try paymentId first, then by phone/email (Grow doesn't return cField1)
+    let orderDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null
+    let order: any = null
+
+    if (paymentId) {
+      const snapshot = await adminDb
+        .collection('orders')
+        .where('paymentId', '==', paymentId)
+        .limit(1)
+        .get()
+      if (!snapshot.empty) {
+        orderDoc = snapshot.docs[0]
+        order = orderDoc.data()
+      }
     }
 
-    console.log(`Webhook: looking for order with paymentId=${paymentId}`)
+    // Fallback: find most recent pending_payment order by phone
+    if (!order && payerPhone) {
+      const cleanPhone = payerPhone.replace(/^0/, '0')
+      const snapshot = await adminDb
+        .collection('orders')
+        .where('customer.phone', '==', cleanPhone)
+        .where('status', 'in', ['pending_payment', 'cart_abandoned'])
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+      if (!snapshot.empty) {
+        orderDoc = snapshot.docs[0]
+        order = orderDoc.data()
+        console.log(`Webhook: found order by phone ${cleanPhone}, #${order.orderNumber}`)
+      }
+    }
 
-    // Query Firestore via Admin SDK — find order by paymentId
-    const snapshot = await adminDb
-      .collection('orders')
-      .where('paymentId', '==', paymentId)
-      .limit(1)
-      .get()
+    // Fallback: find by email
+    if (!order && payerEmail) {
+      const snapshot = await adminDb
+        .collection('orders')
+        .where('customer.email', '==', payerEmail.toLowerCase())
+        .where('status', 'in', ['pending_payment', 'cart_abandoned'])
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+      if (!snapshot.empty) {
+        orderDoc = snapshot.docs[0]
+        order = orderDoc.data()
+        console.log(`Webhook: found order by email ${payerEmail}, #${order.orderNumber}`)
+      }
+    }
 
-    if (snapshot.empty) {
+    if (!orderDoc || !order) {
+      console.error('Webhook: order not found', { paymentId, payerPhone, payerEmail })
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
-
-    const orderDoc = snapshot.docs[0]
-    const order = orderDoc.data()
 
     // Only update if order is pending or abandoned (idempotency + status guard)
     if (order.status !== 'pending_payment' && order.status !== 'cart_abandoned') {

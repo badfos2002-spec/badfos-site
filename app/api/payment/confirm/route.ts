@@ -52,38 +52,71 @@ export async function POST(request: NextRequest) {
 
     const transactionCode = body.transactionCode || body.transaction_code || body.asmachta
     const paymentSum = body.amount || body.paymentSum || body.sum
+    const payerPhone = body.payerPhone || body.phone || ''
+    const payerEmail = body.payerEmail || body.email || ''
 
-    if (!orderId) {
-      console.error('Payment confirm: missing orderId', body)
+    if (!orderId && !payerPhone && !payerEmail) {
+      console.error('Payment confirm: no identifier found', body)
       return NextResponse.json({ error: 'Missing orderId' }, { status: 400 })
     }
 
-    console.log(`Payment confirm: orderId=${orderId}, tx=${transactionCode}, sum=${paymentSum}`)
+    console.log(`Payment confirm: orderId=${orderId || 'NONE'}, phone=${payerPhone}, email=${payerEmail}`)
 
-    // Find order — try paymentId field first, then document ID
+    // Find order — try paymentId, then doc ID, then phone/email
     let orderDoc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot | null = null
     let order: any = null
 
-    const snapshot = await adminDb
-      .collection('orders')
-      .where('paymentId', '==', orderId)
-      .limit(1)
-      .get()
+    if (orderId) {
+      const snapshot = await adminDb
+        .collection('orders')
+        .where('paymentId', '==', orderId)
+        .limit(1)
+        .get()
 
-    if (!snapshot.empty) {
-      orderDoc = snapshot.docs[0]
-      order = orderDoc.data()
-    } else {
-      // Fallback: try as document ID
-      const docRef = await adminDb.collection('orders').doc(orderId).get()
-      if (docRef.exists) {
-        orderDoc = docRef
-        order = docRef.data()
+      if (!snapshot.empty) {
+        orderDoc = snapshot.docs[0]
+        order = orderDoc.data()
+      } else {
+        const docRef = await adminDb.collection('orders').doc(orderId).get()
+        if (docRef.exists) {
+          orderDoc = docRef
+          order = docRef.data()
+        }
+      }
+    }
+
+    // Fallback: find by phone
+    if (!order && payerPhone) {
+      const snapshot = await adminDb
+        .collection('orders')
+        .where('customer.phone', '==', payerPhone)
+        .where('status', 'in', ['pending_payment', 'cart_abandoned'])
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+      if (!snapshot.empty) {
+        orderDoc = snapshot.docs[0]
+        order = orderDoc.data()
+      }
+    }
+
+    // Fallback: find by email
+    if (!order && payerEmail) {
+      const snapshot = await adminDb
+        .collection('orders')
+        .where('customer.email', '==', payerEmail.toLowerCase())
+        .where('status', 'in', ['pending_payment', 'cart_abandoned'])
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+      if (!snapshot.empty) {
+        orderDoc = snapshot.docs[0]
+        order = orderDoc.data()
       }
     }
 
     if (!orderDoc || !order) {
-      console.error(`Payment confirm: order not found for ${orderId}`)
+      console.error(`Payment confirm: order not found`, { orderId, payerPhone, payerEmail })
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
