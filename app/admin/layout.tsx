@@ -46,12 +46,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
-    import('@/lib/auth').then(({ onAuthChange, isAdmin }) => {
+    let hasReceivedUser = false
+
+    import('@/lib/auth').then(({ onAuthChange }) => {
       unsubscribe = onAuthChange((currentUser) => {
-        setUser(currentUser)
-        setLoading(false)
-        if (!currentUser || !isAdmin(currentUser)) {
+        if (currentUser) {
+          hasReceivedUser = true
+          if (currentUser.email === 'badfos2002@gmail.com') {
+            setUser(currentUser)
+            setLoading(false)
+          } else {
+            setLoading(false)
+            router.replace('/admin/login')
+          }
+        } else if (hasReceivedUser) {
+          // User signed out
+          setLoading(false)
           router.replace('/admin/login')
+        } else {
+          // First call with null — Firebase still loading, wait 2s
+          setTimeout(() => {
+            if (!hasReceivedUser) {
+              setLoading(false)
+              router.replace('/admin/login')
+            }
+          }, 2000)
         }
       })
     })
