@@ -21,7 +21,6 @@ import {
   Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { onAuthChange, isAdmin, signOut } from '@/lib/auth'
 import type { User } from 'firebase/auth'
 
 const menuItems = [
@@ -46,17 +45,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
 
   useEffect(() => {
-    const unsubscribe = onAuthChange((currentUser) => {
-      setUser(currentUser)
-      setLoading(false)
-      if (!currentUser || !isAdmin(currentUser)) {
-        router.replace('/admin/login')
-      }
+    let unsubscribe: (() => void) | undefined
+    import('@/lib/auth').then(({ onAuthChange, isAdmin }) => {
+      unsubscribe = onAuthChange((currentUser) => {
+        setUser(currentUser)
+        setLoading(false)
+        if (!currentUser || !isAdmin(currentUser)) {
+          router.replace('/admin/login')
+        }
+      })
     })
-    return unsubscribe
+    return () => unsubscribe?.()
   }, [router])
 
   const handleSignOut = async () => {
+    const { signOut } = await import('@/lib/auth')
     await signOut()
     router.replace('/admin/login')
   }
