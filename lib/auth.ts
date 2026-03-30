@@ -40,9 +40,19 @@ export async function signInWithGoogle(): Promise<User> {
   }
 
   const provider = new GoogleAuthProvider()
+  // Lock to specific admin email — skips account picker
+  provider.setCustomParameters({
+    login_hint: 'badfos2002@gmail.com',
+    prompt: 'none',
+  })
 
   try {
     const result = await signInWithPopup(auth!, provider)
+    // Block any email that isn't the admin
+    if (result.user.email !== 'badfos2002@gmail.com') {
+      await firebaseSignOut(auth!)
+      throw new Error('הכניסה מותרת רק לחשבון המנהל')
+    }
     return result.user
   } catch (err: any) {
     // If popup blocked or failed, fall back to redirect
@@ -81,9 +91,7 @@ export function getCurrentUser(): User | null {
  */
 export function isAdmin(user: User | null): boolean {
   if (!user) return false
-
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-  return user.email === adminEmail
+  return user.email === 'badfos2002@gmail.com'
 }
 
 /**
