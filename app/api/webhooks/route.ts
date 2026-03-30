@@ -90,21 +90,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback: find by phone (simple query — no composite index needed)
+    // Fallback: find by phone — try multiple formats (with/without dashes)
     if (!order && payerPhone) {
-      const snapshot = await adminDb
-        .collection('orders')
-        .where('customer.phone', '==', payerPhone)
-        .limit(10)
-        .get()
-      const pending = snapshot.docs
-        .map(d => ({ doc: d, data: d.data() }))
-        .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
-        .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
-      if (pending.length > 0) {
-        orderDoc = pending[0].doc as FirebaseFirestore.QueryDocumentSnapshot
-        order = pending[0].data
-        console.log(`Webhook: found order by phone ${payerPhone}, #${order.orderNumber}`)
+      const cleanPhone = payerPhone.replace(/[-\s()]/g, '')
+      const phonesToTry = [cleanPhone, payerPhone]
+      // Also try with dash: 05X-XXXXXXX
+      if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
+        phonesToTry.push(`${cleanPhone.slice(0, 3)}-${cleanPhone.slice(3)}`)
+      }
+
+      for (const phone of phonesToTry) {
+        if (order) break
+        const snapshot = await adminDb
+          .collection('orders')
+          .where('customer.phone', '==', phone)
+          .limit(10)
+          .get()
+        const pending = snapshot.docs
+          .map(d => ({ doc: d, data: d.data() }))
+          .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
+          .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
+        if (pending.length > 0) {
+          orderDoc = pending[0].doc as FirebaseFirestore.QueryDocumentSnapshot
+          order = pending[0].data
+          console.log(`Webhook: found order by phone ${phone}, #${order.orderNumber}`)
+        }
       }
     }
 
