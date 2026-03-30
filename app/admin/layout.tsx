@@ -77,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
-  if (!user || !isAdmin(user)) {
+  if (!user || user.email !== 'badfos2002@gmail.com') {
     return null
   }
 
