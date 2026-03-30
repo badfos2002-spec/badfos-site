@@ -42,7 +42,8 @@ const ContentSecurityPolicy = `
     https://ep1.adtrafficquality.google
     https://ep2.adtrafficquality.google
     https://www.youtube.com
-    https://www.facebook.com;
+    https://www.facebook.com
+    https://*.firebaseapp.com;
   object-src 'none';
   base-uri 'self';
 `.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
