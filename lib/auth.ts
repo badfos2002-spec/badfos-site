@@ -43,7 +43,6 @@ export async function signInWithGoogle(): Promise<User> {
   // Lock to specific admin email — skips account picker
   provider.setCustomParameters({
     login_hint: 'badfos2002@gmail.com',
-    prompt: 'none',
   })
 
   try {
