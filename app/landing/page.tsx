@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Phone, Award, Zap, Shield, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Award, Zap, Shield, CheckCircle, ArrowLeft, Clock, Users, Star } from 'lucide-react'
 import { setEnhancedConversionData, sendGoogleAdsConversion, sendMetaLeadEvent } from '@/lib/tracking'
 
 export default function LandingPage() {
   const [form, setForm] = useState({ name: '', phone: '', description: '' })
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [phoneError, setPhoneError] = useState('')
   const [visible, setVisible] = useState(false)
+  const [showVideo, setShowVideo] = useState(false)
 
   useEffect(() => {
     setVisible(true)
@@ -16,16 +18,18 @@ export default function LandingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setPhoneError('')
     if (!form.name.trim() || !form.phone.trim()) return
-    if (!/^05\d{8}$/.test(form.phone.replace(/[-\s]/g, ''))) {
-      alert('מספר טלפון לא תקין — נא להזין מספר ישראלי (05X)')
+
+    const cleanPhone = form.phone.replace(/[-\s]/g, '')
+    if (!/^05\d{8}$/.test(cleanPhone)) {
+      setPhoneError('מספר טלפון לא תקין — נא להזין מספר ישראלי (05X)')
       return
     }
 
     setStatus('loading')
 
     try {
-      // Save lead
       const { createLead } = await import('@/lib/db')
       const gclid = typeof window !== 'undefined' ? localStorage.getItem('gclid') || '' : ''
 
@@ -38,7 +42,6 @@ export default function LandingPage() {
         gclid,
       })
 
-      // Send email notification
       await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +56,6 @@ export default function LandingPage() {
         }),
       }).catch(() => {})
 
-      // Send lead webhook
       await fetch('/api/lead-webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,7 +68,6 @@ export default function LandingPage() {
         }),
       }).catch(() => {})
 
-      // Tracking
       setEnhancedConversionData({ phone: form.phone.trim() })
       sendGoogleAdsConversion()
       sendMetaLeadEvent()
@@ -75,154 +76,208 @@ export default function LandingPage() {
       setForm({ name: '', phone: '', description: '' })
     } catch {
       setStatus('error')
-      setTimeout(() => setStatus('idle'), 3000)
+      setTimeout(() => setStatus('idle'), 5000)
     }
   }
 
   return (
     <div className="min-h-screen bg-[#fffdf5]" dir="rtl">
       {/* Header */}
-      <header className="py-6 text-center">
-        <div className="flex justify-center mb-3">
-          <Image src="/logo.png" alt="בדפוס" width={80} height={80} className="rounded-full" />
+      <header className="py-5 text-center">
+        <div className="flex justify-center mb-2">
+          <Image src="/logo.png" alt="בדפוס" width={72} height={72} className="rounded-full" />
         </div>
-        <p className="text-gray-500 text-lg">הדפסת חולצות איכותית במחיר שתאהבו</p>
       </header>
 
-      {/* Hero */}
-      <section className={`max-w-3xl mx-auto px-4 text-center py-10 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-        <h1 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight mb-6">
-          רוצים חולצות מודפסות?
-          <br />
-          <span className="text-[#f5a623]">השאירו פרטים ונחזור אליכם</span>
-        </h1>
-        <p className="text-lg md:text-xl text-gray-600 max-w-xl mx-auto">
-          ספרו לנו מה אתם מחפשים — ונחזור אליכם עם הצעת מחיר מותאמת אישית, בלי התחייבות.
-        </p>
-      </section>
+      {/* Hero + Form side by side on desktop */}
+      <section className={`max-w-5xl mx-auto px-4 py-6 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
-      {/* Video */}
-      <section className={`max-w-2xl mx-auto px-4 py-8 transition-all duration-700 delay-150 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-        <div className="relative w-full aspect-[9/16] sm:aspect-video rounded-2xl shadow-xl overflow-hidden bg-black">
-          <iframe
-            src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8"
-            title="בדפוס - הדפסת חולצות באיכות גבוהה"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute inset-0 w-full h-full"
-          />
-        </div>
-      </section>
-
-      {/* Trust strip */}
-      <section className={`max-w-3xl mx-auto px-4 py-8 transition-all duration-700 delay-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-14 h-14 rounded-full bg-[#fef3c7] flex items-center justify-center">
-              <Award className="w-7 h-7 text-[#f5a623]" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">איכות פרימיום</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-14 h-14 rounded-full bg-[#fef3c7] flex items-center justify-center">
-              <Zap className="w-7 h-7 text-[#f5a623]" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">מענה מהיר</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-14 h-14 rounded-full bg-[#fef3c7] flex items-center justify-center">
-              <Shield className="w-7 h-7 text-[#f5a623]" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">מחיר תחרותי</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Form */}
-      <section className={`max-w-md mx-auto px-4 py-10 transition-all duration-700 delay-400 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-        {status === 'success' ? (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">תודה!</h2>
-            <p className="text-gray-600">נחזור אליך בהקדם עם הצעת מחיר</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-4">
-            <h2 className="text-xl font-bold text-gray-900 text-center mb-2">קבלו הצעת מחיר</h2>
-            <p className="text-sm text-gray-500 text-center mb-4">ממלאים פרטים — אנחנו מתקשרים</p>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">שם מלא *</label>
-              <input
-                type="text"
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="איך קוראים לך?"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-right focus:ring-2 focus:ring-[#f5a623] focus:border-transparent outline-none transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">טלפון *</label>
-              <input
-                type="tel"
-                required
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="050-0000000"
-                dir="ltr"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-right focus:ring-2 focus:ring-[#f5a623] focus:border-transparent outline-none transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">תיאור ההזמנה</label>
-              <textarea
-                rows={3}
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="כמה חולצות? סוג הדפסה? תיאור העיצוב..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-right focus:ring-2 focus:ring-[#f5a623] focus:border-transparent outline-none transition-all resize-none"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={status === 'loading'}
-              className="w-full py-3.5 bg-[#f5a623] hover:bg-[#e6950f] text-white font-bold text-lg rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {status === 'loading' ? (
-                <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-              ) : (
-                <>
-                  שלחו לי הצעת מחיר
-                  <ArrowLeft className="w-5 h-5" />
-                </>
-              )}
-            </button>
-
-            {status === 'error' && (
-              <p className="text-red-500 text-sm text-center">משהו השתבש, נסה שוב</p>
-            )}
-
-            <p className="text-[10px] text-center text-gray-400 mt-2">
-              הפרטים שלך מאובטחים בהתאם ל<a href="/privacy" className="underline hover:text-[#f5a623]">מדיניות הפרטיות</a>
+          {/* Left: Hero text + trust */}
+          <div className="text-center lg:text-right space-y-6">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
+              חולצות מודפסות באיכות פרימיום
+              <br />
+              <span className="text-[#f5a623]">במחיר שלא תמצאו במקום אחר</span>
+            </h1>
+            <p className="text-lg text-gray-600 max-w-lg mx-auto lg:mx-0">
+              ספרו לנו מה אתם מחפשים — ונחזור אליכם עם הצעת מחיר מותאמת אישית, בלי התחייבות.
             </p>
-          </form>
-        )}
+
+            {/* Trust strip */}
+            <div className="grid grid-cols-3 gap-3 pt-4">
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="w-12 h-12 rounded-full bg-[#fef3c7] flex items-center justify-center">
+                  <Users className="w-6 h-6 text-[#f5a623]" />
+                </div>
+                <span className="text-xs font-medium text-gray-700">500+ לקוחות</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="w-12 h-12 rounded-full bg-[#fef3c7] flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-[#f5a623]" />
+                </div>
+                <span className="text-xs font-medium text-gray-700">מענה תוך 2 שעות</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="w-12 h-12 rounded-full bg-[#fef3c7] flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-[#f5a623]" />
+                </div>
+                <span className="text-xs font-medium text-gray-700">ביטוח איכות 100%</span>
+              </div>
+            </div>
+
+            {/* Stars */}
+            <div className="flex items-center gap-1 justify-center lg:justify-start pt-2">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+              ))}
+              <span className="text-gray-500 text-sm mr-2">4.8 מתוך 5 | 30+ ביקורות בגוגל</span>
+            </div>
+          </div>
+
+          {/* Right: Form */}
+          <div>
+            {status === 'success' ? (
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center" role="alert" aria-live="polite">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">תודה!</h2>
+                <p className="text-gray-600">נחזור אליך תוך 2 שעות עם הצעת מחיר</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-4">
+                <h2 className="text-xl font-bold text-gray-900 text-center mb-1">קבלו הצעת מחיר חינם</h2>
+                <p className="text-sm text-gray-500 text-center mb-4">ממלאים פרטים — מתקשרים תוך 2 שעות</p>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">שם מלא *</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="איך קוראים לך?"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-right focus:ring-2 focus:ring-[#f5a623] focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">טלפון *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={form.phone}
+                    onChange={(e) => {
+                      setForm({ ...form, phone: e.target.value })
+                      if (phoneError) setPhoneError('')
+                    }}
+                    placeholder="050-0000000"
+                    dir="ltr"
+                    className={`w-full px-4 py-3 border rounded-xl text-right focus:ring-2 focus:ring-[#f5a623] focus:border-transparent outline-none transition-all ${
+                      phoneError ? 'border-red-400 bg-red-50' : 'border-gray-200'
+                    }`}
+                  />
+                  {phoneError && (
+                    <p className="text-red-500 text-xs mt-1" role="alert">{phoneError}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">תיאור ההזמנה</label>
+                  <textarea
+                    rows={3}
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="כמה חולצות? סוג הדפסה? תיאור העיצוב..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-right focus:ring-2 focus:ring-[#f5a623] focus:border-transparent outline-none transition-all resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  className="w-full py-3.5 bg-[#f5a623] hover:bg-[#e6950f] text-white font-bold text-lg rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {status === 'loading' ? (
+                    <span className="text-base">שולח את הפרטים...</span>
+                  ) : (
+                    <>
+                      שלחו לי הצעת מחיר
+                      <ArrowLeft className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+
+                {status === 'error' && (
+                  <p className="text-red-500 text-sm text-center" role="alert">
+                    בעיה בשליחה. בדוק חיבור לאינטרנט ונסה שוב.
+                  </p>
+                )}
+
+                <p className="text-xs text-center text-gray-400 mt-2">
+                  הפרטים שלך מאובטחים בהתאם ל<a href="/privacy" className="underline hover:text-[#f5a623]">מדיניות הפרטיות</a>
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
       </section>
 
-      {/* Social proof */}
-      <section className={`max-w-3xl mx-auto px-4 py-10 text-center transition-all duration-700 delay-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-        <div className="flex items-center justify-center gap-1 mb-2">
-          {[...Array(5)].map((_, i) => (
-            <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
+      {/* Testimonials */}
+      <section className={`max-w-4xl mx-auto px-4 py-12 transition-all duration-700 delay-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">מה הלקוחות שלנו אומרים</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { name: 'דני אברהם', role: 'מנהל אירועים', text: 'הדפסנו 200 חולצות לאירוע — איכות מעולה ושירות מהיר. ממליץ בחום!' },
+            { name: 'מיכל לוי', role: 'מעצבת', text: 'הצוות היה סבלני ומקצועי. התוצאה הסופית הפתיעה אותי לטובה.' },
+            { name: 'אורי כהן', role: 'בעל עסק', text: 'מחיר תחרותי, איכות גבוהה, ומענה מהיר. חזרתי להזמין פעם שנייה.' },
+          ].map((t, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-md p-5 border border-gray-100">
+              <div className="flex items-center gap-1 mb-3">
+                {[...Array(5)].map((_, j) => (
+                  <Star key={j} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                ))}
+              </div>
+              <p className="text-gray-700 text-sm leading-relaxed mb-3">&ldquo;{t.text}&rdquo;</p>
+              <p className="text-sm font-bold text-gray-900">{t.name}</p>
+              <p className="text-xs text-gray-400">{t.role}</p>
+            </div>
           ))}
         </div>
-        <p className="text-gray-600 text-sm">4.8 מתוך 5 | 30+ ביקורות מאומתות בגוגל</p>
+      </section>
+
+      {/* Video — lazy loaded */}
+      <section className={`max-w-2xl mx-auto px-4 py-8 transition-all duration-700 delay-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+        <h2 className="text-xl font-bold text-gray-900 text-center mb-4">ראו את איכות ההדפסה שלנו</h2>
+        {showVideo ? (
+          <div className="relative w-full aspect-video rounded-2xl shadow-xl overflow-hidden bg-black">
+            <iframe
+              src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=0&loop=1&playlist=ZBnLtKpF3l8"
+              title="בדפוס - הדפסת חולצות באיכות גבוהה"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowVideo(true)}
+            className="relative w-full aspect-video rounded-2xl shadow-xl overflow-hidden bg-gray-900 group cursor-pointer"
+          >
+            <Image
+              src={`https://img.youtube.com/vi/ZBnLtKpF3l8/hqdefault.jpg`}
+              alt="צפו בסרטון"
+              fill
+              className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <svg className="w-7 h-7 text-[#f5a623] mr-[-2px]" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          </button>
+        )}
       </section>
 
       {/* WhatsApp float */}
