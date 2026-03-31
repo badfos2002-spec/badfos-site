@@ -111,7 +111,7 @@ export default function LandingPage() {
       {/* Video — autoplay full width */}
       <section className="bg-[#1a1a2e] py-8 sm:py-10">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="relative w-full aspect-video rounded-2xl shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl shadow-2xl overflow-hidden">
             <iframe
               src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8&controls=0&modestbranding=1&rel=0"
               title="בדפוס - הדפסת חולצות באיכות גבוהה"
