@@ -126,7 +126,7 @@ export interface Order {
 // Leads
 // ============================================================================
 
-export type LeadSource = 'popup' | 'bottom_form' | 'contact_form'
+export type LeadSource = 'popup' | 'bottom_form' | 'contact_form' | 'landing'
 
 export type LeadStatus =
   | 'new'
