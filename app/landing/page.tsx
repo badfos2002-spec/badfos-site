@@ -32,8 +32,9 @@ export default function LandingPage() {
       await createLead({
         name: form.name.trim(),
         phone: form.phone.trim(),
-        notes: form.description.trim(),
+        message: form.description.trim(),
         source: 'landing',
+        status: 'new',
         gclid,
       })
 
