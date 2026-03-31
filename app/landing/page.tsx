@@ -66,7 +66,7 @@ export default function LandingPage() {
           </h1>
 
           <p className={`text-sm sm:text-base text-white/70 max-w-xl mx-auto mb-6 transition-all duration-700 delay-100 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            מינימום 10 יח׳ | הדפסה תוך 5 ימי עסקים | הדפסה בישראל
+            מינימום 10 יח׳ | אספקה עד 7 ימי עסקים | הדפסה בישראל
           </p>
 
           <a
@@ -129,8 +129,8 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { icon: <Users className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: '500+ לקוחות מרוצים', desc: 'עסקים, אירועים, קבוצות ספורט — כולם חוזרים' },
-            { icon: <Clock className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'הדפסה תוך 5 ימי עסקים', desc: 'מהעיצוב לחולצה — הכי מהיר בשוק' },
-            { icon: <Shield className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'מדפיסים מחדש אם לא מרוצים', desc: 'ביטוח איכות מלא — בלי שאלות, בלי תנאים' },
+            { icon: <Clock className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'אספקה עד 7 ימי עסקים', desc: 'מהאישור עד אליכם — מהיר ואמין' },
+            { icon: <Shield className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'פגם בייצור? מדפיסים מחדש', desc: 'פגם ייצור = הדפסה חוזרת או החזר כספי מלא' },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl border border-[#f5a623]/10 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all p-5 sm:p-6 text-center md:text-right" style={{ transitionDelay: `${i * 100}ms` }}>
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto md:mx-0 mb-3">
