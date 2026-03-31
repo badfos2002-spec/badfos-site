@@ -8,7 +8,7 @@ const AnnouncementBar = dynamic(() => import('@/components/common/AnnouncementBa
 
 export default function ConditionalHeader() {
   const pathname = usePathname()
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/share')) return null
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/share') || pathname?.startsWith('/landing')) return null
   return (
     <>
       <AnnouncementBar placement="header" />

@@ -101,6 +101,19 @@ export default function LandingPage() {
         </p>
       </section>
 
+      {/* Video */}
+      <section className={`max-w-2xl mx-auto px-4 py-8 transition-all duration-700 delay-150 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+        <div className="relative w-full aspect-[9/16] sm:aspect-video rounded-2xl shadow-xl overflow-hidden bg-black">
+          <iframe
+            src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8"
+            title="בדפוס - הדפסת חולצות באיכות גבוהה"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full"
+          />
+        </div>
+      </section>
+
       {/* Trust strip */}
       <section className={`max-w-3xl mx-auto px-4 py-8 transition-all duration-700 delay-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
         <div className="grid grid-cols-3 gap-4 text-center">
