@@ -10,7 +10,7 @@ export default function LandingPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [phoneError, setPhoneError] = useState('')
   const [visible, setVisible] = useState(false)
-  const [showVideo, setShowVideo] = useState(false)
+  // Video autoplays — no state needed
 
   useEffect(() => {
     setVisible(true)
@@ -110,6 +110,44 @@ export default function LandingPage() {
             <div className="flex items-center gap-2 text-white/60 text-sm"><span>⭐</span> 4.8 בגוגל</div>
             <div className="flex items-center gap-2 text-white/60 text-sm"><span>🛡️</span> ביטוח איכות 100%</div>
           </div>
+        </div>
+      </section>
+
+      {/* Google Rating — BIG */}
+      <section className="bg-white py-10 border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="w-10 h-10 md:w-12 md:h-12 text-yellow-400 fill-yellow-400 drop-shadow-sm" />
+            ))}
+          </div>
+          <p className="text-3xl md:text-4xl font-black text-gray-900 mb-1">4.8 מתוך 5</p>
+          <p className="text-lg text-gray-500">30+ ביקורות מאומתות בגוגל</p>
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <svg className="w-6 h-6" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span className="text-sm font-medium text-gray-400">Google Reviews</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Video — autoplay, full width, right after hero */}
+      <section className="bg-[#1a1a2e] py-10">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="relative w-full aspect-video rounded-2xl shadow-2xl overflow-hidden">
+            <iframe
+              src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8&controls=0&modestbranding=1&rel=0"
+              title="בדפוס - הדפסת חולצות באיכות גבוהה"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+          <p className="text-center text-white/40 text-sm mt-4">ראו את איכות ההדפסה שלנו במו עיניכם</p>
         </div>
       </section>
 
@@ -275,44 +313,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Video */}
-      <section className="bg-[#1a1a2e] py-14">
-        <div className="max-w-2xl mx-auto px-4 text-center">
-          <p className="text-sm font-semibold text-[#f5a623] tracking-wider uppercase mb-2">צפו בסרטון</p>
-          <h2 className="text-xl font-bold text-white mb-6">ראו את איכות ההדפסה שלנו</h2>
-          {showVideo ? (
-            <div className="relative w-full aspect-video rounded-2xl shadow-xl overflow-hidden bg-black">
-              <iframe
-                src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=0&loop=1&playlist=ZBnLtKpF3l8"
-                title="בדפוס - הדפסת חולצות באיכות גבוהה"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              />
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowVideo(true)}
-              className="relative w-full aspect-video rounded-2xl shadow-xl overflow-hidden bg-gray-900 group cursor-pointer"
-            >
-              <Image
-                src="https://img.youtube.com/vi/ZBnLtKpF3l8/hqdefault.jpg"
-                alt="צפו בסרטון"
-                fill
-                className="object-cover opacity-70 group-hover:opacity-90 transition-opacity"
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <div className="w-16 h-16 bg-[#f5a623]/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <svg className="w-7 h-7 text-[#1a1a2e] mr-[-2px]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-                <span className="text-white/70 text-sm">לחצו לצפייה</span>
-              </div>
-            </button>
-          )}
-        </div>
-      </section>
+      {/* (Video moved to top — after hero + stars) */}
 
       {/* Bottom CTA */}
       <section className="bg-[#fef3c7] py-10 text-center">
