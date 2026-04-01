@@ -117,14 +117,14 @@ export default function LandingPage() {
 
       {/* ═══ HERO ═══ */}
       <section className="relative bg-gradient-to-br from-[#0d1b2a] via-[#1a2e45] to-[#0d1b2a] text-white overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-[400px] h-[400px] bg-[#f0a500]/15 rounded-full blur-3xl pointer-events-none animate-pulse" aria-hidden="true" />
-        <div className="absolute -bottom-32 -left-32 w-[300px] h-[300px] bg-[#f0a500]/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+        <div className="absolute -top-20 -right-20 w-[400px] h-[400px] bg-[#ffc32e]/15 rounded-full blur-3xl pointer-events-none animate-pulse" aria-hidden="true" />
+        <div className="absolute -bottom-32 -left-32 w-[300px] h-[300px] bg-[#ffc32e]/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 pt-8 pb-10 text-center">
           <Image src="/logo.png" alt="לוגו בדפוס — הדפסת חולצות" width={52} height={52} className="rounded-full mx-auto mb-4" />
 
           {/* Badge with pulse */}
-          <div className={`inline-flex items-center gap-2 bg-[#f0a500]/15 border border-[#f0a500]/30 text-[#f0a500] text-xs sm:text-sm font-semibold px-4 py-2 rounded-full mb-5 whitespace-nowrap transition-all duration-700 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`inline-flex items-center gap-2 bg-[#ffc32e]/15 border border-[#ffc32e]/30 text-[#ffc32e] text-xs sm:text-sm font-semibold px-4 py-2 rounded-full mb-5 whitespace-nowrap transition-all duration-700 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" aria-hidden="true" />
             <span>מענה תוך שעה ⚡</span>
           </div>
@@ -133,7 +133,7 @@ export default function LandingPage() {
           <h1 className={`text-[1.5rem] sm:text-[1.85rem] md:text-4xl lg:text-[2.8rem] font-black leading-[1.2] tracking-[-0.5px] mb-3 transition-all duration-700 delay-100 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
             חולצות שאנשים עוצרים ושואלים עליהן
             <br />
-            <span className="text-[#f0a500]">ישירות מהמפעל בישראל</span>
+            <span className="text-[#ffc32e]">ישירות מהמפעל בישראל</span>
           </h1>
 
           {/* Sub — AIDA: Interest */}
@@ -152,7 +152,7 @@ export default function LandingPage() {
 
           {/* CTA — AIDA: Action */}
           <a href="#form-section"
-            className={`inline-flex items-center gap-2 bg-gradient-to-r from-[#f0a500] to-[#c97d0a] text-[#0d1b2a] font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.4)] hover:shadow-[0_8px_36px_rgba(240,165,0,0.55)] hover:scale-105 transition-all whitespace-nowrap ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+            className={`inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-[#0d1b2a] font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.4)] hover:shadow-[0_8px_36px_rgba(240,165,0,0.55)] hover:scale-105 transition-all whitespace-nowrap ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
             קבלו מחיר תוך שעה — חינם
             <ChevronDown className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
           </a>
@@ -163,7 +163,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ URGENCY BAR ═══ */}
-      <div className="bg-[#f0a500]/10 border-b border-[#f0a500]/20 py-2.5 text-center">
+      <div className="bg-[#ffc32e]/10 border-b border-[#ffc32e]/20 py-2.5 text-center">
         <p className="text-sm text-[#92400e] font-medium flex items-center justify-center gap-2">
           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true" />
           3 עסקים פנו אלינו היום — מענה מהיר לפניות שמגיעות עכשיו
@@ -210,7 +210,7 @@ export default function LandingPage() {
 
       {/* ═══ FORM (moved up before video) ═══ */}
       <section ref={formReveal.ref} id="form-section" className="max-w-lg mx-auto px-4 py-10 sm:py-14 scroll-mt-8">
-        <p className="text-center text-xs font-semibold text-[#a86200] tracking-wider uppercase mb-2">הצעת מחיר חינם</p>
+        <p className="text-center text-xs font-semibold text-[#d4940a] tracking-wider uppercase mb-2">הצעת מחיר חינם</p>
         <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0d1b2a] text-center mb-2">קבלו הצעת מחיר תוך שעה</h2>
         <p className="text-center text-gray-500 text-sm mb-6">ממלאים פרטים — מתקשרים אליכם</p>
 
@@ -221,7 +221,7 @@ export default function LandingPage() {
             <p className="text-gray-600">נחזור אליך תוך שעה בימי עסקים עם הצעת מחיר</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className={`bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border-t-4 border-[#f0a500] p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-700 ${formReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <form onSubmit={handleSubmit} className={`bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border-t-4 border-[#ffc32e] p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-700 ${formReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             {status === 'error' && (
               <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm text-center" role="alert">
                 בעיה בשליחה. בדקו חיבור לאינטרנט ונסו שוב.
@@ -229,21 +229,21 @@ export default function LandingPage() {
             )}
 
             <div>
-              <label htmlFor="name-field" className="block text-sm font-semibold text-gray-800 mb-1.5 text-center md:text-right">שם מלא <span className="text-[#a86200]">*</span></label>
+              <label htmlFor="name-field" className="block text-sm font-semibold text-gray-800 mb-1.5 text-center md:text-right">שם מלא <span className="text-[#d4940a]">*</span></label>
               <div className="relative">
                 <input ref={nameRef} id="name-field" type="text" required aria-required="true" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="איך קוראים לך?"
-                  className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl text-center md:text-right focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all ${nameValid ? 'border-green-400' : 'border-gray-200'}`} />
+                  className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl text-center md:text-right focus:ring-2 focus:ring-[#ffc32e] focus:border-[#ffc32e] outline-none transition-all ${nameValid ? 'border-green-400' : 'border-gray-200'}`} />
                 {nameValid && <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" aria-hidden="true" />}
               </div>
             </div>
 
             <div>
-              <label htmlFor="phone-field" className="block text-sm font-semibold text-gray-800 mb-1.5 text-center md:text-right">טלפון <span className="text-[#a86200]">*</span></label>
+              <label htmlFor="phone-field" className="block text-sm font-semibold text-gray-800 mb-1.5 text-center md:text-right">טלפון <span className="text-[#d4940a]">*</span></label>
               <div className="relative">
                 <input id="phone-field" type="tel" required aria-required="true" aria-describedby={phoneError ? 'phone-error' : undefined}
                   value={form.phone} onChange={(e) => { setForm({ ...form, phone: e.target.value }); if (phoneError) setPhoneError('') }}
                   placeholder="050-0000000" dir="ltr" style={{ textAlign: 'left' }}
-                  className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all ${phoneError ? 'border-red-400 bg-red-50' : phoneValid ? 'border-green-400' : 'border-gray-200'}`} />
+                  className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl focus:ring-2 focus:ring-[#ffc32e] focus:border-[#ffc32e] outline-none transition-all ${phoneError ? 'border-red-400 bg-red-50' : phoneValid ? 'border-green-400' : 'border-gray-200'}`} />
                 {phoneValid && !phoneError && <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" aria-hidden="true" />}
               </div>
               {phoneError && <p id="phone-error" className="text-red-500 text-xs mt-1.5 text-center" role="alert">{phoneError}</p>}
@@ -253,7 +253,7 @@ export default function LandingPage() {
               <label htmlFor="desc-field" className="block text-sm font-semibold text-gray-800 mb-1.5 text-center md:text-right">ספרו לנו עוד <span className="text-gray-400 font-normal text-xs">(אופציונלי)</span></label>
               <textarea id="desc-field" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="כמה חולצות? סוג הדפסה? תיאור העיצוב..."
-                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-center md:text-right focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all resize-none" />
+                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-center md:text-right focus:ring-2 focus:ring-[#ffc32e] focus:border-[#ffc32e] outline-none transition-all resize-none" />
             </div>
 
             <div className="flex items-center justify-center gap-1 pt-1">
@@ -262,7 +262,7 @@ export default function LandingPage() {
             </div>
 
             <button type="submit" disabled={status === 'loading'}
-              className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#f0a500] to-[#c97d0a] hover:from-[#c97d0a] hover:to-[#a86200] text-[#0d1b2a] font-bold text-base sm:text-lg rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.35)] hover:shadow-[0_8px_32px_rgba(240,165,0,0.5)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap">
+              className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] hover:from-[#f5a623] hover:to-[#d4940a] text-[#0d1b2a] font-bold text-base sm:text-lg rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.35)] hover:shadow-[0_8px_32px_rgba(240,165,0,0.5)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap">
               {status === 'loading' ? (
                 <span className="flex items-center gap-2"><span className="animate-spin w-5 h-5 border-2 border-[#0d1b2a] border-t-transparent rounded-full" />שולח...</span>
               ) : (
@@ -272,7 +272,7 @@ export default function LandingPage() {
 
             <p className="text-xs text-center text-gray-400">
               ✓ תוך שעה | ✓ ללא ספאם | ✓ ללא התחייבות |{' '}
-              <a href="/privacy" className="underline hover:text-[#a86200]">מדיניות פרטיות</a>
+              <a href="/privacy" className="underline hover:text-[#d4940a]">מדיניות פרטיות</a>
             </p>
           </form>
         )}
@@ -282,11 +282,11 @@ export default function LandingPage() {
       <section ref={audienceReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-12">
         <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {[
-            { icon: <Swords className="w-8 h-8 text-[#a86200]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
-            { icon: <Briefcase className="w-8 h-8 text-[#a86200]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
-            { icon: <Trophy className="w-8 h-8 text-[#a86200]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
+            { icon: <Swords className="w-8 h-8 text-[#d4940a]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
+            { icon: <Briefcase className="w-8 h-8 text-[#d4940a]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
+            { icon: <Trophy className="w-8 h-8 text-[#d4940a]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
           ].map((card, i) => (
-            <div key={i} className={`bg-white rounded-2xl p-5 sm:p-6 border-r-4 border-[#f0a500] text-center md:text-right shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 120}ms` }}>
+            <div key={i} className={`bg-white rounded-2xl p-5 sm:p-6 border-r-4 border-[#ffc32e] text-center md:text-right shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 120}ms` }}>
               <div className="mb-3 flex justify-center md:justify-start" aria-hidden="true">{card.icon}</div>
               <h3 className="font-bold text-gray-900 text-base mb-1">{card.title}</h3>
               <p className="text-sm text-gray-500">{card.desc}</p>
@@ -299,11 +299,11 @@ export default function LandingPage() {
       <section ref={trustReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-14">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { icon: <Users className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: '500+ לקוחות מרוצים', desc: 'עסקים, אירועים, קבוצות ספורט — כולם חוזרים' },
-            { icon: <Clock className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'אספקה עד 7 ימי עסקים', desc: 'מהאישור עד אליכם — מהיר ואמין' },
-            { icon: <Shield className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'פגם בייצור? מדפיסים מחדש', desc: 'הדפסה חוזרת או החזר כספי מלא' },
+            { icon: <Users className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: '500+ לקוחות מרוצים', desc: 'עסקים, אירועים, קבוצות ספורט — כולם חוזרים' },
+            { icon: <Clock className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: 'אספקה עד 7 ימי עסקים', desc: 'מהאישור עד אליכם — מהיר ואמין' },
+            { icon: <Shield className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: 'פגם בייצור? מדפיסים מחדש', desc: 'הדפסה חוזרת או החזר כספי מלא' },
           ].map((card, i) => (
-            <div key={i} className={`bg-white rounded-2xl border border-[#f0a500]/10 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out p-5 sm:p-6 text-center ${trustReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
+            <div key={i} className={`bg-white rounded-2xl border border-[#ffc32e]/10 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out p-5 sm:p-6 text-center ${trustReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
               <div className="w-12 h-12 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto mb-3">{card.icon}</div>
               <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">{card.title}</h3>
               <p className="text-xs sm:text-sm text-gray-500">{card.desc}</p>
@@ -328,17 +328,17 @@ export default function LandingPage() {
               { name: 'מיכל לוי', role: 'מנהלת שיווק', badge: 'חולצות ממותגות לצוות', initial: 'מ', text: 'הצוות היה סבלני ומקצועי. התוצאה הפתיעה לטובה.' },
               { name: 'אורי כהן', role: 'מאמן קבוצת כדורגל', badge: 'יוניפורם לקבוצה', initial: 'א', text: 'מחיר תחרותי, איכות גבוהה. חזרתי להזמין פעם שנייה.' },
             ].map((t, i) => (
-              <div key={i} className={`bg-white rounded-2xl border border-[#f0a500]/10 p-5 sm:p-6 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out ${testimonialsReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
+              <div key={i} className={`bg-white rounded-2xl border border-[#ffc32e]/10 p-5 sm:p-6 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out ${testimonialsReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
                 <div className="flex items-center gap-1 mb-2">
                   {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 text-yellow-400 fill-yellow-400" aria-hidden="true" />)}
                 </div>
                 <p className="text-gray-700 text-sm leading-relaxed mb-3">&ldquo;{t.text}&rdquo;</p>
                 <div className="flex items-center gap-3 justify-center md:justify-start">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#f0a500] to-[#c97d0a] flex items-center justify-center text-[#0d1b2a] font-bold text-sm flex-shrink-0" aria-hidden="true">{t.initial}</div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ffc32e] to-[#f5a623] flex items-center justify-center text-[#0d1b2a] font-bold text-sm flex-shrink-0" aria-hidden="true">{t.initial}</div>
                   <div className="text-center md:text-right">
                     <p className="text-sm font-bold text-gray-900">{t.name}</p>
                     <p className="text-xs text-gray-400">{t.role}</p>
-                    <p className="text-[11px] text-[#a86200] font-medium mt-0.5">{t.badge}</p>
+                    <p className="text-[11px] text-[#d4940a] font-medium mt-0.5">{t.badge}</p>
                   </div>
                 </div>
               </div>
@@ -348,9 +348,9 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ GUARANTEE ═══ */}
-      <section ref={guaranteeReveal.ref} className="bg-[#fef3c7]/50 py-10 border-y border-[#f0a500]/15">
+      <section ref={guaranteeReveal.ref} className="bg-[#fef3c7]/50 py-10 border-y border-[#ffc32e]/15">
         <div className={`max-w-2xl mx-auto px-4 text-center transition-all duration-700 ${guaranteeReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-          <Shield className="w-12 h-12 text-[#a86200] mx-auto mb-3" aria-hidden="true" />
+          <Shield className="w-12 h-12 text-[#d4940a] mx-auto mb-3" aria-hidden="true" />
           <h2 className="text-xl sm:text-2xl font-black text-[#0d1b2a] mb-2">ערבות איכות מוחלטת</h2>
           <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-4">פגם בייצור = הדפסה חוזרת חינם, או החזר כספי מלא — ללא שאלות</p>
           <p className="text-xs text-[#92400e] font-medium">🇮🇱 הדפסה בישראל | תמיכה בעברית | עסק ישראלי</p>
@@ -362,7 +362,7 @@ export default function LandingPage() {
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">מוכנים? תנו לנו 30 שניות</h2>
         <p className="text-sm text-gray-600 mb-5">תקבלו מחיר מותאם אישית — חינם</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <a href="#form-section" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#f0a500] to-[#c97d0a] text-[#0d1b2a] font-bold text-base px-6 py-3 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap">
+          <a href="#form-section" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-[#0d1b2a] font-bold text-base px-6 py-3 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap">
             קבלו הצעת מחיר חינם <CheckCircle className="w-5 h-5" aria-hidden="true" />
           </a>
           <a href="tel:0559885954" className="inline-flex items-center gap-2 border-2 border-[#0d1b2a]/20 text-gray-900 font-bold text-base px-6 py-3 rounded-full hover:bg-white/50 transition-all whitespace-nowrap">
@@ -378,7 +378,7 @@ export default function LandingPage() {
           <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           WhatsApp
         </a>
-        <a href="/" className="flex-1 bg-[#f97316] text-white font-bold text-sm py-3 rounded-xl text-center">
+        <a href="/" className="flex-1 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-sm py-3 rounded-xl text-center shadow-sm">
           לאתר שלנו
         </a>
       </div>
@@ -395,10 +395,10 @@ export default function LandingPage() {
       </a>
 
       {/* Footer */}
-      <footer className="bg-[#0d1b2a] border-t border-[#f0a500]/10 py-6 text-center">
+      <footer className="bg-[#0d1b2a] border-t border-[#ffc32e]/10 py-6 text-center">
         <Image src="/logo.png" alt="בדפוס" width={36} height={36} className="mx-auto mb-2 opacity-80" />
         <p className="text-xs text-white/40">&copy; {new Date().getFullYear()} בדפוס. כל הזכויות שמורות.</p>
-        <a href="https://badfos.co.il" className="text-xs text-white/60 hover:text-[#f0a500] transition-colors mt-1 inline-block">badfos.co.il</a>
+        <a href="https://badfos.co.il" className="text-xs text-white/60 hover:text-[#ffc32e] transition-colors mt-1 inline-block">badfos.co.il</a>
       </footer>
     </div>
   )
