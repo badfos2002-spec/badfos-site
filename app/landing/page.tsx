@@ -265,7 +265,7 @@ export default function LandingPage() {
             </div>
 
             <button type="submit" disabled={status === 'loading'}
-              className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] hover:from-[#f5a623] hover:to-[#d4940a] text-[#0d1b2a] font-bold text-base sm:text-lg rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.35)] hover:shadow-[0_8px_32px_rgba(240,165,0,0.5)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap">
+              className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] hover:from-[#f5a623] hover:to-[#d4940a] text-white font-bold text-base sm:text-lg rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.35)] hover:shadow-[0_8px_32px_rgba(240,165,0,0.5)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap">
               {status === 'loading' ? (
                 <span className="flex items-center gap-2"><span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />שולח...</span>
               ) : (
