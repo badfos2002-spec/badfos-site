@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { CheckCircle, Clock, Users, Shield, Star, ChevronDown, Phone, Briefcase, Swords, Trophy } from 'lucide-react'
+
+const NewTestimonialsSection = dynamic(() => import('@/components/home/NewTestimonialsSection'))
 import { setEnhancedConversionData, sendGoogleAdsConversion, sendMetaLeadEvent } from '@/lib/tracking'
 
 // Counter animation hook
@@ -64,7 +67,7 @@ export default function LandingPage() {
   const counter = useCountUp(1200)
   const audienceReveal = useReveal()
   const trustReveal = useReveal()
-  const testimonialsReveal = useReveal()
+  // testimonialsReveal removed — using NewTestimonialsSection from homepage
   const guaranteeReveal = useReveal()
   const formReveal = useReveal()
 
@@ -312,40 +315,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ COUNTER + TESTIMONIALS ═══ */}
-      <section ref={testimonialsReveal.ref} className="bg-[#fdfcf9] py-10 sm:py-14">
-        <div className="max-w-4xl mx-auto px-4">
-          {/* Counter */}
-          <div ref={counter.ref} className="text-center mb-8">
-            <p className="text-3xl sm:text-4xl font-black text-[#0d1b2a]">{counter.count.toLocaleString()}+</p>
-            <p className="text-sm text-gray-500 mt-1">הזמנות הושלמו בהצלחה</p>
-          </div>
+      {/* ═══ COUNTER ═══ */}
+      <div ref={counter.ref} className="text-center py-8 bg-[#fdfcf9]">
+        <p className="text-3xl sm:text-4xl font-black text-[#0d1b2a]">{counter.count.toLocaleString()}+</p>
+        <p className="text-sm text-gray-500 mt-1">הזמנות הושלמו בהצלחה</p>
+      </div>
 
-          <h2 className={`text-xl sm:text-2xl font-bold text-[#0d1b2a] text-center mb-6 sm:mb-8 transition-all duration-700 ${testimonialsReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>מה הלקוחות שלנו אומרים</h2>
-          <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 transition-all duration-700 delay-200 ${testimonialsReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            {[
-              { name: 'דני אברהם', role: 'מנהל אירועים', badge: 'הזמין 200 חולצות לאירוע', initial: 'ד', text: 'איכות מעולה ושירות מהיר. ממליץ בחום!' },
-              { name: 'מיכל לוי', role: 'מנהלת שיווק', badge: 'חולצות ממותגות לצוות', initial: 'מ', text: 'הצוות היה סבלני ומקצועי. התוצאה הפתיעה לטובה.' },
-              { name: 'אורי כהן', role: 'מאמן קבוצת כדורגל', badge: 'יוניפורם לקבוצה', initial: 'א', text: 'מחיר תחרותי, איכות גבוהה. חזרתי להזמין פעם שנייה.' },
-            ].map((t, i) => (
-              <div key={i} className={`bg-white rounded-2xl border border-[#ffc32e]/10 p-5 sm:p-6 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out ${testimonialsReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
-                <div className="flex items-center gap-1 mb-2">
-                  {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 text-yellow-400 fill-yellow-400" aria-hidden="true" />)}
-                </div>
-                <p className="text-gray-700 text-sm leading-relaxed mb-3">&ldquo;{t.text}&rdquo;</p>
-                <div className="flex items-center gap-3 justify-center md:justify-start">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ffc32e] to-[#f5a623] flex items-center justify-center text-[#0d1b2a] font-bold text-sm flex-shrink-0" aria-hidden="true">{t.initial}</div>
-                  <div className="text-center md:text-right">
-                    <p className="text-sm font-bold text-gray-900">{t.name}</p>
-                    <p className="text-xs text-gray-400">{t.role}</p>
-                    <p className="text-[11px] text-[#d4940a] font-medium mt-0.5">{t.badge}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ═══ TESTIMONIALS — same as homepage ═══ */}
+      <NewTestimonialsSection />
 
       {/* ═══ GUARANTEE ═══ */}
       <section ref={guaranteeReveal.ref} className="bg-[#fef3c7]/50 py-10 border-y border-[#ffc32e]/15">
