@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { CheckCircle, Clock, Users, Shield, Star, ChevronDown, Phone, Briefcase, Swords, Trophy } from 'lucide-react'
 import { setEnhancedConversionData, sendGoogleAdsConversion, sendMetaLeadEvent } from '@/lib/tracking'
@@ -167,23 +167,6 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* ═══ AUDIENCE CARDS ═══ */}
-      <section ref={audienceReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-12">
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          {[
-            { icon: <Swords className="w-8 h-8 text-[#a86200]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
-            { icon: <Briefcase className="w-8 h-8 text-[#a86200]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
-            { icon: <Trophy className="w-8 h-8 text-[#a86200]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
-          ].map((card, i) => (
-            <div key={i} className="bg-white rounded-2xl p-5 sm:p-6 border-r-4 border-[#f0a500] text-right shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300" style={{ transitionDelay: `${i * 120}ms` }}>
-              <div className="mb-3" aria-hidden="true">{card.icon}</div>
-              <h3 className="font-bold text-gray-900 text-base mb-1">{card.title}</h3>
-              <p className="text-sm text-gray-500">{card.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ═══ GOOGLE RATING ═══ */}
       <section className="bg-white py-8 sm:py-10 border-y border-gray-100">
         <div className="max-w-3xl mx-auto px-4 text-center">
@@ -206,10 +189,97 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ═══ AUDIENCE CARDS ═══ */}
+      <section ref={audienceReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-12">
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          {[
+            { icon: <Swords className="w-8 h-8 text-[#a86200]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
+            { icon: <Briefcase className="w-8 h-8 text-[#a86200]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
+            { icon: <Trophy className="w-8 h-8 text-[#a86200]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
+          ].map((card, i) => (
+            <div key={i} className={`bg-white rounded-2xl p-5 sm:p-6 border-r-4 border-[#f0a500] text-center md:text-right shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 120}ms` }}>
+              <div className="mb-3 flex justify-center md:justify-start" aria-hidden="true">{card.icon}</div>
+              <h3 className="font-bold text-gray-900 text-base mb-1">{card.title}</h3>
+              <p className="text-sm text-gray-500">{card.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══ FORM (moved up before video) ═══ */}
+      <section ref={formReveal.ref} id="form-section" className="max-w-lg mx-auto px-4 py-10 sm:py-14 scroll-mt-8">
+        <p className="text-center text-xs font-semibold text-[#a86200] tracking-wider uppercase mb-2">הצעת מחיר חינם</p>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0d1b2a] text-center mb-2">קבלו הצעת מחיר תוך שעה</h2>
+        <p className="text-center text-gray-500 text-sm mb-6">ממלאים פרטים — מתקשרים אליכם</p>
+
+        {status === 'success' ? (
+          <div className={`bg-white rounded-2xl shadow-lg p-8 text-center transition-all duration-500 ${formReveal.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} role="alert" aria-live="polite">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" aria-hidden="true" />
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">תודה!</h3>
+            <p className="text-gray-600">נחזור אליך תוך שעה בימי עסקים עם הצעת מחיר</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className={`bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border-t-4 border-[#f0a500] p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-700 ${formReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            {status === 'error' && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm text-center" role="alert">
+                בעיה בשליחה. בדקו חיבור לאינטרנט ונסו שוב.
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="name-field" className="block text-sm font-semibold text-gray-800 mb-1.5 text-center md:text-right">שם מלא <span className="text-[#a86200]">*</span></label>
+              <div className="relative">
+                <input ref={nameRef} id="name-field" type="text" required aria-required="true" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="איך קוראים לך?"
+                  className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl text-center md:text-right focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all ${nameValid ? 'border-green-400' : 'border-gray-200'}`} />
+                {nameValid && <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" aria-hidden="true" />}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="phone-field" className="block text-sm font-semibold text-gray-800 mb-1.5 text-center md:text-right">טלפון <span className="text-[#a86200]">*</span></label>
+              <div className="relative">
+                <input id="phone-field" type="tel" required aria-required="true" aria-describedby={phoneError ? 'phone-error' : undefined}
+                  value={form.phone} onChange={(e) => { setForm({ ...form, phone: e.target.value }); if (phoneError) setPhoneError('') }}
+                  placeholder="050-0000000" dir="ltr" style={{ textAlign: 'left' }}
+                  className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all ${phoneError ? 'border-red-400 bg-red-50' : phoneValid ? 'border-green-400' : 'border-gray-200'}`} />
+                {phoneValid && !phoneError && <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" aria-hidden="true" />}
+              </div>
+              {phoneError && <p id="phone-error" className="text-red-500 text-xs mt-1.5 text-center" role="alert">{phoneError}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="desc-field" className="block text-sm font-semibold text-gray-800 mb-1.5 text-center md:text-right">ספרו לנו עוד <span className="text-gray-400 font-normal text-xs">(אופציונלי)</span></label>
+              <textarea id="desc-field" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="כמה חולצות? סוג הדפסה? תיאור העיצוב..."
+                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-center md:text-right focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all resize-none" />
+            </div>
+
+            <div className="flex items-center justify-center gap-1 pt-1">
+              {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" aria-hidden="true" />)}
+              <span className="text-gray-400 text-xs mr-1.5">4.8 מתוך 5 | 30+ ביקורות בגוגל</span>
+            </div>
+
+            <button type="submit" disabled={status === 'loading'}
+              className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#f0a500] to-[#c97d0a] hover:from-[#c97d0a] hover:to-[#a86200] text-[#0d1b2a] font-bold text-base sm:text-lg rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.35)] hover:shadow-[0_8px_32px_rgba(240,165,0,0.5)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap">
+              {status === 'loading' ? (
+                <span className="flex items-center gap-2"><span className="animate-spin w-5 h-5 border-2 border-[#0d1b2a] border-t-transparent rounded-full" />שולח...</span>
+              ) : (
+                <>שלחו לי הצעה עכשיו <CheckCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" /></>
+              )}
+            </button>
+
+            <p className="text-xs text-center text-gray-400">
+              ✓ תוך שעה | ✓ ללא ספאם | ✓ ללא התחייבות |{' '}
+              <a href="/privacy" className="underline hover:text-[#a86200]">מדיניות פרטיות</a>
+            </p>
+          </form>
+        )}
+      </section>
+
       {/* ═══ VIDEO ═══ */}
       <section className="bg-gradient-to-b from-[#fdfcf9] to-[#f5f0e8] py-8 sm:py-10">
-        <div className="max-w-4xl mx-auto px-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 text-center mb-4">ראו את איכות ההדפסה שלנו</h2>
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">ראו את איכות ההדפסה שלנו</h2>
           <div className="relative w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl shadow-xl overflow-hidden border border-gray-200">
             <iframe
               src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8&controls=0&modestbranding=1&rel=0"
@@ -219,20 +289,19 @@ export default function LandingPage() {
               className="absolute inset-0 w-full h-full"
             />
           </div>
-          <p className="text-center text-gray-400 text-xs mt-3">ראו את איכות ההדפסה שלנו במו עיניכם</p>
         </div>
       </section>
 
       {/* ═══ TRUST CARDS ═══ */}
       <section ref={trustReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-14">
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${trustReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { icon: <Users className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: '500+ לקוחות מרוצים', desc: 'עסקים, אירועים, קבוצות ספורט — כולם חוזרים' },
             { icon: <Clock className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'אספקה עד 7 ימי עסקים', desc: 'מהאישור עד אליכם — מהיר ואמין' },
             { icon: <Shield className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'פגם בייצור? מדפיסים מחדש', desc: 'הדפסה חוזרת או החזר כספי מלא' },
           ].map((card, i) => (
-            <div key={i} className={`bg-white rounded-2xl border border-[#f0a500]/10 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out p-5 sm:p-6 text-center md:text-right ${trustReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
-              <div className="w-12 h-12 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto md:mx-0 mb-3">{card.icon}</div>
+            <div key={i} className={`bg-white rounded-2xl border border-[#f0a500]/10 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out p-5 sm:p-6 text-center ${trustReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
+              <div className="w-12 h-12 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto mb-3">{card.icon}</div>
               <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">{card.title}</h3>
               <p className="text-xs sm:text-sm text-gray-500">{card.desc}</p>
             </div>
@@ -261,9 +330,9 @@ export default function LandingPage() {
                   {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 text-yellow-400 fill-yellow-400" aria-hidden="true" />)}
                 </div>
                 <p className="text-gray-700 text-sm leading-relaxed mb-3">&ldquo;{t.text}&rdquo;</p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 justify-center md:justify-start">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#f0a500] to-[#c97d0a] flex items-center justify-center text-[#0d1b2a] font-bold text-sm flex-shrink-0" aria-hidden="true">{t.initial}</div>
-                  <div>
+                  <div className="text-center md:text-right">
                     <p className="text-sm font-bold text-gray-900">{t.name}</p>
                     <p className="text-xs text-gray-400">{t.role}</p>
                     <p className="text-[11px] text-[#a86200] font-medium mt-0.5">{t.badge}</p>
@@ -283,76 +352,6 @@ export default function LandingPage() {
           <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-4">פגם בייצור = הדפסה חוזרת חינם, או החזר כספי מלא — ללא שאלות</p>
           <p className="text-xs text-[#92400e] font-medium">🇮🇱 הדפסה בישראל | תמיכה בעברית | עסק ישראלי</p>
         </div>
-      </section>
-
-      {/* ═══ FORM ═══ */}
-      <section ref={formReveal.ref} id="form-section" className="max-w-lg mx-auto px-4 py-10 sm:py-14 scroll-mt-8">
-        <p className="text-center text-xs font-semibold text-[#a86200] tracking-wider uppercase mb-2">הצעת מחיר חינם</p>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0d1b2a] text-center mb-2">קבלו הצעת מחיר תוך שעה</h2>
-        <p className="text-center text-gray-500 text-sm mb-6">ממלאים פרטים — מתקשרים אליכם</p>
-
-        {status === 'success' ? (
-          <div className={`bg-white rounded-2xl shadow-lg p-8 text-center transition-all duration-500 ${formReveal.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} role="alert" aria-live="polite">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" aria-hidden="true" />
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">תודה!</h3>
-            <p className="text-gray-600">נחזור אליך תוך שעה בימי עסקים עם הצעת מחיר</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className={`bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border-t-4 border-[#f0a500] p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-700 ${formReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            {status === 'error' && (
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm text-center" role="alert">
-                בעיה בשליחה. בדקו חיבור לאינטרנט ונסו שוב.
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="name-field" className="block text-sm font-semibold text-gray-800 mb-1.5">שם מלא <span className="text-[#a86200]">*</span></label>
-              <div className="relative">
-                <input ref={nameRef} id="name-field" type="text" required aria-required="true" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="איך קוראים לך?"
-                  className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl text-right focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all ${nameValid ? 'border-green-400' : 'border-gray-200'}`} />
-                {nameValid && <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" aria-hidden="true" />}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="phone-field" className="block text-sm font-semibold text-gray-800 mb-1.5">טלפון <span className="text-[#a86200]">*</span></label>
-              <div className="relative">
-                <input id="phone-field" type="tel" required aria-required="true" aria-describedby={phoneError ? 'phone-error' : undefined}
-                  value={form.phone} onChange={(e) => { setForm({ ...form, phone: e.target.value }); if (phoneError) setPhoneError('') }}
-                  placeholder="050-0000000" dir="ltr" style={{ textAlign: 'left' }}
-                  className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all ${phoneError ? 'border-red-400 bg-red-50' : phoneValid ? 'border-green-400' : 'border-gray-200'}`} />
-                {phoneValid && !phoneError && <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" aria-hidden="true" />}
-              </div>
-              {phoneError && <p id="phone-error" className="text-red-500 text-xs mt-1.5" role="alert">{phoneError}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="desc-field" className="block text-sm font-semibold text-gray-800 mb-1.5">ספרו לנו עוד <span className="text-gray-400 font-normal text-xs">(אופציונלי)</span></label>
-              <textarea id="desc-field" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="כמה חולצות? סוג הדפסה? תיאור העיצוב..."
-                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-right focus:ring-2 focus:ring-[#f0a500] focus:border-[#f0a500] outline-none transition-all resize-none" />
-            </div>
-
-            <div className="flex items-center justify-center gap-1 pt-1">
-              {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" aria-hidden="true" />)}
-              <span className="text-gray-400 text-xs mr-1.5">4.8 מתוך 5 | 30+ ביקורות בגוגל</span>
-            </div>
-
-            <button type="submit" disabled={status === 'loading'}
-              className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#f0a500] to-[#c97d0a] hover:from-[#c97d0a] hover:to-[#a86200] text-[#0d1b2a] font-bold text-base sm:text-lg rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.35)] hover:shadow-[0_8px_32px_rgba(240,165,0,0.5)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap">
-              {status === 'loading' ? (
-                <span className="flex items-center gap-2"><span className="animate-spin w-5 h-5 border-2 border-[#0d1b2a] border-t-transparent rounded-full" />שולח...</span>
-              ) : (
-                <>שלחו לי הצעה עכשיו <CheckCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" /></>
-              )}
-            </button>
-
-            <p className="text-xs text-center text-gray-400">
-              ✓ תוך שעה | ✓ ללא ספאם | ✓ ללא התחייבות |{' '}
-              <a href="/privacy" className="underline hover:text-[#a86200]">מדיניות פרטיות</a>
-            </p>
-          </form>
-        )}
       </section>
 
       {/* ═══ BOTTOM CTA ═══ */}
