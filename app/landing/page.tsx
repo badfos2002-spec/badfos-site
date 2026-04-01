@@ -109,7 +109,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f3] pb-[72px] md:pb-0" dir="rtl">
+    <div className="min-h-screen bg-[#fdfcf9] pb-[72px] md:pb-0" dir="rtl">
       <a href="#form-section" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:right-4 focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:z-[999]">דלג לטופס</a>
 
       {/* ═══ HERO ═══ */}
@@ -171,21 +171,21 @@ export default function LandingPage() {
       <section ref={audienceReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-12">
         <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {[
-            { icon: <Swords className="w-8 h-8 text-[#f0a500]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
-            { icon: <Briefcase className="w-8 h-8 text-[#f0a500]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
-            { icon: <Trophy className="w-8 h-8 text-[#f0a500]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
+            { icon: <Swords className="w-8 h-8 text-[#a86200]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
+            { icon: <Briefcase className="w-8 h-8 text-[#a86200]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
+            { icon: <Trophy className="w-8 h-8 text-[#a86200]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
           ].map((card, i) => (
-            <div key={i} className="bg-[#0d1b2a] rounded-2xl p-5 sm:p-6 border-r-4 border-[#f0a500] text-right hover:bg-[#1a2e45] transition-all" style={{ transitionDelay: `${i * 120}ms` }}>
+            <div key={i} className="bg-white rounded-2xl p-5 sm:p-6 border-r-4 border-[#f0a500] text-right shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300" style={{ transitionDelay: `${i * 120}ms` }}>
               <div className="mb-3" aria-hidden="true">{card.icon}</div>
-              <h3 className="font-bold text-white text-base mb-1">{card.title}</h3>
-              <p className="text-sm text-white/60">{card.desc}</p>
+              <h3 className="font-bold text-gray-900 text-base mb-1">{card.title}</h3>
+              <p className="text-sm text-gray-500">{card.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ═══ GOOGLE RATING ═══ */}
-      <section className="bg-white py-8 border-y border-gray-100">
+      <section className="bg-white py-8 sm:py-10 border-y border-gray-100">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-1.5 mb-2">
             {[...Array(5)].map((_, i) => (
@@ -207,9 +207,10 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ VIDEO ═══ */}
-      <section className="bg-[#0d1b2a] py-8 sm:py-10">
+      <section className="bg-gradient-to-b from-[#fdfcf9] to-[#f5f0e8] py-8 sm:py-10">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="relative w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl shadow-2xl overflow-hidden">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 text-center mb-4">ראו את איכות ההדפסה שלנו</h2>
+          <div className="relative w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl shadow-xl overflow-hidden border border-gray-200">
             <iframe
               src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8&controls=0&modestbranding=1&rel=0"
               title="בדפוס - הדפסת חולצות באיכות גבוהה"
@@ -218,7 +219,7 @@ export default function LandingPage() {
               className="absolute inset-0 w-full h-full"
             />
           </div>
-          <p className="text-center text-white/35 text-xs mt-3">ראו את איכות ההדפסה שלנו במו עיניכם</p>
+          <p className="text-center text-gray-400 text-xs mt-3">ראו את איכות ההדפסה שלנו במו עיניכם</p>
         </div>
       </section>
 
@@ -230,7 +231,7 @@ export default function LandingPage() {
             { icon: <Clock className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'אספקה עד 7 ימי עסקים', desc: 'מהאישור עד אליכם — מהיר ואמין' },
             { icon: <Shield className="w-7 h-7 text-[#a86200]" aria-hidden="true" />, title: 'פגם בייצור? מדפיסים מחדש', desc: 'הדפסה חוזרת או החזר כספי מלא' },
           ].map((card, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-[#f0a500]/10 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all p-5 sm:p-6 text-center md:text-right" style={{ transitionDelay: `${i * 120}ms` }}>
+            <div key={i} className={`bg-white rounded-2xl border border-[#f0a500]/10 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out p-5 sm:p-6 text-center md:text-right ${trustReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
               <div className="w-12 h-12 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto md:mx-0 mb-3">{card.icon}</div>
               <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">{card.title}</h3>
               <p className="text-xs sm:text-sm text-gray-500">{card.desc}</p>
@@ -240,7 +241,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ COUNTER + TESTIMONIALS ═══ */}
-      <section ref={testimonialsReveal.ref} className="bg-white py-10 sm:py-14">
+      <section ref={testimonialsReveal.ref} className="bg-[#fdfcf9] py-10 sm:py-14">
         <div className="max-w-4xl mx-auto px-4">
           {/* Counter */}
           <div ref={counter.ref} className="text-center mb-8">
@@ -255,7 +256,7 @@ export default function LandingPage() {
               { name: 'מיכל לוי', role: 'מנהלת שיווק', badge: 'חולצות ממותגות לצוות', initial: 'מ', text: 'הצוות היה סבלני ומקצועי. התוצאה הפתיעה לטובה.' },
               { name: 'אורי כהן', role: 'מאמן קבוצת כדורגל', badge: 'יוניפורם לקבוצה', initial: 'א', text: 'מחיר תחרותי, איכות גבוהה. חזרתי להזמין פעם שנייה.' },
             ].map((t, i) => (
-              <div key={i} className="bg-[#faf8f3] rounded-2xl border border-[#f0a500]/10 p-5 sm:p-6 hover:shadow-md hover:-translate-y-1 transition-all" style={{ transitionDelay: `${i * 120}ms` }}>
+              <div key={i} className={`bg-white rounded-2xl border border-[#f0a500]/10 p-5 sm:p-6 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out ${testimonialsReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
                 <div className="flex items-center gap-1 mb-2">
                   {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 text-yellow-400 fill-yellow-400" aria-hidden="true" />)}
                 </div>
@@ -355,21 +356,21 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ BOTTOM CTA ═══ */}
-      <section className="bg-[#0d1b2a] py-10 text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">מוכנים? תנו לנו 30 שניות</h2>
-        <p className="text-sm text-white/50 mb-5">תקבלו מחיר מותאם אישית — חינם</p>
+      <section className="bg-[#fef3c7] py-10 text-center">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">מוכנים? תנו לנו 30 שניות</h2>
+        <p className="text-sm text-gray-600 mb-5">תקבלו מחיר מותאם אישית — חינם</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <a href="#form-section" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#f0a500] to-[#c97d0a] text-[#0d1b2a] font-bold text-base px-6 py-3 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap">
             קבלו הצעת מחיר חינם <CheckCircle className="w-5 h-5" aria-hidden="true" />
           </a>
-          <a href="tel:0559885954" className="inline-flex items-center gap-2 border-2 border-white/20 text-white font-bold text-base px-6 py-3 rounded-full hover:bg-white/10 transition-all whitespace-nowrap">
+          <a href="tel:0559885954" className="inline-flex items-center gap-2 border-2 border-[#0d1b2a]/20 text-gray-900 font-bold text-base px-6 py-3 rounded-full hover:bg-white/50 transition-all whitespace-nowrap">
             <Phone className="w-4 h-4" aria-hidden="true" /> 055-988-5954
           </a>
         </div>
       </section>
 
       {/* ═══ MOBILE STICKY BAR ═══ */}
-      <div className="fixed bottom-0 left-0 right-0 z-[200] md:hidden bg-[#0d1b2a] border-t border-[#f0a500]/20 px-3 py-2.5 flex gap-2">
+      <div className="fixed bottom-0 left-0 right-0 z-[200] md:hidden bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-3 py-2.5 flex gap-2">
         <a href="#form-section" className="flex-1 bg-gradient-to-r from-[#f0a500] to-[#c97d0a] text-[#0d1b2a] font-bold text-sm py-3 rounded-xl text-center">
           קבלו מחיר
         </a>
