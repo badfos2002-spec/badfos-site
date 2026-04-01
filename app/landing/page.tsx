@@ -152,7 +152,7 @@ export default function LandingPage() {
 
           {/* CTA — AIDA: Action */}
           <a href="#form-section"
-            className={`inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-[#0d1b2a] font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.4)] hover:shadow-[0_8px_36px_rgba(240,165,0,0.55)] hover:scale-105 transition-all whitespace-nowrap ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+            className={`inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.4)] hover:shadow-[0_8px_36px_rgba(240,165,0,0.55)] hover:scale-105 transition-all whitespace-nowrap ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
             קבלו מחיר תוך שעה — חינם
             <ChevronDown className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
           </a>
@@ -264,7 +264,7 @@ export default function LandingPage() {
             <button type="submit" disabled={status === 'loading'}
               className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] hover:from-[#f5a623] hover:to-[#d4940a] text-[#0d1b2a] font-bold text-base sm:text-lg rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.35)] hover:shadow-[0_8px_32px_rgba(240,165,0,0.5)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap">
               {status === 'loading' ? (
-                <span className="flex items-center gap-2"><span className="animate-spin w-5 h-5 border-2 border-[#0d1b2a] border-t-transparent rounded-full" />שולח...</span>
+                <span className="flex items-center gap-2"><span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />שולח...</span>
               ) : (
                 <>שלחו לי הצעה עכשיו <CheckCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" /></>
               )}
@@ -362,10 +362,10 @@ export default function LandingPage() {
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">מוכנים? תנו לנו 30 שניות</h2>
         <p className="text-sm text-gray-600 mb-5">תקבלו מחיר מותאם אישית — חינם</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <a href="#form-section" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-[#0d1b2a] font-bold text-base px-6 py-3 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap">
+          <a href="#form-section" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-base px-6 py-3 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap">
             קבלו הצעת מחיר חינם <CheckCircle className="w-5 h-5" aria-hidden="true" />
           </a>
-          <a href="tel:0559885954" className="inline-flex items-center gap-2 border-2 border-[#0d1b2a]/20 text-gray-900 font-bold text-base px-6 py-3 rounded-full hover:bg-white/50 transition-all whitespace-nowrap">
+          <a href="tel:0559885954" className="inline-flex items-center gap-2 border-2 border-white/20 text-gray-900 font-bold text-base px-6 py-3 rounded-full hover:bg-white/50 transition-all whitespace-nowrap">
             <Phone className="w-4 h-4" aria-hidden="true" /> 055-988-5954
           </a>
         </div>
