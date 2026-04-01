@@ -136,12 +136,12 @@ export default function LandingPage() {
           <h1 className={`text-[1.5rem] sm:text-[1.85rem] md:text-4xl lg:text-[2.8rem] font-black leading-[1.2] tracking-[-0.5px] mb-3 transition-all duration-700 delay-100 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
             חולצות שאנשים עוצרים ושואלים עליהן
             <br />
-            <span className="text-[#ffc32e]">ישירות מהמפעל בישראל</span>
+            <span className="text-[#ffc32e]">ייצור כחול לבן</span>
           </h1>
 
           {/* Sub — AIDA: Interest */}
           <p className={`text-sm sm:text-base text-white/65 max-w-lg mx-auto mb-5 leading-relaxed transition-all duration-700 delay-200 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            לחיילים, עסקים וקבוצות | מינימום 10 יח׳ | אספקה עד 7 ימי עסקים
+            לחיילים, עסקים וקבוצות | ללא מינימום הזמנה | אספקה עד 7 ימי עסקים
           </p>
 
           {/* Trust row — AIDA: Desire */}
@@ -285,7 +285,7 @@ export default function LandingPage() {
       <section ref={audienceReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-12">
         <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {[
-            { icon: <Swords className="w-8 h-8 text-[#d4940a]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
+            { icon: <Swords className="w-8 h-8 text-[#d4940a]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — ללא מינימום הזמנה' },
             { icon: <Briefcase className="w-8 h-8 text-[#d4940a]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
             { icon: <Trophy className="w-8 h-8 text-[#d4940a]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
           ].map((card, i) => (
