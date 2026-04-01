@@ -301,7 +301,7 @@ export default function LandingPage() {
           {[
             { icon: <Users className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: '500+ לקוחות מרוצים', desc: 'עסקים, אירועים, קבוצות ספורט — כולם חוזרים' },
             { icon: <Clock className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: 'אספקה עד 7 ימי עסקים', desc: 'מהאישור עד אליכם — מהיר ואמין' },
-            { icon: <Shield className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: 'פגם בייצור? מדפיסים מחדש', desc: 'הדפסה חוזרת או החזר כספי מלא' },
+            { icon: <Shield className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: 'פגם ייצור? מדפיסים מחדש', desc: 'הדפסה חוזרת או החזר כספי — דיווח תוך 7 ימים' },
           ].map((card, i) => (
             <div key={i} className={`bg-white rounded-2xl border border-[#ffc32e]/10 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out p-5 sm:p-6 text-center ${trustReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>
               <div className="w-12 h-12 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto mb-3">{card.icon}</div>
@@ -351,8 +351,8 @@ export default function LandingPage() {
       <section ref={guaranteeReveal.ref} className="bg-[#fef3c7]/50 py-10 border-y border-[#ffc32e]/15">
         <div className={`max-w-2xl mx-auto px-4 text-center transition-all duration-700 ${guaranteeReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           <Shield className="w-12 h-12 text-[#d4940a] mx-auto mb-3" aria-hidden="true" />
-          <h2 className="text-xl sm:text-2xl font-black text-[#0d1b2a] mb-2">ערבות איכות מוחלטת</h2>
-          <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-4">פגם בייצור = הדפסה חוזרת חינם, או החזר כספי מלא — ללא שאלות</p>
+          <h2 className="text-xl sm:text-2xl font-black text-[#0d1b2a] mb-2">ערבות איכות</h2>
+          <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-4">פגם ייצור מצידנו? הדפסה חוזרת או החזר כספי מלא. יש לדווח תוך 7 ימים מקבלת המוצר.</p>
           <p className="text-xs text-[#92400e] font-medium">🇮🇱 הדפסה בישראל | תמיכה בעברית | עסק ישראלי</p>
         </div>
       </section>
