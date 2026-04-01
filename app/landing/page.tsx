@@ -192,20 +192,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ AUDIENCE CARDS ═══ */}
-      <section ref={audienceReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-12">
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          {[
-            { icon: <Swords className="w-8 h-8 text-[#a86200]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
-            { icon: <Briefcase className="w-8 h-8 text-[#a86200]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
-            { icon: <Trophy className="w-8 h-8 text-[#a86200]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
-          ].map((card, i) => (
-            <div key={i} className={`bg-white rounded-2xl p-5 sm:p-6 border-r-4 border-[#f0a500] text-center md:text-right shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 120}ms` }}>
-              <div className="mb-3 flex justify-center md:justify-start" aria-hidden="true">{card.icon}</div>
-              <h3 className="font-bold text-gray-900 text-base mb-1">{card.title}</h3>
-              <p className="text-sm text-gray-500">{card.desc}</p>
-            </div>
-          ))}
+      {/* ═══ VIDEO ═══ */}
+      <section className="bg-gradient-to-b from-[#fdfcf9] to-[#f5f0e8] py-8 sm:py-10">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">ראו את איכות ההדפסה שלנו</h2>
+          <div className="relative w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+            <iframe
+              src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8&controls=0&modestbranding=1&rel=0"
+              title="בדפוס - הדפסת חולצות באיכות גבוהה"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
         </div>
       </section>
 
@@ -279,19 +278,20 @@ export default function LandingPage() {
         )}
       </section>
 
-      {/* ═══ VIDEO ═══ */}
-      <section className="bg-gradient-to-b from-[#fdfcf9] to-[#f5f0e8] py-8 sm:py-10">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">ראו את איכות ההדפסה שלנו</h2>
-          <div className="relative w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-            <iframe
-              src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8&controls=0&modestbranding=1&rel=0"
-              title="בדפוס - הדפסת חולצות באיכות גבוהה"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full"
-            />
-          </div>
+      {/* ═══ AUDIENCE CARDS ═══ */}
+      <section ref={audienceReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-12">
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          {[
+            { icon: <Swords className="w-8 h-8 text-[#a86200]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — מינימום 10 יח׳' },
+            { icon: <Briefcase className="w-8 h-8 text-[#a86200]" />, title: 'עסקים ומותגים', desc: 'חולצות צוות, מיתוג, אירועי חברה' },
+            { icon: <Trophy className="w-8 h-8 text-[#a86200]" />, title: 'קבוצות ספורט', desc: 'יוניפורמים, אימוניות, חולצות תחרות' },
+          ].map((card, i) => (
+            <div key={i} className={`bg-white rounded-2xl p-5 sm:p-6 border-r-4 border-[#f0a500] text-center md:text-right shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 120}ms` }}>
+              <div className="mb-3 flex justify-center md:justify-start" aria-hidden="true">{card.icon}</div>
+              <h3 className="font-bold text-gray-900 text-base mb-1">{card.title}</h3>
+              <p className="text-sm text-gray-500">{card.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
