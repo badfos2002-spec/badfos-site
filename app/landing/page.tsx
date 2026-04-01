@@ -141,45 +141,57 @@ export default function LandingPage() {
         <div className="absolute bottom-20 left-[25%] w-4 h-4 border border-[#ffc32e]/20 rounded-full float-shape pointer-events-none" aria-hidden="true" />
         <div className="absolute top-24 right-[30%] w-6 h-6 border border-[#ffc32e]/10 rotate-45 float-shape-slow pointer-events-none" aria-hidden="true" />
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 pt-8 pb-10 text-center">
-          <Image src="/logo.png" alt="לוגו בדפוס — הדפסת חולצות" width={52} height={52} className="rounded-full mx-auto mb-4" />
+        <div className="relative z-10 max-w-6xl mx-auto px-4 pt-8 pb-10">
+          {/* Desktop: 2-column hero (text right, video left) | Mobile: stacked centered */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            {/* Text column */}
+            <div className="text-center lg:text-right order-1">
+              <Image src="/logo.png" alt="לוגו בדפוס — הדפסת חולצות" width={52} height={52} className="rounded-full mx-auto lg:mx-0 mb-4" />
 
-          {/* Badge with pulse */}
-          <div className={`inline-flex items-center gap-2 bg-[#ffc32e]/15 border border-[#ffc32e]/30 text-[#ffc32e] text-xs sm:text-sm font-semibold px-4 py-2 rounded-full mb-5 whitespace-nowrap transition-all duration-700 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" aria-hidden="true" />
-            <span>מענה תוך שעה ⚡</span>
-          </div>
+              <div className={`inline-flex items-center gap-2 bg-[#ffc32e]/15 border border-[#ffc32e]/30 text-[#ffc32e] text-xs sm:text-sm font-semibold px-4 py-2 rounded-full mb-5 whitespace-nowrap transition-all duration-700 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" aria-hidden="true" />
+                <span>מענה תוך שעה ⚡</span>
+              </div>
 
-          {/* H1 — AIDA: Attention */}
-          <h1 className={`text-[1.5rem] sm:text-[1.85rem] md:text-4xl lg:text-[2.8rem] font-black leading-[1.2] tracking-[-0.5px] mb-3 transition-all duration-700 delay-100 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            חולצות שאנשים עוצרים ושואלים עליהן
-            <br />
-            <span className="text-[#ffc32e]">ייצור כחול לבן</span>
-          </h1>
+              <h1 className={`text-[1.5rem] sm:text-[1.85rem] md:text-4xl lg:text-[2.8rem] font-black leading-[1.2] tracking-[-0.5px] mb-3 transition-all duration-700 delay-100 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                חולצות שאנשים עוצרים ושואלים עליהן
+                <br />
+                <span className="text-[#ffc32e]">ייצור כחול לבן</span>
+              </h1>
 
-          {/* Sub — AIDA: Interest */}
-          <p className={`text-sm sm:text-base text-white/65 max-w-lg mx-auto mb-5 leading-relaxed transition-all duration-700 delay-200 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            לחיילים, עסקים וקבוצות | ללא מינימום הזמנה | אספקה עד 7 ימי עסקים
-          </p>
+              <p className={`text-sm sm:text-base text-white/65 max-w-lg mx-auto lg:mx-0 mb-5 leading-relaxed transition-all duration-700 delay-200 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                לחיילים, עסקים וקבוצות | ללא מינימום הזמנה | אספקה עד 7 ימי עסקים
+              </p>
 
-          {/* Trust row — AIDA: Desire */}
-          <div className={`flex justify-center flex-wrap gap-4 sm:gap-5 mb-6 transition-all duration-700 delay-300 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium"><span aria-hidden="true">✅</span> 500+ לקוחות</div>
-            <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium">
-              <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" aria-hidden="true" /> 4.8 בגוגל
+              <div className={`flex justify-center lg:justify-start flex-wrap gap-4 sm:gap-5 mb-6 transition-all duration-700 delay-300 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium"><span aria-hidden="true">✅</span> 500+ לקוחות</div>
+                <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" aria-hidden="true" /> 4.8 בגוגל
+                </div>
+                <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium"><span aria-hidden="true">🛡️</span> ערבות איכות</div>
+              </div>
+
+              <a href="#form-section"
+                className={`inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.4)] hover:shadow-[0_8px_36px_rgba(240,165,0,0.55)] hover:scale-105 transition-all whitespace-nowrap ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                לפרטים והצעות מחיר
+                <ChevronDown className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+              </a>
+              <p className="text-[11px] text-white/35 mt-2">✓ חינם | ✓ ללא התחייבות | ✓ מענה תוך שעה</p>
             </div>
-            <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium"><span aria-hidden="true">🛡️</span> ערבות איכות</div>
+
+            {/* Video column — desktop only in hero */}
+            <div className="hidden lg:block order-2">
+              <div className="relative w-full max-w-xs mx-auto aspect-[9/16] rounded-2xl shadow-2xl overflow-hidden border border-white/10">
+                <iframe
+                  src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8&controls=0&modestbranding=1&rel=0"
+                  title="בדפוס - הדפסת חולצות באיכות גבוהה"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+            </div>
           </div>
-
-          {/* CTA — AIDA: Action */}
-          <a href="#form-section"
-            className={`inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.4)] hover:shadow-[0_8px_36px_rgba(240,165,0,0.55)] hover:scale-105 transition-all whitespace-nowrap ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            לפרטים והצעות מחיר
-            <ChevronDown className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-          </a>
-
-          {/* Micro-copy */}
-          <p className="text-[11px] text-white/35 mt-2">✓ חינם | ✓ ללא התחייבות | ✓ מענה תוך שעה</p>
         </div>
       </section>
 
@@ -216,12 +228,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ VIDEO ═══ */}
-      <section className="relative bg-gradient-to-b from-[#fdfcf9] to-[#f5f0e8] py-8 sm:py-10 overflow-hidden">
+      {/* ═══ VIDEO — mobile only (desktop shows in hero) ═══ */}
+      <section className="lg:hidden relative bg-gradient-to-b from-[#fdfcf9] to-[#f5f0e8] py-8 overflow-hidden">
         <div className="absolute top-10 right-[5%] w-20 h-20 border-2 border-[#ffc32e]/10 rounded-full spin-slow pointer-events-none" aria-hidden="true" />
-        <div className="absolute bottom-10 left-[8%] w-14 h-14 border border-[#ffc32e]/15 rounded-lg rotate-12 float-shape pointer-events-none" aria-hidden="true" />
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">ראו את איכות ההדפסה שלנו</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">ראו את איכות ההדפסה שלנו</h2>
           <div className="relative w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl shadow-xl overflow-hidden border border-gray-200">
             <iframe
               src="https://www.youtube.com/embed/ZBnLtKpF3l8?start=64&autoplay=1&mute=1&loop=1&playlist=ZBnLtKpF3l8&controls=0&modestbranding=1&rel=0"
@@ -235,19 +246,19 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ FORM (moved up before video) ═══ */}
-      <section ref={formReveal.ref} id="form-section" className="relative max-w-lg mx-auto px-4 py-10 sm:py-14 scroll-mt-8 overflow-visible">
-        {/* Decorative blobs behind form */}
+      <section ref={formReveal.ref} id="form-section" className="relative max-w-lg lg:max-w-5xl mx-auto px-4 py-10 sm:py-14 scroll-mt-8 overflow-visible">
         <div className="absolute -top-10 -right-16 w-32 h-32 bg-[#ffc32e]/8 rounded-full blur-2xl pointer-events-none float-shape-slow" aria-hidden="true" />
         <div className="absolute -bottom-8 -left-12 w-24 h-24 bg-[#ffc32e]/6 rounded-full blur-xl pointer-events-none float-shape" aria-hidden="true" />
         <p className="text-center text-xs font-semibold text-[#d4940a] tracking-wider uppercase mb-2">הצעת מחיר חינם</p>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0d1b2a] text-center mb-2">קבלו הצעת מחיר תוך שעה</h2>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0d1b2a] text-center mb-2">השאירו פרטים ונחזור אליכם</h2>
         <p className="text-center text-gray-500 text-sm mb-6">ממלאים פרטים — מתקשרים אליכם</p>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
 
         {status === 'success' ? (
           <div className={`bg-white rounded-2xl shadow-lg p-8 text-center transition-all duration-500 ${formReveal.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} role="alert" aria-live="polite">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" aria-hidden="true" />
             <h3 className="text-2xl font-bold text-gray-900 mb-2">תודה!</h3>
-            <p className="text-gray-600">נחזור אליך תוך שעה בימי עסקים עם הצעת מחיר</p>
+            <p className="text-gray-600">נחזור אליך בהקדם עם הצעת מחיר</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className={`bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border-t-4 border-[#ffc32e] p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-700 ${formReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -300,11 +311,33 @@ export default function LandingPage() {
             </button>
 
             <p className="text-xs text-center text-gray-400">
-              ✓ תוך שעה | ✓ ללא ספאם | ✓ ללא התחייבות |{' '}
+              ✓ ללא ספאם | ✓ ללא התחייבות |{' '}
               <a href="/privacy" className="underline hover:text-[#d4940a]">מדיניות פרטיות</a>
             </p>
           </form>
         )}
+
+          {/* Desktop: trust sidebar */}
+          <div className="hidden lg:flex flex-col gap-5 pt-4">
+            <div className="bg-white rounded-2xl border border-[#ffc32e]/10 p-6 shadow-sm text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-2">
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-7 h-7 text-yellow-400 fill-yellow-400" aria-hidden="true" />)}
+              </div>
+              <p className="text-2xl font-black text-gray-900">4.8 מתוך 5</p>
+              <p className="text-sm text-gray-500">30+ ביקורות בגוגל</p>
+            </div>
+            {[
+              { icon: <Users className="w-6 h-6 text-[#d4940a]" aria-hidden="true" />, text: '500+ לקוחות מרוצים' },
+              { icon: <Clock className="w-6 h-6 text-[#d4940a]" aria-hidden="true" />, text: 'אספקה עד 7 ימי עסקים' },
+              { icon: <Shield className="w-6 h-6 text-[#d4940a]" aria-hidden="true" />, text: 'איכות ללא פשרות' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-[#fef3c7] flex items-center justify-center flex-shrink-0">{item.icon}</div>
+                <span className="text-sm font-medium text-gray-800">{item.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ═══ AUDIENCE CARDS ═══ */}
