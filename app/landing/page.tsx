@@ -115,13 +115,31 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fdfcf9] pb-[72px] md:pb-0" dir="rtl">
+    <div className="min-h-screen bg-[#fdfcf9] pb-[72px] md:pb-0 overflow-x-hidden" dir="rtl">
+      {/* Global floating shapes */}
+      <style jsx global>{`
+        @keyframes float { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(3deg); } }
+        @keyframes floatSlow { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-12px) rotate(-2deg); } }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .float-shape { animation: float 6s ease-in-out infinite; }
+        .float-shape-slow { animation: floatSlow 8s ease-in-out infinite; }
+        .spin-slow { animation: spin-slow 20s linear infinite; }
+      `}</style>
+
       <a href="#form-section" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:right-4 focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:z-[999]">דלג לטופס</a>
 
       {/* ═══ HERO ═══ */}
       <section className="relative bg-gradient-to-br from-[#0d1b2a] via-[#1a2e45] to-[#0d1b2a] text-white overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-[400px] h-[400px] bg-[#ffc32e]/15 rounded-full blur-3xl pointer-events-none animate-pulse" aria-hidden="true" />
-        <div className="absolute -bottom-32 -left-32 w-[300px] h-[300px] bg-[#ffc32e]/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+        {/* Animated background elements */}
+        <div className="absolute -top-20 -right-20 w-[400px] h-[400px] bg-[#ffc32e]/15 rounded-full blur-3xl pointer-events-none float-shape" aria-hidden="true" />
+        <div className="absolute -bottom-32 -left-32 w-[300px] h-[300px] bg-[#ffc32e]/10 rounded-full blur-3xl pointer-events-none float-shape-slow" aria-hidden="true" />
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" aria-hidden="true" style={{ backgroundImage: 'radial-gradient(circle, #ffc32e 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+        {/* Floating geometric shapes */}
+        <div className="absolute top-16 left-[10%] w-3 h-3 bg-[#ffc32e]/20 rounded-full float-shape pointer-events-none" aria-hidden="true" />
+        <div className="absolute top-32 right-[15%] w-2 h-2 bg-[#ffc32e]/30 rounded-full float-shape-slow pointer-events-none" aria-hidden="true" />
+        <div className="absolute bottom-20 left-[25%] w-4 h-4 border border-[#ffc32e]/20 rounded-full float-shape pointer-events-none" aria-hidden="true" />
+        <div className="absolute top-24 right-[30%] w-6 h-6 border border-[#ffc32e]/10 rotate-45 float-shape-slow pointer-events-none" aria-hidden="true" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 pt-8 pb-10 text-center">
           <Image src="/logo.png" alt="לוגו בדפוס — הדפסת חולצות" width={52} height={52} className="rounded-full mx-auto mb-4" />
@@ -156,7 +174,7 @@ export default function LandingPage() {
           {/* CTA — AIDA: Action */}
           <a href="#form-section"
             className={`inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(240,165,0,0.4)] hover:shadow-[0_8px_36px_rgba(240,165,0,0.55)] hover:scale-105 transition-all whitespace-nowrap ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            קבלו מחיר תוך שעה — חינם
+            לפרטים והצעות מחיר
             <ChevronDown className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
           </a>
 
@@ -174,7 +192,10 @@ export default function LandingPage() {
       </div>
 
       {/* ═══ GOOGLE RATING ═══ */}
-      <section className="bg-white py-8 sm:py-10 border-y border-gray-100">
+      <section className="relative bg-white py-8 sm:py-10 border-y border-gray-100 overflow-hidden">
+        {/* Decorative circles */}
+        <div className="absolute -top-8 -right-8 w-24 h-24 bg-yellow-100 rounded-full opacity-40 float-shape-slow pointer-events-none" aria-hidden="true" />
+        <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-yellow-50 rounded-full opacity-50 float-shape pointer-events-none" aria-hidden="true" />
         <div className="max-w-3xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-1.5 mb-2">
             {[...Array(5)].map((_, i) => (
@@ -196,7 +217,9 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ VIDEO ═══ */}
-      <section className="bg-gradient-to-b from-[#fdfcf9] to-[#f5f0e8] py-8 sm:py-10">
+      <section className="relative bg-gradient-to-b from-[#fdfcf9] to-[#f5f0e8] py-8 sm:py-10 overflow-hidden">
+        <div className="absolute top-10 right-[5%] w-20 h-20 border-2 border-[#ffc32e]/10 rounded-full spin-slow pointer-events-none" aria-hidden="true" />
+        <div className="absolute bottom-10 left-[8%] w-14 h-14 border border-[#ffc32e]/15 rounded-lg rotate-12 float-shape pointer-events-none" aria-hidden="true" />
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">ראו את איכות ההדפסה שלנו</h2>
           <div className="relative w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl shadow-xl overflow-hidden border border-gray-200">
@@ -212,7 +235,10 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ FORM (moved up before video) ═══ */}
-      <section ref={formReveal.ref} id="form-section" className="max-w-lg mx-auto px-4 py-10 sm:py-14 scroll-mt-8">
+      <section ref={formReveal.ref} id="form-section" className="relative max-w-lg mx-auto px-4 py-10 sm:py-14 scroll-mt-8 overflow-visible">
+        {/* Decorative blobs behind form */}
+        <div className="absolute -top-10 -right-16 w-32 h-32 bg-[#ffc32e]/8 rounded-full blur-2xl pointer-events-none float-shape-slow" aria-hidden="true" />
+        <div className="absolute -bottom-8 -left-12 w-24 h-24 bg-[#ffc32e]/6 rounded-full blur-xl pointer-events-none float-shape" aria-hidden="true" />
         <p className="text-center text-xs font-semibold text-[#d4940a] tracking-wider uppercase mb-2">הצעת מחיר חינם</p>
         <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0d1b2a] text-center mb-2">קבלו הצעת מחיר תוך שעה</h2>
         <p className="text-center text-gray-500 text-sm mb-6">ממלאים פרטים — מתקשרים אליכם</p>
@@ -282,7 +308,8 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ AUDIENCE CARDS ═══ */}
-      <section ref={audienceReveal.ref} className="max-w-4xl mx-auto px-4 py-10 sm:py-12">
+      <section ref={audienceReveal.ref} className="relative max-w-4xl mx-auto px-4 py-10 sm:py-12 overflow-visible">
+        <div className="absolute top-0 left-[50%] w-40 h-40 bg-gradient-to-br from-[#ffc32e]/5 to-transparent rounded-full blur-2xl pointer-events-none float-shape" aria-hidden="true" />
         <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ${audienceReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {[
             { icon: <Swords className="w-8 h-8 text-[#d4940a]" />, title: 'חיילים ויחידות', desc: 'גדודים, טקסי סיום, עיצוב אישי — ללא מינימום הזמנה' },
