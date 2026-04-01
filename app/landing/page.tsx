@@ -146,7 +146,7 @@ export default function LandingPage() {
 
               <div className={`inline-flex items-center gap-2 bg-[#ffc32e]/15 border border-[#ffc32e]/30 text-[#ffc32e] text-xs sm:text-sm font-semibold px-4 py-2 rounded-full mb-5 whitespace-nowrap transition-all duration-700 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" aria-hidden="true" />
-                <span>מענה תוך שעה ⚡</span>
+                <span>הדפסה איכותית בישראל ⚡</span>
               </div>
 
               <h1 className={`text-[1.5rem] sm:text-[1.85rem] md:text-4xl lg:text-[2.8rem] font-black leading-[1.2] tracking-[-0.5px] mb-3 transition-all duration-700 delay-100 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
