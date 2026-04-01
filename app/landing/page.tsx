@@ -330,9 +330,9 @@ export default function LandingPage() {
           <Shield className="w-10 h-10 text-[#ffc32e] mx-auto mb-4" aria-hidden="true" />
           <h2 className="text-2xl sm:text-3xl font-black mb-3">מוכנים להתחיל?</h2>
           <p className="text-white/60 text-sm sm:text-base leading-relaxed mb-6">
-            ערבות איכות מלאה — פגם ייצור = הדפסה חוזרת או החזר כספי.
+            הדפסה באיכות פרימיום, שירות אישי ומקצועי, ותוצאות שמדברות בעד עצמן.
             <br className="hidden sm:block" />
-            🇮🇱 ייצור כחול לבן | תמיכה בעברית | דיווח תוך 7 ימים
+            🇮🇱 ייצור כחול לבן | איכות ללא פשרות
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a href="#form-section" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(255,195,46,0.35)] hover:shadow-[0_8px_32px_rgba(255,195,46,0.5)] hover:scale-105 transition-all whitespace-nowrap">
