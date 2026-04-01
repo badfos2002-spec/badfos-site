@@ -324,27 +324,24 @@ export default function LandingPage() {
       {/* ═══ TESTIMONIALS — same as homepage ═══ */}
       <NewTestimonialsSection />
 
-      {/* ═══ GUARANTEE ═══ */}
-      <section ref={guaranteeReveal.ref} className="bg-[#fef3c7]/50 py-10 border-y border-[#ffc32e]/15">
+      {/* ═══ BOTTOM CTA + GUARANTEE ═══ */}
+      <section ref={guaranteeReveal.ref} className="bg-gradient-to-br from-[#0d1b2a] via-[#1a2e45] to-[#0d1b2a] text-white py-12 sm:py-16">
         <div className={`max-w-2xl mx-auto px-4 text-center transition-all duration-700 ${guaranteeReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-          <Shield className="w-12 h-12 text-[#d4940a] mx-auto mb-3" aria-hidden="true" />
-          <h2 className="text-xl sm:text-2xl font-black text-[#0d1b2a] mb-2">ערבות איכות</h2>
-          <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-4">פגם ייצור מצידנו? הדפסה חוזרת או החזר כספי מלא. יש לדווח תוך 7 ימים מקבלת המוצר.</p>
-          <p className="text-xs text-[#92400e] font-medium">🇮🇱 הדפסה בישראל | תמיכה בעברית | עסק ישראלי</p>
-        </div>
-      </section>
-
-      {/* ═══ BOTTOM CTA ═══ */}
-      <section className="bg-[#fef3c7] py-10 text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">מוכנים? תנו לנו 30 שניות</h2>
-        <p className="text-sm text-gray-600 mb-5">תקבלו מחיר מותאם אישית — חינם</p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <a href="#form-section" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-base px-6 py-3 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap">
-            קבלו הצעת מחיר חינם <CheckCircle className="w-5 h-5" aria-hidden="true" />
-          </a>
-          <a href="tel:0559885954" className="inline-flex items-center gap-2 border-2 border-white/20 text-gray-900 font-bold text-base px-6 py-3 rounded-full hover:bg-white/50 transition-all whitespace-nowrap">
-            <Phone className="w-4 h-4" aria-hidden="true" /> 055-988-5954
-          </a>
+          <Shield className="w-10 h-10 text-[#ffc32e] mx-auto mb-4" aria-hidden="true" />
+          <h2 className="text-2xl sm:text-3xl font-black mb-3">מוכנים להתחיל?</h2>
+          <p className="text-white/60 text-sm sm:text-base leading-relaxed mb-6">
+            ערבות איכות מלאה — פגם ייצור = הדפסה חוזרת או החזר כספי.
+            <br className="hidden sm:block" />
+            🇮🇱 ייצור כחול לבן | תמיכה בעברית | דיווח תוך 7 ימים
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="#form-section" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ffc32e] to-[#f5a623] text-white font-bold text-base px-7 py-3.5 rounded-full shadow-[0_4px_24px_rgba(255,195,46,0.35)] hover:shadow-[0_8px_32px_rgba(255,195,46,0.5)] hover:scale-105 transition-all whitespace-nowrap">
+              קבלו הצעת מחיר חינם <CheckCircle className="w-5 h-5" aria-hidden="true" />
+            </a>
+            <a href="tel:0559885954" className="inline-flex items-center gap-2 border-2 border-white/20 text-white font-bold text-base px-7 py-3.5 rounded-full hover:bg-white/10 transition-all whitespace-nowrap">
+              <Phone className="w-4 h-4" aria-hidden="true" /> 055-988-5954
+            </a>
+          </div>
         </div>
       </section>
 
