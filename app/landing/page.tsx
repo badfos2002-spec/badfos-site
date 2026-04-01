@@ -68,7 +68,10 @@ export default function LandingPage() {
   const guaranteeReveal = useReveal()
   const formReveal = useReveal()
 
-  useEffect(() => { setHeroVisible(true) }, [])
+  useEffect(() => {
+    setHeroVisible(true)
+    window.scrollTo(0, 0)
+  }, [])
   useEffect(() => { nameRef.current?.focus() }, [])
 
   // Inline validation
