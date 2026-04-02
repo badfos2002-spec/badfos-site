@@ -97,7 +97,24 @@ const nextConfig = {
   },
   reactStrictMode: true,
   async redirects() {
-    return []
+    return [
+      // Old Base44/WordPress URLs → new routes
+      { source: '/shop/:path*', destination: '/designer', permanent: true },
+      { source: '/product-tag/:path*', destination: '/designer', permanent: true },
+      { source: '/product-category/:path*', destination: '/designer', permanent: true },
+      { source: '/Tshirt', destination: '/designer/tshirt', permanent: true },
+      { source: '/tshirt', destination: '/designer/tshirt', permanent: true },
+      // Case-sensitive old routes
+      { source: '/Contact', destination: '/contact', permanent: true },
+      { source: '/Share/:path*', destination: '/share/:path*', permanent: true },
+      { source: '/AdminPricing', destination: '/admin/pricing', permanent: true },
+      { source: '/AdminImages', destination: '/admin/images', permanent: true },
+      { source: '/AdminDashboard', destination: '/admin', permanent: true },
+      { source: '/AdminAnalytics', destination: '/admin/analytics', permanent: true },
+      // Old misc pages
+      { source: '/ads', destination: '/', permanent: true },
+      { source: '/home', destination: '/', permanent: false },
+    ]
   },
   async headers() {
     return [
