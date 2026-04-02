@@ -105,31 +105,13 @@ const nextConfig = {
       { source: '/Tshirt', destination: '/designer/tshirt', permanent: true },
       { source: '/tshirt', destination: '/designer/tshirt', permanent: true },
       { source: '/comments/:path*', destination: '/', permanent: true },
-      // Uppercase → lowercase public pages
-      { source: '/Contact', destination: '/contact', permanent: true },
-      { source: '/About', destination: '/about', permanent: true },
-      { source: '/Accessibility', destination: '/accessibility', permanent: true },
-      { source: '/Privacy', destination: '/privacy', permanent: true },
-      { source: '/FAQ', destination: '/faq', permanent: true },
-      { source: '/Reviews', destination: '/reviews', permanent: true },
+      // Deal → packages (deal page no longer exists)
       { source: '/Deal', destination: '/packages', permanent: true },
       { source: '/deal', destination: '/packages', permanent: true },
-      { source: '/Home', destination: '/', permanent: true },
-      { source: '/Share/:path*', destination: '/share/:path*', permanent: true },
-      // Uppercase → lowercase admin pages
-      { source: '/AdminPricing', destination: '/admin/pricing', permanent: true },
-      { source: '/AdminImages', destination: '/admin/images', permanent: true },
-      { source: '/AdminDashboard', destination: '/admin', permanent: true },
-      { source: '/AdminAnalytics', destination: '/admin/analytics', permanent: true },
-      { source: '/AdminPromoSettings', destination: '/admin', permanent: true },
-      { source: '/AdminPackages', destination: '/admin/packages', permanent: true },
-      { source: '/AdminLogin', destination: '/admin/login', permanent: true },
-      { source: '/AdminReviews', destination: '/admin/reviews', permanent: true },
-      { source: '/AdminDiscounts', destination: '/admin/discounts', permanent: true },
-      { source: '/AdminCoupons', destination: '/admin/coupons', permanent: true },
       // Old misc pages
       { source: '/ads', destination: '/', permanent: true },
       { source: '/home', destination: '/', permanent: true },
+      { source: '/Home', destination: '/', permanent: true },
     ]
   },
   async headers() {
