@@ -112,7 +112,8 @@ const nextConfig = {
       { source: '/Privacy', destination: '/privacy', permanent: true },
       { source: '/FAQ', destination: '/faq', permanent: true },
       { source: '/Reviews', destination: '/reviews', permanent: true },
-      { source: '/Deal', destination: '/deal', permanent: true },
+      { source: '/Deal', destination: '/packages', permanent: true },
+      { source: '/deal', destination: '/packages', permanent: true },
       { source: '/Home', destination: '/', permanent: true },
       { source: '/Share/:path*', destination: '/share/:path*', permanent: true },
       // Uppercase → lowercase admin pages
