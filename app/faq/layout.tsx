@@ -24,6 +24,7 @@ const faqs = [
 ]
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/faq' },
   title: 'שאלות נפוצות | בדפוס',
   description: 'תשובות לשאלות נפוצות על הדפסת חולצות בעיצוב אישי - מחירים, זמני אספקה, סוגי בדים, מינימום הזמנה ועוד.',
 }

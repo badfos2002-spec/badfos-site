@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/contact' },
   title: 'יצירת קשר | בדפוס',
   description: 'צרו קשר עם בדפוס - טלפון, וואטסאפ, אימייל. שעות פעילות ראשון-חמישי 9:00-23:00. מענה מהיר תוך 24 שעות.',
   openGraph: {

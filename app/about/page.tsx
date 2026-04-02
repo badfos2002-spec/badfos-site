@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 export const metadata = {
   title: 'אודות - בדפוס',
   description: 'הסיפור שלנו - בדפוס היא חברה חדשה ומרגשת בתחום הדפסת חולצות',
+  alternates: { canonical: '/about' },
 }
 
 export default function AboutPage() {

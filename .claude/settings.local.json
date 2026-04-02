@@ -93,7 +93,17 @@
       "Bash(grep -r http:// --include=*.ts --include=*.tsx --include=*.js --include=*.jsx --exclude-dir=node_modules --exclude-dir=.next)",
       "Bash(grep -r \"href\\\\|to=\" --include=*.tsx --include=*.ts /Users/mac/Desktop/badfos_site/app /Users/mac/Desktop/badfos_site/components)",
       "Bash(grep -v \"^api$\\\\|^designer$\")",
-      "Bash(grep -r \"badfos.co.il\\\\|\\\\.co\\\\.il\\\\|\\\\.com\\\\|grow.business\\\\|cardcom\\\\|meshulam\\\\|tranzila\" --include=*.ts --include=*.tsx /Users/mac/Desktop/badfos_site/app /Users/mac/Desktop/badfos_site/components /Users/mac/Desktop/badfos_site/lib)"
+      "Bash(grep -r \"badfos.co.il\\\\|\\\\.co\\\\.il\\\\|\\\\.com\\\\|grow.business\\\\|cardcom\\\\|meshulam\\\\|tranzila\" --include=*.ts --include=*.tsx /Users/mac/Desktop/badfos_site/app /Users/mac/Desktop/badfos_site/components /Users/mac/Desktop/badfos_site/lib)",
+      "WebFetch(domain:pagespeed.web.dev)",
+      "Bash(git revert:*)",
+      "Bash(for page:*)",
+      "Read(//Users/mac/Desktop/badfos_site/app/$page/**)",
+      "Bash(git checkout:*)",
+      "Bash(file=\"/Users/mac/Desktop/badfos_site/app/$page/page.tsx\")",
+      "Bash(if grep:*)",
+      "Bash(then)",
+      "Bash(else)",
+      "Bash(fi)"
     ],
     "additionalDirectories": [
       "/Users/mac/Desktop"
