@@ -153,6 +153,7 @@ export default function RootLayout({
                 '@type': 'PostalAddress',
                 streetAddress: 'דובנוב 10',
                 addressLocality: 'ראשון לציון',
+                postalCode: '7520501',
                 addressCountry: 'IL',
               },
               description: 'הדפסת חולצות בעיצוב אישי – חולצות, סווטשירטים, באפים ועוד. משלוח מהיר לכל הארץ.',
