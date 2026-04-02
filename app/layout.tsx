@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import dynamic from 'next/dynamic'
 import { Rubik } from 'next/font/google'
 import './globals.css'
@@ -13,6 +13,14 @@ const rubik = Rubik({
 
 const ConditionalHeader = dynamic(() => import('@/components/layout/ConditionalHeader'))
 const ConditionalFooter = dynamic(() => import('@/components/layout/ConditionalFooter'))
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://badfos.co.il'),
@@ -68,6 +76,10 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={rubik.variable}>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="format-detection" content="telephone=no" />
         {/* GCLID capture — runs immediately, no consent needed (first-party URL param) */}
         <script
           dangerouslySetInnerHTML={{
