@@ -2,8 +2,9 @@ import { ShieldCheck, Lock, Eye, Database, Mail, Cookie, Server, UserCheck } fro
 
 export const metadata = {
   title: 'מדיניות פרטיות - בדפוס',
-  description: 'מדיניות הפרטיות של בדפוס הדפסת חולצות - בהתאם לחוק הגנת הפרטיות, התשמ"א-1981',
+  description: 'מדיניות הפרטיות של בדפוס הדפסת חולצות — בהתאם לחוק הגנת הפרטיות, התשמ"א-1981. כיצד אנו שומרים על המידע שלך.',
   alternates: { canonical: '/privacy' },
+  keywords: 'מדיניות פרטיות, הגנת פרטיות, בדפוס פרטיות',
 }
 
 export default function PrivacyPage() {

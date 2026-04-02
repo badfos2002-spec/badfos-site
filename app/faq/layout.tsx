@@ -27,6 +27,15 @@ export const metadata: Metadata = {
   alternates: { canonical: '/faq' },
   title: 'שאלות נפוצות | בדפוס',
   description: 'תשובות לשאלות נפוצות על הדפסת חולצות בעיצוב אישי - מחירים, זמני אספקה, סוגי בדים, מינימום הזמנה ועוד.',
+  keywords: 'שאלות נפוצות הדפסת חולצות, מחיר הדפסת חולצה, זמן אספקה חולצות, איכות הדפסה',
+  openGraph: {
+    title: 'שאלות נפוצות | בדפוס',
+    description: 'תשובות לשאלות נפוצות על הדפסת חולצות בעיצוב אישי',
+    url: 'https://badfos.co.il/faq',
+    siteName: 'בדפוס',
+    locale: 'he_IL',
+    type: 'website',
+  },
 }
 
 export default function FaqLayout({ children }: { children: React.ReactNode }) {

@@ -5,8 +5,17 @@ import { Button } from '@/components/ui/button'
 
 export const metadata = {
   title: 'אודות - בדפוס',
-  description: 'הסיפור שלנו - בדפוס היא חברה חדשה ומרגשת בתחום הדפסת חולצות',
+  description: 'הסיפור שלנו — בדפוס מתמחה בהדפסת חולצות בעיצוב אישי. איכות פרימיום, שירות מקצועי, ייצור כחול לבן.',
   alternates: { canonical: '/about' },
+  keywords: 'אודות בדפוס, הדפסת חולצות ישראל, מי אנחנו, בדפוס הדפסות',
+  openGraph: {
+    title: 'אודות - בדפוס',
+    description: 'הסיפור שלנו — בדפוס מתמחה בהדפסת חולצות בעיצוב אישי',
+    url: 'https://badfos.co.il/about',
+    siteName: 'בדפוס',
+    locale: 'he_IL',
+    type: 'website',
+  },
 }
 
 export default function AboutPage() {

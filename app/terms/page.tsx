@@ -3,7 +3,8 @@ import { FileText, Shield, AlertCircle } from 'lucide-react'
 export const metadata = {
   alternates: { canonical: '/terms' },
   title: 'תקנון ותנאי שימוש - בדפוס',
-  description: 'תקנון ותנאי שימוש בשירותי בדפוס הדפסת חולצות',
+  description: 'תקנון ותנאי שימוש בשירותי בדפוס הדפסת חולצות — מדיניות ביטולים, משלוחים, אחריות ותנאי שימוש באתר.',
+  keywords: 'תקנון בדפוס, תנאי שימוש, מדיניות ביטולים, תנאי הזמנה',
 }
 
 export default function TermsPage() {

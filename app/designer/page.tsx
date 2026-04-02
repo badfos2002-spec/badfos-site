@@ -5,7 +5,17 @@ import PageViewTracker from '@/components/common/PageViewTracker'
 export const metadata: Metadata = {
   alternates: { canonical: '/designer' },
   title: 'מעצב חולצות | בדפוס',
-  description: 'עצבו את החולצה המושלמת בעצמכם - בחרו בד, צבע, העלו עיצוב והזמינו',
+  description: 'עצבו את החולצה המושלמת בעצמכם — בחרו בד, צבע, העלו עיצוב והזמינו. חולצות, סווטשירטים, באפים וסינרים.',
+  keywords: 'עיצוב חולצה, מעצב חולצות, הדפסת חולצות אונליין, חולצה בעיצוב אישי, הדפסת חולצות',
+  openGraph: {
+    title: 'מעצב חולצות | בדפוס',
+    description: 'עצבו חולצה בעיצוב אישי — הדפסה איכותית בישראל',
+    url: 'https://badfos.co.il/designer',
+    siteName: 'בדפוס',
+    locale: 'he_IL',
+    type: 'website',
+    images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - מעצב חולצות' }],
+  },
 }
 
 export default function DesignerPage() {

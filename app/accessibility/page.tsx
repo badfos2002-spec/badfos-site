@@ -3,8 +3,9 @@ import { Eye, Sparkles } from 'lucide-react'
 
 export const metadata = {
   title: 'הצהרת נגישות - בדפוס',
-  description: 'מחויבותנו לנגישות דיגיטלית לכלל האוכלוסייה',
+  description: 'מחויבותנו לנגישות דיגיטלית לכלל האוכלוסייה — בדפוס פועל בהתאם לתקנות נגישות אתרי אינטרנט.',
   alternates: { canonical: '/accessibility' },
+  keywords: 'נגישות אתר, הצהרת נגישות, נגישות דיגיטלית',
 }
 
 export default function AccessibilityPage() {

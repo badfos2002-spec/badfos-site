@@ -108,7 +108,8 @@
       "Bash(unzip -o \"https___badfos.co.il_-Coverage-Drilldown-2026-04-02 \\(12\\).zip\" -d /tmp/gsc12)",
       "Bash(grep -E \"\\(page|layout\\)\\\\.tsx$\")",
       "Bash(for file:*)",
-      "Bash(if ! grep -q \"canonical\" \"$file\")"
+      "Bash(if ! grep -q \"canonical\" \"$file\")",
+      "Bash(__NEW_LINE_edfe143c5e70c13e__ echo:*)"
     ],
     "additionalDirectories": [
       "/Users/mac/Desktop"
