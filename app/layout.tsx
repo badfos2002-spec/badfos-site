@@ -77,6 +77,10 @@ export default function RootLayout({
     <html lang="he" dir="rtl" className={rubik.variable}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://connect.facebook.net" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="format-detection" content="telephone=no" />
@@ -155,6 +159,8 @@ export default function RootLayout({
               priceRange: '₪₪',
               openingHoursSpecification: [
                 { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'], opens: '09:00', closes: '23:00' },
+                { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Friday'], opens: '09:00', closes: '14:00' },
+                { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '00:00', closes: '00:00' },
               ],
               sameAs: [
                 'https://www.instagram.com/badfos_il/',

@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/lion-roar' },
   title: 'חולצת שאגת הארי | בדפוס',
   description: 'חולצת שאגת הארי — "עם ישראל חי וקיים". חולצת כותנה איכותית ב-₪50 בלבד. 10% מההכנסות נתרם לעמותת האגודה למען החייל.',
 }

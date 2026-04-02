@@ -103,7 +103,12 @@
       "Bash(if grep:*)",
       "Bash(then)",
       "Bash(else)",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(unzip -o \"https___badfos.co.il_-Coverage-Drilldown-2026-04-02 \\(11\\).zip\" -d /tmp/gsc11)",
+      "Bash(unzip -o \"https___badfos.co.il_-Coverage-Drilldown-2026-04-02 \\(12\\).zip\" -d /tmp/gsc12)",
+      "Bash(grep -E \"\\(page|layout\\)\\\\.tsx$\")",
+      "Bash(for file:*)",
+      "Bash(if ! grep -q \"canonical\" \"$file\")"
     ],
     "additionalDirectories": [
       "/Users/mac/Desktop"

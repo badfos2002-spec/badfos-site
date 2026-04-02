@@ -3,6 +3,7 @@ import ProductSelector from '@/components/designer/ProductSelector'
 import PageViewTracker from '@/components/common/PageViewTracker'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/designer' },
   title: 'מעצב חולצות | בדפוס',
   description: 'עצבו את החולצה המושלמת בעצמכם - בחרו בד, צבע, העלו עיצוב והזמינו',
 }

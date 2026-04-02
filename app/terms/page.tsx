@@ -1,6 +1,7 @@
 import { FileText, Shield, AlertCircle } from 'lucide-react'
 
 export const metadata = {
+  alternates: { canonical: '/terms' },
   title: 'תקנון ותנאי שימוש - בדפוס',
   description: 'תקנון ותנאי שימוש בשירותי בדפוס הדפסת חולצות',
 }

@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/designer/sweatshirt' },
   title: 'עיצוב סווטשירט אישי | בדפוס',
   description: 'עצבו סווטשירט בעיצוב אישי. העלו תמונה, בחרו צבע וגודל והזמינו. הדפסה איכותית ומשלוח מהיר.',
 }
