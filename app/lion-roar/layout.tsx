@@ -25,7 +25,39 @@ export default function LionRoarLayout({ children }: { children: React.ReactNode
               priceCurrency: 'ILS',
               availability: 'https://schema.org/InStock',
               url: 'https://badfos.co.il/lion-roar',
+              shippingDetails: {
+                '@type': 'OfferShippingDetails',
+                shippingRate: { '@type': 'MonetaryAmount', value: '35', currency: 'ILS' },
+                shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'IL' },
+                deliveryTime: { '@type': 'ShippingDeliveryTime', handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' }, transitTime: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 5, unitCode: 'DAY' } },
+              },
+              hasMerchantReturnPolicy: {
+                '@type': 'MerchantReturnPolicy',
+                applicableCountry: 'IL',
+                returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+                merchantReturnDays: 0,
+              },
             },
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: '5.0',
+              reviewCount: '30',
+              bestRating: '5',
+            },
+            review: [
+              {
+                '@type': 'Review',
+                author: { '@type': 'Person', name: 'תומר ישראלי' },
+                reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+                reviewBody: 'שירות ברמה גבוהה, הכי טובים בתחום! מקצוענים והכי מהירים שיש.',
+              },
+              {
+                '@type': 'Review',
+                author: { '@type': 'Person', name: 'הדר פדידה' },
+                reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+                reviewBody: 'שירות מושלם! יחס אישי ומקצועי! ממליצה בחום.',
+              },
+            ],
           }),
         }}
       />
