@@ -14,14 +14,14 @@ interface DesignMockupEmailProps {
 }
 
 const MOCKUP_IMAGES: Record<string, { front: string; back: string }> = {
-  white: { front: '/assets/חולצה לבנה קדימה.png', back: '/assets/חולצה לבנה אחורה.png' },
-  black: { front: '/assets/חולצה שחורה קדימה.png', back: '/assets/חולצה שחורה אחורה.png' },
-  gray: { front: '/assets/חולצה אפורה קדימה.png', back: '/assets/חולצה אפורה אחורה.png' },
-  blue: { front: '/assets/חולצה כחולה קדימה.png', back: '/assets/חולצה כחולה אחורה.png' },
-  red: { front: '/assets/חולצה אדומה קדימה.png', back: '/assets/חולצה אדומה אחורה.png' },
-  burgundy: { front: '/assets/חולצה קדימה בורדו.png', back: '/assets/חולצה אחורה בורדו.png' },
-  olive: { front: '/assets/חולצה קדימה ירוק זית.png', back: '/assets/חולצה אחורה ירוק זית.png' },
-  beige: { front: '/assets/חולצה בז קדימה..png', back: '/assets/חולצה בז אחורה.png' },
+  white: { front: '/assets/חולצה לבנה קדימה.webp', back: '/assets/חולצה לבנה אחורה.webp' },
+  black: { front: '/assets/חולצה שחורה קדימה.webp', back: '/assets/חולצה שחורה אחורה.webp' },
+  gray: { front: '/assets/חולצה אפורה קדימה.webp', back: '/assets/חולצה אפורה אחורה.webp' },
+  blue: { front: '/assets/חולצה כחולה קדימה.webp', back: '/assets/חולצה כחולה אחורה.webp' },
+  red: { front: '/assets/חולצה אדומה קדימה.webp', back: '/assets/חולצה אדומה אחורה.webp' },
+  burgundy: { front: '/assets/חולצה קדימה בורדו.webp', back: '/assets/חולצה אחורה בורדו.webp' },
+  olive: { front: '/assets/חולצה קדימה ירוק זית.webp', back: '/assets/חולצה אחורה ירוק זית.webp' },
+  beige: { front: '/assets/חולצה בז קדימה..webp', back: '/assets/חולצה בז אחורה.webp' },
 }
 
 const COLOR_FALLBACK: Record<string, string> = {

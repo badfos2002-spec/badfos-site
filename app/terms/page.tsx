@@ -5,6 +5,14 @@ export const metadata = {
   title: 'תקנון ותנאי שימוש - בדפוס',
   description: 'תקנון ותנאי שימוש בשירותי בדפוס הדפסת חולצות — מדיניות ביטולים, משלוחים, אחריות ותנאי שימוש באתר.',
   keywords: 'תקנון בדפוס, תנאי שימוש, מדיניות ביטולים, תנאי הזמנה',
+  openGraph: {
+    title: 'תקנון ותנאי שימוש - בדפוס',
+    description: 'תקנון ותנאי שימוש בשירותי בדפוס — מדיניות ביטולים, משלוחים ואחריות',
+    url: 'https://badfos.co.il/terms',
+    siteName: 'בדפוס',
+    locale: 'he_IL',
+    type: 'website',
+  },
 }
 
 export default function TermsPage() {

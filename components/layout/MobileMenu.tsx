@@ -57,6 +57,13 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
                 חבילות ומבצעים
               </Link>
               <Link
+                href="/lion-roar"
+                className="rounded-lg px-4 py-3 text-right text-base font-medium hover:bg-gray-100 transition-colors"
+                onClick={onClose}
+              >
+                🇮🇱 שאגת הארי
+              </Link>
+              <Link
                 href="/reviews"
                 className="rounded-lg px-4 py-3 text-right text-base font-medium hover:bg-gray-100 transition-colors"
                 onClick={onClose}

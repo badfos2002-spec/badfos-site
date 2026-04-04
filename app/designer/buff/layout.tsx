@@ -14,6 +14,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - באף מודפס' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'עיצוב באף אישי | בדפוס',
+    description: 'עצבו באף בעיצוב אישי — הדפסה איכותית בישראל',
+    images: ['https://badfos.co.il/logo.png'],
+  },
 }
 
 export default function BuffLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +41,24 @@ export default function BuffLayout({ children }: { children: React.ReactNode }) 
               priceCurrency: 'ILS',
               availability: 'https://schema.org/InStock',
               url: 'https://badfos.co.il/designer/buff',
+              shippingDetails: {
+                '@type': 'OfferShippingDetails',
+                shippingRate: { '@type': 'MonetaryAmount', value: '35', currency: 'ILS' },
+                shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'IL' },
+                deliveryTime: { '@type': 'ShippingDeliveryTime', handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' }, transitTime: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 5, unitCode: 'DAY' } },
+              },
+              hasMerchantReturnPolicy: {
+                '@type': 'MerchantReturnPolicy',
+                applicableCountry: 'IL',
+                returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+                merchantReturnDays: 0,
+              },
+            },
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: '5.0',
+              reviewCount: '30',
+              bestRating: '5',
             },
           }),
         }}

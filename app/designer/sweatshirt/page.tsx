@@ -18,21 +18,21 @@ const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
 }
 
 const sweatshirtMockups: Record<string, string> = {
-  white: '/assets/סווטשרט חזית לבן.png',
-  black: '/assets/סווטשרט חזית.png',
-  gray: '/assets/סווטשרט חזית אפור.png',
-  navy: '/assets/סווטשרט חזית כחול.png',
-  red: '/assets/סווטשרט חזית אדום.png',
-  burgundy: '/assets/סווטשרט חזית בורדו.png',
+  white: '/assets/סווטשרט חזית לבן.webp',
+  black: '/assets/סווטשרט חזית.webp',
+  gray: '/assets/סווטשרט חזית אפור.webp',
+  navy: '/assets/סווטשרט חזית כחול.webp',
+  red: '/assets/סווטשרט חזית אדום.webp',
+  burgundy: '/assets/סווטשרט חזית בורדו.webp',
 }
 
 const sweatshirtMockupsBack: Record<string, string> = {
-  white: '/assets/סווטשירט גב לבן.png',
-  black: '/assets/סווטשירט גב.png',
-  gray: '/assets/סווטשירט גב אפור.png',
-  navy: '/assets/סווטשירט גב כחול.png',
-  red: '/assets/סווטשירט גב אדום.png',
-  burgundy: '/assets/סווטשירט גב בורדו.png',
+  white: '/assets/סווטשירט גב לבן.webp',
+  black: '/assets/סווטשירט גב.webp',
+  gray: '/assets/סווטשירט גב אפור.webp',
+  navy: '/assets/סווטשירט גב כחול.webp',
+  red: '/assets/סווטשירט גב אדום.webp',
+  burgundy: '/assets/סווטשירט גב בורדו.webp',
 }
 
 const colors = [
@@ -166,8 +166,8 @@ export default function SweatshirtDesignerPage() {
 
   const isBackView = selectedAreaId === 'back'
   const mockupSrc = isBackView
-    ? (sweatshirtMockupsBack[selectedColor] || '/assets/סווטשירט גב.png')
-    : (sweatshirtMockups[selectedColor] || '/assets/סווטשרט חזית.png')
+    ? (sweatshirtMockupsBack[selectedColor] || '/assets/סווטשירט גב.webp')
+    : (sweatshirtMockups[selectedColor] || '/assets/סווטשרט חזית.webp')
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
 
@@ -453,10 +453,9 @@ export default function SweatshirtDesignerPage() {
         <Image
           src={mockupSrc}
           alt="תצוגה מקדימה"
-          width={0}
-          height={0}
-          sizes="100vw"
-          className="w-full h-auto block"
+          fill
+          sizes="(max-width: 640px) 100vw, 400px"
+          className="!relative w-full h-auto block"
         />
         {visibleAreas.map(([areaId, overlay]) => {
           const areaStyle = SWEATSHIRT_AREA_OVERRIDES[areaId] ?? overlay.style

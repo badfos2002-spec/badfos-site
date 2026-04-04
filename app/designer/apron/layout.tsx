@@ -14,6 +14,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - סינר מודפס' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'עיצוב סינר אישי | בדפוס',
+    description: 'עצבו סינר בעיצוב אישי — הדפסה איכותית בישראל',
+    images: ['https://badfos.co.il/logo.png'],
+  },
 }
 
 export default function ApronLayout({ children }: { children: React.ReactNode }) {
@@ -31,10 +37,28 @@ export default function ApronLayout({ children }: { children: React.ReactNode })
             brand: { '@type': 'Brand', name: 'בדפוס' },
             offers: {
               '@type': 'Offer',
-              price: '37',
+              price: '29',
               priceCurrency: 'ILS',
               availability: 'https://schema.org/InStock',
               url: 'https://badfos.co.il/designer/apron',
+              shippingDetails: {
+                '@type': 'OfferShippingDetails',
+                shippingRate: { '@type': 'MonetaryAmount', value: '35', currency: 'ILS' },
+                shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'IL' },
+                deliveryTime: { '@type': 'ShippingDeliveryTime', handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' }, transitTime: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 5, unitCode: 'DAY' } },
+              },
+              hasMerchantReturnPolicy: {
+                '@type': 'MerchantReturnPolicy',
+                applicableCountry: 'IL',
+                returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+                merchantReturnDays: 0,
+              },
+            },
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: '5.0',
+              reviewCount: '30',
+              bestRating: '5',
             },
           }),
         }}

@@ -6,6 +6,14 @@ export const metadata = {
   description: 'מחויבותנו לנגישות דיגיטלית לכלל האוכלוסייה — בדפוס פועל בהתאם לתקנות נגישות אתרי אינטרנט.',
   alternates: { canonical: '/accessibility' },
   keywords: 'נגישות אתר, הצהרת נגישות, נגישות דיגיטלית',
+  openGraph: {
+    title: 'הצהרת נגישות - בדפוס',
+    description: 'מחויבותנו לנגישות דיגיטלית לכלל האוכלוסייה',
+    url: 'https://badfos.co.il/accessibility',
+    siteName: 'בדפוס',
+    locale: 'he_IL',
+    type: 'website',
+  },
 }
 
 export default function AccessibilityPage() {

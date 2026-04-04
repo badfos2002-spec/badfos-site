@@ -62,20 +62,20 @@ async function blobToBase64(blobUrl: string): Promise<string> {
 }
 
 const sweatshirtMockupsFront: Record<string, string> = {
-  white: '/assets/סווטשרט חזית לבן.png',
-  black: '/assets/סווטשרט חזית.png',
-  red: '/assets/סווטשרט חזית אדום.png',
-  blue: '/assets/סווטשרט חזית כחול.png',
-  gray: '/assets/סווטשרט חזית אפור.png',
-  burgundy: '/assets/סווטשרט חזית בורדו.png',
+  white: '/assets/סווטשרט חזית לבן.webp',
+  black: '/assets/סווטשרט חזית.webp',
+  red: '/assets/סווטשרט חזית אדום.webp',
+  blue: '/assets/סווטשרט חזית כחול.webp',
+  gray: '/assets/סווטשרט חזית אפור.webp',
+  burgundy: '/assets/סווטשרט חזית בורדו.webp',
 }
 const sweatshirtMockupsBack: Record<string, string> = {
-  white: '/assets/סווטשירט גב לבן.png',
-  black: '/assets/סווטשירט גב.png',
-  red: '/assets/סווטשירט גב אדום.png',
-  blue: '/assets/סווטשירט גב כחול.png',
-  gray: '/assets/סווטשירט גב אפור.png',
-  burgundy: '/assets/סווטשירט גב בורדו.png',
+  white: '/assets/סווטשירט גב לבן.webp',
+  black: '/assets/סווטשירט גב.webp',
+  red: '/assets/סווטשירט גב אדום.webp',
+  blue: '/assets/סווטשירט גב כחול.webp',
+  gray: '/assets/סווטשירט גב אפור.webp',
+  burgundy: '/assets/סווטשירט גב בורדו.webp',
 }
 
 const stepConfig = [

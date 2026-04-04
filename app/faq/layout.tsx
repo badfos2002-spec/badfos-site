@@ -35,6 +35,13 @@ export const metadata: Metadata = {
     siteName: 'בדפוס',
     locale: 'he_IL',
     type: 'website',
+    images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - שאלות נפוצות' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'שאלות נפוצות | בדפוס',
+    description: 'תשובות לשאלות נפוצות על הדפסת חולצות בעיצוב אישי',
+    images: ['https://badfos.co.il/logo.png'],
   },
 }
 

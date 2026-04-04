@@ -112,7 +112,7 @@ function ReviewCard({ review, index }: { review: ReviewItem; index: number }) {
       {/* Author row */}
       <div className="flex items-center gap-3 mb-4">
         {review.profile_photo_url ? (
-          <img src={review.profile_photo_url} alt={review.author_name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+          <img src={review.profile_photo_url} alt={review.author_name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" loading="lazy" />
         ) : (
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"

@@ -99,20 +99,21 @@ export default function WhatsAppButton() {
 
       {/* Accessibility Panel */}
       {showAccessibility && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowAccessibility(false)}>
+        <div className="fixed inset-0 z-50 sm:flex sm:items-center sm:justify-center sm:bg-black/30" onClick={() => setShowAccessibility(false)}>
           <div
-            className="bg-white rounded-2xl shadow-2xl w-[90vw] sm:w-[340px] max-h-[80vh] overflow-y-auto p-5 sm:p-6"
+            className="bg-white sm:rounded-2xl shadow-2xl w-full sm:w-[360px] h-full sm:h-auto sm:max-h-[80vh] overflow-y-auto overscroll-contain p-5 sm:p-6"
             dir="rtl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
+            {/* Header — sticky on mobile */}
+            <div className="flex items-center justify-between mb-4 sticky top-0 bg-white pb-2 pt-1 -mt-1 z-10">
               <h2 className="text-xl font-bold text-gray-800">כלי נגישות</h2>
-              <button onClick={() => setShowAccessibility(false)} className="p-1 hover:bg-gray-100 rounded-full">
+              <button onClick={() => setShowAccessibility(false)} className="p-2 hover:bg-gray-100 rounded-full" aria-label="סגור כלי נגישות">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 pb-6 sm:pb-0">
               {/* Font Size */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-2">
@@ -120,9 +121,9 @@ export default function WhatsAppButton() {
                   <span className="text-sm font-medium">גודל טקסט</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setFontSize(f => Math.max(-2, f - 1))} className="w-8 h-8 bg-white border rounded-lg font-bold hover:bg-gray-100">-</button>
+                  <button onClick={() => setFontSize(f => Math.max(-2, f - 1))} className="w-10 h-10 sm:w-8 sm:h-8 bg-white border rounded-lg font-bold hover:bg-gray-100 active:bg-gray-200" aria-label="הקטן גודל טקסט">-</button>
                   <span className="text-sm w-6 text-center">{fontSize}</span>
-                  <button onClick={() => setFontSize(f => Math.min(4, f + 1))} className="w-8 h-8 bg-white border rounded-lg font-bold hover:bg-gray-100">+</button>
+                  <button onClick={() => setFontSize(f => Math.min(4, f + 1))} className="w-10 h-10 sm:w-8 sm:h-8 bg-white border rounded-lg font-bold hover:bg-gray-100 active:bg-gray-200" aria-label="הגדל גודל טקסט">+</button>
                 </div>
               </div>
 
@@ -142,7 +143,8 @@ export default function WhatsAppButton() {
                     <button
                       key={opt.value}
                       onClick={() => setContrast(opt.value)}
-                      className={`flex-1 py-1.5 text-xs rounded-lg border ${contrast === opt.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-100'}`}
+                      className={`flex-1 py-2.5 sm:py-1.5 text-xs rounded-lg border ${contrast === opt.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-100 active:bg-gray-200'}`}
+                      aria-pressed={contrast === opt.value}
                     >
                       {opt.label}
                     </button>
@@ -157,9 +159,9 @@ export default function WhatsAppButton() {
                   <span className="text-sm font-medium">ריווח אותיות</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setLetterSpacing(s => Math.max(0, s - 1))} className="w-8 h-8 bg-white border rounded-lg font-bold hover:bg-gray-100">-</button>
+                  <button onClick={() => setLetterSpacing(s => Math.max(0, s - 1))} className="w-10 h-10 sm:w-8 sm:h-8 bg-white border rounded-lg font-bold hover:bg-gray-100 active:bg-gray-200" aria-label="הקטן ריווח אותיות">-</button>
                   <span className="text-sm w-6 text-center">{letterSpacing}</span>
-                  <button onClick={() => setLetterSpacing(s => Math.min(4, s + 1))} className="w-8 h-8 bg-white border rounded-lg font-bold hover:bg-gray-100">+</button>
+                  <button onClick={() => setLetterSpacing(s => Math.min(4, s + 1))} className="w-10 h-10 sm:w-8 sm:h-8 bg-white border rounded-lg font-bold hover:bg-gray-100 active:bg-gray-200" aria-label="הגדל ריווח אותיות">+</button>
                 </div>
               </div>
 
@@ -170,9 +172,9 @@ export default function WhatsAppButton() {
                   <span className="text-sm font-medium">גובה שורה</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setLineHeight(h => Math.max(0, h - 1))} className="w-8 h-8 bg-white border rounded-lg font-bold hover:bg-gray-100">-</button>
+                  <button onClick={() => setLineHeight(h => Math.max(0, h - 1))} className="w-10 h-10 sm:w-8 sm:h-8 bg-white border rounded-lg font-bold hover:bg-gray-100 active:bg-gray-200" aria-label="הקטן גובה שורה">-</button>
                   <span className="text-sm w-6 text-center">{lineHeight}</span>
-                  <button onClick={() => setLineHeight(h => Math.min(4, h + 1))} className="w-8 h-8 bg-white border rounded-lg font-bold hover:bg-gray-100">+</button>
+                  <button onClick={() => setLineHeight(h => Math.min(4, h + 1))} className="w-10 h-10 sm:w-8 sm:h-8 bg-white border rounded-lg font-bold hover:bg-gray-100 active:bg-gray-200" aria-label="הגדל גובה שורה">+</button>
                 </div>
               </div>
 
@@ -187,7 +189,8 @@ export default function WhatsAppButton() {
                 <button
                   key={opt.label}
                   onClick={opt.toggle}
-                  className={`flex items-center gap-2 w-full p-3 rounded-xl text-sm font-medium transition-colors ${opt.value ? 'bg-blue-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-800'}`}
+                  aria-pressed={opt.value}
+                  className={`flex items-center gap-2 w-full p-3.5 sm:p-3 rounded-xl text-sm font-medium transition-colors ${opt.value ? 'bg-blue-600 text-white' : 'bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-800'}`}
                 >
                   <opt.icon className="h-5 w-5" />
                   {opt.label}
@@ -197,7 +200,7 @@ export default function WhatsAppButton() {
               {/* Reset */}
               <button
                 onClick={resetAll}
-                className="w-full p-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-medium transition-colors"
+                className="w-full p-3.5 sm:p-3 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-xl text-sm font-medium transition-colors"
               >
                 איפוס הכול
               </button>

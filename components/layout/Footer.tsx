@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Phone, Mail, MapPin, Instagram, Facebook } from 'lucide-react'
 import { CONTACT_INFO } from '@/lib/constants'
 
@@ -13,7 +14,7 @@ export default function Footer() {
 
           {/* Column 1 - Logo & About */}
           <div dir="rtl">
-            <img
+            <Image
               src="/logo.png"
               alt="בדפוס"
               width={48}

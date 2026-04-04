@@ -59,6 +59,7 @@ export default function FAQPage() {
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                 className="w-full py-6 flex items-center justify-between text-right hover:text-indigo-600 transition-colors group"
                 dir="rtl"
+                aria-expanded={openIndex === index}
               >
                 <div className="flex items-center gap-4 flex-1">
                   {/* Number Circle */}
@@ -67,9 +68,9 @@ export default function FAQPage() {
                   </div>
                   
                   {/* Question */}
-                  <span className="text-lg font-bold text-gray-900">
+                  <h3 className="text-lg font-bold text-gray-900">
                     {faq.question}
-                  </span>
+                  </h3>
                 </div>
 
                 {/* Arrow Icon */}

@@ -2,25 +2,25 @@
 // Used by TshirtDesigner, CartItem, and email templates
 
 export const tshirtMockups: Record<string, string> = {
-  white: '/assets/חולצה לבנה קדימה.png',
-  black: '/assets/חולצה שחורה קדימה.png',
-  gray: '/assets/חולצה אפורה קדימה.png',
-  blue: '/assets/חולצה כחולה קדימה.png',
-  red: '/assets/חולצה אדומה קדימה.png',
-  burgundy: '/assets/חולצה קדימה בורדו.png',
-  olive: '/assets/חולצה קדימה ירוק זית.png',
-  beige: '/assets/חולצה בז קדימה..png',
+  white: '/assets/חולצה לבנה קדימה.webp',
+  black: '/assets/חולצה שחורה קדימה.webp',
+  gray: '/assets/חולצה אפורה קדימה.webp',
+  blue: '/assets/חולצה כחולה קדימה.webp',
+  red: '/assets/חולצה אדומה קדימה.webp',
+  burgundy: '/assets/חולצה קדימה בורדו.webp',
+  olive: '/assets/חולצה קדימה ירוק זית.webp',
+  beige: '/assets/חולצה בז קדימה..webp',
 }
 
 export const tshirtMockupsBack: Record<string, string> = {
-  white: '/assets/חולצה לבנה אחורה.png',
-  black: '/assets/חולצה שחורה אחורה.png',
-  gray: '/assets/חולצה אפורה אחורה.png',
-  blue: '/assets/חולצה כחולה אחורה.png',
-  red: '/assets/חולצה אדומה אחורה.png',
-  burgundy: '/assets/חולצה אחורה בורדו.png',
-  olive: '/assets/חולצה אחורה ירוק זית.png',
-  beige: '/assets/חולצה בז אחורה.png',
+  white: '/assets/חולצה לבנה אחורה.webp',
+  black: '/assets/חולצה שחורה אחורה.webp',
+  gray: '/assets/חולצה אפורה אחורה.webp',
+  blue: '/assets/חולצה כחולה אחורה.webp',
+  red: '/assets/חולצה אדומה אחורה.webp',
+  burgundy: '/assets/חולצה אחורה בורדו.webp',
+  olive: '/assets/חולצה אחורה ירוק זית.webp',
+  beige: '/assets/חולצה בז אחורה.webp',
 }
 
 export const colorFallback: Record<string, string> = {

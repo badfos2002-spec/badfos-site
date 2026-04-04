@@ -266,10 +266,9 @@ export default function LionRoarPage() {
               <Image
                 src={PRODUCT_IMAGE}
                 alt={PRODUCT_NAME}
-                width={0}
-                height={0}
-                sizes="100vw"
-                className="w-full h-auto block"
+                fill
+                sizes="(max-width: 640px) 100vw, 400px"
+                className="!relative w-full h-auto block"
                 priority
               />
             </div>

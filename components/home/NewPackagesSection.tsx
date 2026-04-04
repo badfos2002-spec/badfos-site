@@ -40,7 +40,7 @@ export default function NewPackagesSection() {
                   alt={slide.title}
                   fill
                   className="object-cover animate-fadeIn"
-                  priority
+                  priority={index === 0}
                 />
                 {/* Navigation dots */}
                 <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20">

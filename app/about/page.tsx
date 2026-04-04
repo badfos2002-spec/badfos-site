@@ -15,6 +15,13 @@ export const metadata = {
     siteName: 'בדפוס',
     locale: 'he_IL',
     type: 'website',
+    images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - אודות' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'אודות - בדפוס',
+    description: 'הסיפור שלנו — בדפוס מתמחה בהדפסת חולצות בעיצוב אישי',
+    images: ['https://badfos.co.il/logo.png'],
   },
 }
 

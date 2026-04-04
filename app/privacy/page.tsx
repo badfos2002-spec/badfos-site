@@ -5,6 +5,14 @@ export const metadata = {
   description: 'מדיניות הפרטיות של בדפוס הדפסת חולצות — בהתאם לחוק הגנת הפרטיות, התשמ"א-1981. כיצד אנו שומרים על המידע שלך.',
   alternates: { canonical: '/privacy' },
   keywords: 'מדיניות פרטיות, הגנת פרטיות, בדפוס פרטיות',
+  openGraph: {
+    title: 'מדיניות פרטיות - בדפוס',
+    description: 'מדיניות הפרטיות של בדפוס — כיצד אנו שומרים על המידע שלך',
+    url: 'https://badfos.co.il/privacy',
+    siteName: 'בדפוס',
+    locale: 'he_IL',
+    type: 'website',
+  },
 }
 
 export default function PrivacyPage() {

@@ -224,6 +224,7 @@ export default function ReviewsPage() {
                           type="button"
                           onClick={() => handleStarClick(rating)}
                           className="focus:outline-none"
+                          aria-label={`דירוג ${rating} כוכבים`}
                         >
                           <Star
                             className={`w-10 h-10 transition-all ${

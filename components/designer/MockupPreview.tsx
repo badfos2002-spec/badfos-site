@@ -7,12 +7,12 @@ interface MockupPreviewProps {
 }
 
 const sweatshirtMockups: Record<string, { front: string; back: string }> = {
-  white: { front: '/assets/סווטשרט חזית לבן.png', back: '/assets/סווטשירט גב לבן.png' },
-  black: { front: '/assets/סווטשרט חזית.png', back: '/assets/סווטשירט גב.png' },
-  red: { front: '/assets/סווטשרט חזית אדום.png', back: '/assets/סווטשירט גב אדום.png' },
-  blue: { front: '/assets/סווטשרט חזית כחול.png', back: '/assets/סווטשירט גב כחול.png' },
-  gray: { front: '/assets/סווטשרט חזית אפור.png', back: '/assets/סווטשירט גב אפור.png' },
-  burgundy: { front: '/assets/סווטשרט חזית בורדו.png', back: '/assets/סווטשירט גב בורדו.png' },
+  white: { front: '/assets/סווטשרט חזית לבן.webp', back: '/assets/סווטשירט גב לבן.webp' },
+  black: { front: '/assets/סווטשרט חזית.webp', back: '/assets/סווטשירט גב.webp' },
+  red: { front: '/assets/סווטשרט חזית אדום.webp', back: '/assets/סווטשירט גב אדום.webp' },
+  blue: { front: '/assets/סווטשרט חזית כחול.webp', back: '/assets/סווטשירט גב כחול.webp' },
+  gray: { front: '/assets/סווטשרט חזית אפור.webp', back: '/assets/סווטשירט גב אפור.webp' },
+  burgundy: { front: '/assets/סווטשרט חזית בורדו.webp', back: '/assets/סווטשירט גב בורדו.webp' },
 }
 
 const colorFallback: Record<string, string> = {
@@ -23,22 +23,22 @@ const colorFallback: Record<string, string> = {
 }
 
 const tshirtMockups: Record<string, { front: string; back: string }> = {
-  white: { front: '/assets/חולצה לבנה קדימה.png', back: '/assets/חולצה לבנה אחורה.png' },
-  black: { front: '/assets/חולצה שחורה קדימה.png', back: '/assets/חולצה שחורה אחורה.png' },
-  gray: { front: '/assets/חולצה אפורה קדימה.png', back: '/assets/חולצה אפורה אחורה.png' },
-  blue: { front: '/assets/חולצה כחולה קדימה.png', back: '/assets/חולצה כחולה אחורה.png' },
-  red: { front: '/assets/חולצה אדומה קדימה.png', back: '/assets/חולצה אדומה אחורה.png' },
-  burgundy: { front: '/assets/חולצה קדימה בורדו.png', back: '/assets/חולצה אחורה בורדו.png' },
-  olive: { front: '/assets/חולצה קדימה ירוק זית.png', back: '/assets/חולצה אחורה ירוק זית.png' },
+  white: { front: '/assets/חולצה לבנה קדימה.webp', back: '/assets/חולצה לבנה אחורה.webp' },
+  black: { front: '/assets/חולצה שחורה קדימה.webp', back: '/assets/חולצה שחורה אחורה.webp' },
+  gray: { front: '/assets/חולצה אפורה קדימה.webp', back: '/assets/חולצה אפורה אחורה.webp' },
+  blue: { front: '/assets/חולצה כחולה קדימה.webp', back: '/assets/חולצה כחולה אחורה.webp' },
+  red: { front: '/assets/חולצה אדומה קדימה.webp', back: '/assets/חולצה אדומה אחורה.webp' },
+  burgundy: { front: '/assets/חולצה קדימה בורדו.webp', back: '/assets/חולצה אחורה בורדו.webp' },
+  olive: { front: '/assets/חולצה קדימה ירוק זית.webp', back: '/assets/חולצה אחורה ירוק זית.webp' },
 }
 
 const buffMockups: Record<string, { front: string; back: string }> = {
-  blue: { front: '/assets/באף כחול.png', back: '/assets/באף כחול.png' },
-  red: { front: '/assets/באף אדום.png', back: '/assets/באף אדום.png' },
-  orange: { front: '/assets/באף כתום.png', back: '/assets/באף כתום.png' },
-  purple: { front: '/assets/באף סגול.png', back: '/assets/באף סגול.png' },
-  green: { front: '/assets/באף ירוק.png', back: '/assets/באף ירוק.png' },
-  turquoise: { front: '/assets/באף תכלת.png', back: '/assets/באף תכלת.png' },
+  blue: { front: '/assets/באף כחול.webp', back: '/assets/באף כחול.webp' },
+  red: { front: '/assets/באף אדום.webp', back: '/assets/באף אדום.webp' },
+  orange: { front: '/assets/באף כתום.webp', back: '/assets/באף כתום.webp' },
+  purple: { front: '/assets/באף סגול.webp', back: '/assets/באף סגול.webp' },
+  green: { front: '/assets/באף ירוק.webp', back: '/assets/באף ירוק.webp' },
+  turquoise: { front: '/assets/באף תכלת.webp', back: '/assets/באף תכלת.webp' },
 }
 
 const mockupImages: Record<string, Record<string, { front: string; back: string }>> = {

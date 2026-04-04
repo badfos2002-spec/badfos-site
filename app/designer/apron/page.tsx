@@ -11,10 +11,10 @@ import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const apronMockups: Record<string, string> = {
-  gray: '/assets/סינר אפור.png',
-  white: '/assets/סינר לבן.png',
-  navy: '/assets/סינר נייבי.png',
-  black: '/assets/סינר שחור.png',
+  gray: '/assets/סינר אפור.webp',
+  white: '/assets/סינר לבן.webp',
+  navy: '/assets/סינר נייבי.webp',
+  black: '/assets/סינר שחור.webp',
 }
 
 const colors = [
@@ -80,7 +80,7 @@ export default function ApronDesignerPage() {
     setQuantity(30)
   }
 
-  const mockupSrc = apronMockups[selectedColor] || '/assets/סינר שחור.png'
+  const mockupSrc = apronMockups[selectedColor] || '/assets/סינר שחור.webp'
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
 
@@ -272,10 +272,9 @@ export default function ApronDesignerPage() {
       <Image
         src={mockupSrc}
         alt="תצוגה מקדימה"
-        width={0}
-        height={0}
-        sizes="100vw"
-        className="w-full h-auto block"
+        fill
+        sizes="(max-width: 640px) 100vw, 400px"
+        className="!relative w-full h-auto block"
       />
       {designPreviewUrl ? (
         <div

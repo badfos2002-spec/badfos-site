@@ -16,6 +16,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - מעצב חולצות' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'מעצב חולצות | בדפוס',
+    description: 'עצבו חולצה בעיצוב אישי — הדפסה איכותית בישראל',
+    images: ['https://badfos.co.il/logo.png'],
+  },
 }
 
 export default function DesignerPage() {
@@ -23,10 +29,13 @@ export default function DesignerPage() {
     <div className="container-rtl py-8">
       <div className="text-center mb-8">
         <h1 className="text-[1.7rem] md:text-[2.8rem] font-bold mb-4">
-          בואו ניצור משהו ביחד 🎨
+          עצבו חולצה בעיצוב אישי
         </h1>
-        <p className="text-xl text-text-gray max-w-2xl mx-auto">
-          בחר את המוצר שברצונך לעצב
+        <p className="text-xl text-text-gray max-w-2xl mx-auto mb-4">
+          בחרו את המוצר שברצונכם לעצב
+        </p>
+        <p className="text-sm text-gray-400 max-w-xl mx-auto leading-relaxed">
+          העלו תמונה או עיצוב, בחרו סוג בד וצבע, והדפיסו על חולצות כותנה, דרייפיט, פולו, אוברסייז, סווטשירטים, באפים וסינרים. הדפסת DTF איכותית בישראל עם משלוח מהיר לכל הארץ.
         </p>
       </div>
 

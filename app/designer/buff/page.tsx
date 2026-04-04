@@ -11,12 +11,12 @@ import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const buffMockups: Record<string, string> = {
-  red: '/assets/באף אדום.png',
-  green: '/assets/באף ירוק.png',
-  blue: '/assets/באף כחול.png',
-  orange: '/assets/באף כתום.png',
-  purple: '/assets/באף סגול.png',
-  lightblue: '/assets/באף תכלת.png',
+  red: '/assets/באף אדום.webp',
+  green: '/assets/באף ירוק.webp',
+  blue: '/assets/באף כחול.webp',
+  orange: '/assets/באף כתום.webp',
+  purple: '/assets/באף סגול.webp',
+  lightblue: '/assets/באף תכלת.webp',
 }
 
 const colors = [
@@ -85,7 +85,7 @@ export default function BuffDesignerPage() {
     setQuantity(50)
   }
 
-  const mockupSrc = buffMockups[selectedColor] || '/assets/באף כחול.png'
+  const mockupSrc = buffMockups[selectedColor] || '/assets/באף כחול.webp'
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
 
@@ -271,10 +271,9 @@ export default function BuffDesignerPage() {
       <Image
         src={mockupSrc}
         alt="תצוגה מקדימה"
-        width={0}
-        height={0}
-        sizes="100vw"
-        className="w-full h-auto block"
+        fill
+        sizes="(max-width: 640px) 100vw, 400px"
+        className="!relative w-full h-auto block"
       />
       {buffOverlays.map((overlay, i) =>
         designPreviewUrl ? (

@@ -7,27 +7,27 @@ const categoryDetails: Record<string, { title: string; description: string; imag
   tshirt: {
     title: 'חולצות בעיצוב אישי',
     description: 'הדפסה איכותית על מגוון חולצות כותנה ודרייפיט',
-    image: '/assets/תמונת קטגורייה חולצות.png',
+    image: '/assets/תמונת קטגורייה חולצות.webp',
   },
   sweatshirt: {
     title: 'סווטשרטים',
     description: 'סווטשרטים חמים ואיכותיים עם הדפסה אישית',
-    image: '/assets/סווטשרטים.png',
+    image: '/assets/סווטשרטים.webp',
   },
   cap: {
     title: 'כובעים',
     description: 'כובעים עם רקמה או הדפסה בהתאמה אישית',
-    image: '/assets/a82d25357_.png',
+    image: '/assets/a82d25357_.webp',
   },
   buff: {
     title: 'באפים',
     description: 'באפים ייחודיים עם העיצוב שלך',
-    image: '/assets/רקע קטגוריית באפים.png',
+    image: '/assets/רקע קטגוריית באפים.webp',
   },
   apron: {
     title: 'סינרים',
     description: 'סינרים מעוצבים להדפסה אישית',
-    image: '/assets/סינרים תמונת קטגוריה.png',
+    image: '/assets/סינרים תמונת קטגוריה.webp',
   },
 }
 

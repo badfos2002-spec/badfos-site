@@ -37,18 +37,18 @@ export const metadata: Metadata = {
     siteName: 'בדפוס',
     images: [
       {
-        url: 'https://badfos.co.il/logo.png',
-        width: 512,
-        height: 512,
+        url: 'https://badfos.co.il/og-image.jpg',
+        width: 1200,
+        height: 630,
         alt: 'בדפוס - הדפסת חולצות בעיצוב אישי',
       },
     ],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
     description: 'עצבו חולצות מותאמות אישית עם הדפסה איכותית',
-    images: ['https://badfos.co.il/logo.png'],
+    images: ['https://badfos.co.il/og-image.jpg'],
   },
   verification: {
     other: {
@@ -76,9 +76,10 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={rubik.variable}>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="alternate" hrefLang="he-IL" href="https://badfos.co.il" />
+        <link rel="preconnect" href="https://firestore.googleapis.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
