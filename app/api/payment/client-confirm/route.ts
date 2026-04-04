@@ -5,20 +5,21 @@ import { adminDb } from '@/lib/firebase-admin'
  * Client-side fallback confirmation.
  * Called from the /payment/success page when customer returns from Grow.
  *
- * Accepts orderId which can be either:
- * - Firestore Document ID (from createOrder return value)
- * - paymentId field value (order-XXXXX format)
+ * Security: requires orderId + customer phone to match.
+ * Without the phone that was used to create the order, the request is rejected.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { orderId } = body
+    const { orderId, phone } = body
 
     if (!orderId || typeof orderId !== 'string') {
       return NextResponse.json({ error: 'Missing orderId' }, { status: 400 })
     }
 
-    console.log(`Client-confirm: looking for orderId=${orderId}`)
+    if (!phone || typeof phone !== 'string') {
+      return NextResponse.json({ error: 'Missing phone' }, { status: 400 })
+    }
 
     let orderDoc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot | null = null
     let order: any = null
@@ -28,7 +29,6 @@ export async function POST(request: NextRequest) {
     if (docRef.exists) {
       orderDoc = docRef
       order = docRef.data()
-      console.log(`Client-confirm: found by doc ID, order #${order?.orderNumber}`)
     }
 
     // Try 2: Search by paymentId field
@@ -41,39 +41,52 @@ export async function POST(request: NextRequest) {
       if (!snapshot.empty) {
         orderDoc = snapshot.docs[0]
         order = orderDoc.data()
-        console.log(`Client-confirm: found by paymentId, order #${order?.orderNumber}`)
       }
     }
 
     if (!orderDoc || !order) {
-      console.error(`Client-confirm: order not found for ${orderId}`)
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // Only update if still pending or abandoned
-    if (order.status === 'pending_payment' || order.status === 'cart_abandoned') {
-      await adminDb.collection('orders').doc(orderDoc.id).update({
-        status: 'paid',
-        paidAt: new Date(),
-        updatedAt: new Date(),
-        paidVia: 'client_fallback',
-      })
-      console.log(`Client-confirm: order #${order.orderNumber} → paid`)
+    // Verify phone matches the order — prevents unauthorized status changes
+    const orderPhone = (order.customer?.phone || '').replace(/[-\s]/g, '')
+    const requestPhone = phone.replace(/[-\s]/g, '')
+    if (orderPhone !== requestPhone) {
+      console.error(`Client-confirm: phone mismatch for order #${order.orderNumber}`)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
 
-      // Mark coupon
-      if (order.couponCode) {
-        const couponSnap = await adminDb
-          .collection('coupons')
-          .where('code', '==', order.couponCode)
-          .limit(1)
-          .get()
-        if (!couponSnap.empty) {
-          await adminDb.collection('coupons').doc(couponSnap.docs[0].id).update({
-            isUsed: true,
-            updatedAt: new Date(),
-          })
+    // Only update if still pending or abandoned — use transaction to prevent race
+    if (order.status === 'pending_payment' || order.status === 'cart_abandoned') {
+      const orderRef = adminDb.collection('orders').doc(orderDoc.id)
+      await adminDb.runTransaction(async (transaction) => {
+        const freshDoc = await transaction.get(orderRef)
+        const freshData = freshDoc.data()
+        if (!freshData) return
+        if (freshData.status !== 'pending_payment' && freshData.status !== 'cart_abandoned') return
+
+        transaction.update(orderRef, {
+          status: 'paid',
+          paidAt: new Date(),
+          updatedAt: new Date(),
+          paidVia: 'client_fallback',
+        })
+
+        // Mark coupon as used atomically
+        if (freshData.couponCode) {
+          const couponSnap = await adminDb
+            .collection('coupons')
+            .where('code', '==', freshData.couponCode)
+            .limit(1)
+            .get()
+          if (!couponSnap.empty) {
+            transaction.update(couponSnap.docs[0].ref, {
+              isUsed: true,
+              updatedAt: new Date(),
+            })
+          }
         }
-      }
+      })
     }
 
     return NextResponse.json({ success: true, status: order.status })

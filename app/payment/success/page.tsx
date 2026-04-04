@@ -34,11 +34,11 @@ export default function PaymentSuccessPage() {
         const { orderId, customer, items, total } = JSON.parse(orderDataStr)
 
         // Fallback: update to 'paid' via server API (in case webhook hasn't arrived yet)
-        if (orderId) {
+        if (orderId && customer?.phone) {
           fetch('/api/payment/client-confirm', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId }),
+            body: JSON.stringify({ orderId, phone: customer.phone }),
           }).catch(console.error)
         }
 

@@ -109,7 +109,16 @@
       "Bash(grep -E \"\\(page|layout\\)\\\\.tsx$\")",
       "Bash(for file:*)",
       "Bash(if ! grep -q \"canonical\" \"$file\")",
-      "Bash(__NEW_LINE_edfe143c5e70c13e__ echo:*)"
+      "Bash(__NEW_LINE_edfe143c5e70c13e__ echo:*)",
+      "Bash(pip3 install:*)",
+      "Read(//Users/mac/.claude/skills/**)",
+      "Read(//Users/mac/.claude/**)",
+      "Bash(cat ~/.claude/skills/seo/*.md)",
+      "Read(//Users/mac/Downloads/**)",
+      "Read(//Users/mac/**)",
+      "Bash(du -sh /Users/mac/Desktop/badfos_site/public/assets/* /Users/mac/Desktop/badfos_site/assets/*)",
+      "Bash(find /Users/mac/Desktop/badfos_site/public/assets -name \"*.png\" -size +200k -exec ls -lhS {} \\\\;)",
+      "Bash(sips -s format webp -s formatOptions 80 \"חולצה שחורה קדימה.png\" --out \"חולצה שחורה קדימה.webp\")"
     ],
     "additionalDirectories": [
       "/Users/mac/Desktop"

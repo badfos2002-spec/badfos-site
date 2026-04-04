@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
     )
     const isAuthedByQuery = WEBHOOK_SECRET && querySecret === WEBHOOK_SECRET
 
-    // Verify Grow webhook key (specific to our Grow account)
-    const GROW_WEBHOOK_KEY = 'f05a8802-a073-bfa6-1b44-8c4e3466e7d6'
-    const isFromGrow = body.webhookKey === GROW_WEBHOOK_KEY
+    // Verify Grow webhook key from env (not hardcoded — prevents forgery)
+    const GROW_WEBHOOK_KEY = process.env.GROW_WEBHOOK_KEY
+    const isFromGrow = GROW_WEBHOOK_KEY && body.webhookKey === GROW_WEBHOOK_KEY
 
     if (!isAuthedByHeader && !isAuthedByQuery && !isFromGrow) {
       console.error('Webhook unauthorized — no valid auth method')

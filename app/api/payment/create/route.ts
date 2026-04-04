@@ -2,18 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
 
 // Server-side price verification constants (mirrors lib/constants.ts)
-const BASE_PRICES: Record<string, number> = { tshirt: 37, sweatshirt: 53, buff: 8, cap: 0, apron: 25 }
+const BASE_PRICES: Record<string, number> = { tshirt: 37, sweatshirt: 53, buff: 8, cap: 0, apron: 29 }
 const FABRIC_SURCHARGES: Record<string, number> = { cotton: 0, 'dri-fit': 0, polo: 10, oversized: 10 }
-const AREA_SURCHARGES: Record<string, number> = { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5 }
+const AREA_SURCHARGES: Record<string, number> = { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, center: 10 }
 const SIZE_SURCHARGES: Record<string, number> = { '3XL': 12, '4XL': 12 }
+const SHIPPING_COST = 35
+const QUANTITY_DISCOUNT_THRESHOLD = 15
+const QUANTITY_DISCOUNT_PERCENT = 5
 
-function verifyAmount(items: any[], clientAmount: number, couponDiscount: number = 0): boolean {
-  if (!items || items.length === 0) return true // Can't verify without items
-  let calculated = 0
+function calculateServerAmount(items: any[], couponDiscount: number = 0): number {
+  let subtotal = 0
+  let totalQuantity = 0
+
   for (const item of items) {
     if (item.fixedPrice) {
-      // Special product (lion-roar)
-      calculated += item.totalQuantity * item.fixedPrice
+      for (const size of (item.sizes || [])) {
+        const sizeSurcharge = SIZE_SURCHARGES[size.size] || 0
+        subtotal += (item.fixedPrice + sizeSurcharge) * size.quantity
+        totalQuantity += size.quantity
+      }
     } else {
       const base = BASE_PRICES[item.productType] || 37
       const fabric = FABRIC_SURCHARGES[item.fabricType] || 0
@@ -21,14 +28,32 @@ function verifyAmount(items: any[], clientAmount: number, couponDiscount: number
       const pricePerUnit = base + fabric + areas
       for (const size of (item.sizes || [])) {
         const sizeSurcharge = SIZE_SURCHARGES[size.size] || 0
-        calculated += (pricePerUnit + sizeSurcharge) * size.quantity
+        subtotal += (pricePerUnit + sizeSurcharge) * size.quantity
+        totalQuantity += size.quantity
       }
     }
   }
-  // Allow 20% tolerance (for discounts, coupons, rounding)
-  const min = calculated * 0.01 // At least 1% of calculated (extreme coupon)
-  const max = calculated * 1.05 // No more than 5% over (rounding)
-  return clientAmount >= min && clientAmount <= max
+
+  // Quantity discount
+  let discount = 0
+  if (totalQuantity >= QUANTITY_DISCOUNT_THRESHOLD) {
+    discount = subtotal * (QUANTITY_DISCOUNT_PERCENT / 100)
+  }
+
+  return subtotal - discount - couponDiscount
+}
+
+function verifyAmount(items: any[], clientAmount: number, couponDiscount: number = 0): boolean {
+  if (!items || items.length === 0) return true
+  const serverAmount = calculateServerAmount(items, couponDiscount)
+  // Allow only shipping variance (₪0-35) + ₪2 rounding tolerance
+  const min = serverAmount - 2 // rounding
+  const max = serverAmount + SHIPPING_COST + 2 // shipping + rounding
+  if (clientAmount < min || clientAmount > max) {
+    console.error(`Price mismatch: server=${serverAmount}, client=${clientAmount}, diff=${clientAmount - serverAmount}`)
+    return false
+  }
+  return true
 }
 
 export async function POST(request: NextRequest) {

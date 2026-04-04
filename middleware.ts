@@ -38,8 +38,21 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301)
   }
 
-  // Admin protection handled client-side by useAuth() hook
-  // Firebase Auth uses IndexedDB (not cookies), so middleware can't check auth state
+  // Admin API rate limiting — extra strict since auth is client-side only
+  // TODO: Implement Firebase Custom Claims + session cookie for server-side admin auth
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    const ip = getClientIp(request)
+    const adminKey = `admin:${ip}`
+    const now = Date.now()
+    const entry = rateLimitStore.get(adminKey)
+    if (!entry || entry.resetAt < now) {
+      rateLimitStore.set(adminKey, { count: 1, resetAt: now + 60_000 })
+    } else if (entry.count > 60) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    } else {
+      entry.count++
+    }
+  }
 
   const limit = RATE_LIMITS[pathname]
 
