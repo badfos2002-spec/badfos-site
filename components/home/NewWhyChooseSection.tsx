@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Award, Truck, ShieldCheck, Play } from 'lucide-react'
 
 const D = {
@@ -17,37 +17,17 @@ const D = {
 
 const ICONS = [Award, Truck, ShieldCheck]
 
-/** Lazy YouTube — shows thumbnail, loads iframe ONLY on user click (not on scroll).
- *  This saves ~1MB of YouTube player JS until the user actually wants to watch. */
+/** YouTube facade — thumbnail loads immediately (it's the hook!), iframe on click only. */
 function LazyYouTube({ videoUrl }: { videoUrl: string }) {
   const [loaded, setLoaded] = useState(false)
-  const [thumbnailLoaded, setThumbnailLoaded] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
 
   // Extract video ID for thumbnail
   const videoId = videoUrl.match(/embed\/([^?]+)/)?.[1] || 'ZBnLtKpF3l8'
-
-  // Preload the thumbnail when it comes into view (lightweight, ~20KB)
-  useEffect(() => {
-    if (!ref.current) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setThumbnailLoaded(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '300px' }
-    )
-    observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [])
 
   return (
     <div className="relative flex justify-center lg:justify-end">
       <div className="absolute w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl bg-[#ffc32e]/20" style={{ transform: 'rotate(35deg)' }}></div>
       <div
-        ref={ref}
         className="relative w-full sm:w-80 md:w-96 h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-3xl shadow-2xl overflow-hidden cursor-pointer group"
         onClick={() => setLoaded(true)}
       >
@@ -58,20 +38,16 @@ function LazyYouTube({ videoUrl }: { videoUrl: string }) {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="w-full h-full"
-            loading="lazy"
           />
         ) : (
           <>
-            {/* Solid background before thumbnail loads to avoid flash */}
-            <div className="w-full h-full bg-gray-900" />
-            {thumbnailLoaded && (
-              <img
-                src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-                alt="למה לבחור בנו — לחצו לצפייה בסרטון"
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="lazy"
-              />
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+              alt="למה לבחור בנו — לחצו לצפייה בסרטון"
+              className="w-full h-full object-cover"
+              fetchPriority="high"
+            />
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
               <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
                 <Play className="w-8 h-8 text-white fill-white ml-1" />
