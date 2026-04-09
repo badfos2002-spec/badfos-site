@@ -19,15 +19,16 @@ export default function Header() {
 
   const navLinkClass = (href: string) => {
     const isActive = (href === '/home' || href === '/') ? (pathname === '/' || pathname === '/home') : pathname.startsWith(href)
+    const base = 'flex items-center gap-1.5 xl:gap-2 px-2 xl:px-3 py-2 rounded-lg transition-all duration-200 hover-lift whitespace-nowrap text-sm xl:text-base'
     return isActive
-      ? 'flex items-center space-x-2 space-x-reverse px-3 py-2 rounded-lg transition-all duration-200 hover-lift bg-yellow-100 text-yellow-600'
-      : 'flex items-center space-x-2 space-x-reverse px-3 py-2 rounded-lg transition-all duration-200 hover-lift text-gray-700 hover:text-yellow-600 hover:bg-yellow-50'
+      ? `${base} bg-yellow-100 text-yellow-600`
+      : `${base} text-gray-700 hover:text-yellow-600 hover:bg-yellow-50`
   }
 
   return (
     <>
       <header className="sticky top-0 z-[100] w-full border-b border-gray-200 bg-white/90 backdrop-blur-[20px] shadow-sm" dir="rtl">
-        <div className="mx-auto max-w-[1536px] px-4 md:px-0">
+        <div className="mx-auto max-w-[1536px] px-4 md:px-6 lg:px-8">
 
           {/* Mobile Row */}
           <div className="grid grid-cols-3 items-center h-20 lg:hidden">
@@ -61,47 +62,53 @@ export default function Header() {
           </div>
 
           {/* Desktop Row */}
-          <div className="hidden lg:flex justify-between items-center h-16">
+          <div className="hidden lg:flex justify-between items-center gap-4 h-16">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center flex-shrink-0">
               <Image src="/logo.png" alt="בדפוס - הדפסת חולצות" width={48} height={48} className="h-12 w-auto" priority />
             </Link>
 
             {/* Navigation */}
-            <nav className="flex items-center space-x-8 space-x-reverse" role="navigation">
+            <nav className="flex items-center gap-1 xl:gap-4 min-w-0" role="navigation">
               <Link href="/home" className={navLinkClass('/home')}>
-                <Home className="w-4 h-4" />
+                <Home className="w-4 h-4 flex-shrink-0" />
                 <span className="font-medium">בית</span>
               </Link>
               <Link href="/designer" className={navLinkClass('/designer')}>
-                <Shirt className="w-4 h-4" />
+                <Shirt className="w-4 h-4 flex-shrink-0" />
                 <span className="font-medium">עיצוב אישי</span>
               </Link>
               <Link href="/packages" className={navLinkClass('/packages')}>
-                <Package className="w-4 h-4" />
-                <span className="font-medium">חבילות ומבצעים</span>
+                <Package className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium">
+                  <span className="xl:hidden">חבילות</span>
+                  <span className="hidden xl:inline">חבילות ומבצעים</span>
+                </span>
               </Link>
               <Link href="/about" className={navLinkClass('/about')}>
-                <Info className="w-4 h-4" />
+                <Info className="w-4 h-4 flex-shrink-0" />
                 <span className="font-medium">אודות</span>
               </Link>
               <Link href="/reviews" className={navLinkClass('/reviews')}>
-                <Star className="w-4 h-4" />
+                <Star className="w-4 h-4 flex-shrink-0" />
                 <span className="font-medium">ביקורות</span>
               </Link>
               <Link href="/faq" className={navLinkClass('/faq')}>
-                <HelpCircle className="w-4 h-4" />
+                <HelpCircle className="w-4 h-4 flex-shrink-0" />
                 <span className="font-medium">שאלות</span>
               </Link>
               <Link href="/contact" className={navLinkClass('/contact')}>
-                <Phone className="w-4 h-4" />
-                <span className="font-medium">יצירת קשר</span>
+                <Phone className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium">
+                  <span className="xl:hidden">צור קשר</span>
+                  <span className="hidden xl:inline">יצירת קשר</span>
+                </span>
               </Link>
             </nav>
 
             {/* Cart Button */}
-            <Link href="/cart">
+            <Link href="/cart" className="flex-shrink-0">
               <Button variant="outline" size="icon" className="h-9 w-9 relative hover-lift border-yellow-200 hover:border-yellow-300" aria-label={`עגלת קניות - ${itemCount} פריטים`}>
                 <ShoppingCart className="w-4 h-4" />
                 {mounted && itemCount > 0 && (
