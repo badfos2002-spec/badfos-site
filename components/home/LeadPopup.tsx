@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { X, User, Phone, Loader2, Check } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ const validatePhone = (p: string) => {
 }
 
 export default function LeadPopup() {
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -24,9 +26,14 @@ export default function LeadPopup() {
   const lastSubmitRef = useRef(0)
   const triggeredRef = useRef(false)
 
+  // Don't show on admin, share, landing, cart, payment pages
+  const hideOnRoutes = ['/admin', '/share', '/landing', '/cart', '/payment']
+  const shouldHide = hideOnRoutes.some(r => pathname?.startsWith(r))
+
   // Show popup after BOTH: 8 seconds elapsed AND user scrolled 30% of page
   // Google Ads compliant: not on page load, not blocking, user-initiated scroll
   useEffect(() => {
+    if (shouldHide) return
     const isClosed = safeGetItem('lead_popup_closed')
     const wasShown = safeSessionGet('lead_popup_shown')
     if (isClosed || wasShown) return
@@ -62,7 +69,7 @@ export default function LeadPopup() {
       clearTimeout(timer)
       window.removeEventListener('scroll', onScroll)
     }
-  }, [])
+  }, [shouldHide])
 
   const handleClose = () => {
     safeSetItem('lead_popup_closed', 'true')
