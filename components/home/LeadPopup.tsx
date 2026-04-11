@@ -30,45 +30,22 @@ export default function LeadPopup() {
   const hideOnRoutes = ['/admin', '/share', '/landing', '/cart', '/payment']
   const shouldHide = hideOnRoutes.some(r => pathname?.startsWith(r))
 
-  // Show popup after BOTH: 8 seconds elapsed AND user scrolled 30% of page
-  // Google Ads compliant: not on page load, not blocking, user-initiated scroll
+  // Show popup after 4 seconds on page
   useEffect(() => {
     if (shouldHide) return
     const isClosed = safeGetItem('lead_popup_closed')
     const wasShown = safeSessionGet('lead_popup_shown')
     if (isClosed || wasShown) return
 
-    let timeElapsed = false
-    let scrollReached = false
-
-    const tryShow = () => {
-      if (timeElapsed && scrollReached && !triggeredRef.current) {
+    const timer = setTimeout(() => {
+      if (!triggeredRef.current) {
         triggeredRef.current = true
         setIsOpen(true)
         safeSessionSet('lead_popup_shown', 'true')
-        window.removeEventListener('scroll', onScroll)
       }
-    }
+    }, 4000)
 
-    const timer = setTimeout(() => {
-      timeElapsed = true
-      tryShow()
-    }, 8000)
-
-    const onScroll = () => {
-      const scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight)
-      if (scrollPercent >= 0.3) {
-        scrollReached = true
-        tryShow()
-      }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('scroll', onScroll)
-    }
+    return () => clearTimeout(timer)
   }, [shouldHide])
 
   const handleClose = () => {
