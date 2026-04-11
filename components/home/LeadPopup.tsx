@@ -6,7 +6,6 @@ import { X, User, Phone, Loader2, Check } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { createLead } from '@/lib/db'
 import { sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, sendLeadWebhook, setEnhancedConversionData, getGclid } from '@/lib/tracking'
 import { safeGetItem, safeSetItem, safeSessionGet, safeSessionSet } from '@/lib/safe-storage'
 
@@ -32,21 +31,24 @@ export default function LeadPopup() {
 
   // Show popup after 4 seconds on page
   useEffect(() => {
-    if (shouldHide) return
+    if (shouldHide || triggeredRef.current) return
+
     const isClosed = safeGetItem('lead_popup_closed')
     const wasShown = safeSessionGet('lead_popup_shown')
-    if (isClosed || wasShown) return
+    if (isClosed || wasShown) {
+      triggeredRef.current = true
+      return
+    }
 
     const timer = setTimeout(() => {
-      if (!triggeredRef.current) {
-        triggeredRef.current = true
-        setIsOpen(true)
-        safeSessionSet('lead_popup_shown', 'true')
-      }
+      triggeredRef.current = true
+      setIsOpen(true)
+      safeSessionSet('lead_popup_shown', 'true')
     }, 4000)
 
     return () => clearTimeout(timer)
-  }, [shouldHide])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   const handleClose = () => {
     safeSetItem('lead_popup_closed', 'true')
@@ -74,6 +76,7 @@ export default function LeadPopup() {
     try {
       const gclid = getGclid()
 
+      const { createLead } = await import('@/lib/db')
       await createLead({
         name,
         phone,
