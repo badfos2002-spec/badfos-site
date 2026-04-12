@@ -46,7 +46,7 @@ export default function NewHeroSection() {
               <Sparkles className="w-3.5 h-3.5" />
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-[#1e293b] leading-tight">
+            <h1 className="text-[1.7rem] sm:text-3xl md:text-5xl lg:text-6xl font-bold text-[#1e293b] leading-tight">
               {c.hero_title1}
               <br />
               <span className="text-[#f59e0b]">{c.hero_title2}</span>
@@ -71,7 +71,7 @@ export default function NewHeroSection() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-500 mt-3">
+            <div className="flex items-center gap-2 text-sm sm:text-base text-gray-500 mt-3">
               <div className="flex -space-x-1 rtl:space-x-reverse">
                 {['#4285F4', '#34A853', '#E91E63', '#FF8F00'].map((bg, i) => (
                   <div key={i} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: bg }}>

@@ -97,43 +97,43 @@ function SimpleLeadPopup() {
     <>
       <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm" onClick={handleClose} />
       <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none" dir="rtl">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100 relative w-full max-w-sm md:max-w-md lg:max-w-lg pointer-events-auto">
-          <button onClick={handleClose} className="absolute top-3 left-3 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors" aria-label="סגור">
-            <X className="w-5 h-5 md:w-6 md:h-6" />
+        <div className="bg-white rounded-2xl shadow-2xl p-7 sm:p-8 md:p-10 border border-gray-100 relative w-full max-w-[420px] md:max-w-md lg:max-w-lg pointer-events-auto">
+          <button onClick={handleClose} className="absolute top-3 left-3 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors" aria-label="סגור">
+            <X className="w-6 h-6" />
           </button>
 
-          <div className="flex flex-col items-center text-center mb-5">
-            <Image src="/logo.png" alt="בדפוס" width={48} height={48} className="h-10 w-auto md:h-12 mb-3" />
-            <h3 className="text-gray-900 font-bold text-lg md:text-xl">רוצים שנחזור אליכם?</h3>
-            <p className="text-gray-500 text-sm md:text-base">השאירו פרטים ונחזור בהקדם</p>
+          <div className="flex flex-col items-center text-center mb-6">
+            <Image src="/logo.png" alt="בדפוס" width={56} height={56} className="h-12 w-auto md:h-14 mb-3" />
+            <h3 className="text-gray-900 font-bold text-xl md:text-2xl">רוצים שנחזור אליכם?</h3>
+            <p className="text-gray-500 text-base md:text-lg mt-1">השאירו פרטים ונחזור בהקדם</p>
           </div>
 
           {status === 'success' ? (
-            <div className="text-center py-6 md:py-8" role="status">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Check className="w-7 h-7 md:w-8 md:h-8 text-green-600" />
+            <div className="text-center py-8" role="status">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="w-8 h-8 text-green-600" />
               </div>
-              <h4 className="text-lg md:text-xl font-bold text-gray-900 mb-1">תודה רבה!</h4>
-              <p className="text-gray-500 text-sm md:text-base">נחזור אליכם בהקדם</p>
+              <h4 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">תודה רבה!</h4>
+              <p className="text-gray-500 text-base">נחזור אליכם בהקדם</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative">
-                <User className="absolute top-3 md:top-3.5 right-3 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                <Input type="text" placeholder="שם מלא *" value={name} onChange={(e) => setName(e.target.value)} required className="w-full h-10 md:h-12 text-right pr-9 md:pr-11 text-sm md:text-base" />
+                <User className="absolute top-3.5 right-3 w-5 h-5 text-gray-400" />
+                <Input type="text" placeholder="שם מלא *" value={name} onChange={(e) => setName(e.target.value)} required className="w-full h-12 text-right pr-11 text-base" />
               </div>
               <div className="relative">
-                <PhoneIcon className="absolute top-3 md:top-3.5 right-3 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                <Input type="tel" placeholder="טלפון *" value={phone} onChange={(e) => { setPhone(e.target.value); setPhoneError('') }} required className={`w-full h-10 md:h-12 text-right pr-9 md:pr-11 text-sm md:text-base ${phoneError ? 'border-red-500' : ''}`} dir="ltr" />
-                {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
+                <PhoneIcon className="absolute top-3.5 right-3 w-5 h-5 text-gray-400" />
+                <Input type="tel" placeholder="טלפון *" value={phone} onChange={(e) => { setPhone(e.target.value); setPhoneError('') }} required className={`w-full h-12 text-right pr-11 text-base ${phoneError ? 'border-red-500' : ''}`} dir="ltr" />
+                {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
               </div>
-              <Button type="submit" disabled={status === 'loading'} className="w-full bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-semibold h-10 md:h-12 rounded-full shadow-lg text-sm md:text-base">
-                {status === 'loading' ? <><Loader2 className="w-4 h-4 animate-spin" /> שולח...</> : 'שלחו לי הצעה!'}
+              <Button type="submit" disabled={status === 'loading'} className="w-full bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold h-12 md:h-14 rounded-full shadow-lg text-base md:text-lg">
+                {status === 'loading' ? <><Loader2 className="w-5 h-5 animate-spin" /> שולח...</> : 'שלחו לי הצעה!'}
               </Button>
             </form>
           )}
 
-          <p className="text-xs text-gray-400 text-center mt-3">
+          <p className="text-sm text-gray-400 text-center mt-4">
             הפרטים שלכם מאובטחים בהתאם ל<a href="/privacy" target="_blank" className="underline hover:text-indigo-500">מדיניות הפרטיות</a>
           </p>
         </div>
