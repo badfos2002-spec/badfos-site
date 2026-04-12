@@ -16,9 +16,10 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 }
 
 const sourceLabels: Record<string, string> = {
-  popup: 'פופאפ',
-  bottom_form: 'טופס תחתון',
-  contact_form: 'יצירת קשר',
+  popup: '🔔 פופאפ',
+  bottom_form: '📋 טופס תחתון',
+  contact_form: '📞 יצירת קשר',
+  landing: '🎯 דף נחיתה',
 }
 
 export default function AdminLeadsPage() {
