@@ -142,46 +142,6 @@ function SimpleLeadPopup() {
   )
 }
 
-function StickyMobileCTA() {
-  const pathname = usePathname()
-  const [visible, setVisible] = useState(false)
-
-  // Only show on pages where user isn't already in a flow
-  const hideOnRoutes = ['/designer', '/cart', '/payment', '/admin', '/share', '/landing', '/lion-roar']
-  const shouldShow = !hideOnRoutes.some(r => pathname?.startsWith(r))
-
-  useEffect(() => {
-    if (!shouldShow) return
-
-    const onScroll = () => {
-      // Show after scrolling past the hero (400px)
-      setVisible(window.scrollY > 400)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [shouldShow])
-
-  if (!shouldShow || !visible) return null
-
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-[90] lg:hidden">
-      <div className="bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900 truncate">הדפסת חולצות בעיצוב אישי</p>
-          <p className="text-xs text-gray-500">החל מ-₪37 לחולצה</p>
-        </div>
-        <a
-          href="/designer"
-          className="flex-shrink-0 bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold text-sm px-6 py-2.5 rounded-full shadow-lg"
-        >
-          עצב עכשיו
-        </a>
-      </div>
-    </div>
-  )
-}
-
 export default function ConditionalFooter() {
   const pathname = usePathname()
   if (pathname?.startsWith('/admin') || pathname?.startsWith('/share') || pathname?.startsWith('/landing')) return null
@@ -190,7 +150,6 @@ export default function ConditionalFooter() {
       <Footer />
       <WhatsAppButton />
       <SimpleLeadPopup />
-      <StickyMobileCTA />
       <CookieConsent />
     </>
   )
