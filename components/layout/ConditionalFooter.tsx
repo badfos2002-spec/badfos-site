@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import Footer from './Footer'
 import WhatsAppButton from './WhatsAppButton'
+import LeadPopup from '@/components/home/LeadPopup'
 
 const CookieConsent = dynamic(() => import('@/components/common/CookieConsent'), { ssr: false })
 
@@ -14,6 +15,7 @@ export default function ConditionalFooter() {
     <>
       <Footer />
       <WhatsAppButton />
+      <LeadPopup />
       <CookieConsent />
     </>
   )

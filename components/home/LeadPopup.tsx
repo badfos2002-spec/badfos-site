@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { usePathname } from 'next/navigation'
 import { X, User, Phone, Loader2, Check } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -15,7 +14,6 @@ const validatePhone = (p: string) => {
 }
 
 export default function LeadPopup() {
-  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -23,32 +21,20 @@ export default function LeadPopup() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const lastSubmitRef = useRef(0)
-  const triggeredRef = useRef(false)
 
-  // Don't show on admin, share, landing, cart, payment pages
-  const hideOnRoutes = ['/admin', '/share', '/landing', '/cart', '/payment']
-  const shouldHide = hideOnRoutes.some(r => pathname?.startsWith(r))
-
-  // Show popup after 4 seconds on page
+  // Show popup after 4 seconds on page (route filtering done by ConditionalFooter)
   useEffect(() => {
-    if (shouldHide || triggeredRef.current) return
-
     const isClosed = safeGetItem('lead_popup_closed')
     const wasShown = safeSessionGet('lead_popup_shown')
-    if (isClosed || wasShown) {
-      triggeredRef.current = true
-      return
-    }
+    if (isClosed || wasShown) return
 
     const timer = setTimeout(() => {
-      triggeredRef.current = true
       setIsOpen(true)
       safeSessionSet('lead_popup_shown', 'true')
     }, 4000)
 
     return () => clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
+  }, [])
 
   const handleClose = () => {
     safeSetItem('lead_popup_closed', 'true')
