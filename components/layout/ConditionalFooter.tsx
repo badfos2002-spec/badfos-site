@@ -102,12 +102,10 @@ function SimpleLeadPopup() {
             <X className="w-5 h-5 md:w-6 md:h-6" />
           </button>
 
-          <div className="flex items-center gap-3 md:gap-4 mb-5">
-            <Image src="/logo.png" alt="בדפוס" width={48} height={48} className="h-10 w-auto md:h-12" />
-            <div>
-              <h3 className="text-gray-900 font-bold text-lg md:text-xl">רוצים שנחזור אליכם?</h3>
-              <p className="text-gray-500 text-sm md:text-base">השאירו פרטים ונחזור בהקדם</p>
-            </div>
+          <div className="flex flex-col items-center text-center mb-5">
+            <Image src="/logo.png" alt="בדפוס" width={48} height={48} className="h-10 w-auto md:h-12 mb-3" />
+            <h3 className="text-gray-900 font-bold text-lg md:text-xl">רוצים שנחזור אליכם?</h3>
+            <p className="text-gray-500 text-sm md:text-base">השאירו פרטים ונחזור בהקדם</p>
           </div>
 
           {status === 'success' ? (
