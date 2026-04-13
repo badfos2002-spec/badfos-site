@@ -30,6 +30,39 @@ export default function TrackingScripts() {
     } catch {}
   }, [])
 
+  // Google Consent Mode v2 — must run BEFORE any gtag/GTM scripts
+  useEffect(() => {
+    window.dataLayer = window.dataLayer || []
+    function gtag(..._args: any[]) { window.dataLayer.push(arguments) }
+    window.gtag = gtag
+
+    // Check if user already consented
+    let hasConsent = false
+    try { hasConsent = localStorage.getItem('cookie_consent') === 'accepted' } catch {}
+    if (!hasConsent) hasConsent = document.cookie.includes('cookie_consent=accepted')
+
+    // Set default consent state
+    gtag('consent', 'default', {
+      ad_storage: hasConsent ? 'granted' : 'denied',
+      ad_user_data: hasConsent ? 'granted' : 'denied',
+      ad_personalization: hasConsent ? 'granted' : 'denied',
+      analytics_storage: hasConsent ? 'granted' : 'denied',
+      wait_for_update: 500,
+    })
+
+    // Listen for consent acceptance
+    const handleConsent = () => {
+      gtag('consent', 'update', {
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+        analytics_storage: 'granted',
+      })
+    }
+    window.addEventListener('cookieConsentAccepted', handleConsent)
+    return () => window.removeEventListener('cookieConsentAccepted', handleConsent)
+  }, [])
+
   // Load GTM, Google Ads (gtag.js), Meta Pixel, AdSense - Gated by Cookie Consent
   useEffect(() => {
     let scriptLoaded = false
