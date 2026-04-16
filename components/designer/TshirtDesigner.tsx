@@ -230,9 +230,13 @@ export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.Re
         }
         clearDesignerSession()
         router.push('/cart')
-      } catch (err) {
+      } catch (err: any) {
         console.error('Add to cart failed:', err)
-        alert('אירעה שגיאה. אנא נסו שוב.')
+        if (err?.name === 'QuotaExceededError' || err?.message?.includes('quota')) {
+          alert('התמונות גדולות מדי. נסו להעלות תמונות קטנות יותר (עד 5MB).')
+        } else {
+          alert('אירעה שגיאה. אנא נסו שוב.')
+        }
         setAddingToCart(false)
       }
     }

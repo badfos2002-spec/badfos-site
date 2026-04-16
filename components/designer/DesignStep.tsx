@@ -27,10 +27,36 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
   const handleFileSelectForArea = (areaId: string, file: File) => {
     const area = TSHIRT_DESIGN_AREAS.find(a => a.id === areaId)!
 
-    // Convert to base64 immediately — avoids blob URL issues on Safari/iOS
-    const reader = new FileReader()
-    reader.onload = () => {
-      const imageUrl = reader.result as string
+    // Convert to compressed base64 — keeps images under localStorage limits
+    const blobUrl = URL.createObjectURL(file)
+    const img = new window.Image()
+    img.onload = () => {
+      const MAX = 1000
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+      const w = Math.round(img.width * scale)
+      const h = Math.round(img.height * scale)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')!
+
+      const isPng = file.type === 'image/png'
+      if (isPng) {
+        ctx.clearRect(0, 0, w, h)
+        ctx.drawImage(img, 0, 0, w, h)
+      } else {
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, w, h)
+        ctx.drawImage(img, 0, 0, w, h)
+      }
+
+      const imageUrl = isPng
+        ? canvas.toDataURL('image/png')
+        : canvas.toDataURL('image/jpeg', 0.85)
+
+      URL.revokeObjectURL(blobUrl)
+
       const newDesign: DesignArea = {
         area: areaId as DesignArea['area'],
         areaName: area.name,
@@ -48,7 +74,11 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
       setSelectedAreaId(areaId)
       onAreaFocus?.(areaId)
     }
-    reader.readAsDataURL(file)
+    img.onerror = () => {
+      URL.revokeObjectURL(blobUrl)
+      alert('לא ניתן לטעון את התמונה. נסו קובץ אחר.')
+    }
+    img.src = blobUrl
   }
 
   const handleFileSelect = (file: File) => {
