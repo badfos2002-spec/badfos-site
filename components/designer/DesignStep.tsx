@@ -3,16 +3,49 @@
 import { useState, useRef } from 'react'
 import { TSHIRT_DESIGN_AREAS } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
-import { ImagePlus, CheckCircle, X } from 'lucide-react'
+import { ImagePlus, CheckCircle, X, Loader2 } from 'lucide-react'
 
 interface DesignStepProps {
   designs: DesignArea[]
   onUpdate: (designs: DesignArea[]) => void
   onAreaFocus?: (areaId: string) => void
+  onStorageUrlReady?: (areaId: string, url: string) => void
 }
 
-export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignStepProps) {
+/** Create a small thumbnail for localStorage preview (keeps under 5MB limit) */
+function createThumbnail(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const blobUrl = URL.createObjectURL(file)
+    const img = new window.Image()
+    img.onload = () => {
+      const MAX = 400
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+      const w = Math.round(img.width * scale)
+      const h = Math.round(img.height * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, w, h)
+      URL.revokeObjectURL(blobUrl)
+      resolve(canvas.toDataURL('image/jpeg', 0.6))
+    }
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error('Image load failed')) }
+    img.src = blobUrl
+  })
+}
+
+/** Upload original quality file to Firebase Storage in background */
+async function uploadToStorage(file: File, areaId: string): Promise<string> {
+  const { uploadDesignFile, generateUniqueFileName } = await import('@/lib/storage')
+  const tempId = `draft-${Date.now()}`
+  const fileName = generateUniqueFileName(file.name)
+  return await uploadDesignFile(file, tempId, `${areaId}-${fileName}`)
+}
+
+export default function DesignStep({ designs, onUpdate, onAreaFocus, onStorageUrlReady }: DesignStepProps) {
   const [selectedAreaId, setSelectedAreaId] = useState<string>(TSHIRT_DESIGN_AREAS[0].id)
+  const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const selectedArea = TSHIRT_DESIGN_AREAS.find(a => a.id === selectedAreaId)!
@@ -24,43 +57,23 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
     onAreaFocus?.(areaId)
   }
 
-  const handleFileSelectForArea = (areaId: string, file: File) => {
+  // Store full-quality Storage URLs separately (not in localStorage-persisted state)
+  const storageUrlsRef = useRef<Record<string, string>>({})
+
+  const handleFileSelectForArea = async (areaId: string, file: File) => {
     const area = TSHIRT_DESIGN_AREAS.find(a => a.id === areaId)!
 
-    // Convert to compressed base64 — keeps images under localStorage limits
-    const blobUrl = URL.createObjectURL(file)
-    const img = new window.Image()
-    img.onload = () => {
-      const MAX = 1000
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height))
-      const w = Math.round(img.width * scale)
-      const h = Math.round(img.height * scale)
+    setUploading(prev => ({ ...prev, [areaId]: true }))
 
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')!
+    try {
+      // 1. Create small thumbnail for preview (fast, fits in localStorage)
+      const thumbnail = await createThumbnail(file)
 
-      const isPng = file.type === 'image/png'
-      if (isPng) {
-        ctx.clearRect(0, 0, w, h)
-        ctx.drawImage(img, 0, 0, w, h)
-      } else {
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, w, h)
-        ctx.drawImage(img, 0, 0, w, h)
-      }
-
-      const imageUrl = isPng
-        ? canvas.toDataURL('image/png')
-        : canvas.toDataURL('image/jpeg', 0.85)
-
-      URL.revokeObjectURL(blobUrl)
-
+      // 2. Show thumbnail immediately
       const newDesign: DesignArea = {
         area: areaId as DesignArea['area'],
         areaName: area.name,
-        imageUrl,
+        imageUrl: thumbnail,
         fileName: file.name,
       }
       const existingIndex = designs.findIndex(d => d.area === areaId)
@@ -73,13 +86,21 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
       }
       setSelectedAreaId(areaId)
       onAreaFocus?.(areaId)
+
+      // 3. Upload original quality to Firebase Storage in background
+      const storageUrl = await uploadToStorage(file, areaId)
+      storageUrlsRef.current[areaId] = storageUrl
+      onStorageUrlReady?.(areaId, storageUrl)
+    } catch (err) {
+      console.error('Upload failed:', err)
+      alert('שגיאה בהעלאת התמונה. נסו שוב.')
+    } finally {
+      setUploading(prev => ({ ...prev, [areaId]: false }))
     }
-    img.onerror = () => {
-      URL.revokeObjectURL(blobUrl)
-      alert('לא ניתן לטעון את התמונה. נסו קובץ אחר.')
-    }
-    img.src = blobUrl
   }
+
+  /** Get the full-quality Storage URL for a design area (if uploaded) */
+  const getStorageUrl = (areaId: string) => storageUrlsRef.current[areaId]
 
   const handleFileSelect = (file: File) => {
     handleFileSelectForArea(selectedAreaId, file)

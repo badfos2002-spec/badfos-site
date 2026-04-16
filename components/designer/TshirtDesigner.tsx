@@ -208,19 +208,18 @@ export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.Re
   }
 
   const [addingToCart, setAddingToCart] = useState(false)
+  const storageUrlsRef = useRef<Record<string, string>>({})
 
   const handleAddToCart = async () => {
     if (addingToCart) return
     if (config.productType && config.fabricType && config.color && config.designs && config.sizes && config.sizes.length > 0) {
       setAddingToCart(true)
       try {
-        // Convert blob URLs to base64 NOW — blob URLs expire after page navigation
-        const persistedDesigns = await Promise.all(
-          config.designs.map(async (d) => ({
-            ...d,
-            imageUrl: await blobToBase64(d.imageUrl),
-          }))
-        )
+        // Use Firebase Storage URLs (full quality) if available, fallback to thumbnail
+        const persistedDesigns = config.designs.map((d) => ({
+          ...d,
+          imageUrl: storageUrlsRef.current[d.area] || d.imageUrl,
+        }))
         const persistedConfig = { ...config, designs: persistedDesigns } as ProductConfig
 
         if (editingItemId) {
@@ -272,7 +271,7 @@ export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.Re
       case 2:
         return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} fabricType={config.fabricType} />
       case 3:
-        return <DesignStep designs={config.designs || []} onUpdate={(designs) => updateConfig({ designs })} onAreaFocus={(area) => {
+        return <DesignStep designs={config.designs || []} onUpdate={(designs) => updateConfig({ designs })} onStorageUrlReady={(areaId, url) => { storageUrlsRef.current[areaId] = url }} onAreaFocus={(area) => {
           setActiveDesignArea(area)
           const overlay = DESIGN_AREA_OVERLAYS[area]
           if (overlay) setPreviewView(overlay.view as 'front' | 'back')
