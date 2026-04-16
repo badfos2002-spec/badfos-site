@@ -3,22 +3,21 @@
 import { useState, useRef } from 'react'
 import { TSHIRT_DESIGN_AREAS } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
-import { ImagePlus, CheckCircle, X, Loader2 } from 'lucide-react'
+import { ImagePlus, CheckCircle, X } from 'lucide-react'
 
 interface DesignStepProps {
   designs: DesignArea[]
   onUpdate: (designs: DesignArea[]) => void
   onAreaFocus?: (areaId: string) => void
-  onStorageUrlReady?: (areaId: string, url: string) => void
 }
 
-/** Create a small thumbnail for localStorage preview (keeps under 5MB limit) */
-function createThumbnail(file: File): Promise<string> {
+/** Compress image to fit localStorage — max 1000px, JPEG 85% (or PNG for transparency) */
+function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const blobUrl = URL.createObjectURL(file)
     const img = new window.Image()
     img.onload = () => {
-      const MAX = 400
+      const MAX = 1000
       const scale = Math.min(1, MAX / Math.max(img.width, img.height))
       const w = Math.round(img.width * scale)
       const h = Math.round(img.height * scale)
@@ -26,26 +25,24 @@ function createThumbnail(file: File): Promise<string> {
       canvas.width = w
       canvas.height = h
       const ctx = canvas.getContext('2d')!
+      const isPng = file.type === 'image/png'
+      if (isPng) {
+        ctx.clearRect(0, 0, w, h)
+      } else {
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, w, h)
+      }
       ctx.drawImage(img, 0, 0, w, h)
       URL.revokeObjectURL(blobUrl)
-      resolve(canvas.toDataURL('image/jpeg', 0.6))
+      resolve(isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85))
     }
     img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error('Image load failed')) }
     img.src = blobUrl
   })
 }
 
-/** Upload original quality file to Firebase Storage in background */
-async function uploadToStorage(file: File, areaId: string): Promise<string> {
-  const { uploadDesignFile, generateUniqueFileName } = await import('@/lib/storage')
-  const tempId = `draft-${Date.now()}`
-  const fileName = generateUniqueFileName(file.name)
-  return await uploadDesignFile(file, tempId, `${areaId}-${fileName}`)
-}
-
-export default function DesignStep({ designs, onUpdate, onAreaFocus, onStorageUrlReady }: DesignStepProps) {
+export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignStepProps) {
   const [selectedAreaId, setSelectedAreaId] = useState<string>(TSHIRT_DESIGN_AREAS[0].id)
-  const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const selectedArea = TSHIRT_DESIGN_AREAS.find(a => a.id === selectedAreaId)!
@@ -57,23 +54,16 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus, onStorageUr
     onAreaFocus?.(areaId)
   }
 
-  // Store full-quality Storage URLs separately (not in localStorage-persisted state)
-  const storageUrlsRef = useRef<Record<string, string>>({})
-
   const handleFileSelectForArea = async (areaId: string, file: File) => {
     const area = TSHIRT_DESIGN_AREAS.find(a => a.id === areaId)!
 
-    setUploading(prev => ({ ...prev, [areaId]: true }))
-
     try {
-      // 1. Create small thumbnail for preview (fast, fits in localStorage)
-      const thumbnail = await createThumbnail(file)
+      const imageUrl = await compressImage(file)
 
-      // 2. Show thumbnail immediately
       const newDesign: DesignArea = {
         area: areaId as DesignArea['area'],
         areaName: area.name,
-        imageUrl: thumbnail,
+        imageUrl,
         fileName: file.name,
       }
       const existingIndex = designs.findIndex(d => d.area === areaId)
@@ -86,21 +76,11 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus, onStorageUr
       }
       setSelectedAreaId(areaId)
       onAreaFocus?.(areaId)
-
-      // 3. Upload original quality to Firebase Storage in background
-      const storageUrl = await uploadToStorage(file, areaId)
-      storageUrlsRef.current[areaId] = storageUrl
-      onStorageUrlReady?.(areaId, storageUrl)
     } catch (err) {
-      console.error('Upload failed:', err)
-      alert('שגיאה בהעלאת התמונה. נסו שוב.')
-    } finally {
-      setUploading(prev => ({ ...prev, [areaId]: false }))
+      console.error('Image processing failed:', err)
+      alert('לא ניתן לטעון את התמונה. נסו קובץ אחר.')
     }
   }
-
-  /** Get the full-quality Storage URL for a design area (if uploaded) */
-  const getStorageUrl = (areaId: string) => storageUrlsRef.current[areaId]
 
   const handleFileSelect = (file: File) => {
     handleFileSelectForArea(selectedAreaId, file)
