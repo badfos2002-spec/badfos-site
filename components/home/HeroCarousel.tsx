@@ -11,7 +11,6 @@ interface Slide {
 }
 
 const SLIDES: Slide[] = [
-  { id: 'lion-roar', image: '/assets/lion-roar-banner.webp', link: '/lion-roar' },
   { id: '1', image: '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp' },
   { id: '2', image: '/assets/64ab08d41_IMG_3252.webp' },
   { id: '3', image: '/assets/a189e74e3_IMG_0490.webp' },
