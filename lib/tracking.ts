@@ -3,7 +3,8 @@
  */
 
 const GOOGLE_ADS_ID = 'AW-17871272500'
-const CONVERSION_LABEL = 'AW-17871272500/cEpjCIyrqOobELT018lC'
+const CONVERSION_LABEL = 'AW-17871272500/cEpjCIyrqOobELT018lC' // ליד
+const PURCHASE_CONVERSION_LABEL = 'AW-17871272500/qnLZCLa5hpwcELT0181C' // רכישה
 
 /** Push to dataLayer even if gtag not loaded yet — GTM will pick it up */
 function gtagSafe(...args: any[]) {
@@ -86,6 +87,18 @@ export function sendGoogleAdsConversion(value = 1.0, transactionId?: string) {
     value,
     currency: 'ILS',
     ...(transactionId && { transaction_id: transactionId }),
+    ...(gclid && { gclid }),
+  })
+}
+
+/** Purchase conversion — fires on payment/success page */
+export function sendGoogleAdsPurchase(value: number, transactionId: string) {
+  const gclid = getGclid()
+  gtagSafe('event', 'conversion', {
+    send_to: PURCHASE_CONVERSION_LABEL,
+    value,
+    currency: 'ILS',
+    transaction_id: transactionId,
     ...(gclid && { gclid }),
   })
 }

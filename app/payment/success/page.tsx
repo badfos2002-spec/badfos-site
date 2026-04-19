@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/hooks/useCart'
-import { ensureGtagLoaded, sendGoogleAdsConversion, sendPurchaseEvent, sendMetaPurchaseEvent, setEnhancedConversionData } from '@/lib/tracking'
+import { ensureGtagLoaded, sendGoogleAdsPurchase, sendPurchaseEvent, sendMetaPurchaseEvent, setEnhancedConversionData } from '@/lib/tracking'
 
 export default function PaymentSuccessPage() {
   const clearCart = useCart((state) => state.clearCart)
@@ -54,7 +54,7 @@ export default function PaymentSuccessPage() {
                 lastName: customer.lastName,
               })
             }
-            sendGoogleAdsConversion(total, orderId)
+            sendGoogleAdsPurchase(total, orderId)
             sendPurchaseEvent(orderId, total, (items || []).map((item: any) => ({
               id: item.productType,
               name: item.productType,
