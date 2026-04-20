@@ -50,6 +50,12 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
   }
 
   // ── Default: size + quantity grid ─────────────────────────────────────────
+  // Oversized t-shirts don't come in 3XL/4XL
+  const isOversized = config.fabricType === 'oversized'
+  const availableSizes = isOversized
+    ? STANDARD_SIZES.filter(s => s.id !== '3XL' && s.id !== '4XL')
+    : STANDARD_SIZES
+
   const getQuantity = (sizeId: string) => sizes.find(s => s.size === sizeId)?.quantity || 0
   const totalQuantity = sizes.reduce((sum, s) => sum + s.quantity, 0)
 
@@ -75,7 +81,7 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
     <div>
       <AnnouncementBar placement="designer" />
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-        {STANDARD_SIZES.map((size) => {
+        {availableSizes.map((size) => {
           const quantity = getQuantity(size.id)
           return (
             <div
