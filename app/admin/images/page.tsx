@@ -200,7 +200,7 @@ export default function AdminImagesPage() {
     <div dir="rtl">
       <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">ניהול תמונות</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">ניהול תמונות</h1>
           <p className="text-gray-600">ניהול תמונות האתר לפי קטגוריות</p>
         </div>
         <div className="flex gap-2">

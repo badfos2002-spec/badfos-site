@@ -60,7 +60,7 @@ export default function AdminTopBarPage() {
   return (
     <div dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Top Bar</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">Top Bar</h1>
         <p className="text-gray-600">פס עליון מעל הכותרת – הצגת הודעה עם קופון ללקוחות</p>
       </div>
 

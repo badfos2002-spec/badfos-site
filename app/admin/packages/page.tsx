@@ -134,7 +134,7 @@ export default function AdminPackagesPage() {
     <div dir="rtl">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">ניהול חבילות</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">ניהול חבילות</h1>
           <p className="text-gray-600">הגדרת חבילות מוצרים ומבצעים</p>
         </div>
         <div className="flex gap-2">

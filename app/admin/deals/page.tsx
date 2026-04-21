@@ -62,7 +62,7 @@ export default function AdminDealsPage() {
   return (
     <div dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">הגדרות מבצעים</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">הגדרות מבצעים</h1>
         <p className="text-gray-600">הגדרת אזור המבצעים בעמוד הבית</p>
       </div>
 

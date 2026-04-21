@@ -118,7 +118,10 @@
       "Read(//Users/mac/**)",
       "Bash(du -sh /Users/mac/Desktop/badfos_site/public/assets/* /Users/mac/Desktop/badfos_site/assets/*)",
       "Bash(find /Users/mac/Desktop/badfos_site/public/assets -name \"*.png\" -size +200k -exec ls -lhS {} \\\\;)",
-      "Bash(sips -s format webp -s formatOptions 80 \"חולצה שחורה קדימה.png\" --out \"חולצה שחורה קדימה.webp\")"
+      "Bash(sips -s format webp -s formatOptions 80 \"חולצה שחורה קדימה.png\" --out \"חולצה שחורה קדימה.webp\")",
+      "Bash(git reset:*)",
+      "Bash(grep -o 'buildId\":\"[^\"]*\"' echo \"---\")",
+      "Bash(vercel --version)"
     ],
     "additionalDirectories": [
       "/Users/mac/Desktop"

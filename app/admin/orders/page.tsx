@@ -161,7 +161,7 @@ export default function AdminOrdersPage() {
   return (
     <div dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">ניהול הזמנות</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">ניהול הזמנות</h1>
         <p className="text-gray-600">צפייה וניהול כל ההזמנות במערכת</p>
       </div>
 

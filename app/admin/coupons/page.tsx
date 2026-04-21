@@ -82,7 +82,7 @@ export default function AdminCouponsPage() {
     <div dir="rtl">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">ניהול קופונים</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">ניהול קופונים</h1>
           <p className="text-gray-600">יצירה וניהול קופוני הנחה</p>
         </div>
         <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={() => setShowForm(!showForm)}>

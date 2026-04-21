@@ -104,21 +104,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Top Bar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden shrink-0"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <Menu className="w-6 h-6" />
             </Button>
-            <h1 className="text-xl font-bold text-gray-900">🎨 פאנל ניהול - בדפוס</h1>
+            <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
+              <span className="hidden sm:inline">🎨 פאנל ניהול - בדפוס</span>
+              <span className="sm:hidden">🎨 פאנל ניהול</span>
+            </h1>
           </div>
-          <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleSignOut}>
-            <LogOut className="w-5 h-5 ml-2" />
-            התנתק
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0 px-2 sm:px-4" onClick={handleSignOut}>
+            <LogOut className="w-5 h-5 sm:ml-2" />
+            <span className="hidden sm:inline">התנתק</span>
           </Button>
         </div>
       </header>
@@ -176,7 +179,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 min-w-0 overflow-x-hidden">
           {children}
         </main>
       </div>

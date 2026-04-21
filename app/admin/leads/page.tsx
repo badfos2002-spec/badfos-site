@@ -64,12 +64,12 @@ export default function AdminLeadsPage() {
 
   return (
     <div dir="rtl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">ניהול לידים</h1>
-        <p className="text-gray-600">ניהול פניות לקוחות</p>
+      <div className="mb-4 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">ניהול לידים</h1>
+        <p className="text-sm sm:text-base text-gray-600">ניהול פניות לקוחות</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-6 mb-4 sm:mb-6">
         <div className="relative">
           <Search className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
           <Input
@@ -91,23 +91,25 @@ export default function AdminLeadsPage() {
           <p className="text-lg font-medium">אין לידים</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {filtered.map((lead) => {
-            const date = lead.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? ''
+            const dateObj = lead.createdAt?.toDate?.()
+            const date = dateObj?.toLocaleDateString('he-IL') ?? ''
+            const time = dateObj?.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) ?? ''
             return (
               <div
                 key={lead.id}
-                className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl hover:border-yellow-200 border-2 border-transparent transition-all cursor-pointer"
+                className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 hover:shadow-xl hover:border-yellow-200 border-2 border-transparent transition-all cursor-pointer"
                 onClick={() => window.open(`https://wa.me/${lead.phone.replace(/\D/g, '')}`, '_blank')}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">{lead.name}</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusLabels[lead.status]?.color ?? 'bg-gray-100 text-gray-700'}`}>
+                <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{lead.name}</h3>
+                  <span className={`shrink-0 px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusLabels[lead.status]?.color ?? 'bg-gray-100 text-gray-700'}`}>
                     {statusLabels[lead.status]?.label ?? lead.status}
                   </span>
                 </div>
 
-                <div className="space-y-3 mb-4">
+                <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
                   <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-gray-700 hover:text-yellow-600">
                     <Phone className="w-4 h-4" />
                     <span className="text-sm">{lead.phone}</span>
@@ -120,7 +122,7 @@ export default function AdminLeadsPage() {
                   )}
                   <div className="flex items-center gap-2 text-gray-500">
                     <Calendar className="w-4 h-4" />
-                    <span className="text-sm">{date}</span>
+                    <span className="text-sm">{date} • {time}</span>
                   </div>
                   {lead.source && (
                     <div className="text-xs text-gray-400">מקור: {sourceLabels[lead.source] ?? lead.source}</div>
