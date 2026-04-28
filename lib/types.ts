@@ -76,6 +76,7 @@ export interface Address {
   street: string
   number: string
   city: string
+  apartment?: string
   floor?: string
   entrance?: string
 }

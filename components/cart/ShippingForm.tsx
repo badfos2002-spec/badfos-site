@@ -11,7 +11,7 @@ interface ShippingFormProps {
 
 export default function ShippingForm({ onSubmit }: ShippingFormProps) {
   const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
-  const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', floor: 'קרקע', entrance: '' })
+  const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', apartment: '', floor: 'קרקע', entrance: '' })
   const [touched, setTouched] = useState(false)
 
   // Auto-update parent with debounce (300ms)
@@ -24,7 +24,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
       return () => clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [method, address.street, address.number, address.city, address.floor, address.entrance])
+  }, [method, address.street, address.number, address.city, address.apartment, address.floor, address.entrance])
 
   // Mark as touched after 3 seconds of delivery being selected
   useEffect(() => {
@@ -138,17 +138,31 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">כניסה</label>
-                <input
-                  type="text"
-                  name="entrance"
-                  autoComplete="off"
-                  value={address.entrance}
-                  onChange={(e) => setAddress({ ...address, entrance: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
-                  placeholder="אופציונלי"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">דירה</label>
+                  <input
+                    type="text"
+                    name="apartment"
+                    autoComplete="off"
+                    value={address.apartment}
+                    onChange={(e) => setAddress({ ...address, apartment: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                    placeholder="אופציונלי"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">כניסה</label>
+                  <input
+                    type="text"
+                    name="entrance"
+                    autoComplete="off"
+                    value={address.entrance}
+                    onChange={(e) => setAddress({ ...address, entrance: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                    placeholder="אופציונלי"
+                  />
+                </div>
               </div>
             </div>
           )}

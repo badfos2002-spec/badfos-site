@@ -344,6 +344,9 @@ export default function AdminOrdersPage() {
                                   <span className="font-semibold text-gray-700">מספר:</span>
                                   <span className="text-gray-900">{order.shipping.address.number || '—'}</span>
 
+                                  <span className="font-semibold text-gray-700">דירה:</span>
+                                  <span className="text-gray-900">{(order.shipping.address as any).apartment || '—'}</span>
+
                                   <span className="font-semibold text-gray-700">קומה:</span>
                                   <span className="text-gray-900">{order.shipping.address.floor || '—'}</span>
 
