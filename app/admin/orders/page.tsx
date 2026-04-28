@@ -336,11 +336,22 @@ export default function AdminOrdersPage() {
                               </div>
                             ) : order.shipping?.address ? (
                               <div className="space-y-2">
-                                <div className="font-medium text-blue-600">משלוח עד הבית</div>
-                                <div className="text-gray-600">
-                                  <div>{order.shipping.address.street} {order.shipping.address.number}</div>
-                                  <div>{order.shipping.address.city}{order.shipping.address.floor ? `, קומה ${order.shipping.address.floor}` : ''}</div>
-                                  {order.shipping.address.entrance && <div>כניסה: {order.shipping.address.entrance}</div>}
+                                <div className="font-medium text-blue-600 mb-2">משלוח עד הבית</div>
+                                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
+                                  <span className="font-semibold text-gray-700">רחוב:</span>
+                                  <span className="text-gray-900">{order.shipping.address.street || '—'}</span>
+
+                                  <span className="font-semibold text-gray-700">מספר:</span>
+                                  <span className="text-gray-900">{order.shipping.address.number || '—'}</span>
+
+                                  <span className="font-semibold text-gray-700">קומה:</span>
+                                  <span className="text-gray-900">{order.shipping.address.floor || '—'}</span>
+
+                                  <span className="font-semibold text-gray-700">כניסה:</span>
+                                  <span className="text-gray-900">{order.shipping.address.entrance || '—'}</span>
+
+                                  <span className="font-semibold text-gray-700">עיר:</span>
+                                  <span className="text-gray-900">{order.shipping.address.city || '—'}</span>
                                 </div>
                               </div>
                             ) : (
