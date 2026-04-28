@@ -11,15 +11,25 @@ interface ShippingFormProps {
 
 export default function ShippingForm({ onSubmit }: ShippingFormProps) {
   const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
+  const [isPrivateHouse, setIsPrivateHouse] = useState(false)
   const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', apartment: '', floor: 'קרקע', entrance: '' })
   const [touched, setTouched] = useState(false)
+
+  // When private house is selected, apartment becomes "בית פרטי" and floor becomes "קרקע"
+  useEffect(() => {
+    if (isPrivateHouse) {
+      setAddress(a => ({ ...a, apartment: 'בית פרטי', floor: 'קרקע' }))
+    } else {
+      setAddress(a => ({ ...a, apartment: a.apartment === 'בית פרטי' ? '' : a.apartment }))
+    }
+  }, [isPrivateHouse])
 
   // Auto-update parent with debounce (300ms)
   useEffect(() => {
     if (method === 'pickup') {
       const timer = setTimeout(() => onSubmit({ method, cost: SHIPPING_COSTS[method] }), 300)
       return () => clearTimeout(timer)
-    } else if (address.street && address.number && address.city && address.floor) {
+    } else if (address.street && address.number && address.city && address.floor && address.apartment) {
       const timer = setTimeout(() => onSubmit({ method, address, cost: SHIPPING_COSTS[method] }), 300)
       return () => clearTimeout(timer)
     }
@@ -131,25 +141,41 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary bg-white"
                   >
                     <option value="קרקע">קרקע</option>
-                    {Array.from({ length: 99 }, (_, i) => i + 1).map(n => (
+                    {Array.from({ length: 200 }, (_, i) => i + 1).map(n => (
                       <option key={n} value={String(n)}>{n}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
+              {/* Private house checkbox */}
+              <label className="flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer hover:border-primary transition-colors bg-gray-50">
+                <input
+                  type="checkbox"
+                  checked={isPrivateHouse}
+                  onChange={(e) => setIsPrivateHouse(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-medium">🏡 בית פרטי / קרקע (ללא דירה)</span>
+              </label>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">דירה</label>
+                  <label className="block text-sm font-medium mb-2">
+                    דירה {!isPrivateHouse && <span className="text-red-500">*</span>}
+                  </label>
                   <input
                     type="text"
                     name="apartment"
                     autoComplete="off"
+                    required={!isPrivateHouse}
+                    disabled={isPrivateHouse}
                     value={address.apartment}
                     onChange={(e) => setAddress({ ...address, apartment: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
-                    placeholder="אופציונלי"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${!address.apartment && touched && !isPrivateHouse ? 'border-red-500' : ''} ${isPrivateHouse ? 'bg-gray-100 text-gray-500' : ''}`}
+                    placeholder={isPrivateHouse ? 'בית פרטי' : 'מספר דירה'}
                   />
+                  {!address.apartment && touched && !isPrivateHouse && <p className="text-red-500 text-sm mt-1">שדה חובה</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">כניסה</label>
