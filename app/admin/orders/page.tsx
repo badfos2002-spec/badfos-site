@@ -337,25 +337,38 @@ export default function AdminOrdersPage() {
                             ) : order.shipping?.address ? (
                               <div className="space-y-2">
                                 <div className="font-medium text-blue-600 mb-2">משלוח עד הבית</div>
-                                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
-                                  <span className="font-semibold text-gray-700">רחוב:</span>
-                                  <span className="text-gray-900">{order.shipping.address.street || '—'}</span>
+                                {(() => {
+                                  const addr = order.shipping.address as any
+                                  // For old orders: if `number` contains "/" (e.g. "1/59"), split into building/apartment
+                                  let buildingNum = addr.number || ''
+                                  let aptNum = addr.apartment || ''
+                                  if (!aptNum && buildingNum.includes('/')) {
+                                    const [b, a] = buildingNum.split('/')
+                                    buildingNum = b.trim()
+                                    aptNum = a.trim()
+                                  }
+                                  return (
+                                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
+                                      <span className="font-semibold text-gray-700">רחוב:</span>
+                                      <span className="text-gray-900">{addr.street || '—'}</span>
 
-                                  <span className="font-semibold text-gray-700">מספר:</span>
-                                  <span className="text-gray-900">{order.shipping.address.number || '—'}</span>
+                                      <span className="font-semibold text-gray-700">מספר:</span>
+                                      <span className="text-gray-900">{buildingNum || '—'}</span>
 
-                                  <span className="font-semibold text-gray-700">דירה:</span>
-                                  <span className="text-gray-900">{(order.shipping.address as any).apartment || '—'}</span>
+                                      <span className="font-semibold text-gray-700">דירה:</span>
+                                      <span className="text-gray-900">{aptNum || '—'}</span>
 
-                                  <span className="font-semibold text-gray-700">קומה:</span>
-                                  <span className="text-gray-900">{order.shipping.address.floor || '—'}</span>
+                                      <span className="font-semibold text-gray-700">קומה:</span>
+                                      <span className="text-gray-900">{addr.floor || '—'}</span>
 
-                                  <span className="font-semibold text-gray-700">כניסה:</span>
-                                  <span className="text-gray-900">{order.shipping.address.entrance || '—'}</span>
+                                      <span className="font-semibold text-gray-700">כניסה:</span>
+                                      <span className="text-gray-900">{addr.entrance || '—'}</span>
 
-                                  <span className="font-semibold text-gray-700">עיר:</span>
-                                  <span className="text-gray-900">{order.shipping.address.city || '—'}</span>
-                                </div>
+                                      <span className="font-semibold text-gray-700">עיר:</span>
+                                      <span className="text-gray-900">{addr.city || '—'}</span>
+                                    </div>
+                                  )
+                                })()}
                               </div>
                             ) : (
                               <p className="text-sm text-gray-500">—</p>
