@@ -75,13 +75,7 @@ function SimpleLeadPopup() {
         body: JSON.stringify({ name: name.trim(), phone: phone.trim(), source: 'popup', ...(gclid && { gclid }) }),
       }).catch(() => {})
 
-      // Tracking (dynamic to avoid import issues)
-      import('@/lib/tracking').then(({ sendGoogleAdsConversion, sendGenerateLeadEvent, sendMetaLeadEvent, setEnhancedConversionData }) => {
-        setEnhancedConversionData({ phone: phone.trim() })
-        sendGoogleAdsConversion()
-        sendGenerateLeadEvent('popup')
-        sendMetaLeadEvent()
-      }).catch(() => {})
+      // No conversion tracking — only WhatsApp clicks count as conversions
 
       setStatus('success')
       try { localStorage.setItem('lead_popup_closed', 'true') } catch {}

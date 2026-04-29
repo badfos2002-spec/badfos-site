@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { CheckCircle, Clock, Users, Shield, Star, ChevronDown, Phone, Briefcase, Swords, Trophy } from 'lucide-react'
 
 const NewTestimonialsSection = dynamic(() => import('@/components/home/NewTestimonialsSection'))
-import { setEnhancedConversionData, sendGoogleAdsConversion, sendMetaLeadEvent } from '@/lib/tracking'
+// Tracking removed — only WhatsApp clicks count as conversions
 
 // Counter animation hook
 function useCountUp(target: number, duration = 2000) {
@@ -103,9 +103,6 @@ export default function LandingPage() {
       await createLead({ name: form.name.trim(), phone: form.phone.trim(), message: form.description.trim(), source: 'landing', status: 'new', gclid })
       await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'new_lead', data: { name: form.name.trim(), phone: form.phone.trim(), notes: form.description.trim(), source: 'landing' } }) }).catch(() => {})
       await fetch('/api/lead-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), phone: form.phone.trim(), notes: form.description.trim(), source: 'landing', gclid }) }).catch(() => {})
-      setEnhancedConversionData({ phone: form.phone.trim() })
-      sendGoogleAdsConversion()
-      sendMetaLeadEvent()
       setStatus('success')
       setForm({ name: '', phone: '', description: '' })
     } catch {
