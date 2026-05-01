@@ -50,10 +50,10 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
   }
 
   // ── Default: size + quantity grid ─────────────────────────────────────────
-  // Oversized t-shirts don't come in 3XL/4XL
+  // Oversized t-shirts: no XS, 3XL, or 4XL — sizes start from S
   const isOversized = config.fabricType === 'oversized'
   const availableSizes = isOversized
-    ? STANDARD_SIZES.filter(s => s.id !== '3XL' && s.id !== '4XL')
+    ? STANDARD_SIZES.filter(s => s.id !== 'XS' && s.id !== '3XL' && s.id !== '4XL')
     : STANDARD_SIZES
 
   const getQuantity = (sizeId: string) => sizes.find(s => s.size === sizeId)?.quantity || 0
