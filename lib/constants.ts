@@ -30,6 +30,14 @@ export const PRODUCT_CATEGORIES = [
     popular: false,
   },
   {
+    id: 'baby' as ProductType,
+    name: 'בגדי תינוקות',
+    icon: '👶',
+    color: 'bg-rose-100 border-rose-400',
+    textColor: 'text-rose-900',
+    popular: false,
+  },
+  {
     id: 'buff' as ProductType,
     name: 'באפים',
     icon: '🎽',
@@ -124,6 +132,12 @@ export const APRON_COLORS = [
   { id: 'black', name: 'שחור', hex: '#000000' },
 ] as const
 
+export const BABY_COLORS = [
+  { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },
+  { id: 'lightblue', name: 'תכלת', hex: '#BFDBFE' },
+  { id: 'pink', name: 'ורוד', hex: '#FBCFE8' },
+] as const
+
 // ============================================================================
 // Design Areas by Product Type
 // ============================================================================
@@ -200,6 +214,24 @@ export const APRON_DESIGN_AREAS = [
   },
 ] as const
 
+export const BABY_DESIGN_AREAS = [
+  {
+    id: 'front_full' as DesignAreaType,
+    name: 'קידמי',
+    description: 'הדפסה על קדמת בגד הגוף',
+    price: 0,
+  },
+] as const
+
+export const BABY_SIZES = [
+  { id: 'newborn', name: 'נולד עכשיו', surcharge: 0 },
+  { id: '0-3m', name: 'נולד עכשיו - 3 חודשים', surcharge: 0 },
+  { id: '3-6m', name: '3-6 חודשים', surcharge: 0 },
+  { id: '6-12m', name: '6-12 חודשים', surcharge: 0 },
+  { id: '12-18m', name: '12-18 חודשים', surcharge: 0 },
+  { id: '18-24m', name: '18-24 חודשים', surcharge: 0 },
+] as const
+
 // ============================================================================
 // Sizes and Surcharges
 // ============================================================================
@@ -225,6 +257,7 @@ export const BASE_PRICES = {
   buff: 8,
   cap: 0, // To be defined
   apron: 29,
+  baby: 35,
 } as const
 
 // ============================================================================
@@ -404,6 +437,8 @@ export function getColorsByProductType(productType: ProductType) {
       return BUFF_COLORS
     case 'apron':
       return APRON_COLORS
+    case 'baby':
+      return BABY_COLORS
     default:
       return TSHIRT_COLORS
   }
@@ -416,6 +451,7 @@ export function getDesignAreasByProductType(productType: ProductType) {
       case 'sweatshirt': return SWEATSHIRT_DESIGN_AREAS
       case 'buff': return BUFF_DESIGN_AREAS
       case 'apron': return APRON_DESIGN_AREAS
+      case 'baby': return BABY_DESIGN_AREAS
       default: return TSHIRT_DESIGN_AREAS
     }
   })()

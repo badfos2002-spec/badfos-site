@@ -24,6 +24,7 @@ const productLabels: Record<string, string> = {
   buff: 'באף',
   cap: 'כובע',
   apron: 'סינר',
+  baby: 'בגד גוף תינוק',
 }
 
 const fabricLabels: Record<string, string> = {
@@ -37,7 +38,7 @@ const colorLabels: Record<string, string> = {
   white: 'לבן', black: 'שחור', gray: 'אפור', red: 'אדום',
   navy: 'נייבי', beige: 'בז׳', burgundy: 'בורדו', olive: 'זית',
   blue: 'כחול', green: 'ירוק', purple: 'סגול', orange: 'כתום',
-  turquoise: 'טורקיז', lightblue: 'תכלת',
+  turquoise: 'טורקיז', lightblue: 'תכלת', pink: 'ורוד',
 }
 
 export default function AdminOrdersPage() {

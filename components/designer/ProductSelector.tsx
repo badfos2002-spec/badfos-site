@@ -29,6 +29,11 @@ const categoryDetails: Record<string, { title: string; description: string; imag
     description: 'סינרים מעוצבים להדפסה אישית',
     image: '/assets/סינרים תמונת קטגוריה.webp',
   },
+  baby: {
+    title: 'בגדי תינוקות',
+    description: 'בגד גוף לתינוק בעיצוב אישי — מתנה מושלמת',
+    image: '/assets/baby-category.webp',
+  },
 }
 
 export default function ProductSelector() {
