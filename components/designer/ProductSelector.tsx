@@ -42,6 +42,8 @@ export default function ProductSelector() {
       {PRODUCT_CATEGORIES.map((category) => {
         const details = categoryDetails[category.id]
         const isComingSoon = 'comingSoon' in category && category.comingSoon
+        // Extract the border-* class from category.color so the inner divider matches
+        const borderClass = category.color.match(/border-[a-z]+-\d+/)?.[0] || 'border-gray-200'
         return (
           <Link
             key={category.id}
@@ -77,7 +79,7 @@ export default function ProductSelector() {
                   </div>
                 )}
               </div>
-              <div className="bg-white border-t border-gray-200 px-5 py-4 text-center shrink-0">
+              <div className={`bg-white border-t ${borderClass} px-5 py-4 text-center shrink-0`}>
                 <h4 className="font-bold text-xl text-[#1e293b] mb-1">
                   {details.title}
                 </h4>
