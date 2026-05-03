@@ -17,8 +17,8 @@ export const PRODUCT_CATEGORIES = [
     id: 'sweatshirt' as ProductType,
     name: 'סווטשרטים',
     icon: '🧥',
-    color: 'bg-purple-100 border-purple-400',
-    textColor: 'text-purple-900',
+    color: 'bg-green-100 border-green-500',
+    textColor: 'text-green-900',
     popular: false,
   },
   {
