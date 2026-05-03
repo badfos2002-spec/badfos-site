@@ -22,27 +22,11 @@ export const PRODUCT_CATEGORIES = [
     popular: false,
   },
   {
-    id: 'apron' as ProductType,
-    name: 'סינרים',
-    icon: '🧑‍🍳',
-    color: 'bg-emerald-100 border-emerald-400',
-    textColor: 'text-emerald-900',
-    popular: false,
-  },
-  {
     id: 'baby' as ProductType,
     name: 'בגדי תינוקות',
     icon: '👶',
     color: 'bg-rose-100 border-rose-400',
     textColor: 'text-rose-900',
-    popular: false,
-  },
-  {
-    id: 'buff' as ProductType,
-    name: 'באפים',
-    icon: '🎽',
-    color: 'bg-pink-100 border-pink-400',
-    textColor: 'text-pink-900',
     popular: false,
   },
   {
@@ -53,6 +37,22 @@ export const PRODUCT_CATEGORIES = [
     textColor: 'text-blue-900',
     popular: false,
     comingSoon: true,
+  },
+  {
+    id: 'apron' as ProductType,
+    name: 'סינרים',
+    icon: '🧑‍🍳',
+    color: 'bg-emerald-100 border-emerald-400',
+    textColor: 'text-emerald-900',
+    popular: false,
+  },
+  {
+    id: 'buff' as ProductType,
+    name: 'באפים',
+    icon: '🎽',
+    color: 'bg-pink-100 border-pink-400',
+    textColor: 'text-pink-900',
+    popular: false,
   },
 ] as const
 
