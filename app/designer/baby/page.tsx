@@ -294,7 +294,7 @@ export default function BabyDesignerPage() {
       {designPreviewUrl ? (
         <div
           className="absolute overflow-hidden"
-          style={{ top: '26%', left: '46%', transform: 'translateX(-50%)', width: '32%', height: '24%' }}
+          style={{ top: '30%', left: '40%', transform: 'translateX(-50%)', width: '32%', height: '24%' }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -307,7 +307,7 @@ export default function BabyDesignerPage() {
         currentStep === 2 && (
           <div
             className="absolute border-2 border-dashed flex items-center justify-center overflow-hidden border-green-400 bg-green-100/70"
-            style={{ top: '26%', left: '46%', transform: 'translateX(-50%)', width: '32%', height: '24%' }}
+            style={{ top: '30%', left: '40%', transform: 'translateX(-50%)', width: '32%', height: '24%' }}
           >
             <span className="text-xs font-medium text-center leading-tight px-1 text-green-700">
               קידמי
