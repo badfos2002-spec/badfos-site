@@ -25,8 +25,8 @@ export const PRODUCT_CATEGORIES = [
     id: 'baby' as ProductType,
     name: 'בגדי תינוקות',
     icon: '👶',
-    color: 'bg-rose-100 border-rose-400',
-    textColor: 'text-rose-900',
+    color: 'bg-sky-100 border-sky-400',
+    textColor: 'text-sky-900',
     popular: false,
   },
   {
