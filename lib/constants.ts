@@ -219,7 +219,7 @@ export const BABY_DESIGN_AREAS = [
     id: 'front_full' as DesignAreaType,
     name: 'קידמי',
     description: 'הדפסה על קדמת בגד הגוף',
-    price: 0,
+    price: 5,
   },
 ] as const
 

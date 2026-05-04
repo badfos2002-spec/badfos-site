@@ -25,6 +25,7 @@ const stepConfig = [
 const STEP_NAMES = ['צבע', 'עיצוב', 'מידה']
 const totalSteps = 3
 const BASE_PRICE = 35
+const DESIGN_COST = 5
 
 export default function BabyDesignerPage() {
   const router = useRouter()
@@ -35,7 +36,7 @@ export default function BabyDesignerPage() {
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({})
 
   const totalQuantity = Object.values(sizeQuantities).reduce((sum, q) => sum + q, 0)
-  const pricePerUnit = BASE_PRICE
+  const pricePerUnit = designFile ? BASE_PRICE + DESIGN_COST : BASE_PRICE
   const total = totalQuantity * pricePerUnit
 
   const designPreviewUrl = useMemo(() => {
@@ -133,7 +134,7 @@ export default function BabyDesignerPage() {
               <button className="relative text-xs h-16 px-2 py-2 rounded-md font-medium gradient-yellow text-white border-transparent shadow flex items-center justify-center">
                 <div className="flex flex-col items-center">
                   <span>קידמי</span>
-                  <span className="text-[10px] opacity-80">כלול במחיר</span>
+                  <span className="text-[10px] opacity-80">+₪{DESIGN_COST}</span>
                 </div>
               </button>
             </div>
@@ -257,9 +258,15 @@ export default function BabyDesignerPage() {
       <div className="p-4 space-y-2">
         <div className="space-y-1.5 pb-3 border-b border-gray-100 text-sm">
           <div className="flex justify-between text-gray-600">
-            <span>מחיר בסיס (כולל הדפסה)</span>
+            <span>מחיר בסיס</span>
             <span className="font-medium">{BASE_PRICE}₪</span>
           </div>
+          {designFile && (
+            <div className="flex justify-between text-gray-600">
+              <span>הדפסה קדמית</span>
+              <span className="font-medium">+{DESIGN_COST}₪</span>
+            </div>
+          )}
         </div>
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">מחיר ליחידה</span>
