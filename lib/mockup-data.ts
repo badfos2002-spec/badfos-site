@@ -28,6 +28,18 @@ export const colorFallback: Record<string, string> = {
   navy: 'blue', beige: 'beige', burgundy: 'burgundy', olive: 'olive',
 }
 
+export const capMockups: Record<string, string> = {
+  white: '/assets/כובע טמבל לבן.png',
+  black: '/assets/כובע טמבל שחור.png',
+  gray: '/assets/כובע טמבל אפור.png',
+  burgundy: '/assets/כובע טמבל בורדו.png',
+  olive: '/assets/כובע טמבל זית.png',
+  khaki: '/assets/כובע טמבל חאקי.png',
+  royalblue: '/assets/כובע טמבל כחול רויל.png',
+  orange: '/assets/כובע טמבל כתום.png',
+  yellow: '/assets/כובע טמבל צהוב.png',
+}
+
 export const DESIGN_AREA_OVERLAYS: Record<string, {
   view: 'front' | 'back'
   label: string
@@ -57,6 +69,11 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     view: 'front',
     label: 'מרכזי',
     style: { width: '22%', aspectRatio: '140 / 100', top: '28%', left: '49.5%', transform: 'translateX(-50%)', borderRadius: '8px' },
+  },
+  cap_center: {
+    view: 'front',
+    label: 'קידמי',
+    style: { width: '20%', aspectRatio: '1', top: '38%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
   },
   buff_main: {
     view: 'front',

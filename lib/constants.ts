@@ -33,17 +33,16 @@ export const PRODUCT_CATEGORIES = [
     id: 'cap' as ProductType,
     name: 'כובעים',
     icon: '🧢',
-    color: 'bg-pink-100 border-pink-400',
-    textColor: 'text-pink-900',
+    color: 'bg-orange-100 border-orange-500',
+    textColor: 'text-orange-900',
     popular: false,
-    comingSoon: true,
   },
   {
     id: 'apron' as ProductType,
     name: 'סינרים',
     icon: '🧑‍🍳',
-    color: 'bg-emerald-100 border-emerald-400',
-    textColor: 'text-emerald-900',
+    color: 'bg-purple-100 border-purple-800',
+    textColor: 'text-purple-900',
     popular: false,
   },
   {
@@ -132,6 +131,27 @@ export const APRON_COLORS = [
   { id: 'black', name: 'שחור', hex: '#000000' },
 ] as const
 
+export const CAP_TYPES = [
+  {
+    id: 'tembel',
+    name: 'כובע טמבל',
+    description: 'כובע טמבל קלאסי עם שוליים',
+    surcharge: 0,
+  },
+] as const
+
+export const CAP_COLORS = [
+  { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },
+  { id: 'black', name: 'שחור', hex: '#000000' },
+  { id: 'gray', name: 'אפור', hex: '#9CA3AF' },
+  { id: 'burgundy', name: 'בורדו', hex: '#7C2D12' },
+  { id: 'olive', name: 'זית', hex: '#6B7245' },
+  { id: 'khaki', name: 'חאקי', hex: '#A09262' },
+  { id: 'royalblue', name: 'כחול רויל', hex: '#1E40AF' },
+  { id: 'orange', name: 'כתום', hex: '#F97316' },
+  { id: 'yellow', name: 'צהוב', hex: '#FBBF24' },
+] as const
+
 export const BABY_COLORS = [
   { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },
   { id: 'lightblue', name: 'תכלת', hex: '#BFDBFE' },
@@ -214,6 +234,15 @@ export const APRON_DESIGN_AREAS = [
   },
 ] as const
 
+export const CAP_DESIGN_AREAS = [
+  {
+    id: 'center' as DesignAreaType,
+    name: 'קידמי',
+    description: 'הדפסה קדמית על הכובע',
+    price: 5,
+  },
+] as const
+
 export const BABY_DESIGN_AREAS = [
   {
     id: 'front_full' as DesignAreaType,
@@ -255,10 +284,12 @@ export const BASE_PRICES = {
   tshirt: 37,
   sweatshirt: 53,
   buff: 8,
-  cap: 0, // To be defined
+  cap: 30,
   apron: 29,
   baby: 35,
 } as const
+
+export const CAP_MIN_QUANTITY = 10
 
 // ============================================================================
 // Buff Quantity Options
@@ -439,6 +470,8 @@ export function getColorsByProductType(productType: ProductType) {
       return APRON_COLORS
     case 'baby':
       return BABY_COLORS
+    case 'cap':
+      return CAP_COLORS
     default:
       return TSHIRT_COLORS
   }
@@ -452,6 +485,7 @@ export function getDesignAreasByProductType(productType: ProductType) {
       case 'buff': return BUFF_DESIGN_AREAS
       case 'apron': return APRON_DESIGN_AREAS
       case 'baby': return BABY_DESIGN_AREAS
+      case 'cap': return CAP_DESIGN_AREAS
       default: return TSHIRT_DESIGN_AREAS
     }
   })()

@@ -121,7 +121,8 @@
       "Bash(sips -s format webp -s formatOptions 80 \"חולצה שחורה קדימה.png\" --out \"חולצה שחורה קדימה.webp\")",
       "Bash(git reset:*)",
       "Bash(grep -o 'buildId\":\"[^\"]*\"' echo \"---\")",
-      "Bash(vercel --version)"
+      "Bash(vercel --version)",
+      "Bash(vercel ls *)"
     ],
     "additionalDirectories": [
       "/Users/mac/Desktop"

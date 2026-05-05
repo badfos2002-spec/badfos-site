@@ -15,9 +15,9 @@ const categoryDetails: Record<string, { title: string; description: string; imag
     image: '/assets/סווטשרטים.webp',
   },
   cap: {
-    title: 'כובעים',
-    description: 'כובעים עם רקמה או הדפסה בהתאמה אישית',
-    image: '/assets/a82d25357_.webp',
+    title: 'כובעי טמבל',
+    description: 'כובעי טמבל עם הדפסה אישית — 9 צבעים, מינ׳ 10',
+    image: '/assets/כובע טמבל שחור.png',
   },
   buff: {
     title: 'באפים',
@@ -41,7 +41,7 @@ export default function ProductSelector() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-none mx-auto">
       {PRODUCT_CATEGORIES.map((category) => {
         const details = categoryDetails[category.id]
-        const isComingSoon = 'comingSoon' in category && category.comingSoon
+        const isComingSoon = 'comingSoon' in category && Boolean((category as { comingSoon?: boolean }).comingSoon)
         // Extract the border-* class from category.color so the inner divider matches
         const borderClass = category.color.match(/border-[a-z]+-\d+/)?.[0] || 'border-gray-200'
         return (
