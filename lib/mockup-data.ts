@@ -28,16 +28,26 @@ export const colorFallback: Record<string, string> = {
   navy: 'blue', beige: 'beige', burgundy: 'burgundy', olive: 'olive',
 }
 
-export const capMockups: Record<string, string> = {
-  white: '/assets/כובע טמבל לבן.png',
-  black: '/assets/כובע טמבל שחור.png',
-  gray: '/assets/כובע טמבל אפור.png',
-  burgundy: '/assets/כובע טמבל בורדו.png',
-  olive: '/assets/כובע טמבל זית.png',
-  khaki: '/assets/כובע טמבל חאקי.png',
-  royalblue: '/assets/כובע טמבל כחול רויל.png',
-  orange: '/assets/כובע טמבל כתום.png',
-  yellow: '/assets/כובע טמבל צהוב.png',
+export const capMockups: Record<string, Record<string, string>> = {
+  tembel: {
+    white: '/assets/כובע טמבל לבן.png',
+    black: '/assets/כובע טמבל שחור.png',
+    gray: '/assets/כובע טמבל אפור.png',
+    burgundy: '/assets/כובע טמבל בורדו.png',
+    olive: '/assets/כובע טמבל זית.png',
+    khaki: '/assets/כובע טמבל חאקי.png',
+    royalblue: '/assets/כובע טמבל כחול רויל.png',
+    orange: '/assets/כובע טמבל כתום.png',
+    yellow: '/assets/כובע טמבל צהוב.png',
+  },
+  mesh: {
+    burgundy: '/assets/כובע רשת בורדו.png',
+    beige: '/assets/כובע רשת בז.png',
+    pink: '/assets/כובע רשת ורוד.png',
+    green: '/assets/כובע רשת ירוק.png',
+    royalblue: '/assets/כובע רשת כחול רויאל.png',
+    black: '/assets/כובע רשת שחור.png',
+  },
 }
 
 export const DESIGN_AREA_OVERLAYS: Record<string, {

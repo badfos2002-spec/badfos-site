@@ -15,9 +15,9 @@ const categoryDetails: Record<string, { title: string; description: string; imag
     image: '/assets/סווטשרטים.webp',
   },
   cap: {
-    title: 'כובעי טמבל',
-    description: 'כובעי טמבל עם הדפסה אישית — 9 צבעים, מינ׳ 10',
-    image: '/assets/כובע טמבל שחור.png',
+    title: 'כובעים',
+    description: 'כובעים עם רקמה או הדפסה בהתאמה אישית',
+    image: '/assets/a82d25357_.webp',
   },
   buff: {
     title: 'באפים',

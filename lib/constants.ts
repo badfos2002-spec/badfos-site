@@ -138,6 +138,12 @@ export const CAP_TYPES = [
     description: 'כובע טמבל קלאסי עם שוליים',
     surcharge: 0,
   },
+  {
+    id: 'mesh',
+    name: 'כובע רשת',
+    description: 'כובע רשת ספורטיבי (טראקר)',
+    surcharge: 0,
+  },
 ] as const
 
 export const CAP_COLORS = [
@@ -150,7 +156,15 @@ export const CAP_COLORS = [
   { id: 'royalblue', name: 'כחול רויל', hex: '#1E40AF' },
   { id: 'orange', name: 'כתום', hex: '#F97316' },
   { id: 'yellow', name: 'צהוב', hex: '#FBBF24' },
+  { id: 'beige', name: 'בז׳', hex: '#D4A574' },
+  { id: 'pink', name: 'ורוד', hex: '#FBCFE8' },
+  { id: 'green', name: 'ירוק', hex: '#10B981' },
 ] as const
+
+export const CAP_COLOR_FILTER: Record<string, string[]> = {
+  tembel: ['white', 'black', 'gray', 'burgundy', 'olive', 'khaki', 'royalblue', 'orange', 'yellow'],
+  mesh: ['burgundy', 'beige', 'pink', 'green', 'royalblue', 'black'],
+}
 
 export const BABY_COLORS = [
   { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },

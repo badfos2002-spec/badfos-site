@@ -5,20 +5,21 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus } from 'lucide-react'
+import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { CAP_COLORS, CAP_MIN_QUANTITY } from '@/lib/constants'
+import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_MIN_QUANTITY } from '@/lib/constants'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const stepConfig = [
+  { title: 'בחר סוג כובע', icon: Shirt },
   { title: 'בחר צבע', icon: Palette },
   { title: 'העלה עיצוב', icon: ImagePlus },
   { title: 'בחרו כמות', icon: Package },
 ]
 
-const STEP_NAMES = ['צבע', 'עיצוב', 'כמות']
-const totalSteps = 3
+const STEP_NAMES = ['סוג', 'צבע', 'עיצוב', 'כמות']
+const totalSteps = 4
 const BASE_PRICE = 30
 const DESIGN_COST = 5
 
@@ -26,6 +27,7 @@ export default function CapDesignerPage() {
   const router = useRouter()
   const { addItem } = useCart()
   const [currentStep, setCurrentStep] = useState(1)
+  const [selectedType, setSelectedType] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState('')
   const [designFile, setDesignFile] = useState<File | null>(null)
   const [quantity, setQuantity] = useState(CAP_MIN_QUANTITY)
@@ -38,13 +40,19 @@ export default function CapDesignerPage() {
     return URL.createObjectURL(designFile)
   }, [designFile])
 
+  const availableColors = useMemo(() => {
+    if (!selectedType) return CAP_COLORS
+    const allowed = CAP_COLOR_FILTER[selectedType] || []
+    return CAP_COLORS.filter(c => allowed.includes(c.id))
+  }, [selectedType])
+
   const handleAddToCart = () => {
-    if (!designFile) return
+    if (!designFile || !selectedType) return
     if (quantity < CAP_MIN_QUANTITY) return
     const imageUrl = URL.createObjectURL(designFile)
     addItem({
       productType: 'cap',
-      fabricType: 'tembel',
+      fabricType: selectedType,
       color: selectedColor,
       sizes: [{ size: 'ONE_SIZE', quantity }],
       designs: [{ area: 'center', areaName: 'קידמי', imageUrl, fileName: designFile.name }],
@@ -54,9 +62,10 @@ export default function CapDesignerPage() {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return !!selectedColor
-      case 2: return !!designFile
-      case 3: return quantity >= CAP_MIN_QUANTITY
+      case 1: return !!selectedType
+      case 2: return !!selectedColor
+      case 3: return !!designFile
+      case 4: return quantity >= CAP_MIN_QUANTITY
       default: return false
     }
   }
@@ -65,12 +74,24 @@ export default function CapDesignerPage() {
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
+    setSelectedType('')
     setSelectedColor('')
     setDesignFile(null)
     setQuantity(CAP_MIN_QUANTITY)
   }
 
-  const mockupSrc = capMockups[selectedColor] || '/assets/כובע טמבל שחור.png'
+  const handleTypeChange = (typeId: string) => {
+    setSelectedType(typeId)
+    if (selectedColor) {
+      const allowed = CAP_COLOR_FILTER[typeId] || []
+      if (!allowed.includes(selectedColor)) setSelectedColor('')
+    }
+  }
+
+  const mockupSrc = (selectedType && selectedColor && capMockups[selectedType]?.[selectedColor]) ||
+    (selectedType && Object.values(capMockups[selectedType] || {})[0]) ||
+    '/assets/כובע טמבל שחור.png'
+
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
 
@@ -80,10 +101,42 @@ export default function CapDesignerPage() {
         return (
           <div>
             <p className="text-sm text-gray-500 mb-4">
-              {selectedColor ? `נבחר: ${CAP_COLORS.find(c => c.id === selectedColor)?.name}` : 'בחרו את צבע הכובע'}
+              {selectedType ? `נבחר: ${CAP_TYPES.find(t => t.id === selectedType)?.name}` : 'בחרו סוג כובע'}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {CAP_TYPES.map(type => {
+                const isSelected = selectedType === type.id
+                return (
+                  <button
+                    key={type.id}
+                    onClick={() => handleTypeChange(type.id)}
+                    className={`p-5 rounded-xl border-2 text-right transition-all ${
+                      isSelected
+                        ? 'border-[#fbbf24] bg-yellow-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-bold text-lg text-[#1e293b]">{type.name}</div>
+                      {isSelected && <Check className="w-5 h-5 text-[#f59e0b]" strokeWidth={3} />}
+                    </div>
+                    <div className="text-xs text-gray-500">{type.description}</div>
+                  </button>
+                )
+              })}
+            </div>
+            {!selectedType && <p className="text-sm text-red-500 mt-4">יש לבחור סוג כובע כדי להמשיך.</p>}
+          </div>
+        )
+
+      case 2:
+        return (
+          <div>
+            <p className="text-sm text-gray-500 mb-4">
+              {selectedColor ? `נבחר: ${availableColors.find(c => c.id === selectedColor)?.name}` : 'בחרו את צבע הכובע'}
             </p>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-4">
-              {CAP_COLORS.map(color => {
+              {availableColors.map(color => {
                 const isSelected = selectedColor === color.id
                 const hasBorder = 'border' in color && color.border
                 return (
@@ -112,7 +165,7 @@ export default function CapDesignerPage() {
           </div>
         )
 
-      case 2:
+      case 3:
         return (
           <div>
             <p className="text-sm text-gray-500 mb-4">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
@@ -180,7 +233,7 @@ export default function CapDesignerPage() {
           </div>
         )
 
-      case 3:
+      case 4:
         return (
           <div>
             <p className="text-sm text-gray-500 mb-4">
@@ -263,7 +316,7 @@ export default function CapDesignerPage() {
           <span className="text-sm text-gray-600">מחיר ליחידה</span>
           <span className="font-bold text-[#f59e0b]">{pricePerUnit}₪</span>
         </div>
-        {currentStep >= 3 && (
+        {currentStep >= 4 && (
           <>
             <div className="flex justify-between items-center text-sm text-gray-600">
               <span>כמות</span>
@@ -305,7 +358,7 @@ export default function CapDesignerPage() {
           />
         </div>
       ) : (
-        currentStep === 2 && (
+        currentStep === 3 && (
           <div
             className="absolute border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors duration-200 border-green-400 bg-green-100/70"
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
