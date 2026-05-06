@@ -103,7 +103,7 @@ export default function CapDesignerPage() {
   }
 
   const mockupSrc = (selectedType && selectedColor && capMockups[selectedType]?.[selectedColor]) ||
-    (selectedType && Object.values(capMockups[selectedType] || {})[0]) ||
+    (selectedType && capMockups[selectedType]?.['black']) ||
     '/assets/כובע טמבל שחור.png'
 
   const StepIcon = stepConfig[currentStep - 1].icon
