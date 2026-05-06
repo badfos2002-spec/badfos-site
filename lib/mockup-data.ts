@@ -88,7 +88,7 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   cap_center_mesh: {
     view: 'front',
     label: 'קידמי',
-    style: { width: '22%', aspectRatio: '1', top: '70%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
+    style: { width: '22%', aspectRatio: '1', top: '50%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
   },
   buff_main: {
     view: 'front',
