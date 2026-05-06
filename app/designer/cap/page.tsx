@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_MIN_QUANTITY } from '@/lib/constants'
+import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY } from '@/lib/constants'
+import type { DesignAreaType } from '@/lib/types'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const stepConfig = [
@@ -29,6 +30,7 @@ export default function CapDesignerPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedType, setSelectedType] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState('')
+  const [selectedArea, setSelectedArea] = useState<DesignAreaType>('center')
   const [designFile, setDesignFile] = useState<File | null>(null)
   const [quantity, setQuantity] = useState(CAP_MIN_QUANTITY)
 
@@ -46,16 +48,23 @@ export default function CapDesignerPage() {
     return CAP_COLORS.filter(c => allowed.includes(c.id))
   }, [selectedType])
 
+  const availableAreas = useMemo(() => {
+    if (!selectedType) return [CAP_DESIGN_AREAS[0]]
+    const allowed = CAP_AREA_FILTER[selectedType] || ['center']
+    return CAP_DESIGN_AREAS.filter(a => allowed.includes(a.id))
+  }, [selectedType])
+
   const handleAddToCart = () => {
     if (!designFile || !selectedType) return
     if (quantity < CAP_MIN_QUANTITY) return
     const imageUrl = URL.createObjectURL(designFile)
+    const areaConfig = CAP_DESIGN_AREAS.find(a => a.id === selectedArea)
     addItem({
       productType: 'cap',
       fabricType: selectedType,
       color: selectedColor,
       sizes: [{ size: 'ONE_SIZE', quantity }],
-      designs: [{ area: 'center', areaName: 'קידמי', imageUrl, fileName: designFile.name }],
+      designs: [{ area: selectedArea, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: designFile.name }],
     })
     router.push('/cart')
   }
@@ -76,6 +85,7 @@ export default function CapDesignerPage() {
     setCurrentStep(1)
     setSelectedType('')
     setSelectedColor('')
+    setSelectedArea('center')
     setDesignFile(null)
     setQuantity(CAP_MIN_QUANTITY)
   }
@@ -85,6 +95,10 @@ export default function CapDesignerPage() {
     if (selectedColor) {
       const allowed = CAP_COLOR_FILTER[typeId] || []
       if (!allowed.includes(selectedColor)) setSelectedColor('')
+    }
+    const allowedAreas = CAP_AREA_FILTER[typeId] || ['center']
+    if (!allowedAreas.includes(selectedArea)) {
+      setSelectedArea(allowedAreas[0] as DesignAreaType)
     }
   }
 
@@ -170,13 +184,26 @@ export default function CapDesignerPage() {
           <div>
             <p className="text-sm text-gray-500 mb-4">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
 
-            <div className="grid gap-2 mb-4 grid-cols-3">
-              <button className="relative text-xs h-16 px-2 py-2 rounded-md font-medium gradient-yellow text-white border-transparent shadow flex items-center justify-center">
-                <div className="flex flex-col items-center">
-                  <span>קידמי</span>
-                  <span className="text-[10px] opacity-80">+₪{DESIGN_COST}</span>
-                </div>
-              </button>
+            <div className={`grid gap-2 mb-4 ${availableAreas.length > 1 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+              {availableAreas.map(area => {
+                const isSelected = selectedArea === area.id
+                return (
+                  <button
+                    key={area.id}
+                    onClick={() => setSelectedArea(area.id as DesignAreaType)}
+                    className={`relative text-xs h-16 px-2 py-2 rounded-md font-medium border-2 flex items-center justify-center transition-all ${
+                      isSelected
+                        ? 'gradient-yellow text-white border-transparent shadow'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-yellow-400'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span>{area.name}</span>
+                      <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
             <div className="space-y-3">
@@ -217,7 +244,7 @@ export default function CapDesignerPage() {
                     </div>
                     <p className="text-sm font-medium text-gray-900 mb-1">לחץ להעלאת תמונה</p>
                     <p className="text-xs text-gray-600 mb-2">JPG, PNG, JPEG עד 10MB</p>
-                    <p className="text-xs text-blue-600 font-medium">יועלה לאזור: קידמי</p>
+                    <p className="text-xs text-blue-600 font-medium">יועלה לאזור: {availableAreas.find(a => a.id === selectedArea)?.name || 'קידמי'}</p>
                   </div>
                   <input
                     type="file"
@@ -335,7 +362,9 @@ export default function CapDesignerPage() {
 
   const overlay = selectedType === 'mesh'
     ? DESIGN_AREA_OVERLAYS['cap_center_mesh']
-    : DESIGN_AREA_OVERLAYS['cap_center']
+    : selectedArea === 'center_wide'
+      ? DESIGN_AREA_OVERLAYS['cap_center_wide']
+      : DESIGN_AREA_OVERLAYS['cap_center']
 
   const MockupImage = () => (
     <div className="relative w-full">

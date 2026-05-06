@@ -255,7 +255,18 @@ export const CAP_DESIGN_AREAS = [
     description: 'הדפסה קדמית על הכובע',
     price: 5,
   },
+  {
+    id: 'center_wide' as DesignAreaType,
+    name: 'קידמי רוחבי',
+    description: 'הדפסה קדמית במלבן רוחבי',
+    price: 5,
+  },
 ] as const
+
+export const CAP_AREA_FILTER: Record<string, string[]> = {
+  tembel: ['center', 'center_wide'],
+  mesh: ['center'],
+}
 
 export const BABY_DESIGN_AREAS = [
   {

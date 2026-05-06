@@ -85,10 +85,15 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'קידמי',
     style: { width: '20%', aspectRatio: '1', top: '38%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
   },
+  cap_center_wide: {
+    view: 'front',
+    label: 'קידמי רוחבי',
+    style: { width: '28%', aspectRatio: '180 / 80', top: '44%', left: '50%', transform: 'translateX(-50%)', borderRadius: '4px' },
+  },
   cap_center_mesh: {
     view: 'front',
     label: 'קידמי',
-    style: { width: '22%', aspectRatio: '1', top: '50%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
+    style: { width: '22%', aspectRatio: '1', top: '60%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
   },
   buff_main: {
     view: 'front',
