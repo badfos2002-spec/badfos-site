@@ -85,6 +85,11 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'קידמי',
     style: { width: '20%', aspectRatio: '1', top: '38%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
   },
+  cap_center_mesh: {
+    view: 'front',
+    label: 'קידמי',
+    style: { width: '22%', aspectRatio: '1', top: '70%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
+  },
   buff_main: {
     view: 'front',
     label: 'עיצוב באף',

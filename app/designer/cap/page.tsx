@@ -333,7 +333,9 @@ export default function CapDesignerPage() {
     </div>
   )
 
-  const overlay = DESIGN_AREA_OVERLAYS['cap_center']
+  const overlay = selectedType === 'mesh'
+    ? DESIGN_AREA_OVERLAYS['cap_center_mesh']
+    : DESIGN_AREA_OVERLAYS['cap_center']
 
   const MockupImage = () => (
     <div className="relative w-full">
