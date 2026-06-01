@@ -100,11 +100,19 @@ export async function POST(request: NextRequest) {
           .where('customer.phone', '==', phone)
           .limit(10)
           .get()
-        const pending = snapshot.docs
+        let pending = snapshot.docs
           .map(d => ({ doc: d, data: d.data() }))
           .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
-          .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
-        if (pending.length > 0) {
+        if (paymentSum) {
+          const paid = Number(paymentSum)
+          pending = pending.filter(x => Math.abs((Number(x.data.total) || 0) - paid) < 0.5)
+        }
+        pending.sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
+        if (pending.length > 1) {
+          console.warn(`Payment confirm: AMBIGUOUS — ${pending.length} pending orders for phone ${phone}, amount=${paymentSum || 'n/a'}. Skipping auto-match.`)
+          return NextResponse.json({ error: 'Ambiguous match — manual review required' }, { status: 409 })
+        }
+        if (pending.length === 1) {
           orderDoc = pending[0].doc
           order = pending[0].data
         }
@@ -118,11 +126,19 @@ export async function POST(request: NextRequest) {
         .where('customer.email', '==', payerEmail.toLowerCase())
         .limit(10)
         .get()
-      const pending = snapshot.docs
+      let pending = snapshot.docs
         .map(d => ({ doc: d, data: d.data() }))
         .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
-        .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
-      if (pending.length > 0) {
+      if (paymentSum) {
+        const paid = Number(paymentSum)
+        pending = pending.filter(x => Math.abs((Number(x.data.total) || 0) - paid) < 0.5)
+      }
+      pending.sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
+      if (pending.length > 1) {
+        console.warn(`Payment confirm: AMBIGUOUS — ${pending.length} pending orders for email ${payerEmail}, amount=${paymentSum || 'n/a'}. Skipping auto-match.`)
+        return NextResponse.json({ error: 'Ambiguous match — manual review required' }, { status: 409 })
+      }
+      if (pending.length === 1) {
         orderDoc = pending[0].doc
         order = pending[0].data
       }
