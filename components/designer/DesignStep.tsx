@@ -11,13 +11,13 @@ interface DesignStepProps {
   onAreaFocus?: (areaId: string) => void
 }
 
-/** Compress image to fit localStorage — max 1000px, JPEG 85% (or PNG for transparency) */
+/** Compress image — max 3000px (covers 30cm@250DPI print), JPEG 92% (or PNG for transparency) */
 function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const blobUrl = URL.createObjectURL(file)
     const img = new window.Image()
     img.onload = () => {
-      const MAX = 1000
+      const MAX = 3000
       const scale = Math.min(1, MAX / Math.max(img.width, img.height))
       const w = Math.round(img.width * scale)
       const h = Math.round(img.height * scale)
@@ -34,7 +34,7 @@ function compressImage(file: File): Promise<string> {
       }
       ctx.drawImage(img, 0, 0, w, h)
       URL.revokeObjectURL(blobUrl)
-      resolve(isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85))
+      resolve(isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.92))
     }
     img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error('Image load failed')) }
     img.src = blobUrl

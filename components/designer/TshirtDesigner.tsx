@@ -39,7 +39,7 @@ async function blobToBase64(blobUrl: string): Promise<string> {
     img.onerror = () => reject(new Error('Image load failed'))
   })
 
-  const MAX = 1000
+  const MAX = 3000
   const scale = Math.min(1, MAX / Math.max(img.width, img.height))
   const w = Math.round(img.width * scale)
   const h = Math.round(img.height * scale)
@@ -58,7 +58,7 @@ async function blobToBase64(blobUrl: string): Promise<string> {
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, w, h)
   ctx.drawImage(img, 0, 0, w, h)
-  return canvas.toDataURL('image/jpeg', 0.85)
+  return canvas.toDataURL('image/jpeg', 0.92)
 }
 
 const sweatshirtMockupsFront: Record<string, string> = {
