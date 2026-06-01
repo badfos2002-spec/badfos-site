@@ -4,7 +4,7 @@
 
 const GOOGLE_ADS_ID = 'AW-17871272500'
 const CONVERSION_LABEL = 'AW-17871272500/cEpjCIyrqOobELT018lC' // ליד
-const PURCHASE_CONVERSION_LABEL = 'AW-17871272500/qnLZCLa5hpwcELT0181C' // רכישה
+const PURCHASE_CONVERSION_LABEL = 'AW-17871272500/qnLZCLa5hpwcELT018lC' // רכישה
 
 /** Push to dataLayer even if gtag not loaded yet — GTM will pick it up */
 function gtagSafe(...args: any[]) {
