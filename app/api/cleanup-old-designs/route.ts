@@ -5,12 +5,17 @@ import { Timestamp } from 'firebase-admin/firestore'
 const CRON_SECRET = process.env.CRON_SECRET
 const CLEANUP_DAYS = 60
 
+// Storage thresholds (in MB). Override via env vars if needed.
+// Default tuned for Firebase free tier (5GB) with generous safety margin.
+const STORAGE_AGGRESSIVE_MB = Number(process.env.STORAGE_AGGRESSIVE_MB || 3000)
+const STORAGE_TARGET_MB = Number(process.env.STORAGE_TARGET_MB || 2000)
+const MAX_EMERGENCY_DELETIONS = 200 // safety cap per run
+
 /**
- * Deletes design image files from Firebase Storage for orders older than 60 days.
- * The order document itself stays in Firestore — only the image files are removed.
- * Order docs get a `designsDeleted: true` flag so we don't try again.
+ * Layer 1: Delete design files of orders older than 60 days (keep order docs).
+ * Layer 2: If Storage usage still high → delete entire oldest orders (doc + files) until safe.
  *
- * Triggered by Vercel Cron (daily) or manually with the CRON_SECRET.
+ * Triggered by Vercel Cron daily, or manually with the CRON_SECRET.
  */
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization') || req.nextUrl.searchParams.get('secret')
@@ -18,17 +23,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const bucket = adminStorage.bucket()
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - CLEANUP_DAYS)
   const cutoffTs = Timestamp.fromDate(cutoff)
 
-  const bucket = adminStorage.bucket()
-
   let scanned = 0
   let cleaned = 0
   let errors = 0
+  let emergencyDeleted = 0
 
   try {
+    // ── Layer 1: 60-day image cleanup (orders stay in admin) ────────────
     const snapshot = await adminDb
       .collection('orders')
       .where('createdAt', '<', cutoffTs)
@@ -37,9 +43,7 @@ export async function GET(req: NextRequest) {
 
     for (const doc of snapshot.docs) {
       scanned++
-      const data = doc.data()
-      if (data.designsDeleted) continue
-
+      if (doc.data().designsDeleted) continue
       try {
         await bucket.deleteFiles({ prefix: `designs/${doc.id}/` })
         await doc.ref.update({
@@ -53,17 +57,69 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    console.log(`Cleanup complete: scanned=${scanned}, cleaned=${cleaned}, errors=${errors}`)
+    // ── Check current storage usage in designs/ ─────────────────────────
+    let { totalMB: usageMB, count: filesCount } = await getDesignsUsage(bucket)
+
+    // ── Layer 2: Emergency — delete IMAGES of oldest orders (orders themselves stay) ─
+    if (usageMB > STORAGE_AGGRESSIVE_MB) {
+      console.warn(`Storage at ${usageMB.toFixed(0)}MB > ${STORAGE_AGGRESSIVE_MB}MB. Emergency image cleanup.`)
+      const oldestSnap = await adminDb
+        .collection('orders')
+        .orderBy('createdAt', 'asc')
+        .limit(1000)
+        .get()
+
+      for (const doc of oldestSnap.docs) {
+        if (usageMB <= STORAGE_TARGET_MB) break
+        if (emergencyDeleted >= MAX_EMERGENCY_DELETIONS) break
+        if (doc.data().designsDeleted) continue
+
+        try {
+          const [orderFiles] = await bucket.getFiles({ prefix: `designs/${doc.id}/` })
+          const orderBytes = orderFiles.reduce(
+            (sum, f) => sum + Number(f.metadata?.size || 0),
+            0
+          )
+          if (orderFiles.length === 0) continue
+          await bucket.deleteFiles({ prefix: `designs/${doc.id}/` })
+          await doc.ref.update({
+            designsDeleted: true,
+            designsDeletedAt: Timestamp.now(),
+            designsDeletedReason: 'storage_limit',
+          })
+          usageMB -= orderBytes / (1024 * 1024)
+          emergencyDeleted++
+        } catch (e) {
+          console.error(`Emergency image cleanup failed for order ${doc.id}:`, e)
+          errors++
+        }
+      }
+      console.warn(`Emergency cleanup done: cleared images of ${emergencyDeleted} orders. Usage now ${usageMB.toFixed(0)}MB.`)
+    }
 
     return NextResponse.json({
       success: true,
       scanned,
       cleaned,
+      emergencyDeleted,
       errors,
+      storageMB: Math.round(usageMB),
+      filesCount,
       cutoff: cutoff.toISOString(),
     })
   } catch (e) {
     console.error('Cleanup endpoint error:', e)
     return NextResponse.json({ error: 'Cleanup failed' }, { status: 500 })
+  }
+}
+
+async function getDesignsUsage(bucket: ReturnType<typeof adminStorage.bucket>) {
+  try {
+    const [files] = await bucket.getFiles({ prefix: 'designs/' })
+    const totalBytes = files.reduce((sum, f) => sum + Number(f.metadata?.size || 0), 0)
+    return { totalMB: totalBytes / (1024 * 1024), count: files.length }
+  } catch (e) {
+    console.error('Failed to compute storage usage:', e)
+    return { totalMB: 0, count: 0 }
   }
 }
