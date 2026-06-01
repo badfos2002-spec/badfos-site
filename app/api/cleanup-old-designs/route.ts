@@ -6,10 +6,12 @@ const CRON_SECRET = process.env.CRON_SECRET
 const CLEANUP_DAYS = 60
 
 // Storage thresholds (in MB). Override via env vars if needed.
-// Default tuned for Firebase free tier (5GB) with generous safety margin.
-const STORAGE_AGGRESSIVE_MB = Number(process.env.STORAGE_AGGRESSIVE_MB || 3000)
-const STORAGE_TARGET_MB = Number(process.env.STORAGE_TARGET_MB || 2000)
-const MAX_EMERGENCY_DELETIONS = 200 // safety cap per run
+// Firebase Spark (free) tier limit is 5000 MB.
+// Default policy: always keep at least 500 MB free + 300 MB buffer for uploads
+// between cron runs → trigger aggressive cleanup at 4200 MB, target 3000 MB after.
+const STORAGE_AGGRESSIVE_MB = Number(process.env.STORAGE_AGGRESSIVE_MB || 4200)
+const STORAGE_TARGET_MB = Number(process.env.STORAGE_TARGET_MB || 3000)
+const MAX_EMERGENCY_DELETIONS = 500 // safety cap per run
 
 /**
  * Layer 1: Delete design files of orders older than 60 days (keep order docs).
