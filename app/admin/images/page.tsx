@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Image as ImageIcon, Upload, Trash2, Eye, EyeOff, Loader2, Database } from 'lucide-react'
+import { Image as ImageIcon, Upload, Trash2, Eye, EyeOff, Loader2, Database, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { getAllDocuments, createDocument, updateDocument, deleteDocument } from '@/lib/db'
+import { uploadSiteImage, validateFile, generateUniqueFileName } from '@/lib/storage'
 import type { SiteImage } from '@/lib/types'
 import { Timestamp } from 'firebase/firestore'
 
@@ -93,6 +95,11 @@ export default function AdminImagesPage() {
   const [loadError, setLoadError] = useState(false)
   const [seeding, setSeeding] = useState(false)
   const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [uploadCategory, setUploadCategory] = useState<string>('hero_carousel')
+  const [uploadName, setUploadName] = useState('')
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     loadImages()
@@ -190,6 +197,41 @@ export default function AdminImagesPage() {
     }
   }
 
+  const handleUpload = async () => {
+    if (!uploadFile) { alert('יש לבחור קובץ'); return }
+    if (!uploadName.trim()) { alert('יש להזין שם לתמונה'); return }
+    const validation = validateFile(uploadFile, 10)
+    if (!validation.valid) { alert(validation.error); return }
+
+    setUploading(true)
+    try {
+      const fileName = generateUniqueFileName(uploadFile.name)
+      const downloadUrl = await uploadSiteImage(uploadFile, uploadCategory, fileName)
+      const maxSort = Math.max(0, ...images.filter(i => i.category === uploadCategory).map(i => i.sortOrder ?? 0))
+
+      await createDocument<SiteImage>('siteImages', {
+        category: uploadCategory as any,
+        name: uploadName.trim(),
+        description: '',
+        imageUrl: downloadUrl,
+        isActive: true,
+        sortOrder: maxSort + 1,
+        createdAt: Timestamp.now(),
+      } as any)
+
+      await loadImages()
+      setUploadOpen(false)
+      setUploadName('')
+      setUploadFile(null)
+      alert('✅ התמונה הועלתה בהצלחה')
+    } catch (e) {
+      console.error(e)
+      alert('❌ שגיאה בהעלאת התמונה. בדוק את הרשאות Firebase Storage.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const filtered = activeCategory === 'all'
     ? images
     : images.filter(i => i.category === activeCategory)
@@ -203,7 +245,15 @@ export default function AdminImagesPage() {
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">ניהול תמונות</h1>
           <p className="text-gray-600">ניהול תמונות האתר לפי קטגוריות</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            className="bg-blue-500 hover:bg-blue-600 text-white"
+            onClick={() => setUploadOpen(true)}
+            disabled={seeding || loading}
+          >
+            <Plus className="w-4 h-4 ml-2" />
+            העלאת תמונה
+          </Button>
           {images.length > 0 && (
             <Button
               variant="outline"
@@ -216,15 +266,93 @@ export default function AdminImagesPage() {
             </Button>
           )}
           <Button
-            className="bg-green-500 hover:bg-green-600 text-white"
+            variant="outline"
             onClick={handleSeed}
             disabled={seeding || loading}
           >
             {seeding ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Database className="w-4 h-4 ml-2" />}
-            {seeding ? 'מזין...' : images.length === 0 ? 'הזן כל התמונות' : 'הוסף תמונות ברירת מחדל'}
+            {seeding ? 'מזין...' : images.length === 0 ? 'הזן כל התמונות' : 'הוסף ברירת מחדל'}
           </Button>
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {uploadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !uploading && setUploadOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">העלאת תמונה חדשה</h2>
+              <button onClick={() => !uploading && setUploadOpen(false)} className="text-gray-400 hover:text-gray-600" aria-label="סגור">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">קטגוריה</label>
+                <select
+                  value={uploadCategory}
+                  onChange={e => setUploadCategory(e.target.value)}
+                  disabled={uploading}
+                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-yellow-500 focus:outline-none"
+                >
+                  {Object.entries(categoryLabels).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  לתמונות בקרוסלה של דף הבית — בחר &quot;קרוסלת גלריה (דף הבית)&quot;
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">שם התמונה</label>
+                <Input
+                  value={uploadName}
+                  onChange={e => setUploadName(e.target.value)}
+                  placeholder="לדוגמה: תמונה חדשה לקרוסלה"
+                  disabled={uploading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">קובץ תמונה</label>
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={e => setUploadFile(e.target.files?.[0] || null)}
+                  disabled={uploading}
+                  className="cursor-pointer"
+                />
+                {uploadFile && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    נבחר: {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">JPG / PNG / WEBP — עד 10MB</p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                  onClick={handleUpload}
+                  disabled={uploading || !uploadFile || !uploadName.trim()}
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Upload className="w-4 h-4 ml-2" />}
+                  {uploading ? 'מעלה...' : 'העלה'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setUploadOpen(false)}
+                  disabled={uploading}
+                >
+                  ביטול
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Category Tabs */}
       {images.length > 0 && (
