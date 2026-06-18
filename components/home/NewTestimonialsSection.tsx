@@ -3,7 +3,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { Star } from 'lucide-react'
 import Link from 'next/link'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useGSAP } from '@gsap/react'
 import { Button } from '@/components/ui/button'
+import Reveal from '@/components/common/Reveal'
+import RevealText from '@/components/common/RevealText'
+import { useTilt } from '@/components/common/useTilt'
 
 // ---------- Unified review type ----------
 type ReviewItem = {
@@ -106,39 +112,122 @@ const AVATAR_COLORS = [
 function ReviewCard({ review, index }: { review: ReviewItem; index: number }) {
   const initial = review.author_name.charAt(0)
   const bgColor = AVATAR_COLORS[index % AVATAR_COLORS.length]
+  const tiltRef = useTilt<HTMLDivElement>({ maxTilt: 6, scale: 1.02 })
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-md hover:shadow-lg p-6 h-full flex flex-col min-w-0 transition-shadow duration-200">
+    <div
+      ref={tiltRef}
+      className="group relative bg-white rounded-3xl ring-1 ring-gray-200/70 shadow-[0_10px_30px_-12px_rgba(2,6,23,0.18)] hover:shadow-[0_26px_60px_-20px_rgba(2,6,23,0.30)] p-6 md:p-7 h-full flex flex-col min-w-0 transition-shadow duration-300"
+    >
+      {/* Brand accent bar */}
+      <span className="absolute top-0 right-7 left-7 h-1 rounded-b-full bg-gradient-to-l from-[#ffc32e] to-[#fbbf24] opacity-80" aria-hidden="true" />
+
       {/* Author row */}
       <div className="flex items-center gap-3 mb-4">
         {review.profile_photo_url ? (
-          <img src={review.profile_photo_url} alt={review.author_name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" loading="lazy" />
+          <img src={review.profile_photo_url} alt={review.author_name} className="w-11 h-11 rounded-full object-cover flex-shrink-0 ring-2 ring-white shadow-sm" loading="lazy" />
         ) : (
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+            className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ring-2 ring-white shadow-sm"
             style={{ backgroundColor: bgColor }}
           >
-            <span className="text-white font-medium leading-none" style={{ fontSize: '1.18rem' }}>{initial}</span>
+            <span className="text-white font-medium leading-none" style={{ fontSize: '1.25rem' }}>{initial}</span>
           </div>
         )}
         <div className="flex-1 text-right min-w-0">
-          <p className="font-semibold text-sm text-gray-900 truncate">{review.author_name}</p>
+          <p className="font-bold text-sm text-gray-900 truncate">{review.author_name}</p>
           {review.relative_time_description && (
             <p className="text-xs text-gray-400">{review.relative_time_description}</p>
           )}
         </div>
-        {/* Stars + Google icon */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <div className="flex gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
-            ))}
-          </div>
-          <GoogleIcon className="w-4 h-4 mr-1" />
+        {/* Google badge */}
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 ring-1 ring-gray-100 flex-shrink-0">
+          <GoogleIcon className="w-4 h-4" />
         </div>
       </div>
+
+      {/* Stars */}
+      <div className="flex gap-0.5 mb-3">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'text-[#fbbf24] fill-[#fbbf24]' : 'text-gray-200'}`} />
+        ))}
+      </div>
+
       {/* Review text */}
       <p className="text-gray-600 text-sm leading-relaxed text-right flex-1">{review.text}</p>
+    </div>
+  )
+}
+
+// ---------- Bold brand marquee band (solid yellow, always visibly moving) ----------
+function ScrollMarquee() {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const phrase = 'הדפסת DTF • עיצוב אישי • משלוח מהיר • איכות פרימיום • '
+  // Duplicate the phrase set so the loop is seamless: track is exactly 2x the
+  // visible content, so animating one full half (-50%) wraps with no empty edge.
+  const SETS = 8
+
+  useGSAP(
+    () => {
+      const wrap = wrapRef.current
+      const track = trackRef.current
+      if (!wrap || !track) return
+
+      // Reduced motion: leave the band static — still solid yellow + fully
+      // legible, just not moving.
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+      gsap.registerPlugin(ScrollTrigger)
+
+      // Continuous auto-drift so the band is ALWAYS visibly moving (RTL: text
+      // flows toward the left). The track holds two identical halves, so looping
+      // the first half (0 → -50%) is seamless.
+      const auto = gsap.to(track, {
+        xPercent: -50,
+        ease: 'none',
+        duration: 28,
+        repeat: -1,
+      })
+
+      // Scroll adds an extra nudge on top of the auto-drift via timeScale, so
+      // scrolling makes the band surge — premium, scrub-driven feel — without
+      // ever exposing an empty edge or causing horizontal page scroll.
+      ScrollTrigger.create({
+        trigger: wrap,
+        start: 'top bottom',
+        end: 'bottom top',
+        onUpdate: (self) => {
+          gsap.to(auto, {
+            timeScale: 1 + Math.abs(self.getVelocity()) / 1200,
+            overwrite: true,
+            duration: 0.4,
+          })
+        },
+      })
+    },
+    { scope: wrapRef }
+  )
+
+  return (
+    <div
+      className="relative -mx-4 md:mx-0 mb-10 md:mb-12 overflow-x-hidden select-none pointer-events-none"
+      aria-hidden="true"
+    >
+      {/* Solid brand-yellow band, slight skew for dynamism */}
+      <div
+        ref={wrapRef}
+        className="relative bg-gradient-to-l from-[#ffc32e] via-[#fbbf24] to-[#ffc32e] py-3 md:py-4 shadow-[0_8px_24px_-10px_rgba(251,191,36,0.6)] -rotate-1"
+      >
+        <div
+          ref={trackRef}
+          className="flex w-max whitespace-nowrap will-change-transform text-2xl md:text-4xl font-extrabold tracking-tight text-[#1e293b]"
+        >
+          {[...Array(SETS)].map((_, i) => (
+            <span key={i} className="px-3">{phrase}</span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -223,13 +312,18 @@ export default function NewTestimonialsSection() {
   return (
     <section className="w-full bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-20 overflow-hidden" dir="rtl">
       <div className="mx-auto max-w-[1536px] px-4 md:px-0">
+        {/* Scroll-driven brand marquee band */}
+        <ScrollMarquee />
+
         {/* Heading */}
         <div className="text-center mb-5">
-          <h2 className="text-3xl lg:text-4xl font-bold text-[#1e293b] mb-4">
-            מה הלקוחות שלנו חושבים
-          </h2>
+          <RevealText
+            text="מה הלקוחות שלנו חושבים"
+            trigger="scroll"
+            className="text-3xl lg:text-4xl font-bold text-[#1e293b] mb-4"
+          />
           {googleRating ? (
-            <div className="flex items-center justify-center gap-3 mb-2">
+            <Reveal className="flex items-center justify-center gap-3 mb-2" y={20} duration={0.6}>
               <GoogleIcon className="w-6 h-6" />
               <span className="text-2xl font-bold text-gray-900">{googleRating}</span>
               <div className="flex gap-0.5">
@@ -238,11 +332,11 @@ export default function NewTestimonialsSection() {
                 ))}
               </div>
               <span className="text-sm text-[#64748b]">({googleReviewCount} ביקורות בגוגל)</span>
-            </div>
+            </Reveal>
           ) : (
-            <p className="text-xl text-[#64748b]">
+            <Reveal as="p" className="text-xl text-[#64748b]" y={20} duration={0.6}>
               קראו מה הלקוחות שלנו אומרים על האיכות שלנו
-            </p>
+            </Reveal>
           )}
         </div>
 
@@ -258,7 +352,7 @@ export default function NewTestimonialsSection() {
         </div>
 
         {/* CTA */}
-        <div className="text-center mt-6 md:mt-0">
+        <Reveal className="text-center mt-6 md:mt-0">
           <Link href="/reviews">
             <Button
               variant="outline"
@@ -267,7 +361,7 @@ export default function NewTestimonialsSection() {
               כל הביקורות
             </Button>
           </Link>
-        </div>
+        </Reveal>
       </div>
     </section>
   )

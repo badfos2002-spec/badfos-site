@@ -1,4 +1,6 @@
 import dynamic from 'next/dynamic'
+import SmoothScrollProvider from '@/components/common/SmoothScrollProvider'
+import IntroOverlay from '@/components/home/IntroOverlay'
 import NewHeroSection from '@/components/home/NewHeroSection'
 import NewWhyChooseSection from '@/components/home/NewWhyChooseSection'
 import NewPackagesSection from '@/components/home/NewPackagesSection'
@@ -13,13 +15,16 @@ const NewFinalCTASection = dynamic(() => import('@/components/home/NewFinalCTASe
 export default function RootPage() {
   return (
     <main>
-      <NewHeroSection />
-      <NewWhyChooseSection />
-      <NewPackagesSection />
-      <NewHowItWorksSection />
-      <NewContactFormSection />
-      <NewTestimonialsSection />
-      <NewFinalCTASection />
+      <IntroOverlay />
+      <SmoothScrollProvider>
+        <NewHeroSection />
+        <NewWhyChooseSection />
+        <NewPackagesSection />
+        <NewHowItWorksSection />
+        <NewContactFormSection />
+        <NewTestimonialsSection />
+        <NewFinalCTASection />
+      </SmoothScrollProvider>
     </main>
   )
 }
