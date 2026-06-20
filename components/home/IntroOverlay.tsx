@@ -99,29 +99,31 @@ export default function IntroOverlay() {
         // 1) Logo reveals FIRST: elastic scale-in + yellow glow bloom.
         mtl.fromTo(
           '[data-intro-logo-m]',
-          { opacity: 0, scale: 0.2, rotation: -14, transformOrigin: '50% 50%' },
-          { opacity: 1, scale: 1, rotation: 0, duration: 1, ease: 'elastic.out(1, 0.55)' }
+          { opacity: 0, scaleX: 0.2, scaleY: 0.2, rotation: -14, transformOrigin: '50% 50%' },
+          { opacity: 1, scaleX: 1, scaleY: 1, rotation: 0, duration: 1, ease: 'elastic.out(1, 0.55)' }
         )
           .fromTo(
             '[data-intro-glow-m]',
-            { opacity: 0, scale: 0.4 },
-            { opacity: 1, scale: 1.15, duration: 0.6, ease: 'power2.out' },
+            { opacity: 0, scaleX: 0.4, scaleY: 0.4 },
+            { opacity: 1, scaleX: 1.15, scaleY: 1.15, duration: 0.6, ease: 'power2.out' },
             0.15
           )
-          .to('[data-intro-glow-m]', { scale: 1, opacity: 0.85, duration: 0.5, ease: 'sine.inOut' }, '>-0.1')
+          .to('[data-intro-glow-m]', { scaleX: 1, scaleY: 1, opacity: 0.85, duration: 0.5, ease: 'sine.inOut' }, '>-0.1')
           // 2) Cards cascade/flip in with stagger.
           .fromTo(
             cards,
             {
               transformPerspective: 800,
               opacity: 0,
-              scale: 0.6,
+              scaleX: 0.6,
+              scaleY: 0.6,
               rotationY: -90,
               y: 30,
             },
             {
               opacity: 1,
-              scale: 1,
+              scaleX: 1,
+              scaleY: 1,
               rotationY: 0,
               y: 0,
               rotationZ: (i: number) => PRODUCTS[i]?.tilt ?? 0,
@@ -149,15 +151,15 @@ export default function IntroOverlay() {
           .to('[data-intro-tag-m]', { opacity: 0, y: -12, duration: 0.35, ease: 'power2.in' }, 'climax')
           .to(
             cards,
-            { opacity: 0, scale: 0.6, duration: 0.5, ease: 'power3.in', stagger: 0.04 },
+            { opacity: 0, scaleX: 0.6, scaleY: 0.6, duration: 0.5, ease: 'power3.in', stagger: 0.04 },
             'climax'
           )
-          .to('[data-intro-logo-m]', { scale: 2.6, duration: 0.85, ease: 'expo.out' }, 'climax+=0.1')
-          .to('[data-intro-glow-m]', { scale: 2.4, opacity: 1, duration: 0.85, ease: 'power3.out' }, 'climax+=0.1')
+          .to('[data-intro-logo-m]', { scaleX: 2.6, scaleY: 2.6, duration: 0.85, ease: 'expo.out' }, 'climax+=0.1')
+          .to('[data-intro-glow-m]', { scaleX: 2.4, scaleY: 2.4, opacity: 1, duration: 0.85, ease: 'power3.out' }, 'climax+=0.1')
           // 6) EXIT: logo fades, clip-path curtain wipe reveals the site.
           .addLabel('exit')
-          .to('[data-intro-logo-m]', { opacity: 0, scale: 2.9, duration: 0.45, ease: 'power2.in' }, 'exit')
-          .to('[data-intro-glow-m]', { opacity: 0, scale: 3, duration: 0.45, ease: 'power2.in' }, 'exit')
+          .to('[data-intro-logo-m]', { opacity: 0, scaleX: 2.9, scaleY: 2.9, duration: 0.45, ease: 'power2.in' }, 'exit')
+          .to('[data-intro-glow-m]', { opacity: 0, scaleX: 3, scaleY: 3, duration: 0.45, ease: 'power2.in' }, 'exit')
           .to(
             el,
             { clipPath: 'inset(0 0 100% 0)', duration: 0.6, ease: 'power4.inOut' },
@@ -210,10 +212,11 @@ export default function IntroOverlay() {
       // 1) Logo: confident elastic scale-in with a slight rotation settle.
       tl.fromTo(
         '[data-intro-logo]',
-        { opacity: 0, scale: 0.2, rotation: -18, transformOrigin: '50% 50%' },
+        { opacity: 0, scaleX: 0.2, scaleY: 0.2, rotation: -18, transformOrigin: '50% 50%' },
         {
           opacity: 1,
-          scale: 1,
+          scaleX: 1,
+          scaleY: 1,
           rotation: 0,
           duration: 1.05,
           ease: 'elastic.out(1, 0.55)',
@@ -222,11 +225,11 @@ export default function IntroOverlay() {
         // Brand-yellow glow pulse blooms behind the logo as it lands.
         .fromTo(
           '[data-intro-glow]',
-          { opacity: 0, scale: 0.4 },
-          { opacity: 1, scale: 1.15, duration: 0.6, ease: 'power2.out' },
+          { opacity: 0, scaleX: 0.4, scaleY: 0.4 },
+          { opacity: 1, scaleX: 1.15, scaleY: 1.15, duration: 0.6, ease: 'power2.out' },
           0.15
         )
-        .to('[data-intro-glow]', { scale: 1, opacity: 0.85, duration: 0.5, ease: 'sine.inOut' }, '>-0.1')
+        .to('[data-intro-glow]', { scaleX: 1, scaleY: 1, opacity: 0.85, duration: 0.5, ease: 'sine.inOut' }, '>-0.1')
         // 2) The whole ring spins into place while each tile swirls inward + 3D flips in.
         .fromTo(
           '[data-intro-ring]',
@@ -239,7 +242,8 @@ export default function IntroOverlay() {
           {
             transformPerspective: 800,
             opacity: 0,
-            scale: 0,
+            scaleX: 0,
+            scaleY: 0,
             rotationY: -90,
             rotationZ: () => gsap.utils.random(-25, 25),
             x: (i: number, t: HTMLElement) => Number(t.dataset.sx ?? 0),
@@ -247,7 +251,8 @@ export default function IntroOverlay() {
           },
           {
             opacity: 1,
-            scale: 1,
+            scaleX: 1,
+            scaleY: 1,
             rotationY: 0,
             rotationZ: (i: number) => PRODUCTS[i]?.tilt ?? 0,
             x: (i: number, t: HTMLElement) => Number(t.dataset.ox ?? 0),
@@ -269,17 +274,17 @@ export default function IntroOverlay() {
         .addLabel('climax')
         .to(
           '[data-intro-ring]',
-          { scale: 0.55, opacity: 0, duration: 0.6, ease: 'power3.in' },
+          { scaleX: 0.55, scaleY: 0.55, opacity: 0, duration: 0.6, ease: 'power3.in' },
           'climax'
         )
         .to(
           '[data-intro-logo]',
-          { scale: 2.8, duration: 0.85, ease: 'expo.out' },
+          { scaleX: 2.8, scaleY: 2.8, duration: 0.85, ease: 'expo.out' },
           'climax+=0.1'
         )
         .to(
           '[data-intro-glow]',
-          { scale: 2.4, opacity: 1, duration: 0.85, ease: 'power3.out' },
+          { scaleX: 2.4, scaleY: 2.4, opacity: 1, duration: 0.85, ease: 'power3.out' },
           'climax+=0.1'
         )
         // Tagline reveals at the climax, once the product cards are gone (no overlap).
@@ -291,8 +296,8 @@ export default function IntroOverlay() {
         )
         // 6) Hand-off: the grown logo fades as a clip/curtain reveals the site.
         .addLabel('exit', 'climax+=1.75')
-        .to('[data-intro-logo]', { opacity: 0, scale: 3.1, duration: 0.45, ease: 'power2.in' }, 'exit')
-        .to('[data-intro-glow]', { opacity: 0, scale: 3, duration: 0.45, ease: 'power2.in' }, 'exit')
+        .to('[data-intro-logo]', { opacity: 0, scaleX: 3.1, scaleY: 3.1, duration: 0.45, ease: 'power2.in' }, 'exit')
+        .to('[data-intro-glow]', { opacity: 0, scaleX: 3, scaleY: 3, duration: 0.45, ease: 'power2.in' }, 'exit')
         .to(
           el,
           {
