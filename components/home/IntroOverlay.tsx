@@ -5,6 +5,18 @@ import Image from 'next/image'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 
+declare global {
+  interface Window {
+    __badfosIntroActive?: boolean
+  }
+}
+
+function signalIntroDone() {
+  if (typeof window === 'undefined') return
+  window.__badfosIntroActive = false
+  window.dispatchEvent(new CustomEvent('badfos:intro-done'))
+}
+
 const SESSION_KEY = 'badfos_intro_seen'
 
 type Product = { src: string; tilt: number; angle: number }
@@ -32,6 +44,7 @@ export default function IntroOverlay() {
   const dismiss = useCallback(() => {
     if (doneRef.current) return
     doneRef.current = true
+    signalIntroDone()
     const el = overlayRef.current
     if (!el) return setShow(false)
     gsap.killTweensOf('*')
@@ -52,6 +65,7 @@ export default function IntroOverlay() {
     // Decide the layout on the client BEFORE the timeline builds. Reading this in
     // JSX is safe because the JSX only renders once `show` is true (client-side).
     setIsMobile(window.matchMedia('(max-width: 639px)').matches)
+    window.__badfosIntroActive = true
     setShow(true)
   }, [])
 
@@ -68,6 +82,7 @@ export default function IntroOverlay() {
         const mTimer = setTimeout(() => {
           doneRef.current = true
           setShow(false)
+          signalIntroDone()
         }, 3700)
 
         const mtl = gsap.timeline({
@@ -76,6 +91,7 @@ export default function IntroOverlay() {
             clearTimeout(mTimer)
             doneRef.current = true
             setShow(false)
+            signalIntroDone()
           },
         })
         tlRef.current = mtl
@@ -176,6 +192,7 @@ export default function IntroOverlay() {
       const timer = setTimeout(() => {
         doneRef.current = true
         setShow(false)
+        signalIntroDone()
       }, 3800)
 
       const tl = gsap.timeline({
@@ -184,6 +201,7 @@ export default function IntroOverlay() {
           clearTimeout(timer)
           doneRef.current = true
           setShow(false)
+          signalIntroDone()
         },
       })
       tlRef.current = tl

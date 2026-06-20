@@ -9,11 +9,34 @@ export default function CookieConsent() {
 
   useEffect(() => {
     const consent = safeGetItem('cookie_consent')
-    if (!consent) {
-      // Small delay so page renders first
-      const timer = setTimeout(() => setVisible(true), 1000)
-      return () => clearTimeout(timer)
+    if (consent) return
+
+    let shown = false
+    const show = () => {
+      if (shown) return
+      shown = true
+      setVisible(true)
     }
+
+    if (typeof window !== 'undefined' && window.__badfosIntroActive) {
+      // Wait for the intro splash to finish before showing the banner.
+      let postTimer: ReturnType<typeof setTimeout> | undefined
+      const onIntroDone = () => {
+        postTimer = setTimeout(show, 400) // appear just after the curtain reveal
+      }
+      window.addEventListener('badfos:intro-done', onIntroDone, { once: true })
+      // Fallback in case the event never fires.
+      const fallback = setTimeout(show, 6000)
+      return () => {
+        window.removeEventListener('badfos:intro-done', onIntroDone)
+        clearTimeout(fallback)
+        if (postTimer) clearTimeout(postTimer)
+      }
+    }
+
+    // No intro playing — original behavior.
+    const timer = setTimeout(() => setVisible(true), 1000)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleAccept = () => {
