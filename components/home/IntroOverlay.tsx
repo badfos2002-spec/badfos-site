@@ -375,7 +375,7 @@ export default function IntroOverlay() {
           className="absolute left-1/2 top-[64%] z-40 -translate-x-1/2 text-center text-2xl font-black tracking-tight text-black"
           style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)', opacity: 0 }}
         >
-          עיצוב מוצרים ברמה אחרת
+          עיצוב מוצרים<br />ברמה אחרת
         </p>
       </div>
     )
