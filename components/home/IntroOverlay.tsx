@@ -324,7 +324,7 @@ export default function IntroOverlay() {
         onClick={dismiss}
         onWheel={dismiss}
         onTouchMove={dismiss}
-        className="fixed inset-0 z-[120] flex cursor-pointer flex-col items-center justify-center gap-6 overflow-hidden bg-[#fffdf5] px-4"
+        className="fixed inset-0 z-[120] flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden bg-[#fffdf5] px-4"
       >
         {/* Soft brand glow */}
         <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffc32e]/25 blur-3xl" />
@@ -374,8 +374,8 @@ export default function IntroOverlay() {
         <p
           data-intro-tag-m
           dir="rtl"
-          className="z-10 text-center text-2xl font-black tracking-tight text-[#f59e0b]"
-          style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(245,158,11,0.25)' }}
+          className="z-10 text-center text-2xl font-black tracking-tight text-black"
+          style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
         >
           עיצוב מוצרים ברמה אחרת
         </p>
@@ -391,7 +391,7 @@ export default function IntroOverlay() {
       onClick={dismiss}
       onWheel={dismiss}
       onTouchMove={dismiss}
-      className="fixed inset-0 z-[120] flex cursor-pointer flex-col items-center justify-center gap-10 overflow-hidden bg-[#fffdf5]"
+      className="fixed inset-0 z-[120] flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden bg-[#fffdf5]"
     >
       {/* Soft brand glow */}
       <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffc32e]/25 blur-3xl" />
@@ -444,8 +444,8 @@ export default function IntroOverlay() {
       <p
         data-intro-tag
         dir="rtl"
-        className="z-10 mt-2 text-center text-3xl font-black tracking-tight text-[#f59e0b] sm:text-4xl"
-        style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(245,158,11,0.25)' }}
+        className="z-10 -mt-20 text-center text-3xl font-black tracking-tight text-black sm:text-4xl"
+        style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
       >
         עיצוב מוצרים ברמה אחרת
       </p>
