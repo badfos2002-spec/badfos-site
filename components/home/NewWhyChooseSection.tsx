@@ -196,9 +196,6 @@ export default function NewWhyChooseSection() {
                 trigger="scroll"
                 className="text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight text-[#1e293b] mb-5 leading-[1.1]"
               />
-              <Reveal as="p" delay={0.15} y={20} className="max-w-xl text-lg lg:text-xl text-[#475569] leading-relaxed">
-                {c.why_subtitle}
-              </Reveal>
             </div>
 
             <Reveal className="space-y-5" from="right" y={60} stagger={0.18} duration={0.8}>

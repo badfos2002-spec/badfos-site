@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Star } from 'lucide-react'
 import Link from 'next/link'
 import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
 import { Button } from '@/components/ui/button'
 import Reveal from '@/components/common/Reveal'
@@ -178,32 +177,14 @@ function ScrollMarquee() {
       // legible, just not moving.
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-      gsap.registerPlugin(ScrollTrigger)
-
       // Continuous auto-drift so the band is ALWAYS visibly moving (RTL: text
       // flows toward the left). The track holds two identical halves, so looping
       // the first half (0 → -50%) is seamless.
-      const auto = gsap.to(track, {
+      gsap.to(track, {
         xPercent: -50,
         ease: 'none',
-        duration: 28,
+        duration: 20,
         repeat: -1,
-      })
-
-      // Scroll adds an extra nudge on top of the auto-drift via timeScale, so
-      // scrolling makes the band surge — premium, scrub-driven feel — without
-      // ever exposing an empty edge or causing horizontal page scroll.
-      ScrollTrigger.create({
-        trigger: wrap,
-        start: 'top bottom',
-        end: 'bottom top',
-        onUpdate: (self) => {
-          gsap.to(auto, {
-            timeScale: 1 + Math.abs(self.getVelocity()) / 1200,
-            overwrite: true,
-            duration: 0.4,
-          })
-        },
       })
     },
     { scope: wrapRef }
