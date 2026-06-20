@@ -133,13 +133,6 @@ export default function IntroOverlay() {
             },
             0.35
           )
-          // 3) Tagline rises in.
-          .fromTo(
-            '[data-intro-tag-m]',
-            { opacity: 0, y: 18, letterSpacing: '0.45em' },
-            { opacity: 1, y: 0, letterSpacing: '0.02em', duration: 0.6, ease: 'expo.out' },
-            '-=0.35'
-          )
           // 4) Gentle float while held.
           .to(
             '[data-intro-grid-m]',
@@ -148,7 +141,6 @@ export default function IntroOverlay() {
           )
           // 5) CLIMAX: cards retreat, logo grows with glow boost.
           .addLabel('climax')
-          .to('[data-intro-tag-m]', { opacity: 0, y: -12, duration: 0.35, ease: 'power2.in' }, 'climax')
           .to(
             cards,
             { opacity: 0, scaleX: 0.6, scaleY: 0.6, duration: 0.5, ease: 'power3.in', stagger: 0.04 },
@@ -156,6 +148,12 @@ export default function IntroOverlay() {
           )
           .to('[data-intro-logo-m]', { scaleX: 2.6, scaleY: 2.6, duration: 0.85, ease: 'expo.out' }, 'climax+=0.1')
           .to('[data-intro-glow-m]', { scaleX: 2.4, scaleY: 2.4, opacity: 1, duration: 0.85, ease: 'power3.out' }, 'climax+=0.1')
+          .fromTo(
+            '[data-intro-tag-m]',
+            { opacity: 0, letterSpacing: '0.45em' },
+            { opacity: 1, letterSpacing: '0.02em', duration: 0.6, ease: 'expo.out' },
+            'climax+=0.55'
+          )
           // 6) EXIT: logo fades, clip-path curtain wipe reveals the site.
           .addLabel('exit')
           .to('[data-intro-logo-m]', { opacity: 0, scaleX: 2.9, scaleY: 2.9, duration: 0.45, ease: 'power2.in' }, 'exit')
@@ -374,8 +372,8 @@ export default function IntroOverlay() {
         <p
           data-intro-tag-m
           dir="rtl"
-          className="z-10 text-center text-2xl font-black tracking-tight text-black"
-          style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+          className="absolute left-1/2 top-[64%] z-40 -translate-x-1/2 text-center text-2xl font-black tracking-tight text-black"
+          style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)', opacity: 0 }}
         >
           עיצוב מוצרים ברמה אחרת
         </p>
@@ -444,7 +442,7 @@ export default function IntroOverlay() {
       <p
         data-intro-tag
         dir="rtl"
-        className="z-10 -mt-20 text-center text-3xl font-black tracking-tight text-black sm:text-4xl"
+        className="z-10 -mt-5 text-center text-3xl font-black tracking-tight text-black sm:text-4xl"
         style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
       >
         עיצוב מוצרים ברמה אחרת
