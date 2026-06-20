@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import dynamic from 'next/dynamic'
-import { Rubik } from 'next/font/google'
+import { Rubik, Secular_One } from 'next/font/google'
 import './globals.css'
 import TrackingScripts from '@/components/common/TrackingScripts'
 import PricingLoader from '@/components/common/PricingLoader'
@@ -9,6 +9,13 @@ const rubik = Rubik({
   subsets: ['hebrew', 'latin'],
   display: 'swap',
   variable: '--font-rubik',
+})
+
+const secularOne = Secular_One({
+  subsets: ['hebrew', 'latin'],
+  weight: '400',
+  display: 'swap',
+  variable: '--font-secular',
 })
 
 const ConditionalHeader = dynamic(() => import('@/components/layout/ConditionalHeader'))
@@ -76,7 +83,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="he" dir="rtl" className={rubik.variable}>
+    <html lang="he" dir="rtl" className={`${rubik.variable} ${secularOne.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

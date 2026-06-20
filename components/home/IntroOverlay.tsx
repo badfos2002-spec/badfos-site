@@ -374,12 +374,10 @@ export default function IntroOverlay() {
         <p
           data-intro-tag-m
           dir="rtl"
-          className="z-10 text-center text-xl font-extrabold text-gray-900"
+          className="z-10 text-center text-2xl font-black tracking-tight text-[#f59e0b]"
+          style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(245,158,11,0.25)' }}
         >
-          עיצוב מוצרים{' '}
-          <span className="bg-gradient-to-l from-[#fbbf24] to-[#ffc32e] bg-clip-text text-transparent">
-            ברמה אחרת
-          </span>
+          עיצוב מוצרים ברמה אחרת
         </p>
       </div>
     )
@@ -446,12 +444,10 @@ export default function IntroOverlay() {
       <p
         data-intro-tag
         dir="rtl"
-        className="z-10 mt-2 text-center text-xl font-extrabold text-gray-900 sm:text-2xl"
+        className="z-10 mt-2 text-center text-3xl font-black tracking-tight text-[#f59e0b] sm:text-4xl"
+        style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(245,158,11,0.25)' }}
       >
-        עיצוב מוצרים{' '}
-        <span className="bg-gradient-to-l from-[#fbbf24] to-[#ffc32e] bg-clip-text text-transparent">
-          ברמה אחרת
-        </span>
+        עיצוב מוצרים ברמה אחרת
       </p>
     </div>
   )
