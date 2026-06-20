@@ -27,6 +27,7 @@ const ContentSecurityPolicy = `
     https://*.googletagmanager.com
     https://*.googleadservices.com
     https://googleads.g.doubleclick.net
+    https://*.doubleclick.net
     https://region1.analytics.google.com
     https://pagead2.googlesyndication.com
     https://ep1.adtrafficquality.google
