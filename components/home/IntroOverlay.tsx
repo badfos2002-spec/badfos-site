@@ -187,13 +187,14 @@ export default function IntroOverlay() {
         t.dataset.sy = String(Math.sin(startRad) * startRadius)
       })
 
-      // Total animation lands ~3.2s (logo grows as a climax, then clip reveal);
-      // safety timeout sits ~600ms after the end, capped at 3800ms.
+      // Total animation lands ~4.0s (logo grows as a climax, the tagline reveals
+      // once the cards are gone, then a brief hold + clip reveal); safety timeout
+      // sits ~600ms after the end (4600ms).
       const timer = setTimeout(() => {
         doneRef.current = true
         setShow(false)
         signalIntroDone()
-      }, 3800)
+      }, 4600)
 
       const tl = gsap.timeline({
         defaults: { ease: 'power3.out' },
@@ -257,13 +258,6 @@ export default function IntroOverlay() {
           },
           0.45
         )
-        // 3) Tagline rises in with a tightening letter-spacing.
-        .fromTo(
-          '[data-intro-tag]',
-          { opacity: 0, y: 18, letterSpacing: '0.45em' },
-          { opacity: 1, y: 0, letterSpacing: '0.02em', duration: 0.6, ease: 'expo.out' },
-          '-=0.45'
-        )
         // 4) A brief, gentle continuous float while the composition is held.
         .to(
           '[data-intro-ring]',
@@ -273,7 +267,6 @@ export default function IntroOverlay() {
         // 5) CLIMAX: the products & tagline retreat while the LOGO grows dramatically,
         //    becoming the focal point, with a glow boost behind it.
         .addLabel('climax')
-        .to('[data-intro-tag]', { opacity: 0, y: -12, duration: 0.35, ease: 'power2.in' }, 'climax')
         .to(
           '[data-intro-ring]',
           { scale: 0.55, opacity: 0, duration: 0.6, ease: 'power3.in' },
@@ -289,8 +282,15 @@ export default function IntroOverlay() {
           { scale: 2.4, opacity: 1, duration: 0.85, ease: 'power3.out' },
           'climax+=0.1'
         )
+        // Tagline reveals at the climax, once the product cards are gone (no overlap).
+        .fromTo(
+          '[data-intro-tag]',
+          { opacity: 0, y: 18, letterSpacing: '0.45em' },
+          { opacity: 1, y: 0, letterSpacing: '0.02em', duration: 0.6, ease: 'expo.out' },
+          'climax+=0.55'
+        )
         // 6) Hand-off: the grown logo fades as a clip/curtain reveals the site.
-        .addLabel('exit')
+        .addLabel('exit', 'climax+=1.75')
         .to('[data-intro-logo]', { opacity: 0, scale: 3.1, duration: 0.45, ease: 'power2.in' }, 'exit')
         .to('[data-intro-glow]', { opacity: 0, scale: 3, duration: 0.45, ease: 'power2.in' }, 'exit')
         .to(
