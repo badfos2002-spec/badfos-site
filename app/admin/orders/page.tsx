@@ -293,6 +293,17 @@ export default function AdminOrdersPage() {
                 {/* Expanded Content */}
                 {isExpanded && (
                   <div className="p-4 sm:p-6 pt-0 border-t bg-gray-50">
+                    {order.customer.notes && (
+                      <div className="mt-4 sm:mt-6 mb-2 rounded-xl border-2 border-amber-500 bg-amber-50 shadow-lg shadow-amber-200/60 overflow-hidden">
+                        <div className="flex items-center gap-2 bg-amber-400 px-4 py-2.5 text-amber-950 font-extrabold text-base sm:text-lg">
+                          <StickyNote className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+                          <span>הערות</span>
+                        </div>
+                        <p className="px-4 py-3 text-amber-900 font-bold text-base sm:text-lg whitespace-pre-wrap break-words leading-relaxed">
+                          {order.customer.notes}
+                        </p>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 pt-4 sm:pt-6">
                       {/* Left Column: Customer + Shipping + Status */}
                       <div className="space-y-6">
@@ -316,17 +327,6 @@ export default function AdminOrdersPage() {
                                 <Mail className="w-4 h-4 text-gray-400 ml-2" />
                                 <span>{order.customer.email}</span>
                               </a>
-                            )}
-                            {order.customer.notes && (
-                              <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-3 mt-3">
-                                <div className="flex items-center text-amber-800 font-bold mb-1">
-                                  <StickyNote className="w-4 h-4 ml-2 shrink-0" />
-                                  <span>הערת לקוח</span>
-                                </div>
-                                <p className="text-amber-900 font-medium text-sm whitespace-pre-wrap break-words">
-                                  {order.customer.notes}
-                                </p>
-                              </div>
                             )}
                           </div>
                         </div>
