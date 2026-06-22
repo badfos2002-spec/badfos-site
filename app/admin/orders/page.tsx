@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
@@ -318,7 +318,15 @@ export default function AdminOrdersPage() {
                               </a>
                             )}
                             {order.customer.notes && (
-                              <p className="text-sm text-gray-500 border-t pt-2 mt-2">{order.customer.notes}</p>
+                              <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-3 mt-3">
+                                <div className="flex items-center text-amber-800 font-bold mb-1">
+                                  <StickyNote className="w-4 h-4 ml-2 shrink-0" />
+                                  <span>הערת לקוח</span>
+                                </div>
+                                <p className="text-amber-900 font-medium text-sm whitespace-pre-wrap break-words">
+                                  {order.customer.notes}
+                                </p>
+                              </div>
                             )}
                           </div>
                         </div>
