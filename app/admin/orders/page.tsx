@@ -302,7 +302,7 @@ export default function AdminOrdersPage() {
                 {isExpanded && (
                   <div className="p-4 sm:p-6 pt-0 border-t bg-gray-50">
                     {order.customer.notes && (
-                      <div className="mt-4 sm:mt-6 mb-2 rounded-xl border-2 border-amber-500 bg-amber-50 shadow-lg shadow-amber-200/60 overflow-hidden">
+                      <div className="mt-4 sm:mt-6 mb-2 rounded-xl border-2 border-amber-500 bg-amber-50 shadow-lg shadow-amber-200/60 overflow-hidden animate-note-flash">
                         <div className="flex items-center gap-2 bg-amber-400 px-4 py-2.5 text-amber-950 font-extrabold text-base sm:text-lg">
                           <StickyNote className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
                           <span>הערות</span>
