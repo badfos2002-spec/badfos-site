@@ -259,7 +259,15 @@ export default function AdminOrdersPage() {
                   {/* Mobile: stacked layout */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-base sm:text-lg">הזמנה #{order.orderNumber}</div>
+                      <div className="font-semibold text-base sm:text-lg flex items-center gap-2 flex-wrap">
+                        הזמנה #{order.orderNumber}
+                        {order.customer.notes && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 text-amber-950 text-xs font-bold px-2.5 py-0.5 ring-2 ring-amber-300 shadow-sm animate-pulse">
+                            <StickyNote className="w-3.5 h-3.5 shrink-0" />
+                            הערה
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 mt-0.5 truncate">{customerName} &bull; {date}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
