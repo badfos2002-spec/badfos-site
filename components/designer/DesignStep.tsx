@@ -11,6 +11,14 @@ interface DesignStepProps {
   onAreaFocus?: (areaId: string) => void
 }
 
+/** Convert a HEIC/HEIF file to a JPEG File (iPhone photos that browsers can't decode) */
+async function convertHeicToJpeg(file: File): Promise<File> {
+  const heic2any = (await import('heic2any')).default
+  const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
+  const blob = (Array.isArray(out) ? out[0] : out) as Blob
+  return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' })
+}
+
 /** Compress image — max 3000px (covers 30cm@250DPI print), JPEG 92% (or PNG for transparency) */
 function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -43,6 +51,7 @@ function compressImage(file: File): Promise<string> {
 
 export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignStepProps) {
   const [selectedAreaId, setSelectedAreaId] = useState<string>(TSHIRT_DESIGN_AREAS[0].id)
+  const [processingAreaId, setProcessingAreaId] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const selectedArea = TSHIRT_DESIGN_AREAS.find(a => a.id === selectedAreaId)!
@@ -56,15 +65,35 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
 
   const handleFileSelectForArea = async (areaId: string, file: File) => {
     const area = TSHIRT_DESIGN_AREAS.find(a => a.id === areaId)!
+    setProcessingAreaId(areaId)
 
     try {
-      const imageUrl = await compressImage(file)
+      let workFile = file
+      let converted = false
+
+      // iPhone photos are often HEIC/HEIF — browsers can't decode them, so convert first.
+      const isHeic = /image\/hei[cf]/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)
+      if (isHeic) {
+        workFile = await convertHeicToJpeg(file)
+        converted = true
+      }
+
+      let imageUrl: string
+      try {
+        imageUrl = await compressImage(workFile)
+      } catch (decodeErr) {
+        // Fallback: some HEIC files arrive with empty/generic MIME and skip the test above.
+        if (converted) throw decodeErr
+        const jpgFile = await convertHeicToJpeg(file)
+        imageUrl = await compressImage(jpgFile)
+        workFile = jpgFile
+      }
 
       const newDesign: DesignArea = {
         area: areaId as DesignArea['area'],
         areaName: area.name,
         imageUrl,
-        fileName: file.name,
+        fileName: workFile.name,
       }
       const existingIndex = designs.findIndex(d => d.area === areaId)
       if (existingIndex >= 0) {
@@ -79,6 +108,8 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
     } catch (err) {
       console.error('Image processing failed:', err)
       alert('לא ניתן לטעון את התמונה. נסו קובץ אחר.')
+    } finally {
+      setProcessingAreaId(null)
     }
   }
 
@@ -98,8 +129,14 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
       <div className="lg:hidden grid gap-3 mb-4 grid-cols-2">
         {TSHIRT_DESIGN_AREAS.map((area) => {
           const uploaded = hasDesign(area.id)
+          const processing = processingAreaId === area.id
           return (
             <div key={area.id} className="relative">
+              {processing && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80 rounded-xl">
+                  <span className="text-[11px] font-medium text-yellow-600">מעבד תמונה…</span>
+                </div>
+              )}
               <label
                 className={`cursor-pointer block border-2 border-dashed rounded-xl p-3 text-center transition-all ${
                   uploaded
@@ -126,7 +163,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                 )}
                 <input
                   type="file"
-                  accept="image/png, image/jpeg, image/jpg"
+                  accept="image/png, image/jpeg, image/jpg, image/heic, image/heif, .heic, .heif"
                   className="hidden"
                   ref={(el) => { fileInputRefs.current[area.id] = el }}
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelectForArea(area.id, f); if (e.target) e.target.value = '' }}
@@ -178,6 +215,9 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
 
         {/* Upload area */}
         <div className="space-y-3">
+          {processingAreaId === selectedAreaId && (
+            <div className="text-center text-xs font-medium text-yellow-600">מעבד תמונה…</div>
+          )}
           {currentDesign ? (
             <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
               <div className="flex items-center justify-between mb-3">
@@ -199,7 +239,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                 </div>
                 <input
                   type="file"
-                  accept="image/png, image/jpeg, image/jpg"
+                  accept="image/png, image/jpeg, image/jpg, image/heic, image/heif, .heic, .heif"
                   className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
                 />
@@ -217,7 +257,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
               </div>
               <input
                 type="file"
-                accept="image/png, image/jpeg, image/jpg"
+                accept="image/png, image/jpeg, image/jpg, image/heic, image/heif, .heic, .heif"
                 className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
               />
