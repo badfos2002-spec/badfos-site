@@ -79,7 +79,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
               />
               <div className="flex-1">
                 <div className="font-bold">איסוף עצמי</div>
-                <div className="text-sm text-text-gray">ראשון לציון</div>
+                <div className="text-sm text-text-gray">ראשון לציון • בתיאום מראש</div>
               </div>
               <div className="font-bold text-black">₪0</div>
             </label>
