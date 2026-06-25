@@ -190,7 +190,7 @@ export default function TermsPage() {
             בדפוס הדפסת חולצות
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            גרסה מעודכנת | מרץ 2026 | תואמת חוק הגנת הצרכן, תשמ&quot;א-1981
+            גרסה מעודכנת | יוני 2026 | תואמת חוק הגנת הצרכן, תשמ&quot;א-1981
           </p>
         </div>
 
@@ -229,7 +229,7 @@ export default function TermsPage() {
                   </h3>
                   <p className="text-yellow-800 text-sm leading-relaxed">
                     התקנון מנוסח בלשון זכר מטעמי נוחות בלבד ומתייחס לכלל המגדרים.
-                    תקנון זה עודכן לאחרונה במרץ 2026.
+                    תקנון זה עודכן לאחרונה ביוני 2026.
                   </p>
                 </div>
               </div>
