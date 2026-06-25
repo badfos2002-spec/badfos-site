@@ -19,30 +19,65 @@ async function convertHeicToJpeg(file: File): Promise<File> {
   return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' })
 }
 
-/** Compress image — max 3000px (covers 30cm@250DPI print), JPEG 92% (or PNG for transparency) */
+/** Compress image — caps the output data URL size so the base64 reliably fits localStorage
+ *  (Zustand persist) on iOS Safari (~5MB total). Scales down + lowers JPEG quality as needed;
+ *  PNG keeps transparency and is shrunk by dimension only. */
 function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
+    // Max length of the returned data URL string (~0.6MB). Keeps the per-design base64
+    // small enough to fit alongside other cart items in iOS Safari's ~5MB localStorage.
+    const MAX_CHARS = 800000
+
     const blobUrl = URL.createObjectURL(file)
     const img = new window.Image()
     img.onload = () => {
-      const MAX = 3000
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height))
-      const w = Math.round(img.width * scale)
-      const h = Math.round(img.height * scale)
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')!
       const isPng = file.type === 'image/png'
-      if (isPng) {
-        ctx.clearRect(0, 0, w, h)
-      } else {
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, w, h)
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')!
+
+      // Draw the image scaled to a given max dimension into the (reused) canvas.
+      const drawAt = (maxDim: number) => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        canvas.width = w
+        canvas.height = h
+        if (isPng) {
+          ctx.clearRect(0, 0, w, h)
+        } else {
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(0, 0, w, h)
+        }
+        ctx.drawImage(img, 0, 0, w, h)
       }
-      ctx.drawImage(img, 0, 0, w, h)
+
+      let dataUrl: string
+
+      if (isPng) {
+        // PNG: no quality knob — preserve transparency, shrink by dimension only.
+        const dims = [3000, 2400, 2000, 1600, 1200]
+        for (let i = 0; i < dims.length; i++) {
+          drawAt(dims[i])
+          dataUrl = canvas.toDataURL('image/png')
+          if (dataUrl.length <= MAX_CHARS) break
+        }
+      } else {
+        // JPEG: run the quality ladder; if still too big at 0.5, step the dimension down and retry.
+        const qualities = [0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5]
+        const dims = [3000, 2400, 2000, 1600]
+        dataUrl = ''
+        outer: for (let d = 0; d < dims.length; d++) {
+          drawAt(dims[d])
+          for (let q = 0; q < qualities.length; q++) {
+            dataUrl = canvas.toDataURL('image/jpeg', qualities[q])
+            if (dataUrl.length <= MAX_CHARS) break outer
+          }
+        }
+        // Accept the smallest result (1600px @ 0.5) even if still above the cap.
+      }
+
       URL.revokeObjectURL(blobUrl)
-      resolve(isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.92))
+      resolve(dataUrl!)
     }
     img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error('Image load failed')) }
     img.src = blobUrl
