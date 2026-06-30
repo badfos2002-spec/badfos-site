@@ -125,6 +125,15 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(email)
 }
 
+const LEAD_STALE_DAYS = 3
+/** A lead is "stale" (shown as 'לא עודכן') when it's still 'new' but older than 3 days. */
+export function isLeadStale(lead: { status?: string; createdAt?: any }): boolean {
+  if (lead?.status !== 'new') return false
+  const ms = lead.createdAt?.toMillis?.() ?? lead.createdAt?.toDate?.()?.getTime?.()
+  if (!ms) return false
+  return Date.now() - ms > LEAD_STALE_DAYS * 24 * 60 * 60 * 1000
+}
+
 /**
  * Escape HTML special characters to prevent HTML injection
  */

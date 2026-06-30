@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getAllDocuments } from '@/lib/db'
+import { isLeadStale } from '@/lib/utils'
 import type { Order, Lead } from '@/lib/types'
 
 interface StatCard {
@@ -67,7 +68,7 @@ export default function AdminPage() {
       ])
 
       const newOrders = orders.filter(o => o.status === 'new' || o.status === 'paid').length
-      const newLeads = leads.filter(l => l.status === 'new').length
+      const newLeads = leads.filter(l => l.status === 'new' && !isLeadStale(l)).length
       const activeCoupons = coupons.filter((c: any) => c.active !== false).length
       const activeDiscounts = discounts.filter((d: any) => d.active !== false).length
       const pendingReviews = reviews.filter((r: any) => !r.approved).length

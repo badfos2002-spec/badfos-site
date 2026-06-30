@@ -5,6 +5,7 @@ import { Search, Phone, Mail, Calendar, Loader2, Users, Trash2 } from 'lucide-re
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getAllLeads, updateLeadStatus, deleteDocument } from '@/lib/db'
+import { isLeadStale } from '@/lib/utils'
 import type { Lead } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -96,6 +97,9 @@ export default function AdminLeadsPage() {
             const dateObj = lead.createdAt?.toDate?.()
             const date = dateObj?.toLocaleDateString('he-IL') ?? ''
             const time = dateObj?.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) ?? ''
+            const stale = isLeadStale(lead)
+            const badgeLabel = stale ? 'לא עודכן' : (statusLabels[lead.status]?.label ?? lead.status)
+            const badgeColor = stale ? 'bg-amber-100 text-amber-700' : (statusLabels[lead.status]?.color ?? 'bg-gray-100 text-gray-700')
             return (
               <div
                 key={lead.id}
@@ -104,8 +108,8 @@ export default function AdminLeadsPage() {
               >
                 <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{lead.name}</h3>
-                  <span className={`shrink-0 px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusLabels[lead.status]?.color ?? 'bg-gray-100 text-gray-700'}`}>
-                    {statusLabels[lead.status]?.label ?? lead.status}
+                  <span className={`shrink-0 px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badgeColor}`}>
+                    {badgeLabel}
                   </span>
                 </div>
 
