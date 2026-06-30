@@ -425,8 +425,8 @@ export default function AdminOrdersPage() {
                                 <div className="flex justify-between items-start mb-3">
                                   <h4 className="font-medium">{productName}</h4>
                                   <div className="text-left">
-                                    <div className="font-bold">₪{item.totalPrice}</div>
-                                    <div className="text-sm text-gray-500">{item.totalQuantity} יח&apos; &times; ₪{item.pricePerUnit}</div>
+                                    <div className="font-bold">₪{Math.round((item.totalPrice ?? 0) * 100) / 100}</div>
+                                    <div className="text-sm text-gray-500">{item.totalQuantity} יח&apos; &times; ₪{Math.round((item.pricePerUnit ?? 0) * 100) / 100}</div>
                                   </div>
                                 </div>
 
@@ -473,10 +473,17 @@ export default function AdminOrdersPage() {
 
                           {/* Order Total */}
                           <div className="bg-gray-100 p-4 rounded-lg">
-                            {order.couponCode && (
-                              <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
-                                <span>קופון {order.couponCode}</span>
-                                <span className="text-green-600">-₪{order.discount ?? 0}</span>
+                            {(order.discount ?? 0) > 0 && (
+                              <div className="flex justify-between items-center text-sm mb-2">
+                                <span className="flex items-center gap-2 text-gray-600">
+                                  הנחה
+                                  {order.couponCode && (
+                                    <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full text-xs whitespace-nowrap">
+                                      🎟️ קופון {order.couponCode}
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="text-green-600 font-medium">-₪{Math.round((order.discount ?? 0) * 100) / 100}</span>
                               </div>
                             )}
                             <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
