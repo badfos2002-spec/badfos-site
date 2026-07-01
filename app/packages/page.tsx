@@ -190,13 +190,14 @@ export default function PackagesPage() {
                       <div className="font-semibold tracking-tight text-xl">{pkg.name}</div>
                       <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">{pkg.tag}</span>
                     </div>
-                    <div className="mt-2 text-gray-600">{pkg.range} • {pkg.subtitle}</div>
+                    <div className="mt-2 text-gray-600">{pkg.subtitle}</div>
                   </CardHeader>
 
                   <CardContent className="space-y-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between min-h-10">
                       <div className="text-2xl font-bold text-gray-900">
                         ₪{pkg.pricePerUnit} <span className="text-sm font-normal text-gray-600">ליח&apos;</span>
+                        <div className="text-xs font-normal text-gray-500 mt-0.5">לא כולל הדפסה</div>
                       </div>
                       <div className={`text-sm px-3 py-1 rounded-full ${pkg.graphicDesignerFree ? 'text-green-700 bg-green-50' : 'text-gray-700 bg-gray-50'}`}>
                         {pkg.graphicDesignerLabel}
