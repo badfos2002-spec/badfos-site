@@ -3,6 +3,10 @@
     {
       "path": "/api/cleanup-old-designs",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/notify-abandoned",
+      "schedule": "0 * * * *"
     }
   ]
 }
