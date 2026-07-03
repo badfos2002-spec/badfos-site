@@ -97,6 +97,27 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // Eligible for cart recovery: abandoned, or pending_payment older than 60 minutes
+  const isRecoveryEligible = (order: Order) => {
+    if (order.status === 'cart_abandoned') return true
+    if (order.status === 'pending_payment') {
+      const created = order.createdAt?.toDate?.()
+      if (!created) return false
+      return Date.now() - created.getTime() > 60 * 60 * 1000
+    }
+    return false
+  }
+
+  const handleRowRecovery = (order: Order) => {
+    // Open WhatsApp first — handleRecoveryWhatsApp opens the tab synchronously (popup-blocker safe)
+    handleRecoveryWhatsApp(order)
+    if (order.status === 'pending_payment') {
+      updateOrderStatus(order.id, 'cart_abandoned')
+        .then(() => setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cart_abandoned' as any } : o)))
+        .catch(console.error)
+    }
+  }
+
   const handleRecoveryWhatsApp = async (order: Order) => {
     // Open the tab synchronously so popup blockers don't kill it
     const win = window.open('', '_blank')
@@ -302,14 +323,27 @@ export default function AdminOrdersPage() {
                       <p className="text-sm text-gray-600 mt-0.5 truncate">{customerName} &bull; {date}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      {isRecoveryEligible(order) && (
+                        <button
+                          className="relative bg-green-600 hover:bg-green-700 text-white rounded-lg h-8 px-2.5 shadow-sm inline-flex items-center gap-1"
+                          title="שחזור עגלה בוואטסאפ"
+                          onClick={(e) => { e.stopPropagation(); handleRowRecovery(order) }}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="hidden sm:inline text-xs font-bold">שחזור{(order as any).recoverySentAt ? ' ✓' : ''}</span>
+                          {(order as any).recoverySentAt && (
+                            <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-green-300 ring-2 ring-white" />
+                          )}
+                        </button>
+                      )}
                       <div className="relative" onClick={(e) => e.stopPropagation()}>
                         <select
                           className={`appearance-none rounded-lg pl-7 pr-3 py-1.5 text-xs font-semibold whitespace-nowrap cursor-pointer border border-gray-200 shadow-sm outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${statusLabels[order.status]?.color ?? 'bg-gray-100 text-gray-700'}`}
                           value={order.status}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                         >
-                          {Object.entries(statusLabels).filter(([val]) => val !== 'pending_payment').map(([val, { label }]) => (
-                            <option key={val} value={val}>{label}</option>
+                          {Object.entries(statusLabels).map(([val, { label }]) => (
+                            <option key={val} value={val} disabled={val === 'pending_payment'}>{label}</option>
                           ))}
                         </select>
                         <ChevronDown className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
@@ -343,11 +377,11 @@ export default function AdminOrdersPage() {
                         </p>
                       </div>
                     )}
-                    {order.status === 'cart_abandoned' && (
+                    {isRecoveryEligible(order) && (
                       <div className="mt-4 sm:mt-6 mb-2 flex flex-wrap items-center gap-3 rounded-xl border-2 border-green-500 bg-green-50 p-4">
                         <button
                           className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg px-5 py-2.5 shadow-md transition-colors"
-                          onClick={() => handleRecoveryWhatsApp(order)}
+                          onClick={() => handleRowRecovery(order)}
                         >
                           <MessageCircle className="w-5 h-5" />
                           🛒 שחזור עגלה בוואטסאפ
@@ -453,8 +487,8 @@ export default function AdminOrdersPage() {
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           >
-                            {Object.entries(statusLabels).filter(([val]) => val !== 'pending_payment').map(([val, { label }]) => (
-                              <option key={val} value={val}>{label}</option>
+                            {Object.entries(statusLabels).map(([val, { label }]) => (
+                              <option key={val} value={val} disabled={val === 'pending_payment'}>{label}</option>
                             ))}
                           </select>
                         </div>
