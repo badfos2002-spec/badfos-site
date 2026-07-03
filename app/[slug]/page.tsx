@@ -112,7 +112,7 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
             {page.heroText}
           </p>
           <Link
-            href="/designer/tshirt"
+            href="/"
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] px-8 py-4 text-lg font-extrabold text-white shadow-[0_15px_35px_-10px_rgba(245,158,11,0.6)] hover:from-[#e6ac28] hover:to-[#d97706] transition-colors"
           >
             {page.ctaText}
@@ -263,7 +263,7 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
             מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים חולצות מודפסות תוך ימים ספורים.
           </p>
           <Link
-            href="/designer/tshirt"
+            href="/"
             className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-extrabold text-[#b45309] shadow-lg hover:bg-[#fffdf5] transition-colors"
           >
             {page.ctaText}
