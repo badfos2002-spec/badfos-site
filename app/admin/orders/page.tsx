@@ -97,13 +97,14 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // Eligible for cart recovery: abandoned, or pending_payment older than 60 minutes
+  // Eligible for cart recovery: abandoned, or pending_payment older than 10 minutes
+  // (matches the client-side abandonment delay in CartPage)
   const isRecoveryEligible = (order: Order) => {
     if (order.status === 'cart_abandoned') return true
     if (order.status === 'pending_payment') {
       const created = order.createdAt?.toDate?.()
       if (!created) return false
-      return Date.now() - created.getTime() > 60 * 60 * 1000
+      return Date.now() - created.getTime() > 10 * 60 * 1000
     }
     return false
   }
