@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Phone, Mail, MapPin, Instagram, Facebook } from 'lucide-react'
 import { CONTACT_INFO } from '@/lib/constants'
+import { SEO_PAGES } from '@/lib/seo-pages'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -134,6 +135,20 @@ export default function Footer() {
               עקבו אחרינו ברשתות החברתיות לעדכונים ומבצעים בלעדיים!
             </p>
           </div>
+        </div>
+
+        {/* SEO landing pages */}
+        <div className="border-t border-gray-800 mt-8 pt-6 text-center md:text-right" dir="rtl">
+          <h3 className="text-white text-sm font-bold mb-3">הדפסת חולצות לכל אירוע</h3>
+          <ul className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-xs">
+            {SEO_PAGES.map((page) => (
+              <li key={page.slug}>
+                <Link href={`/${page.slug}`} className="hover:text-yellow-400 transition-colors">
+                  {page.h1}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Bottom Bar */}

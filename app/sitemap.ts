@@ -1,7 +1,16 @@
 import { MetadataRoute } from 'next'
+import { SEO_PAGES } from '@/lib/seo-pages'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://badfos.co.il'
+
+  // SEO landing pages (Hebrew slugs — URL-encoded)
+  const seoLandingPages: MetadataRoute.Sitemap = SEO_PAGES.map((page) => ({
+    url: `${baseUrl}/${encodeURIComponent(page.slug)}`,
+    lastModified: '2026-07-03',
+    changeFrequency: 'monthly',
+    priority: 0.8,
+  }))
 
   return [
     {
@@ -94,5 +103,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    ...seoLandingPages,
   ]
 }
