@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/utils'
+import { sendRecoveryWhatsApp, normalizeIlPhone } from '@/lib/manychat'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const STALE_MINUTES = 60 // pending_payment older than this → cart_abandoned
@@ -43,6 +44,10 @@ export async function GET(req: NextRequest) {
   let marked = 0
   let notified = 0
   const recentRows: AbandonedOrderRow[] = []
+  const recoveryCandidates: {
+    ref: FirebaseFirestore.DocumentReference
+    data: FirebaseFirestore.DocumentData
+  }[] = []
 
   try {
     // ── 1. Stale pending_payment → cart_abandoned ───────────────────────
@@ -66,6 +71,7 @@ export async function GET(req: NextRequest) {
       // Don't email orders already reported (e.g. by the instant abandoned-alert)
       if (createdAt.getTime() >= floodCutoff && !data.abandonNotifiedAt) {
         recentRows.push(toRow(data, createdAt))
+        recoveryCandidates.push({ ref: doc.ref, data })
       }
     }
 
@@ -85,19 +91,92 @@ export async function GET(req: NextRequest) {
       const createdAt: Date = data.createdAt?.toDate?.() ?? new Date(0)
       if (createdAt.getTime() >= floodCutoff) {
         recentRows.push(toRow(data, createdAt))
+        recoveryCandidates.push({ ref: doc.ref, data })
       }
     }
 
-    // ── 3. One summary email for all recent abandoned carts ─────────────
+    // ── 3. Auto WhatsApp recovery via ManyChat (best-effort) ────────────
+    let whatsappSent = 0
+    for (const candidate of recoveryCandidates) {
+      const result = await autoSendRecovery(candidate.ref, candidate.data, now)
+      if (result.sent) whatsappSent++
+    }
+
+    // ── 4. One summary email for all recent abandoned carts ─────────────
     let emailed = false
     if (recentRows.length > 0) {
       emailed = await sendSummaryEmail(recentRows)
     }
 
-    return NextResponse.json({ success: true, marked, notified, emailed })
+    return NextResponse.json({ success: true, marked, notified, emailed, whatsappSent })
   } catch (e) {
     console.error('Notify-abandoned endpoint error:', e)
     return NextResponse.json({ error: 'Notify-abandoned failed' }, { status: 500 })
+  }
+}
+
+/**
+ * Best-effort auto WhatsApp recovery: create a BACK5 coupon and send it via
+ * ManyChat. Stamps recoverySentAt only on success. Never throws.
+ * Pre-checks env + phone before creating the coupon to avoid orphan coupons
+ * while the ManyChat flow isn't configured yet.
+ */
+async function autoSendRecovery(
+  docRef: FirebaseFirestore.DocumentReference,
+  data: FirebaseFirestore.DocumentData,
+  now: Timestamp
+): Promise<{ sent: boolean; reason?: string }> {
+  try {
+    if (data.recoverySentAt) return { sent: false, reason: 'already_sent' }
+    if (!process.env.MANYCHAT_API_TOKEN) {
+      return { sent: false, reason: 'missing MANYCHAT_API_TOKEN' }
+    }
+    if (!process.env.MANYCHAT_RECOVERY_FLOW_NS) {
+      console.log(`ManyChat recovery skipped for order #${data.orderNumber}: flow not configured`)
+      return { sent: false, reason: 'missing MANYCHAT_RECOVERY_FLOW_NS' }
+    }
+    if (!normalizeIlPhone(data.customer?.phone || '')) {
+      return { sent: false, reason: 'unparseable phone' }
+    }
+
+    // BACK5 recovery coupon — same doc shape as createRecoveryCoupon() in lib/db.ts
+    const code = `BACK5-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+    const expiresAt = new Date()
+    expiresAt.setMonth(expiresAt.getMonth() + 3)
+    await adminDb.collection('coupons').add({
+      code,
+      discountPercent: 5,
+      isUsed: false,
+      isActive: true,
+      expiresAt: Timestamp.fromDate(expiresAt),
+      orderId: docRef.id,
+      createdAt: Timestamp.now(),
+    })
+
+    const result = await sendRecoveryWhatsApp({
+      orderId: docRef.id,
+      orderNumber: data.orderNumber ?? 0,
+      firstName: data.customer?.firstName || '',
+      lastName: data.customer?.lastName || '',
+      phone: data.customer?.phone || '',
+      couponCode: code,
+    })
+
+    if (result.sent) {
+      await docRef.update({
+        recoverySentAt: now,
+        recoveryCouponCode: code,
+        recoveryChannel: 'manychat_auto',
+      })
+    } else {
+      // Coupon doc may already exist — acceptable, it's just an unused coupon
+      console.log(`ManyChat recovery not sent for order #${data.orderNumber}: ${result.reason}`)
+    }
+    return result
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e)
+    console.error('ManyChat auto-recovery error:', reason)
+    return { sent: false, reason }
   }
 }
 
