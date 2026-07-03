@@ -470,6 +470,28 @@ export async function createShareCoupon(shareCartId: string): Promise<string> {
 }
 
 /**
+ * Create a personal recovery coupon for an abandoned cart (5%, 3 months expiry)
+ */
+export async function createRecoveryCoupon(orderId: string): Promise<string> {
+  const randomPart = Math.random().toString(36).substring(2, 9).toUpperCase()
+  const code = `BACK5-${randomPart}`
+  const expiresAt = new Date()
+  expiresAt.setMonth(expiresAt.getMonth() + 3) // 3 months from now
+
+  const coupon: Omit<Coupon, 'id' | 'createdAt'> = {
+    code,
+    discountPercent: 5,
+    isUsed: false,
+    isActive: true,
+    expiresAt: Timestamp.fromDate(expiresAt),
+    orderId,
+  }
+
+  await createDocument<Coupon>('coupons', coupon)
+  return code
+}
+
+/**
  * Validate and get coupon by code
  */
 export async function validateCoupon(code: string): Promise<Coupon | null> {

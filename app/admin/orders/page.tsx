@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote } from 'lucide-react'
+import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote, MessageCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
+import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
+import { Timestamp } from 'firebase/firestore'
 import { deleteFile } from '@/lib/storage'
 import type { Order } from '@/lib/types'
 
@@ -93,6 +94,36 @@ export default function AdminOrdersPage() {
     } catch (e) {
       console.error(e)
       alert('שגיאה בעדכון סטטוס')
+    }
+  }
+
+  const handleRecoveryWhatsApp = async (order: Order) => {
+    // Open the tab synchronously so popup blockers don't kill it
+    const win = window.open('', '_blank')
+    const digits = order.customer.phone.replace(/\D/g, '')
+    const waNumber = digits.startsWith('0') ? `972${digits.slice(1)}` : digits
+    const buildMessage = (couponCode?: string) =>
+      `היי ${order.customer.firstName} 👋 כאן בדפוס!\n` +
+      `שמנו לב שהתחלת הזמנה באתר ולא הספקת לסיים — שמרנו לך את העגלה 🛒\n` +
+      (couponCode ? `מגיע לך קופון 5% הנחה להשלמת ההזמנה: ${couponCode}\n` : '') +
+      `להשלמת ההזמנה: https://badfos.co.il/cart\n` +
+      `נשמח לעזור בכל שאלה 🙂`
+
+    try {
+      const couponCode = await createRecoveryCoupon(order.id)
+      if (win) win.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(buildMessage(couponCode))}`
+    } catch (e) {
+      console.error(e)
+      // Never leave a blank tab — send the message without the coupon line
+      if (win) win.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(buildMessage())}`
+    }
+
+    try {
+      const recoverySentAt = Timestamp.now()
+      await updateDocument('orders', order.id, { recoverySentAt } as any)
+      setOrders(prev => prev.map(o => o.id === order.id ? ({ ...o, recoverySentAt } as any) : o))
+    } catch (e) {
+      console.error(e)
     }
   }
 
@@ -310,6 +341,27 @@ export default function AdminOrdersPage() {
                         <p className="px-4 py-3 text-amber-900 font-bold text-base sm:text-lg whitespace-pre-wrap break-words leading-relaxed">
                           {order.customer.notes}
                         </p>
+                      </div>
+                    )}
+                    {order.status === 'cart_abandoned' && (
+                      <div className="mt-4 sm:mt-6 mb-2 flex flex-wrap items-center gap-3 rounded-xl border-2 border-green-500 bg-green-50 p-4">
+                        <button
+                          className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg px-5 py-2.5 shadow-md transition-colors"
+                          onClick={() => handleRecoveryWhatsApp(order)}
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          🛒 שחזור עגלה בוואטסאפ
+                        </button>
+                        {(order as any).recoverySentAt && (
+                          <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                            ✓ נשלחה תזכורת
+                            {(order as any).recoverySentAt?.toDate?.() && (
+                              <span className="font-normal">
+                                ({(order as any).recoverySentAt.toDate().toLocaleDateString('he-IL')})
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     )}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 pt-4 sm:pt-6">
