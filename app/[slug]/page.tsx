@@ -111,6 +111,18 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
           <h1 className="text-3xl md:text-5xl font-black tracking-tight text-[#1e293b] leading-tight mb-5">
             {page.h1}
           </h1>
+          {page.audienceLine && (
+            <p className="mb-5">
+              <span
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-base md:text-lg font-extrabold ${
+                  page.accent ? page.accent.badge : 'bg-[#fff6e6] text-[#b45309] border-[#ffc32e]/50'
+                }`}
+              >
+                {page.accent && <span aria-hidden>{page.accent.emoji}</span>}
+                {page.audienceLine}
+              </span>
+            </p>
+          )}
           <p className="text-lg md:text-xl text-[#475569] leading-relaxed max-w-3xl md:ml-auto mb-7">
             {page.heroText}
           </p>
@@ -165,7 +177,13 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
                   key={index}
                   className="flex items-start gap-4 rounded-3xl border border-black/5 bg-white p-6 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-[#ffc32e] to-[#f59e0b] shadow ring-1 ring-[#ffc32e]/40">
+                  <div
+                    className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br shadow ring-1 ${
+                      page.accent
+                        ? `${page.accent.gradient} ring-black/10`
+                        : 'from-[#ffc32e] to-[#f59e0b] ring-[#ffc32e]/40'
+                    }`}
+                  >
                     <Icon className="w-6 h-6" strokeWidth={2.2} />
                   </div>
                   <div>
@@ -197,6 +215,33 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
             ))}
           </div>
         </section>
+
+        {/* Ideas chips — playful print-slogan / use-case inspiration */}
+        {page.ideas && (
+          <section className="mb-14">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-[#1e293b] mb-2">
+              {page.accent && <span aria-hidden className="ml-2">{page.accent.emoji}</span>}
+              {page.ideas.title}
+            </h2>
+            <p className="text-[#64748b] font-semibold mb-5">
+              קחו השראה — כל כיתוב כזה מעצבים אונליין תוך דקות, עם תצוגה מקדימה חיה.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {page.ideas.items.map((item) => (
+                <span
+                  key={item}
+                  className={`rounded-full border px-5 py-2.5 text-sm md:text-base font-bold ${
+                    page.accent
+                      ? page.accent.badge
+                      : 'bg-[#fff6e6] text-[#b45309] border-[#ffc32e]/50'
+                  }`}
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Body copy */}
         <section className="mb-14 space-y-10">
