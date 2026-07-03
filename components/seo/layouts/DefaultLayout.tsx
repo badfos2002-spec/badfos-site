@@ -198,17 +198,17 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
           <div className="flex flex-col md:flex-row items-center justify-between gap-5 text-center md:text-right">
             <div>
               <p className="text-xl md:text-2xl font-black text-[#1e293b]">
-                חולצה מודפסת מ־37 ₪ · סווטשירט מ־53 ₪
+                מחירים שקופים — בלי הפתעות ובלי עלויות נסתרות
               </p>
               <p className="text-[#64748b] font-semibold mt-1">
-                מעל 15 יחידות? 5% הנחה אוטומטית על כל ההזמנה
+                מעצבים אונליין עם תצוגה מקדימה חיה ומקבלים הצעת מחיר מהירה
               </p>
             </div>
             <Link
-              href="/packages"
+              href="/designer/tshirt"
               className="inline-flex items-center gap-2 rounded-full border-2 border-[#f59e0b] px-6 py-3 font-extrabold text-[#b45309] hover:bg-[#f59e0b] hover:text-white transition-colors"
             >
-              לחבילות המשתלמות
+              מתחילים לעצב
               <ArrowLeft className="w-4 h-4" />
             </Link>
           </div>

@@ -209,9 +209,9 @@ export default function BirthdayLayout({ page, waUrl }: SeoLayoutProps) {
       <StatStrip
         bandClass="bg-purple-50"
         stats={[
-          { value: 'מ־37 ₪', label: 'חולצה מודפסת עם תמונה וכיתוב' },
+          { value: 'עיצוב אונליין', label: 'מעלים תמונה ורואים תצוגה מקדימה חיה' },
           { value: 'ימים ספורים', label: 'ייצור מהיר — מוכן לפני המסיבה' },
-          { value: '5%', label: 'הנחה אוטומטית מעל 15 יחידות' },
+          { value: 'DTF', label: 'הדפסה חדה ועמידה — התמונה יוצאת מושלמת' },
         ]}
         valueClass="text-purple-700"
         labelClass="text-[#64748b]"

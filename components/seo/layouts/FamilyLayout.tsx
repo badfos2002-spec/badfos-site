@@ -168,9 +168,9 @@ export default function FamilyLayout({ page, waUrl }: SeoLayoutProps) {
       <StatStrip
         bandClass="bg-amber-50"
         stats={[
-          { value: 'מ־37 ₪', label: 'חולצה מודפסת לכל בן משפחה' },
+          { value: 'עיצוב אונליין', label: 'תצוגה מקדימה חיה לפני שמזמינים' },
           { value: 'XS–4XL', label: 'מידה לכל אחד — מסבא ועד הנכד הקטן' },
-          { value: '5%', label: 'הנחה אוטומטית מעל 15 יחידות' },
+          { value: 'DTF', label: 'הדפסה עמידה שמחזיקה טיולים וכביסות' },
         ]}
         valueClass="text-orange-600"
         labelClass="text-[#64748b]"

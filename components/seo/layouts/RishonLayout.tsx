@@ -88,7 +88,7 @@ export default function RishonLayout({ page, waUrl }: SeoLayoutProps) {
         stats={[
           { value: 'חינם', label: 'איסוף עצמי בתיאום מראש' },
           { value: 'דובנוב 10', label: 'ראשון לציון' },
-          { value: '35 ₪', label: 'משלוח לכל הארץ' },
+          { value: 'לכל הארץ', label: 'משלוח עד הבית' },
         ]}
         valueClass="text-[#b45309]"
         labelClass="text-[#64748b]"

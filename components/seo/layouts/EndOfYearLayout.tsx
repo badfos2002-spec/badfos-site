@@ -106,7 +106,7 @@ export default function EndOfYearLayout({ page, waUrl }: SeoLayoutProps) {
               'מקבלים סקיצה לאישור לפני ההדפסה — כל שם, כל ניקוד, כל גרש',
               'משלבים באותה הזמנה מידות ילדים לתלמידים ומידות מבוגרים למורים — מ־XS ועד 4XL',
               'סוגרים מידות שבועיים־שלושה לפני מסיבת הסיום — איסוף המידות לוקח יותר זמן מההדפסה',
-              'בוחרים משלוח מרוכז אחד לכל הארץ (35 ₪) או איסוף עצמי חינם מראשון לציון',
+              'בוחרים משלוח מרוכז אחד לכל הארץ או איסוף עצמי חינם מראשון לציון',
             ]}
             footer={
               <p className="text-sm font-semibold leading-relaxed text-[#64748b]">
@@ -176,8 +176,8 @@ export default function EndOfYearLayout({ page, waUrl }: SeoLayoutProps) {
       <StatStrip
         bandClass="bg-gradient-to-l from-emerald-600 to-teal-600"
         stats={[
-          { value: 'מ־37 ₪', label: 'חולצה מודפסת — מחיר שוועד הורים אוהב' },
-          { value: '5%', label: 'הנחה אוטומטית מעל 15 יחידות (כמעט כל כיתה)' },
+          { value: 'אפס טעויות', label: 'סקיצה לאישור לפני ההדפסה — כל שם, כל גרש' },
+          { value: 'ימים ספורים', label: 'ייצור מהיר — מוכנים לפני מסיבת הסיום' },
           { value: 'XS–4XL', label: 'מידות ילדים ומבוגרים באותה הזמנה' },
         ]}
         valueClass="text-white"

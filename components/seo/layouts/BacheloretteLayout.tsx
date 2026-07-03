@@ -91,8 +91,8 @@ export default function BacheloretteLayout({ page, waUrl }: SeoLayoutProps) {
       <StatStrip
         bandClass="bg-pink-50"
         stats={[
-          { value: 'מ־37 ₪', label: 'חולצה מודפסת — פחות מקוקטייל אחד' },
-          { value: '5%', label: 'הנחה אוטומטית מעל 15 חולצות' },
+          { value: 'עיצוב אונליין', label: 'תצוגה מקדימה חיה לכל חולצה' },
+          { value: 'DTF', label: 'הדפסה עמידה שנשארת הרבה אחרי המסיבה' },
           { value: 'ימים ספורים', label: 'מהעיצוב ועד שהחולצות אצלכן' },
         ]}
         valueClass="text-pink-600"
