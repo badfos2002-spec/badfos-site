@@ -423,9 +423,10 @@ export const SEO_PAGES: SeoPage[] = [
       },
     ],
     galleryImages: [
-      '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.webp',
-      '/assets/c4660170b_IMG_6179.webp',
-      '/assets/64ab08d41_IMG_3252.webp',
+      '/assets/seo/family-1.jpg',
+      '/assets/seo/family-2.jpg',
+      '/assets/seo/family-3.jpg',
+      '/assets/seo/family-4.jpg',
     ],
     ctaText: 'מעצבים חולצות למשפחה',
     related: ['חולצות-ליום-הולדת', 'חולצות-לסוף-שנה', 'הדפסת-חולצות-לעסקים'],
