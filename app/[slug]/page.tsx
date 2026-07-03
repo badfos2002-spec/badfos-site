@@ -13,8 +13,10 @@ import {
   ChevronLeft,
   ArrowLeft,
   ChevronDown,
+  MessageCircle,
 } from 'lucide-react'
 import { SEO_PAGES, getSeoPage } from '@/lib/seo-pages'
+import { CONTACT_INFO } from '@/lib/constants'
 
 const BASE_URL = 'https://badfos.co.il'
 const BENEFIT_ICONS = [BadgePercent, Palette, Sparkles, Truck]
@@ -51,6 +53,7 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
   if (!page) notFound()
 
   const pageUrl = `${BASE_URL}/${encodeURIComponent(page.slug)}`
+  const waUrl = `https://wa.me/${CONTACT_INFO.whatsapp}?text=${encodeURIComponent(`היי! הגעתי מהאתר ואני מתעניין ב${page.h1} 🙂`)}`
 
   const faqJsonLd = {
     '@context': 'https://schema.org',
@@ -111,13 +114,24 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
           <p className="text-lg md:text-xl text-[#475569] leading-relaxed max-w-3xl md:ml-auto mb-7">
             {page.heroText}
           </p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] px-8 py-4 text-lg font-extrabold text-white shadow-[0_15px_35px_-10px_rgba(245,158,11,0.6)] hover:from-[#e6ac28] hover:to-[#d97706] transition-colors"
-          >
-            {page.ctaText}
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] px-8 py-4 text-lg font-extrabold text-white shadow-[0_15px_35px_-10px_rgba(245,158,11,0.6)] hover:from-[#e6ac28] hover:to-[#d97706] transition-colors"
+            >
+              {page.ctaText}
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1fb455] px-8 py-4 text-lg font-extrabold text-white shadow-lg transition-colors"
+            >
+              <MessageCircle className="w-5 h-5" />
+              דברו איתנו בוואטסאפ
+            </a>
+          </div>
         </header>
 
         {/* Trust row */}
@@ -262,13 +276,24 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
           <p className="text-white/90 text-lg font-semibold mb-6">
             מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים חולצות מודפסות תוך ימים ספורים.
           </p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-extrabold text-[#b45309] shadow-lg hover:bg-[#fffdf5] transition-colors"
-          >
-            {page.ctaText}
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-extrabold text-[#b45309] shadow-lg hover:bg-[#fffdf5] transition-colors"
+            >
+              {page.ctaText}
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1fb455] px-8 py-4 text-lg font-extrabold text-white shadow-lg transition-colors"
+            >
+              <MessageCircle className="w-5 h-5" />
+              דברו איתנו בוואטסאפ
+            </a>
+          </div>
         </section>
       </div>
     </main>
