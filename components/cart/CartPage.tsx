@@ -10,7 +10,8 @@ import ContactForm from './ContactForm'
 import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
 import { ArrowRight, ShoppingBag, Check, Share2, Loader2, Package, Trash2 } from 'lucide-react'
-import { createSharedCart, createOrder } from '@/lib/db'
+import { createSharedCart, createOrder, validateCoupon } from '@/lib/db'
+import { phonesMatch } from '@/lib/utils'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { calculateOrderTotal } from '@/lib/pricing'
 import type { CustomerInfo, Shipping } from '@/lib/types'
@@ -239,8 +240,28 @@ export default function CartPage() {
     setLoadingMessage('מכין את ההזמנה...')
 
     try {
+      // Re-validate personal coupons against the customer's phone.
+      // A Firestore hiccup must NEVER block checkout — on error, proceed as today.
+      let effectiveCouponDiscount = couponDiscount
+      let effectiveCouponCode = couponCode
+      if (couponCode) {
+        try {
+          const coupon = await validateCoupon(couponCode.trim().toUpperCase())
+          if (coupon?.restrictedPhone && !phonesMatch(coupon.restrictedPhone, customerInfo.phone)) {
+            effectiveCouponDiscount = 0
+            effectiveCouponCode = ''
+            setCouponDiscount(0)
+            setCouponCode('')
+            // Invalidate the pre-fetched payment link — its amount includes the removed coupon
+            paymentCacheRef.current = null
+            try { sessionStorage.removeItem('badfos_payment_cache') } catch {}
+            alert('הקופון שהוזן אישי ללקוח אחר ולכן הוסר מההזמנה')
+          }
+        } catch {}
+      }
+
       // Calculate correct totals (including quantity discount + coupon)
-      const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount)
+      const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', effectiveCouponDiscount)
       // Add package totals
       const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
       orderCalc.subtotal += packagesTotal
@@ -292,7 +313,7 @@ export default function CartPage() {
             email: customerInfo.email,
             description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
             items: items.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
-            couponDiscount,
+            couponDiscount: effectiveCouponDiscount,
             ...(getGclid() && { gclid: getGclid() }),
           }),
         }).then(r => r.json())
@@ -337,8 +358,8 @@ export default function CartPage() {
             })),
           }),
           subtotal: orderCalc.subtotal,
-          discount: couponDiscount + orderCalc.quantityDiscount,
-          ...(couponCode && { couponCode }),
+          discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
+          ...(effectiveCouponCode && { couponCode: effectiveCouponCode }),
           // Use the payment amount (includes coupon) as the authoritative total
           total: paymentCacheRef.current?.amount ?? orderCalc.total,
           ...(getGclid() && { gclid: getGclid() }),
@@ -640,6 +661,7 @@ export default function CartPage() {
               packageItems={packageItems}
               shipping={shipping}
               couponCode={couponCode}
+              customerPhone={customerInfo?.phone}
               onCouponChange={setCouponCode}
               onDiscountApplied={(discount, code) => { setCouponDiscount(discount); if (code) setCouponCode(code) }}
               onCheckout={handleCheckout}

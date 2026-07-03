@@ -143,6 +143,7 @@ async function autoSendRecovery(
     const code = `BACK5-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
     const expiresAt = new Date()
     expiresAt.setMonth(expiresAt.getMonth() + 3)
+    const restrictedPhone = String(data.customer?.phone || '').replace(/\D/g, '')
     await adminDb.collection('coupons').add({
       code,
       discountPercent: 5,
@@ -150,6 +151,7 @@ async function autoSendRecovery(
       isActive: true,
       expiresAt: Timestamp.fromDate(expiresAt),
       orderId: docRef.id,
+      ...(restrictedPhone && { restrictedPhone }),
       createdAt: Timestamp.now(),
     })
 

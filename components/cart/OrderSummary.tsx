@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import type { CartItem, Shipping, Discount, PackageCartItem } from '@/lib/types'
 import { formatPrice, calculateOrderTotal } from '@/lib/pricing'
 import { validateCoupon, getActiveDiscounts } from '@/lib/db'
+import { phonesMatch } from '@/lib/utils'
 import { CheckCircle, X, Loader2 } from 'lucide-react'
 
 interface OrderSummaryProps {
@@ -14,6 +15,7 @@ interface OrderSummaryProps {
   packageItems?: PackageCartItem[]
   shipping: Shipping | null
   couponCode: string
+  customerPhone?: string
   onCouponChange: (code: string) => void
   onDiscountApplied: (discount: number, code: string) => void
   onCheckout: () => void
@@ -22,11 +24,14 @@ interface OrderSummaryProps {
   paymentReady?: boolean
 }
 
+const DEFAULT_COUPON_ERROR = 'קוד קופון לא תקין או פג תוקף'
+
 export default function OrderSummary({
   items,
   packageItems = [],
   shipping,
   couponCode,
+  customerPhone,
   onCouponChange,
   onDiscountApplied,
   onCheckout,
@@ -36,6 +41,7 @@ export default function OrderSummary({
 }: OrderSummaryProps) {
   const [applying, setApplying] = useState(false)
   const [couponStatus, setCouponStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
+  const [couponError, setCouponError] = useState(DEFAULT_COUPON_ERROR)
   const [couponDiscount, setCouponDiscount] = useState(0)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [activeDiscounts, setActiveDiscounts] = useState<Discount[]>([])
@@ -43,6 +49,18 @@ export default function OrderSummary({
   useEffect(() => {
     getActiveDiscounts().then(setActiveDiscounts).catch(console.error)
   }, [])
+
+  // If CartPage strips the coupon (e.g. personal coupon rejected at checkout),
+  // the couponCode prop becomes empty — reset local state so the green banner
+  // and discounted total disappear. Never fires during a normal apply, where
+  // couponCode is non-empty.
+  useEffect(() => {
+    if (couponStatus === 'valid' && !couponCode) {
+      setCouponStatus('idle')
+      setCouponDiscount(0)
+      setCouponError(DEFAULT_COUPON_ERROR)
+    }
+  }, [couponCode, couponStatus])
 
   // Compute quantity discount from Firestore rules (fallback to hardcoded if none)
   // Exclude noDiscount items (special products) from discount calculations
@@ -79,6 +97,23 @@ export default function OrderSummary({
     setCouponStatus('idle')
     try {
       const coupon = await validateCoupon(couponCode.trim().toUpperCase())
+      if (coupon && coupon.restrictedPhone) {
+        // Personal coupon — only valid for the phone it was issued to
+        if (!customerPhone) {
+          setCouponStatus('invalid')
+          setCouponError('קופון אישי — נא למלא קודם את מספר הטלפון בפרטי ההזמנה ואז להזין את הקופון')
+          setCouponDiscount(0)
+          onDiscountApplied(0, '')
+          return
+        }
+        if (!phonesMatch(coupon.restrictedPhone, customerPhone)) {
+          setCouponStatus('invalid')
+          setCouponError('הקופון הזה אישי ואינו תקף למספר הטלפון שהוזן')
+          setCouponDiscount(0)
+          onDiscountApplied(0, '')
+          return
+        }
+      }
       if (coupon) {
         const itemsSubtotal = items.filter(i => !i.noDiscount).reduce((sum, item) => sum + item.totalPrice, 0)
         const pkgSubtotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
@@ -88,11 +123,13 @@ export default function OrderSummary({
         onDiscountApplied(discount, couponCode.trim().toUpperCase())
       } else {
         setCouponStatus('invalid')
+        setCouponError(DEFAULT_COUPON_ERROR)
         setCouponDiscount(0)
         onDiscountApplied(0, '')
       }
     } catch {
       setCouponStatus('invalid')
+      setCouponError(DEFAULT_COUPON_ERROR)
     } finally {
       setApplying(false)
     }
@@ -201,7 +238,7 @@ export default function OrderSummary({
             </div>
           )}
           {couponStatus === 'invalid' && (
-            <p className="text-xs text-red-500 mt-1">קוד קופון לא תקין או פג תוקף</p>
+            <p className="text-xs text-red-500 mt-1">{couponError}</p>
           )}
         </div>
 

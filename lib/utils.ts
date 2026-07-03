@@ -135,6 +135,17 @@ export function isLeadStale(lead: { status?: string; createdAt?: any }): boolean
 }
 
 /**
+ * Compare two phone numbers by their last 9 digits (handles 05X vs +9725X forms).
+ * Returns false if either is missing or too short.
+ */
+export function phonesMatch(a?: string, b?: string): boolean {
+  const digitsA = (a || '').replace(/\D/g, '')
+  const digitsB = (b || '').replace(/\D/g, '')
+  if (digitsA.length < 9 || digitsB.length < 9) return false
+  return digitsA.slice(-9) === digitsB.slice(-9)
+}
+
+/**
  * Escape HTML special characters to prevent HTML injection
  */
 export function escapeHtml(str: string): string {

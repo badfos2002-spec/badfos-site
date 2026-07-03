@@ -193,6 +193,7 @@ export interface Coupon {
   isActive: boolean
   expiresAt: Timestamp // 3 months from creation
   orderId?: string // linked to which order generated it
+  restrictedPhone?: string // personal coupon: Israeli phone (digits only) it's locked to
   createdAt: Timestamp
 }
 

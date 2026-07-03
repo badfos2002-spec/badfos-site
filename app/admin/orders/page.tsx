@@ -136,7 +136,7 @@ export default function AdminOrdersPage() {
       `נשמח לעזור בכל שאלה 🙂`
 
     try {
-      const couponCode = await createRecoveryCoupon(order.id)
+      const couponCode = await createRecoveryCoupon(order.id, order.customer.phone)
       if (win) win.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(buildMessage(couponCode))}`
     } catch (e) {
       console.error(e)
