@@ -326,11 +326,11 @@ export default function AdminOrdersPage() {
                       {isRecoveryEligible(order) && (
                         <button
                           className="relative bg-green-600 hover:bg-green-700 text-white rounded-lg h-8 px-2.5 shadow-sm inline-flex items-center gap-1"
-                          title="שחזור עגלה בוואטסאפ"
+                          title="קופון 5% החזרת לקוח בוואטסאפ"
                           onClick={(e) => { e.stopPropagation(); handleRowRecovery(order) }}
                         >
                           <MessageCircle className="w-4 h-4" />
-                          <span className="hidden sm:inline text-xs font-bold">שחזור{(order as any).recoverySentAt ? ' ✓' : ''}</span>
+                          <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">קופון 5% החזרת לקוח{(order as any).recoverySentAt ? ' ✓' : ''}</span>
                           {(order as any).recoverySentAt && (
                             <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-green-300 ring-2 ring-white" />
                           )}
