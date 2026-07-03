@@ -63,7 +63,8 @@ export async function GET(req: NextRequest) {
         updatedAt: now,
       })
       marked++
-      if (createdAt.getTime() >= floodCutoff) {
+      // Don't email orders already reported (e.g. by the instant abandoned-alert)
+      if (createdAt.getTime() >= floodCutoff && !data.abandonNotifiedAt) {
         recentRows.push(toRow(data, createdAt))
       }
     }

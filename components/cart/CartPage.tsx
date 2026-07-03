@@ -113,6 +113,12 @@ export default function CartPage() {
         // Only mark as abandoned if still pending_payment
         if (order && order.status === 'pending_payment') {
           updateOrderStatus(orderId, 'cart_abandoned').catch(console.error)
+          // Instant abandoned-cart alert to the business owner (fire-and-forget)
+          fetch('/api/abandoned-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, source: 'cart_revisit' }),
+          }).catch(() => {})
         }
 
         sessionStorage.removeItem('badfos_pending_order')

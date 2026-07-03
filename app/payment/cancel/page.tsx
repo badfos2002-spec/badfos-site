@@ -1,10 +1,45 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+// Read the pending order id: sessionStorage first, cookie fallback
+function getPendingOrderId(): string | null {
+  try {
+    const stored = sessionStorage.getItem('badfos_pending_order')
+    if (stored) {
+      const { orderId } = JSON.parse(stored)
+      if (orderId) return orderId as string
+    }
+    const match = document.cookie.match(/(?:^|;\s*)badfos_pending_order=([^;]+)/)
+    if (match) {
+      const { orderId } = JSON.parse(decodeURIComponent(match[1]))
+      if (orderId) return orderId as string
+    }
+  } catch {}
+  return null
+}
+
 export default function PaymentCancelPage() {
+  const didAlert = useRef(false)
+
+  useEffect(() => {
+    if (didAlert.current) return
+    didAlert.current = true
+
+    // Instant abandoned-cart alert to the business owner (fire-and-forget)
+    const orderId = getPendingOrderId()
+    if (orderId) {
+      fetch('/api/abandoned-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, source: 'payment_cancel' }),
+      }).catch(() => {})
+    }
+  }, [])
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-16" dir="rtl">
       <div className="max-w-md mx-auto text-center p-8 bg-white rounded-2xl shadow-xl">

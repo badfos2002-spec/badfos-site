@@ -6,6 +6,23 @@ import { XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { updateOrderStatus } from '@/lib/db'
 
+// Read the pending order id: sessionStorage first, cookie fallback
+function getPendingOrderId(): string | null {
+  try {
+    const stored = sessionStorage.getItem('badfos_pending_order')
+    if (stored) {
+      const { orderId } = JSON.parse(stored)
+      if (orderId) return orderId as string
+    }
+    const match = document.cookie.match(/(?:^|;\s*)badfos_pending_order=([^;]+)/)
+    if (match) {
+      const { orderId } = JSON.parse(decodeURIComponent(match[1]))
+      if (orderId) return orderId as string
+    }
+  } catch {}
+  return null
+}
+
 export default function PaymentFailurePage() {
   const didProcess = useRef(false)
 
@@ -24,6 +41,16 @@ export default function PaymentFailurePage() {
       } catch (e) {
         console.error('Failed to update abandoned order:', e)
       }
+    }
+
+    // Instant abandoned-cart alert to the business owner (fire-and-forget)
+    const alertOrderId = getPendingOrderId()
+    if (alertOrderId) {
+      fetch('/api/abandoned-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: alertOrderId, source: 'payment_failure' }),
+      }).catch(() => {})
     }
   }, [])
 
