@@ -108,6 +108,10 @@ export default function AdminOrdersPage() {
     return false
   }
 
+  // Recovered customer: recovery WhatsApp was sent and the order was later completed/paid
+  const isRecoveredCustomer = (order: Order) =>
+    Boolean((order as any).recoverySentAt) && ['paid', 'in_production', 'shipped', 'completed'].includes(order.status)
+
   const handleRowRecovery = (order: Order) => {
     // Open WhatsApp first — handleRecoveryWhatsApp opens the tab synchronously (popup-blocker safe)
     handleRecoveryWhatsApp(order)
@@ -302,7 +306,7 @@ export default function AdminOrdersPage() {
             const customerName = `${order.customer.firstName} ${order.customer.lastName}`
 
             return (
-              <div key={order.id} className="rounded-xl border bg-white shadow overflow-hidden">
+              <div key={order.id} className={`rounded-xl border bg-white shadow overflow-hidden ${isRecoveredCustomer(order) ? 'border-yellow-400 bg-yellow-50/60 ring-1 ring-yellow-300' : ''}`}>
                 {/* Card Header */}
                 <div
                   className="p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -313,6 +317,9 @@ export default function AdminOrdersPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-base sm:text-lg flex items-center gap-2 flex-wrap">
                         הזמנה #{order.orderNumber}
+                        {isRecoveredCustomer(order) && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-yellow-300 text-yellow-950 text-xs font-bold px-2.5 py-0.5 ring-2 ring-yellow-400 shadow-sm whitespace-nowrap">🎉 לקוח חזר אחרי קופון</span>
+                        )}
                         {order.customer.notes && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 text-amber-950 text-xs font-bold px-2.5 py-0.5 ring-2 ring-amber-300 shadow-sm animate-pulse">
                             <StickyNote className="w-3.5 h-3.5 shrink-0" />
