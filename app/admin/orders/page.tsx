@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote, MessageCircle } from 'lucide-react'
+import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote, MessageCircle, Star } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
+import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, getCouponForOrder, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
 import { Timestamp } from 'firebase/firestore'
 import { deleteFile } from '@/lib/storage'
 import type { Order } from '@/lib/types'
@@ -148,6 +148,38 @@ export default function AdminOrdersPage() {
       const recoverySentAt = Timestamp.now()
       await updateDocument('orders', order.id, { recoverySentAt } as any)
       setOrders(prev => prev.map(o => o.id === order.id ? ({ ...o, recoverySentAt } as any) : o))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleReviewRequest = async (order: Order) => {
+    // Open the tab synchronously so popup blockers don't kill it
+    const win = window.open('', '_blank')
+    const digits = order.customer.phone.replace(/\D/g, '')
+    const waNumber = digits.startsWith('0') ? `972${digits.slice(1)}` : digits
+    const buildMessage = (couponCode?: string) =>
+      `היי ${order.customer.firstName} 👋 כאן בדפוס!\n` +
+      `מקווים שאתם מרוצים מההזמנה 🎽\n` +
+      `נשמח המון אם תשאירו לנו ביקורת קצרה בגוגל — זה עוזר לעסק קטן יותר ממה שנדמה 🙏\n` +
+      `https://search.google.com/local/writereview?placeid=ChIJdWBwSp2984gRNGbFgb-Kykc` +
+      (couponCode ? `\nוכתודה — קופון 10% להזמנה הבאה: ${couponCode} 🎁` : '')
+
+    try {
+      // Reuse the SAVE10 coupon created when the order was marked paid; create only if missing
+      const existing = await getCouponForOrder(order.id)
+      const couponCode = existing?.code ?? await createCoupon(order.id)
+      if (win) win.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(buildMessage(couponCode))}`
+    } catch (e) {
+      console.error(e)
+      // Never leave a blank tab — send the message without the coupon line
+      if (win) win.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(buildMessage())}`
+    }
+
+    try {
+      const reviewRequestSentAt = Timestamp.now()
+      await updateDocument('orders', order.id, { reviewRequestSentAt } as any)
+      setOrders(prev => prev.map(o => o.id === order.id ? ({ ...o, reviewRequestSentAt } as any) : o))
     } catch (e) {
       console.error(e)
     }
@@ -341,6 +373,19 @@ export default function AdminOrdersPage() {
                           <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">קופון 5% החזרת לקוח{(order as any).recoverySentAt ? ' ✓' : ''}</span>
                           {(order as any).recoverySentAt && (
                             <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-green-300 ring-2 ring-white" />
+                          )}
+                        </button>
+                      )}
+                      {['shipped', 'completed'].includes(order.status) && (
+                        <button
+                          className="relative bg-amber-500 hover:bg-amber-600 text-white rounded-lg h-8 px-2.5 shadow-sm inline-flex items-center gap-1"
+                          title="בקשת ביקורת בוואטסאפ"
+                          onClick={(e) => { e.stopPropagation(); handleReviewRequest(order) }}
+                        >
+                          <Star className="w-4 h-4" />
+                          <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">בקשת ביקורת{(order as any).reviewRequestSentAt ? ' ✓' : ''}</span>
+                          {(order as any).reviewRequestSentAt && (
+                            <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-amber-300 ring-2 ring-white" />
                           )}
                         </button>
                       )}

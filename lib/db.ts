@@ -437,7 +437,28 @@ export async function createCoupon(orderId: string): Promise<string> {
     orderId,
   }
 
-  return await createDocument<Coupon>('coupons', coupon)
+  await createDocument<Coupon>('coupons', coupon)
+  return code
+}
+
+/**
+ * Get the existing SAVE10 coupon for an order (active, unused, not expired).
+ * Excludes BACK5 recovery coupons. Returns null if no valid one exists.
+ */
+export async function getCouponForOrder(orderId: string): Promise<Coupon | null> {
+  const coupons = await queryDocuments<Coupon>('coupons', [
+    { field: 'orderId', operator: '==', value: orderId },
+  ])
+  const now = Timestamp.now()
+  return (
+    coupons.find(
+      (c) =>
+        c.code?.startsWith('SAVE10') &&
+        c.isActive &&
+        !c.isUsed &&
+        c.expiresAt.seconds > now.seconds
+    ) ?? null
+  )
 }
 
 /**
