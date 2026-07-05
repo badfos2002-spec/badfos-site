@@ -100,7 +100,7 @@ export function HeroBand({
           </h1>
           {subtitle && (
             <p
-              className={`mb-8 max-w-3xl text-lg leading-relaxed md:ml-auto md:text-xl ${
+              className={`mb-8 max-w-2xl text-lg leading-relaxed md:ml-auto md:text-xl ${
                 subtitleClass ?? 'text-white/90'
               }`}
             >
@@ -134,7 +134,7 @@ export function PullQuote({ quote, attribution, markClass, quoteClass }: PullQuo
   return (
     <figure className="relative mx-auto max-w-3xl px-6 text-center">
       <span
-        className={`pointer-events-none absolute -top-12 right-0 select-none text-[7rem] font-black leading-none md:-right-8 md:text-[10rem] ${
+        className={`pointer-events-none absolute -top-10 -right-1 select-none text-[7rem] leading-none md:-top-14 md:-right-8 md:text-[10rem] ${
           markClass ?? 'text-[#ffc32e]/40'
         }`}
         style={DISPLAY_FONT}
@@ -143,9 +143,10 @@ export function PullQuote({ quote, attribution, markClass, quoteClass }: PullQuo
         ”
       </span>
       <blockquote
-        className={`relative text-2xl font-black leading-snug md:text-4xl md:leading-snug ${
+        className={`relative mx-auto max-w-2xl text-2xl leading-snug md:text-4xl md:leading-snug ${
           quoteClass ?? 'text-[#1e293b]'
         }`}
+        style={DISPLAY_FONT}
       >
         {quote}
       </blockquote>
@@ -190,11 +191,15 @@ export function PolaroidGallery({
       {images.map((img, i) => (
         <figure
           key={img.src}
-          className={`relative rounded-sm bg-white p-3 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.4)] ring-1 ring-black/5 ${
+          className={`relative rounded-sm bg-white p-3 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.4)] ring-1 ring-black/5 transition-transform duration-300 hover:z-20 hover:scale-[1.03] ${
             img.caption ? 'pb-12' : 'pb-10'
           } ${POLAROID_TILTS[i % POLAROID_TILTS.length]}`}
         >
-          <div className={`relative overflow-hidden ${sizeClass ?? 'h-60 w-60 sm:h-64 sm:w-64'}`}>
+          <div
+            className={`relative overflow-hidden ${
+              sizeClass ?? 'h-60 w-60 sm:h-64 sm:w-64 lg:h-72 lg:w-72'
+            }`}
+          >
             <Image
               src={img.src}
               alt={img.alt}
@@ -204,7 +209,7 @@ export function PolaroidGallery({
             />
           </div>
           {img.caption && (
-            <figcaption className="absolute inset-x-3 bottom-3 truncate text-center text-sm font-bold text-[#475569]">
+            <figcaption className="absolute inset-x-3 bottom-3 truncate text-center text-base font-bold italic text-[#475569]">
               {img.caption}
             </figcaption>
           )}
@@ -237,10 +242,10 @@ export function StepsTimeline({
   lineClass: string
 }) {
   return (
-    <ol className="relative grid gap-10 md:grid-cols-3 md:gap-8">
+    <ol className="relative grid gap-12 md:grid-cols-3 md:gap-10">
       {/* Vertical connector on mobile (right side in RTL), horizontal on desktop */}
-      <span className={`absolute bottom-10 right-7 top-8 w-0.5 md:hidden ${lineClass}`} aria-hidden />
-      <span className={`absolute left-[16%] right-[16%] top-8 hidden h-0.5 md:block ${lineClass}`} aria-hidden />
+      <span className={`absolute bottom-10 right-[26px] top-8 w-1 rounded-full md:hidden ${lineClass}`} aria-hidden />
+      <span className={`absolute left-[16%] right-[16%] top-8 hidden h-1 rounded-full md:block ${lineClass}`} aria-hidden />
       {steps.map((step, i) => (
         <li
           key={step.title}
@@ -254,7 +259,7 @@ export function StepsTimeline({
             {step.icon ?? i + 1}
           </span>
           <div className="pt-1.5 md:pt-0">
-            <h3 className="mb-1 text-lg font-extrabold text-[#1e293b] md:text-xl">{step.title}</h3>
+            <h3 className="mb-2 text-lg font-extrabold text-[#1e293b] md:text-xl">{step.title}</h3>
             {step.text && (
               <p className="text-sm leading-relaxed text-[#64748b] md:text-base">{step.text}</p>
             )}
@@ -295,7 +300,12 @@ export function ChecklistCard({
         cardClass ?? 'border-black/5 bg-white'
       }`}
     >
-      <Heading className="mb-4 text-2xl font-extrabold text-[#1e293b] md:text-3xl">{title}</Heading>
+      <Heading
+        className="mb-4 text-2xl leading-tight tracking-tight text-[#1e293b] md:text-3xl lg:text-4xl"
+        style={DISPLAY_FONT}
+      >
+        {title}
+      </Heading>
       {intro && <p className="mb-6 leading-relaxed text-[#475569] md:text-lg">{intro}</p>}
       <ul className="space-y-3.5">
         {items.map((item) => (
@@ -332,6 +342,7 @@ export function StatStrip({
   colsClass,
   valueClass,
   labelClass,
+  dividerClass,
 }: {
   stats: Stat[]
   /** Full bg classes for the band, e.g. 'bg-pink-50' */
@@ -340,23 +351,28 @@ export function StatStrip({
   colsClass?: string
   valueClass?: string
   labelClass?: string
+  /**
+   * Optional divider between items — full literal matched to the band bg,
+   * e.g. 'sm:divide-x sm:rtl:divide-x-reverse sm:divide-pink-200' (default: none)
+   */
+  dividerClass?: string
 }) {
   return (
     <section className={bandClass}>
       <div
         className={`mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-10 text-center md:px-8 md:py-14 ${
           colsClass ?? 'sm:grid-cols-3'
-        }`}
+        } ${dividerClass ?? ''}`}
       >
         {stats.map((stat) => (
-          <div key={stat.label}>
+          <div key={stat.label} className="px-2">
             <p
-              className={`mb-1 text-3xl md:text-4xl ${valueClass ?? 'text-[#b45309]'}`}
+              className={`mb-1.5 text-4xl md:text-5xl ${valueClass ?? 'text-[#b45309]'}`}
               style={DISPLAY_FONT}
             >
               {stat.value}
             </p>
-            <p className={`text-sm font-bold md:text-base ${labelClass ?? 'text-[#64748b]'}`}>
+            <p className={`text-base font-bold ${labelClass ?? 'text-[#475569]'}`}>
               {stat.label}
             </p>
           </div>
@@ -394,7 +410,10 @@ export function IdeaStickers({
 }) {
   return (
     <div>
-      <h2 className="mb-2 text-center text-2xl font-extrabold text-[#1e293b] md:text-3xl">
+      <h2
+        className="mb-2 text-center text-2xl leading-tight tracking-tight text-[#1e293b] md:text-3xl lg:text-4xl"
+        style={DISPLAY_FONT}
+      >
         {emoji && (
           <span aria-hidden className="ml-2">
             {emoji}
@@ -457,7 +476,10 @@ export function SplitSection({
             {eyebrow}
           </p>
         )}
-        <h2 className="mb-4 text-2xl font-extrabold leading-tight text-[#1e293b] md:text-4xl">
+        <h2
+          className="mb-4 text-2xl leading-tight tracking-tight text-[#1e293b] md:text-3xl lg:text-4xl"
+          style={DISPLAY_FONT}
+        >
           {title}
         </h2>
         <div className="space-y-4 text-base leading-relaxed text-[#475569] md:text-lg">
@@ -502,18 +524,18 @@ export function FaqAccordion({
       {faq.map((item, index) => (
         <details
           key={index}
-          className={`group rounded-2xl border shadow-sm open:shadow-md ${
+          className={`group rounded-2xl border shadow-sm transition-shadow duration-200 hover:shadow-md open:shadow-md ${
             cardClass ?? 'border-black/5 bg-white'
           }`}
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-bold text-[#1e293b] [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-5 text-base font-bold text-[#1e293b] md:text-lg [&::-webkit-details-marker]:hidden">
             <span>{item.q}</span>
             <span className="shrink-0" aria-hidden>
               <Plus className={`h-5 w-5 group-open:hidden ${iconClass ?? 'text-[#f59e0b]'}`} />
               <Minus className={`hidden h-5 w-5 group-open:block ${iconClass ?? 'text-[#f59e0b]'}`} />
             </span>
           </summary>
-          <p className="px-5 pb-5 leading-relaxed text-[#475569]">{item.a}</p>
+          <p className="px-6 pb-6 leading-relaxed text-[#475569]">{item.a}</p>
         </details>
       ))}
     </div>
@@ -554,11 +576,13 @@ export function CtaBanner({
         className="pointer-events-none absolute -bottom-20 left-4 h-64 w-64 rounded-full bg-white/10 blur-3xl"
         aria-hidden
       />
-      <h2 className="relative mb-4 text-3xl text-white md:text-5xl" style={DISPLAY_FONT}>
+      <h2 className="relative mb-4 text-3xl tracking-tight text-white md:text-5xl" style={DISPLAY_FONT}>
         {headline}
       </h2>
       {sub && (
-        <p className="relative mx-auto mb-7 max-w-2xl text-lg font-semibold text-white/90">{sub}</p>
+        <p className="relative mx-auto mb-7 max-w-2xl text-lg font-semibold text-white/90 md:text-xl">
+          {sub}
+        </p>
       )}
       <div className="relative flex flex-wrap items-center justify-center gap-3">{children}</div>
     </section>

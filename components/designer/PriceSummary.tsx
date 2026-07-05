@@ -5,7 +5,7 @@ import {
   formatPrice,
   getPriceBreakdown,
 } from '@/lib/pricing'
-import { QUANTITY_DISCOUNT } from '@/lib/constants'
+import { getLiveQuantityDiscount } from '@/lib/constants'
 
 interface PriceSummaryProps {
   config: ProductConfig
@@ -18,8 +18,9 @@ export default function PriceSummary({ config }: PriceSummaryProps) {
   const pricePerUnit = calculateItemPrice(config)
   const totalQuantity = calculateTotalQuantity(sizes || [])
   const subtotal = pricePerUnit * totalQuantity
-  const hasDiscount = totalQuantity >= QUANTITY_DISCOUNT.minQuantity
-  const discount = hasDiscount ? subtotal * (QUANTITY_DISCOUNT.discountPercent / 100) : 0
+  const quantityDiscount = getLiveQuantityDiscount()
+  const hasDiscount = totalQuantity >= quantityDiscount.minQuantity
+  const discount = hasDiscount ? subtotal * (quantityDiscount.discountPercent / 100) : 0
   const totalPrice = subtotal - discount
 
   return (
@@ -70,7 +71,7 @@ export default function PriceSummary({ config }: PriceSummaryProps) {
             </div>
             {hasDiscount && (
               <div className="flex justify-between items-center text-sm text-green-600">
-                <span>הנחה ({QUANTITY_DISCOUNT.discountPercent}%)</span>
+                <span>הנחה ({quantityDiscount.discountPercent}%)</span>
                 <span className="font-medium">-{formatPrice(discount)}</span>
               </div>
             )}
