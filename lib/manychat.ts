@@ -50,38 +50,84 @@ async function mcFetch(path: string, init?: RequestInit): Promise<any> {
 }
 
 /**
+ * Try findBySystemField with each phone format in order. ManyChat stores the
+ * WhatsApp wa_id WITHOUT a plus ('972...'), so bare-972 must be tried first.
+ * "Not found"-style non-success responses are treated as a miss, not an error.
+ */
+async function findSubscriberByPhone(variants: string[]): Promise<string | null> {
+  for (const variant of variants) {
+    try {
+      const found = await mcFetch(
+        `/fb/subscriber/findBySystemField?phone=${encodeURIComponent(variant)}`
+      )
+      const id = found?.data?.id
+      if (id) return String(id)
+    } catch {
+      // miss (ManyChat returns non-success when not found) — try next format
+    }
+  }
+  return null
+}
+
+/**
  * Find a ManyChat subscriber by phone, or create one (with WhatsApp opt-in).
  * Returns the subscriber id.
+ *
+ * Searches with both '972...' (ManyChat wa_id format, no plus) and '+972...'.
+ * If createSubscriber says the WhatsApp ID already exists, re-finds instead
+ * of failing (the create error body usually carries the exact wa_id).
  */
 export async function findOrCreateSubscriber(
   phone: string,
   firstName: string,
   lastName: string
 ): Promise<string> {
-  try {
-    const found = await mcFetch(
-      `/fb/subscriber/findBySystemField?phone=${encodeURIComponent(phone)}`
-    )
-    const id = found?.data?.id
-    if (id) return String(id)
-  } catch {
-    // not found (ManyChat returns non-success) — fall through to create
-  }
+  const bare = phone.replace(/^\+/, '') // '972...' — ManyChat wa_id format
+  const variants = [bare, `+${bare}`]
 
-  const created = await mcFetch('/fb/subscriber/createSubscriber', {
-    method: 'POST',
-    body: JSON.stringify({
-      phone,
-      whatsapp_phone: phone,
-      first_name: firstName,
-      last_name: lastName,
-      has_opt_in_sms: true,
-      consent_phrase: 'אישור תקנון בהזמנה באתר badfos.co.il',
-    }),
-  })
-  const id = created?.data?.id
-  if (!id) throw new Error('ManyChat createSubscriber returned no subscriber id')
-  return String(id)
+  const existing = await findSubscriberByPhone(variants)
+  if (existing) return existing
+
+  try {
+    const created = await mcFetch('/fb/subscriber/createSubscriber', {
+      method: 'POST',
+      body: JSON.stringify({
+        phone,
+        whatsapp_phone: phone,
+        first_name: firstName,
+        last_name: lastName,
+        has_opt_in_sms: true,
+        consent_phrase: 'אישור תקנון בהזמנה באתר badfos.co.il',
+      }),
+    })
+    const id = created?.data?.id
+    if (!id) throw new Error('ManyChat createSubscriber returned no subscriber id')
+    return String(id)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+
+    // Contact exists in ManyChat but the initial find missed it — retry the
+    // find, preferring the exact wa_id from the error body
+    // (e.g. "This WhatsApp ID already exists: 972549213258")
+    if (/already exists/i.test(msg)) {
+      const waId = msg.match(/already exists\D*(\d{10,15})/i)?.[1]
+      const retryVariants = waId ? [waId, `+${waId}`, ...variants] : variants
+      const refound = await findSubscriberByPhone(retryVariants)
+      if (refound) return refound
+      throw new Error(
+        `ManyChat says WhatsApp ID already exists but subscriber not findable — ${msg}`
+      )
+    }
+
+    // New contact blocked by ManyChat account permissions — not a code bug
+    if (/permission denied to import phone/i.test(msg)) {
+      throw new Error(
+        `ManyChat account permission blocks importing new phone contacts ("Permission denied to import phone") — enable phone import in ManyChat settings. ${msg}`
+      )
+    }
+
+    throw e
+  }
 }
 
 /** Set the subscriber's `coupon_code` custom field to the given coupon. */
