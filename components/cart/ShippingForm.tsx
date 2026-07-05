@@ -13,6 +13,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
   const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
   const [isPrivateHouse, setIsPrivateHouse] = useState(false)
   const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', apartment: '', floor: 'קרקע', entrance: '' })
+  const [additionalPhone, setAdditionalPhone] = useState('')
   const [touched, setTouched] = useState(false)
 
   // When private house is selected, apartment becomes "בית פרטי" and floor becomes "קרקע"
@@ -30,11 +31,11 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
       const timer = setTimeout(() => onSubmit({ method, cost: SHIPPING_COSTS[method] }), 300)
       return () => clearTimeout(timer)
     } else if (address.street && address.number && address.city && address.floor && address.apartment) {
-      const timer = setTimeout(() => onSubmit({ method, address, cost: SHIPPING_COSTS[method] }), 300)
+      const timer = setTimeout(() => onSubmit({ method, address, ...(additionalPhone.trim() && { additionalPhone: additionalPhone.trim() }), cost: SHIPPING_COSTS[method] }), 300)
       return () => clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [method, address.street, address.number, address.city, address.apartment, address.floor, address.entrance])
+  }, [method, address.street, address.number, address.city, address.apartment, address.floor, address.entrance, additionalPhone])
 
   // Mark as touched after 3 seconds of delivery being selected
   useEffect(() => {
@@ -187,6 +188,22 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                     onChange={(e) => setAddress({ ...address, entrance: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                     placeholder="אופציונלי"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">טלפון נוסף (אופציונלי)</label>
+                  <input
+                    type="tel"
+                    name="additionalPhone"
+                    autoComplete="tel"
+                    maxLength={10}
+                    value={additionalPhone}
+                    onChange={(e) => setAdditionalPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                    placeholder="איש קשר נוסף לשליח"
                   />
                 </div>
               </div>

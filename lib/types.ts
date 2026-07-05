@@ -93,6 +93,7 @@ export interface CustomerInfo {
 export interface Shipping {
   method: ShippingMethod
   address?: Address
+  additionalPhone?: string // optional extra contact for the courier (delivery only)
   cost: number // 35 or 0
 }
 

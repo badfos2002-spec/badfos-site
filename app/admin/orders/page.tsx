@@ -514,6 +514,15 @@ export default function AdminOrdersPage() {
                                     </div>
                                   )
                                 })()}
+                                {order.shipping.additionalPhone && (
+                                  <div className="grid grid-cols-[auto_1fr] gap-x-3 text-sm pt-1">
+                                    <span className="font-semibold text-gray-700">טלפון נוסף:</span>
+                                    <a href={`tel:${order.shipping.additionalPhone}`} className="text-gray-900 hover:text-blue-600 flex items-center">
+                                      <Phone className="w-4 h-4 text-gray-400 ml-2" />
+                                      <span>{order.shipping.additionalPhone}</span>
+                                    </a>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <p className="text-sm text-gray-500">—</p>
