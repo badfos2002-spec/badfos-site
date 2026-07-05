@@ -195,7 +195,7 @@ export async function setCouponField(subscriberId: string, coupon: string): Prom
 
 /** Trigger a ManyChat flow (the approved WhatsApp template) for a subscriber. */
 export async function sendFlow(subscriberId: string, flowNs: string): Promise<void> {
-  await mcFetch('/fb/subscriber/sendFlow', {
+  await mcFetch('/fb/sending/sendFlow', {
     method: 'POST',
     body: JSON.stringify({ subscriber_id: subscriberId, flow_ns: flowNs }),
   })
