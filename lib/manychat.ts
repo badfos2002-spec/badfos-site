@@ -10,6 +10,11 @@
 
 const MANYCHAT_API = 'https://api.manychat.com'
 const COUPON_FIELD_NAME = 'coupon_code'
+// Mirror TEXT custom field populated by a ManyChat Rule with the WhatsApp ID
+// for every new contact. Needed because WhatsApp-only contacts store the number
+// as wa_id and their `phone` SYSTEM field is empty, so findBySystemField can
+// never find them (known ManyChat limitation).
+const WA_PHONE_FIELD_NAME = 'wa_phone'
 
 /**
  * Normalize an Israeli mobile number to E.164 (+9725XXXXXXXX).
@@ -49,10 +54,47 @@ async function mcFetch(path: string, init?: RequestInit): Promise<any> {
   return json
 }
 
+/** Resolve a ManyChat custom field id by name via getCustomFields. */
+async function getFieldIdByName(name: string): Promise<number | string | null> {
+  const fields = await mcFetch('/fb/page/getCustomFields')
+  const field = (fields?.data || []).find((f: any) => f?.name === name)
+  return field?.id ?? null
+}
+
+/**
+ * Look up a subscriber via the `wa_phone` mirror custom field
+ * (findByCustomField), trying each phone format in order (bare '972...'
+ * first — that's what the ManyChat Rule writes). Best-effort: any failure
+ * (field missing, API error, no match) is a miss, never an error.
+ * Response shape: { status: 'success', data: [ ...subscribers ] }.
+ */
+async function findSubscriberByWaPhone(variants: string[]): Promise<string | null> {
+  try {
+    const fieldId = await getFieldIdByName(WA_PHONE_FIELD_NAME)
+    if (!fieldId) return null
+    for (const variant of variants) {
+      try {
+        const found = await mcFetch(
+          `/fb/subscriber/findByCustomField?field_id=${encodeURIComponent(String(fieldId))}&field_value=${encodeURIComponent(variant)}`
+        )
+        const id = found?.data?.[0]?.id
+        if (id) return String(id)
+      } catch {
+        // miss — try next format
+      }
+    }
+  } catch {
+    // getCustomFields failed — fall back to system-field lookup
+  }
+  return null
+}
+
 /**
  * Try findBySystemField with each phone format in order. ManyChat stores the
  * WhatsApp wa_id WITHOUT a plus ('972...'), so bare-972 must be tried first.
  * "Not found"-style non-success responses are treated as a miss, not an error.
+ * NOTE: only finds contacts whose `phone` SYSTEM field is set — WhatsApp-only
+ * contacts won't match here; that's what findSubscriberByWaPhone is for.
  */
 async function findSubscriberByPhone(variants: string[]): Promise<string | null> {
   for (const variant of variants) {
@@ -69,10 +111,16 @@ async function findSubscriberByPhone(variants: string[]): Promise<string | null>
   return null
 }
 
+/** Full lookup: wa_phone mirror custom field first, then the phone system field. */
+async function findSubscriber(variants: string[]): Promise<string | null> {
+  return (await findSubscriberByWaPhone(variants)) ?? (await findSubscriberByPhone(variants))
+}
+
 /**
  * Find a ManyChat subscriber by phone, or create one (with WhatsApp opt-in).
  * Returns the subscriber id.
  *
+ * Lookup order: `wa_phone` mirror custom field → `phone` system field → create.
  * Searches with both '972...' (ManyChat wa_id format, no plus) and '+972...'.
  * If createSubscriber says the WhatsApp ID already exists, re-finds instead
  * of failing (the create error body usually carries the exact wa_id).
@@ -85,7 +133,7 @@ export async function findOrCreateSubscriber(
   const bare = phone.replace(/^\+/, '') // '972...' — ManyChat wa_id format
   const variants = [bare, `+${bare}`]
 
-  const existing = await findSubscriberByPhone(variants)
+  const existing = await findSubscriber(variants)
   if (existing) return existing
 
   try {
@@ -112,7 +160,7 @@ export async function findOrCreateSubscriber(
     if (/already exists/i.test(msg)) {
       const waId = msg.match(/already exists\D*(\d{10,15})/i)?.[1]
       const retryVariants = waId ? [waId, `+${waId}`, ...variants] : variants
-      const refound = await findSubscriberByPhone(retryVariants)
+      const refound = await findSubscriber(retryVariants)
       if (refound) return refound
       throw new Error(
         `ManyChat says WhatsApp ID already exists but subscriber not findable — ${msg}`
@@ -132,15 +180,14 @@ export async function findOrCreateSubscriber(
 
 /** Set the subscriber's `coupon_code` custom field to the given coupon. */
 export async function setCouponField(subscriberId: string, coupon: string): Promise<void> {
-  const fields = await mcFetch('/fb/page/getCustomFields')
-  const field = (fields?.data || []).find((f: any) => f?.name === COUPON_FIELD_NAME)
-  if (!field?.id) throw new Error(`ManyChat custom field '${COUPON_FIELD_NAME}' not found`)
+  const fieldId = await getFieldIdByName(COUPON_FIELD_NAME)
+  if (!fieldId) throw new Error(`ManyChat custom field '${COUPON_FIELD_NAME}' not found`)
 
   await mcFetch('/fb/subscriber/setCustomField', {
     method: 'POST',
     body: JSON.stringify({
       subscriber_id: subscriberId,
-      field_id: field.id,
+      field_id: fieldId,
       field_value: coupon,
     }),
   })
