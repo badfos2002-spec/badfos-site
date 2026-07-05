@@ -363,18 +363,18 @@ export default function AdminOrdersPage() {
                       <p className="text-sm text-gray-600 mt-0.5 truncate">{customerName} &bull; {date}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {isRecoveryEligible(order) && (
+                      {isRecoveryEligible(order) && !(order as any).recoverySentAt && (
                         <button
                           className="relative bg-green-600 hover:bg-green-700 text-white rounded-lg h-8 px-2.5 shadow-sm inline-flex items-center gap-1"
                           title="קופון 5% החזרת לקוח בוואטסאפ"
                           onClick={(e) => { e.stopPropagation(); handleRowRecovery(order) }}
                         >
                           <MessageCircle className="w-4 h-4" />
-                          <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">קופון 5% החזרת לקוח{(order as any).recoverySentAt ? ' ✓' : ''}</span>
-                          {(order as any).recoverySentAt && (
-                            <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-green-300 ring-2 ring-white" />
-                          )}
+                          <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">קופון 5% החזרת לקוח</span>
                         </button>
+                      )}
+                      {isRecoveryEligible(order) && (order as any).recoverySentAt && (
+                        <span className="hidden sm:inline text-xs font-bold text-green-600 whitespace-nowrap">✓ נשלחה תזכורת אוטומטית</span>
                       )}
                       {['shipped', 'completed'].includes(order.status) && (
                         <button
@@ -432,16 +432,17 @@ export default function AdminOrdersPage() {
                     )}
                     {isRecoveryEligible(order) && (
                       <div className="mt-4 sm:mt-6 mb-2 flex flex-wrap items-center gap-3 rounded-xl border-2 border-green-500 bg-green-50 p-4">
-                        <button
-                          className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg px-5 py-2.5 shadow-md transition-colors"
-                          onClick={() => handleRowRecovery(order)}
-                        >
-                          <MessageCircle className="w-5 h-5" />
-                          🛒 שחזור עגלה בוואטסאפ
-                        </button>
-                        {(order as any).recoverySentAt && (
+                        {!(order as any).recoverySentAt ? (
+                          <button
+                            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg px-5 py-2.5 shadow-md transition-colors"
+                            onClick={() => handleRowRecovery(order)}
+                          >
+                            <MessageCircle className="w-5 h-5" />
+                            🛒 שחזור עגלה בוואטסאפ
+                          </button>
+                        ) : (
                           <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                            ✓ נשלחה תזכורת
+                            ✓ נשלחה תזכורת אוטומטית
                             {(order as any).recoverySentAt?.toDate?.() && (
                               <span className="font-normal">
                                 ({(order as any).recoverySentAt.toDate().toLocaleDateString('he-IL')})
