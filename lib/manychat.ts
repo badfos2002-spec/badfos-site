@@ -122,6 +122,8 @@ async function findSubscriber(variants: string[]): Promise<string | null> {
  *
  * Lookup order: `wa_phone` mirror custom field → `phone` system field → create.
  * Searches with both '972...' (ManyChat wa_id format, no plus) and '+972...'.
+ * Creation uses whatsapp_phone + WhatsApp opt-in only (account has no SMS
+ * channel), and mirrors the number into `wa_phone` for future lookups.
  * If createSubscriber says the WhatsApp ID already exists, re-finds instead
  * of failing (the create error body usually carries the exact wa_id).
  */
@@ -140,16 +142,33 @@ export async function findOrCreateSubscriber(
     const created = await mcFetch('/fb/subscriber/createSubscriber', {
       method: 'POST',
       body: JSON.stringify({
-        phone,
         whatsapp_phone: phone,
         first_name: firstName,
         last_name: lastName,
-        has_opt_in_sms: true,
+        has_opt_in_whatsapp: true,
         consent_phrase: 'אישור תקנון בהזמנה באתר badfos.co.il',
       }),
     })
     const id = created?.data?.id
     if (!id) throw new Error('ManyChat createSubscriber returned no subscriber id')
+    // Mirror the number into the wa_phone custom field so future lookups
+    // (which check wa_phone first) find this contact. Non-fatal on failure —
+    // the subscriber was created successfully either way.
+    try {
+      const waFieldId = await getFieldIdByName(WA_PHONE_FIELD_NAME)
+      if (waFieldId) {
+        await mcFetch('/fb/subscriber/setCustomField', {
+          method: 'POST',
+          body: JSON.stringify({
+            subscriber_id: String(id),
+            field_id: waFieldId,
+            field_value: bare,
+          }),
+        })
+      }
+    } catch {
+      // best-effort mirror — ignore
+    }
     return String(id)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
