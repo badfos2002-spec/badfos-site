@@ -32,9 +32,17 @@ export function middleware(request: NextRequest) {
   }
 
   // Redirect uppercase URLs to lowercase (Google Tag Assistant sends /Designer/Designer)
-  if (pathname !== pathname.toLowerCase() && !pathname.startsWith('/api/')) {
+  // Decode first — percent-encoded Hebrew paths (e.g. /%D7%94...) must NOT be redirected,
+  // since lowercasing the hex digits of the encoding creates a redirect loop for Googlebot
+  let decodedPathname: string
+  try {
+    decodedPathname = decodeURIComponent(pathname)
+  } catch {
+    decodedPathname = pathname
+  }
+  if (/[A-Z]/.test(decodedPathname) && !pathname.startsWith('/api/')) {
     const url = request.nextUrl.clone()
-    url.pathname = pathname.toLowerCase()
+    url.pathname = decodedPathname.toLowerCase()
     return NextResponse.redirect(url, 301)
   }
 
