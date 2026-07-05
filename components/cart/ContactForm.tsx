@@ -125,6 +125,10 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               placeholder="הערות מיוחדות להזמנה..."
             />
           </div>
+
+          <p className="text-xs text-gray-500 leading-relaxed">
+            בשליחת ההזמנה אני מאשר/ת קבלת הודעות בוואטסאפ, במייל וב-SMS בנוגע להזמנתי — כולל עדכוני סטטוס, תזכורות להשלמת הזמנה והטבות אישיות.
+          </p>
         </div>
       </CardContent>
     </Card>
