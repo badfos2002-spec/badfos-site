@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote, MessageCircle, Star } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, getCouponForOrder, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
+import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
 import { Timestamp } from 'firebase/firestore'
 import { deleteFile } from '@/lib/storage'
 import type { Order } from '@/lib/types'
@@ -158,23 +158,11 @@ export default function AdminOrdersPage() {
     const win = window.open('', '_blank')
     const digits = order.customer.phone.replace(/\D/g, '')
     const waNumber = digits.startsWith('0') ? `972${digits.slice(1)}` : digits
-    const buildMessage = (couponCode?: string) =>
-      `היי ${order.customer.firstName} 👋 כאן בדפוס!\n` +
-      `מקווים שאתם מרוצים מההזמנה 🎽\n` +
-      `נשמח המון אם תשאירו לנו ביקורת קצרה בגוגל — זה עוזר לעסק קטן יותר ממה שנדמה 🙏\n` +
-      `https://search.google.com/local/writereview?placeid=ChIJdWBwSp2984gRNGbFgb-Kykc` +
-      (couponCode ? `\nוכתודה — קופון 10% להזמנה הבאה: ${couponCode} 🎁` : '')
+    const message =
+      `היי ${order.customer.firstName}, תודה שהזמנתם אצלנו בבדפוס! 💛\n` +
+      `נשמח אם תשאירו לנו ביקורת קצרה בגוגל: https://search.google.com/local/writereview?placeid=ChIJdWBwSp2984gRNGbFgb-Kykc`
 
-    try {
-      // Reuse the SAVE10 coupon created when the order was marked paid; create only if missing
-      const existing = await getCouponForOrder(order.id)
-      const couponCode = existing?.code ?? await createCoupon(order.id)
-      if (win) win.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(buildMessage(couponCode))}`
-    } catch (e) {
-      console.error(e)
-      // Never leave a blank tab — send the message without the coupon line
-      if (win) win.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(buildMessage())}`
-    }
+    if (win) win.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`
 
     try {
       const reviewRequestSentAt = Timestamp.now()
