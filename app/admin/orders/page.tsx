@@ -91,6 +91,27 @@ export default function AdminOrdersPage() {
           body: JSON.stringify({ type: 'order_shipped', data: order }),
         }).catch(console.error)
       }
+
+      // Pickup order completed → auto WhatsApp "ready for pickup" (once per order)
+      if (newStatus === 'completed' && order.shipping?.method === 'pickup' && !(order as any).pickupReadySentAt) {
+        try {
+          const res = await fetch('/api/pickup-ready', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+          })
+          const result = await res.json().catch(() => null)
+          if (result?.whatsapp?.sent || result?.alreadySent) {
+            const pickupReadySentAt = Timestamp.now()
+            setOrders(prev => prev.map(o => o.id === orderId ? ({ ...o, pickupReadySentAt } as any) : o))
+          } else {
+            alert(`הודעת 'מוכן לאיסוף' לא נשלחה אוטומטית (${result?.whatsapp?.reason || result?.error || 'שגיאה לא ידועה'}) — שלחו ללקוח הודעה ידנית`)
+          }
+        } catch (err) {
+          console.error(err)
+          alert("הודעת 'מוכן לאיסוף' לא נשלחה אוטומטית — שלחו ללקוח הודעה ידנית")
+        }
+      }
     } catch (e) {
       console.error(e)
       alert('שגיאה בעדכון סטטוס')
@@ -438,6 +459,18 @@ export default function AdminOrdersPage() {
                             )}
                           </span>
                         )}
+                      </div>
+                    )}
+                    {order.shipping?.method === 'pickup' && (order as any).pickupReadySentAt && (
+                      <div className="mt-4 sm:mt-6 mb-2">
+                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                          📦 נשלחה הודעת מוכן לאיסוף ✓
+                          {(order as any).pickupReadySentAt?.toDate?.() && (
+                            <span className="font-normal">
+                              ({(order as any).pickupReadySentAt.toDate().toLocaleDateString('he-IL')})
+                            </span>
+                          )}
+                        </span>
                       </div>
                     )}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 pt-4 sm:pt-6">

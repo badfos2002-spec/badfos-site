@@ -220,6 +220,45 @@ export async function sendFlow(subscriberId: string, flowNs: string): Promise<vo
   })
 }
 
+export interface PickupReadySendInput {
+  phone: string
+  firstName: string
+  lastName: string
+}
+
+/**
+ * Best-effort "order ready for pickup" WhatsApp: find/create subscriber,
+ * trigger the pickup-ready flow (MANYCHAT_PICKUP_FLOW_NS). Never throws.
+ */
+export async function sendPickupReadyWhatsApp(
+  input: PickupReadySendInput
+): Promise<RecoverySendResult> {
+  try {
+    if (!process.env.MANYCHAT_API_TOKEN) {
+      return { sent: false, reason: 'missing MANYCHAT_API_TOKEN' }
+    }
+    const flowNs = process.env.MANYCHAT_PICKUP_FLOW_NS
+    if (!flowNs) {
+      console.log('ManyChat pickup-ready skipped: MANYCHAT_PICKUP_FLOW_NS not set')
+      return { sent: false, reason: 'MANYCHAT_PICKUP_FLOW_NS not set' }
+    }
+    const phone = normalizeIlPhone(input.phone)
+    if (!phone) {
+      return { sent: false, reason: `unparseable IL phone: ${input.phone}` }
+    }
+
+    const subscriberId = await findOrCreateSubscriber(phone, input.firstName, input.lastName)
+    await sendFlow(subscriberId, flowNs)
+
+    console.log(`ManyChat pickup-ready WhatsApp sent to ${phone}`)
+    return { sent: true }
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e)
+    console.error('ManyChat pickup-ready failed:', reason)
+    return { sent: false, reason }
+  }
+}
+
 export interface RecoverySendInput {
   orderId: string
   orderNumber: number
