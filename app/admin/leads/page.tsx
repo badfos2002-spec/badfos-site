@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Timestamp } from 'firebase/firestore'
 import { Search, Phone, Mail, Calendar, Loader2, Users, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -37,8 +38,30 @@ export default function AdminLeadsPage() {
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     try {
+      const lead = leads.find(l => l.id === leadId)
       await updateLeadStatus(leadId, newStatus)
       setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus as any } : l))
+
+      // Lead marked as "called - no answer" → auto WhatsApp (once per lead)
+      if (newStatus === 'called_no_answer' && lead && !(lead as any).noAnswerSentAt) {
+        try {
+          const res = await fetch('/api/lead-no-answer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leadId }),
+          })
+          const result = await res.json().catch(() => null)
+          if (result?.whatsapp?.sent || result?.alreadySent) {
+            const noAnswerSentAt = Timestamp.now()
+            setLeads(prev => prev.map(l => l.id === leadId ? ({ ...l, noAnswerSentAt } as any) : l))
+          } else {
+            alert(`הודעת 'לא ענינו' לא נשלחה אוטומטית (${result?.whatsapp?.reason || result?.reason || result?.error || 'שגיאה לא ידועה'}) — שלחו לליד הודעה ידנית`)
+          }
+        } catch (err) {
+          console.error(err)
+          alert("הודעת 'לא ענינו' לא נשלחה אוטומטית — שלחו לליד הודעה ידנית")
+        }
+      }
     } catch (e) {
       console.error(e)
       alert('שגיאה בעדכון סטטוס ליד')
@@ -130,6 +153,16 @@ export default function AdminLeadsPage() {
                   </div>
                   {lead.source && (
                     <div className="text-xs text-gray-400">מקור: {sourceLabels[lead.source] ?? lead.source}</div>
+                  )}
+                  {(lead as any).noAnswerSentAt && (
+                    <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                      📵 נשלחה הודעת &apos;לא ענינו&apos; ✓
+                      {(lead as any).noAnswerSentAt?.toDate?.() && (
+                        <span className="font-normal">
+                          ({(lead as any).noAnswerSentAt.toDate().toLocaleDateString('he-IL')})
+                        </span>
+                      )}
+                    </span>
                   )}
                   {lead.message && (
                     <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-2">{lead.message}</p>
