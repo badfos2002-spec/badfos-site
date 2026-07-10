@@ -235,6 +235,15 @@ export type ImageCategory =
   | 'about_process'
   | 'video'
 
+/** קטגוריות התצוגה בעמוד /gallery (רלוונטי רק לתמונות בקטגוריית 'gallery') */
+export type GallerySection =
+  | 'soldiers'
+  | 'families'
+  | 'bachelorette'
+  | 'birthday'
+  | 'business'
+  | 'more'
+
 export interface SiteImage {
   id: string
   category: ImageCategory
@@ -244,6 +253,8 @@ export interface SiteImage {
   isActive: boolean
   sortOrder: number
   createdAt: Timestamp
+  /** באיזו קטגוריה בעמוד הגלריה התמונה תוצג (רק כשcategory === 'gallery') */
+  gallerySection?: GallerySection
 }
 
 // ============================================================================

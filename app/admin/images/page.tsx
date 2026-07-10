@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getAllDocuments, createDocument, updateDocument, deleteDocument } from '@/lib/db'
 import { uploadSiteImage, validateFile, generateUniqueFileName } from '@/lib/storage'
-import type { SiteImage } from '@/lib/types'
+import { GALLERY_SECTIONS } from '@/lib/constants'
+import type { SiteImage, GallerySection } from '@/lib/types'
 import { Timestamp } from 'firebase/firestore'
 
 // ─── Seed Data ─────────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ export default function AdminImagesPage() {
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadCategory, setUploadCategory] = useState<string>('hero_carousel')
+  const [uploadGallerySection, setUploadGallerySection] = useState<GallerySection>('soldiers')
   const [uploadName, setUploadName] = useState('')
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -218,6 +220,8 @@ export default function AdminImagesPage() {
         isActive: true,
         sortOrder: maxSort + 1,
         createdAt: Timestamp.now(),
+        // תמונת גלריה משויכת לקטגוריית תצוגה בעמוד /gallery
+        ...(uploadCategory === 'gallery' ? { gallerySection: uploadGallerySection } : {}),
       } as any)
 
       await loadImages()
@@ -305,6 +309,25 @@ export default function AdminImagesPage() {
                   לתמונות בקרוסלה של דף הבית — בחר &quot;קרוסלת גלריה (דף הבית)&quot;
                 </p>
               </div>
+
+              {uploadCategory === 'gallery' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">קטגוריה בעמוד הגלריה</label>
+                  <select
+                    value={uploadGallerySection}
+                    onChange={e => setUploadGallerySection(e.target.value as GallerySection)}
+                    disabled={uploading}
+                    className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-yellow-500 focus:outline-none"
+                  >
+                    {GALLERY_SECTIONS.map(s => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    התמונה תופיע בעמוד /gallery תחת הקטגוריה שנבחרה
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">שם התמונה</label>
@@ -419,7 +442,12 @@ export default function AdminImagesPage() {
                   <h3 className="font-medium text-gray-900 text-sm truncate">{image.name}</h3>
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${image.isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
                 </div>
-                <p className="text-xs text-gray-500 mb-3">{categoryLabels[image.category] ?? image.category}</p>
+                <p className="text-xs text-gray-500 mb-3">
+                  {categoryLabels[image.category] ?? image.category}
+                  {image.category === 'gallery' && image.gallerySection && (
+                    <> · {GALLERY_SECTIONS.find(s => s.value === image.gallerySection)?.label}</>
+                  )}
+                </p>
                 <div className="flex gap-1">
                   <Button
                     size="sm"

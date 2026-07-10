@@ -1,4 +1,4 @@
-import type { ProductType, FabricType, DesignAreaType } from './types'
+import type { ProductType, FabricType, DesignAreaType, GallerySection } from './types'
 
 // ============================================================================
 // Product Categories
@@ -542,3 +542,16 @@ export function getLiveQuantityDiscount(): { minQuantity: number; discountPercen
     discountPercent: _pricingOverrides.quantityDiscount?.discountPercent ?? QUANTITY_DISCOUNT.discountPercent,
   }
 }
+
+// ============================================================================
+// Gallery Sections (עמוד /gallery — קטגוריות סינון + העלאה מהאדמין)
+// ============================================================================
+
+export const GALLERY_SECTIONS: { value: GallerySection; label: string }[] = [
+  { value: 'soldiers', label: 'חיילים ושחרור' },
+  { value: 'families', label: 'משפחות' },
+  { value: 'bachelorette', label: 'רווקות' },
+  { value: 'birthday', label: 'ימי הולדת' },
+  { value: 'business', label: 'עסקים וצוותים' },
+  { value: 'more', label: 'ועוד' },
+]
