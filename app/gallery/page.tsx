@@ -8,6 +8,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, MessageCircle } from 'lucide-react'
 import { CONTACT_INFO } from '@/lib/constants'
+import { DISPLAY_FONT } from '@/components/seo/blocks'
 import GalleryGrid, { type GalleryItem } from '@/components/gallery/GalleryGrid'
 
 const BASE_URL = 'https://badfos.co.il'
@@ -180,15 +181,24 @@ export default function GalleryPage() {
       />
 
       <main className="min-h-screen bg-white" dir="rtl">
-        {/* כותרת קומפקטית */}
-        <header className="mx-auto max-w-6xl px-4 pb-4 pt-8 md:px-8 md:pt-10">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
-            העבודות שלנו
-          </h1>
-          <p className="mt-2 text-base text-gray-600 md:text-lg">
-            הדפסות אמיתיות שיצאו מהדפוס שלנו — בוחרים קטגוריה ולוחצים על תמונה להגדלה.
-          </p>
-        </header>
+        {/* כותרת קומפקטית — Secular One + פס גרדיאנט מותג + רקע ענברי עדין */}
+        <div className="bg-gradient-to-b from-amber-50/70 via-amber-50/30 to-white">
+          <header className="mx-auto max-w-6xl px-4 pb-5 pt-8 md:px-8 md:pt-12">
+            <h1
+              className="text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl"
+              style={DISPLAY_FONT}
+            >
+              העבודות שלנו
+            </h1>
+            <div
+              className="mt-3 h-1.5 w-24 rounded-full bg-gradient-to-l from-[#ffc32e] to-[#f59e0b]"
+              aria-hidden
+            />
+            <p className="mt-3 max-w-2xl text-base text-gray-600 md:text-lg">
+              הדפסות אמיתיות שיצאו מהדפוס שלנו — בוחרים קטגוריה ולוחצים על תמונה להגדלה.
+            </p>
+          </header>
+        </div>
 
         {/* צ'יפים + גריד + לייטבוקס — תמונות מנוהלות מהאדמין; fallback סטטי כשה-DB ריק */}
         <GalleryGrid fallbackItems={GALLERY_ITEMS} />

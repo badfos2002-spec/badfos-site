@@ -195,6 +195,45 @@
   }
 }
 
+/* ── Gallery page: staggered entrance, shimmer skeleton, lightbox ──
+   (prefers-reduced-motion handled by the global rule above) */
+@keyframes gallery-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-gallery-in {
+  animation: gallery-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes gallery-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+.gallery-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: gallery-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes lightbox-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-lightbox-fade {
+  animation: lightbox-fade 0.25s ease-out both;
+}
+
+@keyframes lightbox-zoom {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-lightbox-zoom {
+  animation: lightbox-zoom 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @keyframes note-flash {
   0%, 100% { transform: scale(1); box-shadow: 0 10px 15px -3px rgba(251,191,36,0.4); }
   50% { transform: scale(1.025); box-shadow: 0 0 0 4px rgba(251,191,36,0.55), 0 12px 22px -6px rgba(251,191,36,0.7); }

@@ -4,10 +4,15 @@
 // מקור התמונות: siteImages (category='gallery') — מנוהל במלואו מהאדמין
 // (קטגוריה, סדר, הסתרה, מחיקה). אם ה-DB ריק / לא זמין — fallback לרשימה
 // הסטטית שמגיעה מהשרת, כדי שהעמוד הציבורי לעולם לא יישאר ריק.
+//
+// ליטוש ויזואלי לפי ספריית UI/UX Pro Max: סגנון Motion-Driven + Bento Grid —
+// כניסה מדורגת (35ms לפריט), שלד שימר בזמן טעינה, ריחוף עם זום + צל,
+// צ'יפ פעיל בגרדיאנט המותג עם טקסט כהה (ניגודיות WCAG), לייטבוקס עם
+// טשטוש רקע, כיתוב ומונה. prefers-reduced-motion מכובה גלובלית ב-globals.css.
 
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
-import { X, ChevronRight, ChevronLeft } from 'lucide-react'
+import { X, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react'
 import { queryDocuments } from '@/lib/db'
 import { GALLERY_SECTIONS } from '@/lib/constants'
 import type { SiteImage, GallerySection } from '@/lib/types'
@@ -16,6 +21,55 @@ export interface GalleryItem {
   src: string
   alt: string
   section: GallerySection
+}
+
+/* כרטיס בודד: שלד שימר עד שהתמונה נטענת + ריחוף (זום תמונה, צל, אייקון הגדלה) */
+function GalleryCard({
+  item,
+  index,
+  onOpen,
+}: {
+  item: GalleryItem
+  index: number
+  onOpen: () => void
+}) {
+  const [loaded, setLoaded] = useState(false)
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      style={{ animationDelay: `${Math.min(index, 11) * 35}ms` }}
+      className="animate-gallery-in group relative aspect-square cursor-pointer overflow-hidden rounded-2xl bg-gray-100 shadow-sm ring-1 ring-gray-900/5 transition-shadow duration-300 ease-out hover:shadow-xl hover:shadow-gray-900/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-2"
+      aria-label={`הגדלת תמונה: ${item.alt}`}
+    >
+      {!loaded && (
+        <span aria-hidden className="gallery-shimmer absolute inset-0 overflow-hidden bg-gray-100" />
+      )}
+      <Image
+        src={item.src}
+        alt={item.alt}
+        fill
+        priority={index < 4}
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+        onLoad={() => setLoaded(true)}
+        className={`object-cover transition-[transform,opacity] duration-500 ease-out group-hover:scale-105 ${
+          loaded ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+      {/* שכבת ריחוף עדינה + אייקון הגדלה (דסקטופ; במובייל הקלקה עובדת כרגיל) */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-gray-900/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-3 right-3 flex h-9 w-9 translate-y-1.5 items-center justify-center rounded-full bg-white/95 text-gray-900 opacity-0 shadow-md transition-[transform,opacity] duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100"
+      >
+        <ZoomIn className="h-4 w-4" />
+      </span>
+    </button>
+  )
 }
 
 export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryItem[] }) {
@@ -48,14 +102,16 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
   }, [])
 
   // DB ריק / עדיין נטען / שגיאה → fallback סטטי (העמוד לעולם לא ריק)
-  const allItems = dbItems && dbItems.length > 0 ? dbItems : fallbackItems
+  const usingDb = dbItems !== null && dbItems.length > 0
+  const allItems = usingDb ? dbItems : fallbackItems
   const visibleItems =
     activeSection === 'all' ? allItems : allItems.filter((i) => i.section === activeSection)
 
-  // צ'יפים רק לקטגוריות שיש בהן תמונות
-  const sections = GALLERY_SECTIONS.filter((s) =>
-    allItems.some((i) => i.section === s.value)
-  )
+  // צ'יפים רק לקטגוריות שיש בהן תמונות + ספירה לכל קטגוריה
+  const sections = GALLERY_SECTIONS.map((s) => ({
+    ...s,
+    count: allItems.filter((i) => i.section === s.value).length,
+  })).filter((s) => s.count > 0)
 
   const close = useCallback(() => setLightboxIndex(null), [])
   const next = useCallback(
@@ -93,60 +149,69 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
   return (
     <div dir="rtl">
       {/* ── צ'יפים דביקים מתחת להדר האתר (h-20 מובייל / h-16 דסקטופ) ── */}
-      <div className="sticky top-20 lg:top-16 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-sm">
+      <div className="sticky top-20 lg:top-16 z-40 border-b border-gray-100 bg-white/90 backdrop-blur-md">
         <div className="mx-auto max-w-6xl overflow-x-auto px-4 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max items-center gap-2 py-3">
             <button
               type="button"
               onClick={() => setActiveSection('all')}
-              className={`min-h-[44px] cursor-pointer whitespace-nowrap rounded-full px-5 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] ${
+              className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full px-5 text-sm font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-1 ${
                 activeSection === 'all'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] text-gray-900 shadow-md shadow-amber-200/80'
+                  : 'bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-200/70 hover:bg-amber-50 hover:text-gray-900 hover:ring-amber-200'
               }`}
               aria-pressed={activeSection === 'all'}
             >
               הכל
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${
+                  activeSection === 'all' ? 'bg-white/60 text-gray-900' : 'bg-white text-gray-500'
+                }`}
+              >
+                {allItems.length}
+              </span>
             </button>
             {sections.map((s) => (
               <button
                 key={s.value}
                 type="button"
                 onClick={() => setActiveSection(s.value)}
-                className={`min-h-[44px] cursor-pointer whitespace-nowrap rounded-full px-5 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] ${
+                className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full px-5 text-sm font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-1 ${
                   activeSection === s.value
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] text-gray-900 shadow-md shadow-amber-200/80'
+                    : 'bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-200/70 hover:bg-amber-50 hover:text-gray-900 hover:ring-amber-200'
                 }`}
                 aria-pressed={activeSection === s.value}
               >
                 {s.label}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${
+                    activeSection === s.value
+                      ? 'bg-white/60 text-gray-900'
+                      : 'bg-white text-gray-500'
+                  }`}
+                >
+                  {s.count}
+                </span>
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── גריד תמונות אחיד ── */}
+      {/* ── גריד תמונות אחיד; key מפעיל מחדש את אנימציית הכניסה בהחלפת פילטר ── */}
       <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4">
+        <div
+          key={`${activeSection}-${usingDb ? 'db' : 'fb'}`}
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4"
+        >
           {visibleItems.map((item, idx) => (
-            <button
+            <GalleryCard
               key={`${item.src}-${idx}`}
-              type="button"
-              onClick={() => setLightboxIndex(idx)}
-              className="group relative aspect-square cursor-pointer overflow-hidden rounded-2xl bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-2"
-              aria-label={`הגדלת תמונה: ${item.alt}`}
-            >
-              <Image
-                src={item.src}
-                alt={item.alt}
-                fill
-                priority={idx < 4}
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              />
-            </button>
+              item={item}
+              index={idx}
+              onOpen={() => setLightboxIndex(idx)}
+            />
           ))}
         </div>
       </div>
@@ -154,7 +219,7 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
       {/* ── לייטבוקס ── */}
       {current && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90"
+          className="animate-lightbox-fade fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label={current.alt}
@@ -163,7 +228,7 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
           <button
             type="button"
             onClick={close}
-            className="absolute right-4 top-4 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label="סגירה"
           >
             <X className="h-6 w-6" />
@@ -178,7 +243,7 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
                   e.stopPropagation()
                   prev()
                 }}
-                className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white md:right-4"
+                className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white md:right-4"
                 aria-label="התמונה הקודמת"
               >
                 <ChevronRight className="h-7 w-7" />
@@ -189,7 +254,7 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
                   e.stopPropagation()
                   next()
                 }}
-                className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white md:left-4"
+                className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white md:left-4"
                 aria-label="התמונה הבאה"
               >
                 <ChevronLeft className="h-7 w-7" />
@@ -198,7 +263,8 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
           )}
 
           <div
-            className="relative h-[80vh] w-[92vw] max-w-4xl"
+            key={current.src}
+            className="animate-lightbox-zoom relative h-[76vh] w-[92vw] max-w-4xl"
             onClick={(e) => e.stopPropagation()}
           >
             <Image
@@ -210,11 +276,23 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
             />
           </div>
 
-          {visibleItems.length > 1 && lightboxIndex !== null && (
-            <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm font-bold text-white/70" dir="ltr">
-              {lightboxIndex + 1} / {visibleItems.length}
+          {/* כיתוב + מונה */}
+          <div
+            className="pointer-events-none absolute bottom-4 left-1/2 flex w-[92vw] max-w-2xl -translate-x-1/2 flex-col items-center gap-2 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="line-clamp-2 text-sm font-medium text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">
+              {current.alt}
             </p>
-          )}
+            {visibleItems.length > 1 && lightboxIndex !== null && (
+              <p
+                className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold tabular-nums text-white backdrop-blur-sm"
+                dir="ltr"
+              >
+                {lightboxIndex + 1} / {visibleItems.length}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>
