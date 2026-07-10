@@ -6,7 +6,7 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowLeft, MessageCircle } from 'lucide-react'
+import { ArrowLeft, Camera, MessageCircle } from 'lucide-react'
 import { CONTACT_INFO } from '@/lib/constants'
 import { DISPLAY_FONT } from '@/components/seo/blocks'
 import GalleryGrid, { type GalleryItem } from '@/components/gallery/GalleryGrid'
@@ -181,20 +181,28 @@ export default function GalleryPage() {
       />
 
       <main className="min-h-screen bg-white" dir="rtl">
-        {/* כותרת קומפקטית — Secular One + פס גרדיאנט מותג + רקע ענברי עדין */}
-        <div className="bg-gradient-to-b from-amber-50/70 via-amber-50/30 to-white">
-          <header className="mx-auto max-w-6xl px-4 pb-5 pt-8 md:px-8 md:pt-12">
+        {/* כותרת קומפקטית בשפת האתר — ממורכזת, באדג' צהוב, מילת הדגשה ענברית ורקע קרם עם גלואים */}
+        <div className="relative overflow-hidden bg-gradient-to-b from-[#fffdf5] via-[#fffdf5] to-white">
+          <div
+            className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-[#ffc32e]/15 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -bottom-24 left-0 h-64 w-64 rounded-full bg-[#f59e0b]/10 blur-3xl"
+            aria-hidden
+          />
+          <header className="relative mx-auto max-w-6xl px-4 pb-7 pt-8 text-center md:px-8 md:pt-12">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-yellow-100 px-4 py-2 text-sm font-medium text-yellow-700 shadow-sm">
+              <Camera className="h-4 w-4" />
+              גלריית עבודות
+            </div>
             <h1
-              className="text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl"
+              className="text-4xl tracking-tight text-[#1e293b] md:text-5xl"
               style={DISPLAY_FONT}
             >
-              העבודות שלנו
+              העבודות <span className="text-[#f59e0b]">שלנו</span>
             </h1>
-            <div
-              className="mt-3 h-1.5 w-24 rounded-full bg-gradient-to-l from-[#ffc32e] to-[#f59e0b]"
-              aria-hidden
-            />
-            <p className="mt-3 max-w-2xl text-base text-gray-600 md:text-lg">
+            <p className="mx-auto mt-3 max-w-2xl text-base text-gray-600 md:text-lg">
               הדפסות אמיתיות שיצאו מהדפוס שלנו — בוחרים קטגוריה ולוחצים על תמונה להגדלה.
             </p>
           </header>
@@ -203,25 +211,38 @@ export default function GalleryPage() {
         {/* צ'יפים + גריד + לייטבוקס — תמונות מנוהלות מהאדמין; fallback סטטי כשה-DB ריק */}
         <GalleryGrid fallbackItems={GALLERY_ITEMS} />
 
-        {/* שורת CTA מצומצמת */}
-        <div className="border-t border-gray-100 bg-gray-50">
-          <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-10 text-center sm:flex-row sm:justify-between sm:text-right md:px-8">
-            <p className="text-lg font-bold text-gray-900">רוצים חולצה כזאת? מתחילים לעצב אונליין.</p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
+        {/* שורת CTA מצומצמת — ממורכזת בשפת האתר: רקע קרם-ענברי, כותרת דיספליי וכפתורי החתימה */}
+        <div className="relative overflow-hidden border-t border-amber-100/60 bg-gradient-to-br from-[#fffaf0] via-white to-[#fff6e6]">
+          <div
+            className="pointer-events-none absolute -top-16 right-8 h-48 w-48 rounded-full bg-[#ffc32e]/15 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -bottom-16 left-8 h-56 w-56 rounded-full bg-[#f59e0b]/10 blur-3xl"
+            aria-hidden
+          />
+          <div className="relative mx-auto max-w-6xl px-4 py-12 text-center md:px-8 md:py-14">
+            <h2 className="text-2xl tracking-tight text-[#1e293b] md:text-3xl" style={DISPLAY_FONT}>
+              רוצים חולצה <span className="text-[#f59e0b]">כזאת?</span>
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-gray-600 md:text-lg">
+              מתחילים לעצב אונליין תוך דקות — או מדברים איתנו ומקבלים ליווי אישי.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/"
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] px-6 py-2.5 font-extrabold text-white shadow-md transition-colors hover:from-[#e6ac28] hover:to-[#d97706]"
+                className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#fbbf24] px-8 py-3 text-lg font-bold text-white shadow-xl transition-all hover:scale-105 hover:bg-[#f59e0b]"
               >
                 מתחילים לעצב
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-5 w-5" />
               </Link>
               <a
                 href={WA_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-[#25D366] px-6 py-2.5 font-extrabold text-white shadow-md transition-colors hover:bg-[#1fb455]"
+                className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#25D366] px-8 py-3 text-lg font-bold text-white shadow-xl transition-all hover:scale-105 hover:bg-[#1fb455]"
               >
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-5 w-5" />
                 דברו איתנו בוואטסאפ
               </a>
             </div>

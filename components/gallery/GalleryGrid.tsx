@@ -40,7 +40,7 @@ function GalleryCard({
       type="button"
       onClick={onOpen}
       style={{ animationDelay: `${Math.min(index, 11) * 35}ms` }}
-      className="animate-gallery-in group relative aspect-square cursor-pointer overflow-hidden rounded-2xl bg-gray-100 shadow-sm ring-1 ring-gray-900/5 transition-shadow duration-300 ease-out hover:shadow-xl hover:shadow-gray-900/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-2"
+      className="animate-gallery-in group relative aspect-square cursor-pointer overflow-hidden rounded-2xl bg-gray-100 shadow-sm ring-1 ring-gray-900/5 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_24px_45px_-20px_rgba(245,158,11,0.45)] hover:ring-[#ffc32e]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-2"
       aria-label={`הגדלת תמונה: ${item.alt}`}
     >
       {!loaded && (
@@ -151,21 +151,21 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
       {/* ── צ'יפים דביקים מתחת להדר האתר (h-20 מובייל / h-16 דסקטופ) ── */}
       <div className="sticky top-20 lg:top-16 z-40 border-b border-gray-100 bg-white/90 backdrop-blur-md">
         <div className="mx-auto max-w-6xl overflow-x-auto px-4 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex w-max items-center gap-2 py-3">
+          <div className="mx-auto flex w-max items-center gap-2 py-3">
             <button
               type="button"
               onClick={() => setActiveSection('all')}
-              className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full px-5 text-sm font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-1 ${
+              className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border px-5 text-sm font-bold shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-1 ${
                 activeSection === 'all'
-                  ? 'bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] text-gray-900 shadow-md shadow-amber-200/80'
-                  : 'bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-200/70 hover:bg-amber-50 hover:text-gray-900 hover:ring-amber-200'
+                  ? 'border-yellow-500 bg-yellow-100 text-yellow-800'
+                  : 'border-yellow-200 bg-white text-gray-700 hover:bg-yellow-50 hover:text-gray-900'
               }`}
               aria-pressed={activeSection === 'all'}
             >
               הכל
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${
-                  activeSection === 'all' ? 'bg-white/60 text-gray-900' : 'bg-white text-gray-500'
+                  activeSection === 'all' ? 'bg-white/80 text-yellow-800' : 'bg-gray-100 text-gray-500'
                 }`}
               >
                 {allItems.length}
@@ -176,10 +176,10 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
                 key={s.value}
                 type="button"
                 onClick={() => setActiveSection(s.value)}
-                className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full px-5 text-sm font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-1 ${
+                className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border px-5 text-sm font-bold shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f59e0b] focus-visible:ring-offset-1 ${
                   activeSection === s.value
-                    ? 'bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] text-gray-900 shadow-md shadow-amber-200/80'
-                    : 'bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-200/70 hover:bg-amber-50 hover:text-gray-900 hover:ring-amber-200'
+                    ? 'border-yellow-500 bg-yellow-100 text-yellow-800'
+                    : 'border-yellow-200 bg-white text-gray-700 hover:bg-yellow-50 hover:text-gray-900'
                 }`}
                 aria-pressed={activeSection === s.value}
               >
@@ -187,8 +187,8 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${
                     activeSection === s.value
-                      ? 'bg-white/60 text-gray-900'
-                      : 'bg-white text-gray-500'
+                      ? 'bg-white/80 text-yellow-800'
+                      : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   {s.count}
