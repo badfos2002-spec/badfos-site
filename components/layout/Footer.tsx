@@ -53,6 +53,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/gallery" className="hover:text-yellow-400 transition-colors">
+                  העבודות שלנו
+                </Link>
+              </li>
+              <li>
                 <Link href="/faq" className="hover:text-yellow-400 transition-colors">
                   שאלות נפוצות
                 </Link>

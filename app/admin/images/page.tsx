@@ -76,6 +76,7 @@ const SEED_IMAGES: Omit<SiteImage, 'id' | 'createdAt'>[] = [
 const categoryLabels: Record<string, string> = {
   logo: 'לוגו',
   hero_carousel: 'קרוסלת גלריה (דף הבית)',
+  gallery: 'גלריית העבודות שלנו (עמוד /gallery)',
   homepage_carousel: 'קרוסלת חבילות',
   designable_products: 'מוצרים לעיצוב',
   tshirt_mockups: 'מוקאפים חולצות',

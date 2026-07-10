@@ -64,6 +64,13 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
                 ביקורות לקוחות
               </Link>
               <Link
+                href="/gallery"
+                className="rounded-lg px-4 py-3 text-right text-base font-medium hover:bg-gray-100 transition-colors"
+                onClick={onClose}
+              >
+                העבודות שלנו
+              </Link>
+              <Link
                 href="/faq"
                 className="rounded-lg px-4 py-3 text-right text-base font-medium hover:bg-gray-100 transition-colors"
                 onClick={onClose}

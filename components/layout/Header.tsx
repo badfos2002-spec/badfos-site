@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Menu, Home, Shirt, Package, Star, Info, Phone, HelpCircle } from 'lucide-react'
+import { ShoppingCart, Menu, Home, Shirt, Package, Star, Info, Phone, HelpCircle, Images } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useCart } from '@/hooks/useCart'
@@ -93,6 +93,10 @@ export default function Header() {
               <Link href="/reviews" className={navLinkClass('/reviews')}>
                 <Star className="w-4 h-4 flex-shrink-0" />
                 <span className="font-medium">ביקורות</span>
+              </Link>
+              <Link href="/gallery" className={navLinkClass('/gallery')}>
+                <Images className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium">העבודות שלנו</span>
               </Link>
               <Link href="/faq" className={navLinkClass('/faq')}>
                 <HelpCircle className="w-4 h-4 flex-shrink-0" />

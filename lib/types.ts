@@ -229,6 +229,7 @@ export type ImageCategory =
   | 'designable_products'
   | 'homepage_carousel'
   | 'hero_carousel'
+  | 'gallery'
   | 'logo'
   | 'about_main'
   | 'about_process'

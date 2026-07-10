@@ -62,6 +62,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/gallery`,
+      lastModified: '2026-07-10',
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
       url: `${baseUrl}/reviews`,
       lastModified: '2026-04-04',
       changeFrequency: 'daily',
