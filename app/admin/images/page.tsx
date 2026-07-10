@@ -74,6 +74,35 @@ const SEED_IMAGES: Omit<SiteImage, 'id' | 'createdAt'>[] = [
   { category: 'apron_mockups' as any, name: 'סינר שחור', description: '', imageUrl: '/assets/סינר שחור.webp', isActive: true, sortOrder: 4 },
 ]
 
+// ─── ייבוא הגלריה הסטטית של /gallery ל-siteImages ──────────────────────────
+// הרשימה משקפת את ה-fallback הסטטי בעמוד /gallery. אחרי הייבוא הגריד הציבורי
+// נבנה 100% מה-DB. אידמפוטנטי לפי imageUrl — תמונות שכבר קיימות מדולגות.
+const GALLERY_IMPORT: Omit<SiteImage, 'id' | 'createdAt'>[] = [
+  // עסקים
+  { category: 'gallery', gallerySection: 'business', name: 'סט חולצות לעסק — Push The Button', description: 'סט חולצות שרוול ארוך שחורות עם לוגו Push The Button — הדפסת חולצות לעסק', imageUrl: '/assets/c4660170b_IMG_6179.webp', isActive: true, sortOrder: 1 },
+  { category: 'gallery', gallerySection: 'business', name: 'סט חולצות לצוות — איור דמויות', description: 'חולצות שחורות עם הדפסה אישית של איור דמויות וכיתוב בעברית — סט מותאם לצוות', imageUrl: '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.webp', isActive: true, sortOrder: 2 },
+  // ועוד
+  { category: 'gallery', gallerySection: 'more', name: 'הדפסת גב — Sundara', description: 'לקוח לובש חולצת אוברסייז שחורה עם הדפסת גב צבעונית של שמש — Sundara, הדפסת DTF של בדפוס', imageUrl: '/assets/64ab08d41_IMG_3252.webp', isActive: true, sortOrder: 3 },
+  { category: 'gallery', gallerySection: 'more', name: 'הדפסת גב — Forever Onward', description: 'לקוח בחצר לובש חולצת אוברסייז שחורה עם הדפסת גב — Forever Onward Moving Onward', imageUrl: '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp', isActive: true, sortOrder: 4 },
+  { category: 'gallery', gallerySection: 'more', name: 'אוברסייז אפורה — Greatest', description: 'חולצת אוברסייז אפורה בשטיפת אבן עם הדפס Greatest בסגנון וינטג׳', imageUrl: '/assets/a189e74e3_IMG_0490.webp', isActive: true, sortOrder: 5 },
+  // רווקות
+  { category: 'gallery', gallerySection: 'bachelorette', name: 'רווקות — Bride to Be', description: 'חולצה מודפסת למסיבת רווקות — עיצוב Bride to Be', imageUrl: '/assets/seo/bachelorette-1.jpg', isActive: true, sortOrder: 6 },
+  { category: 'gallery', gallerySection: 'bachelorette', name: 'רווקות — הלילה קצר', description: 'הדפסת חולצות למסיבת רווקות — "הלילה קצר והחצאית עוד יותר" בעיצוב ורוד עם נעל עקב ושמפניה', imageUrl: '/assets/seo/bachelorette-2.jpg', isActive: true, sortOrder: 7 },
+  { category: 'gallery', gallerySection: 'bachelorette', name: 'רווקות — כיתוב מצחיק', description: 'חולצה מודפסת למסיבת רווקות עם כיתוב מצחיק בעברית', imageUrl: '/assets/seo/bachelorette-3.jpg', isActive: true, sortOrder: 8 },
+  { category: 'gallery', gallerySection: 'bachelorette', name: 'רווקות — צוות הכלה', description: 'חולצת רווקות מודפסת לצוות הכלה — סט תואם לכל הקבוצה', imageUrl: '/assets/seo/bachelorette-4.jpg', isActive: true, sortOrder: 9 },
+  { category: 'gallery', gallerySection: 'bachelorette', name: 'רווקות — Bride Squad', description: 'חולצת Bride Squad עם איור טבעת ולב ורוד — הדפסה למסיבת רווקות', imageUrl: '/assets/seo/bachelorette-5.jpg', isActive: true, sortOrder: 10 },
+  // משפחות
+  { category: 'gallery', gallerySection: 'families', name: 'משפחות — בגד גוף לתינוק', description: 'בגד גוף לתינוק עם הדפסת תמונה אישית — "יום הולדת לאמא הכי טובה בעולם"', imageUrl: '/assets/seo/family-1.jpg', isActive: true, sortOrder: 11 },
+  { category: 'gallery', gallerySection: 'families', name: 'משפחות — Family Adventure', description: 'חולצה סגולה מודפסת לטיול משפחתי — Family Adventure מונטנגרו 2026', imageUrl: '/assets/seo/family-2.jpg', isActive: true, sortOrder: 12 },
+  { category: 'gallery', gallerySection: 'families', name: 'משפחות — Road Trip', description: 'חולצת Road Trip משפחתית בצבע שמנת עם איור דוב מטייל ושמות כל בני המשפחה', imageUrl: '/assets/seo/family-3.jpg', isActive: true, sortOrder: 13 },
+  { category: 'gallery', gallerySection: 'families', name: 'משפחות — עיצוב תואם', description: 'חולצות משפחתיות מודפסות בעיצוב תואם לכל המשפחה', imageUrl: '/assets/seo/family-4.jpg', isActive: true, sortOrder: 14 },
+  // ימי הולדת
+  { category: 'gallery', gallerySection: 'birthday', name: 'יום הולדת — כוכב היום', description: 'חולצת יום הולדת לילד עם הדפסת כדורסל — "יום הולדת שמח! כוכב היום"', imageUrl: '/assets/seo/birthday-1.jpg', isActive: true, sortOrder: 15 },
+  { category: 'gallery', gallerySection: 'birthday', name: 'יום הולדת — שם וגיל', description: 'חולצת יום הולדת מודפסת עם שם וגיל בעיצוב צבעוני', imageUrl: '/assets/seo/birthday-2.jpg', isActive: true, sortOrder: 16 },
+  { category: 'gallery', gallerySection: 'birthday', name: 'יום הולדת — נסיכה', description: 'חולצת יום הולדת לנסיכה — איור ילדה עם כתר, בלונים ועוגה בהדפסה צבעונית', imageUrl: '/assets/seo/birthday-3.jpg', isActive: true, sortOrder: 17 },
+  { category: 'gallery', gallerySection: 'birthday', name: 'יום הולדת — שם החוגג', description: 'חולצה מודפסת לחגיגת יום הולדת — עיצוב אישי עם שם החוגג', imageUrl: '/assets/seo/birthday-4.jpg', isActive: true, sortOrder: 18 },
+]
+
 const categoryLabels: Record<string, string> = {
   logo: 'לוגו',
   hero_carousel: 'קרוסלת גלריה (דף הבית)',
@@ -181,6 +210,65 @@ export default function AdminImagesPage() {
     }
   }
 
+  // ייבוא הגלריה הסטטית של /gallery ל-DB — אידמפוטנטי לפי imageUrl
+  const handleGalleryImport = async () => {
+    if (!confirm('לייבא את תמונות הגלריה הקיימות ל-Firebase? (תמונות שכבר קיימות ידולגו)')) return
+    setSeeding(true)
+    try {
+      // בדיקה טרייה מול ה-DB כדי להישאר אידמפוטנטי גם אם המצב המקומי לא מעודכן
+      const existing = await getAllDocuments<SiteImage>('siteImages')
+      const existingUrls = new Set(existing.filter(i => i.category === 'gallery').map(i => i.imageUrl))
+      const toAdd = GALLERY_IMPORT.filter(img => !existingUrls.has(img.imageUrl))
+      if (toAdd.length === 0) {
+        alert('✅ כל תמונות הגלריה כבר קיימות במערכת')
+        return
+      }
+      for (const img of toAdd) {
+        await createDocument<SiteImage>('siteImages', {
+          ...img,
+          createdAt: Timestamp.now(),
+        } as any)
+      }
+      await loadImages()
+      alert(`✅ יובאו ${toAdd.length} תמונות גלריה — עמוד /gallery מנוהל כעת במלואו מהאדמין`)
+    } catch (e) {
+      console.error(e)
+      alert('❌ שגיאה בייבוא תמונות הגלריה')
+    } finally {
+      setSeeding(false)
+    }
+  }
+
+  // שינוי קטגוריית תצוגה בעמוד /gallery — נשמר מיד
+  const handleSectionChange = async (id: string, section: GallerySection) => {
+    try {
+      await updateDocument<SiteImage>('siteImages', id, { gallerySection: section } as any)
+      setImages(prev => prev.map(i => i.id === id ? { ...i, gallerySection: section } : i))
+    } catch (e) {
+      console.error(e)
+      alert('❌ שגיאה בעדכון הקטגוריה')
+    }
+  }
+
+  // שינוי סדר תצוגה (נמוך = מוצג קודם) — נשמר ביציאה מהשדה
+  const handleSortOrderChange = async (id: string, value: string) => {
+    const sortOrder = parseInt(value, 10)
+    if (isNaN(sortOrder)) return
+    const current = images.find(i => i.id === id)
+    if (!current || (current.sortOrder ?? 0) === sortOrder) return
+    try {
+      await updateDocument<SiteImage>('siteImages', id, { sortOrder } as any)
+      setImages(prev =>
+        prev
+          .map(i => i.id === id ? { ...i, sortOrder } : i)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      )
+    } catch (e) {
+      console.error(e)
+      alert('❌ שגיאה בעדכון סדר התצוגה')
+    }
+  }
+
   const handleToggle = async (id: string, current: boolean) => {
     try {
       await updateDocument<SiteImage>('siteImages', id, { isActive: !current } as any)
@@ -243,6 +331,10 @@ export default function AdminImagesPage() {
 
   const categories = ['all', ...new Set(images.map(i => i.category))]
 
+  // כמה מתמונות הגלריה הסטטיות עדיין חסרות ב-DB (קובע אם להציג את כפתור הייבוא)
+  const galleryUrls = new Set(images.filter(i => i.category === 'gallery').map(i => i.imageUrl))
+  const missingGalleryImports = GALLERY_IMPORT.filter(img => !galleryUrls.has(img.imageUrl))
+
   return (
     <div dir="rtl">
       <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
@@ -259,6 +351,17 @@ export default function AdminImagesPage() {
             <Plus className="w-4 h-4 ml-2" />
             העלאת תמונה
           </Button>
+          {!loading && missingGalleryImports.length > 0 && (
+            <Button
+              variant="outline"
+              className="border-purple-400 text-purple-700 hover:bg-purple-50"
+              onClick={handleGalleryImport}
+              disabled={seeding || loading}
+            >
+              {seeding ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Database className="w-4 h-4 ml-2" />}
+              ייבוא תמונות הגלריה הקיימות ({missingGalleryImports.length})
+            </Button>
+          )}
           {images.length > 0 && (
             <Button
               variant="outline"
@@ -444,10 +547,34 @@ export default function AdminImagesPage() {
                 </div>
                 <p className="text-xs text-gray-500 mb-3">
                   {categoryLabels[image.category] ?? image.category}
-                  {image.category === 'gallery' && image.gallerySection && (
-                    <> · {GALLERY_SECTIONS.find(s => s.value === image.gallerySection)?.label}</>
-                  )}
                 </p>
+                {/* תמונת גלריה: שינוי קטגוריה + סדר תצוגה — נשמרים מיד */}
+                {image.category === 'gallery' && (
+                  <div className="mb-3 space-y-2">
+                    <select
+                      value={image.gallerySection ?? 'more'}
+                      onChange={e => handleSectionChange(image.id, e.target.value as GallerySection)}
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:border-yellow-500 focus:outline-none"
+                      aria-label="קטגוריה בעמוד הגלריה"
+                    >
+                      {GALLERY_SECTIONS.map(s => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-gray-500 whitespace-nowrap">סדר תצוגה</label>
+                      <input
+                        key={`${image.id}-${image.sortOrder ?? 0}`}
+                        type="number"
+                        defaultValue={image.sortOrder ?? 0}
+                        onBlur={e => handleSortOrderChange(image.id, e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:border-yellow-500 focus:outline-none"
+                        aria-label="סדר תצוגה (נמוך = מוצג קודם)"
+                        title="נמוך = מוצג קודם"
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-1">
                   <Button
                     size="sm"

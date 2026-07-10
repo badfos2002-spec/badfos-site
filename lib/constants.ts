@@ -548,10 +548,10 @@ export function getLiveQuantityDiscount(): { minQuantity: number; discountPercen
 // ============================================================================
 
 export const GALLERY_SECTIONS: { value: GallerySection; label: string }[] = [
-  { value: 'soldiers', label: 'חיילים ושחרור' },
+  { value: 'soldiers', label: 'חיילים' },
   { value: 'families', label: 'משפחות' },
   { value: 'bachelorette', label: 'רווקות' },
   { value: 'birthday', label: 'ימי הולדת' },
-  { value: 'business', label: 'עסקים וצוותים' },
+  { value: 'business', label: 'עסקים' },
   { value: 'more', label: 'ועוד' },
 ]

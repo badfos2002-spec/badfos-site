@@ -1,6 +1,8 @@
 // עמוד "העבודות שלנו" — גלריית תמונות נקייה ופשוטה.
 // כותרת קצרה → צ'יפים לסינון לפי קטגוריה → גריד תמונות אחיד עם לייטבוקס → שורת CTA.
-// Server component; הסינון, הלייטבוקס ומיזוג תמונות האדמין ב-GalleryGrid (client).
+// Server component; הסינון והלייטבוקס ב-GalleryGrid (client).
+// הגריד מנוהל במלואו מהאדמין (siteImages, category='gallery');
+// הרשימה הסטטית כאן משמשת רק כ-fallback כשה-DB ריק + כמקור ל-JSON-LD (יציבות SEO).
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -11,11 +13,12 @@ import GalleryGrid, { type GalleryItem } from '@/components/gallery/GalleryGrid'
 const BASE_URL = 'https://badfos.co.il'
 
 /* ------------------------------------------------------------------ */
-/* תמונות סטטיות לפי קטגוריה                                            */
+/* Fallback סטטי — מוצג רק כשאין תמונות גלריה פעילות ב-Firestore        */
+/* (אחרי לחיצה על "ייבוא תמונות הגלריה הקיימות" באדמין — הכל מה-DB)      */
 /* ------------------------------------------------------------------ */
 
 const GALLERY_ITEMS: GalleryItem[] = [
-  // עסקים וצוותים — עבודות אמיתיות של לקוחות
+  // עסקים — עבודות אמיתיות של לקוחות
   {
     src: '/assets/c4660170b_IMG_6179.webp',
     alt: 'סט חולצות שרוול ארוך שחורות עם לוגו Push The Button — הדפסת חולצות לעסק',
@@ -119,12 +122,12 @@ const GALLERY_ITEMS: GalleryItem[] = [
 export const metadata: Metadata = {
   title: 'העבודות שלנו — גלריית הדפסות אמיתיות על חולצות | בדפוס',
   description:
-    'גלריית עבודות של בדפוס לפי קטגוריות: חולצות מודפסות לחיילים ושחרור, משפחות, מסיבות רווקות, ימי הולדת ועסקים. הדפסת DTF איכותית בראשון לציון עם משלוח לכל הארץ.',
+    'גלריית עבודות של בדפוס לפי קטגוריות: חולצות מודפסות לחיילים, משפחות, מסיבות רווקות, ימי הולדת ועסקים. הדפסת DTF איכותית בראשון לציון עם משלוח לכל הארץ.',
   alternates: { canonical: '/gallery' },
   openGraph: {
     title: 'העבודות שלנו — גלריית הדפסות אמיתיות | בדפוס',
     description:
-      'תמונות של חולצות מודפסות לפי קטגוריות: חיילים ושחרור, משפחות, רווקות, ימי הולדת ועסקים.',
+      'תמונות של חולצות מודפסות לפי קטגוריות: חיילים, משפחות, רווקות, ימי הולדת ועסקים.',
     url: `${BASE_URL}/gallery`,
     siteName: 'בדפוס',
     locale: 'he_IL',
@@ -142,7 +145,7 @@ export default function GalleryPage() {
     '@id': `${BASE_URL}/gallery`,
     name: 'העבודות שלנו — גלריית הדפסות של בדפוס',
     description:
-      'גלריית עבודות לפי קטגוריות: חיילים ושחרור, משפחות, רווקות, ימי הולדת ועסקים.',
+      'גלריית עבודות לפי קטגוריות: חיילים, משפחות, רווקות, ימי הולדת ועסקים.',
     url: `${BASE_URL}/gallery`,
     inLanguage: 'he',
     mainEntity: {
@@ -187,8 +190,8 @@ export default function GalleryPage() {
           </p>
         </header>
 
-        {/* צ'יפים + גריד + לייטבוקס (כולל תמונות שהועלו מהאדמין) */}
-        <GalleryGrid items={GALLERY_ITEMS} />
+        {/* צ'יפים + גריד + לייטבוקס — תמונות מנוהלות מהאדמין; fallback סטטי כשה-DB ריק */}
+        <GalleryGrid fallbackItems={GALLERY_ITEMS} />
 
         {/* שורת CTA מצומצמת */}
         <div className="border-t border-gray-100 bg-gray-50">

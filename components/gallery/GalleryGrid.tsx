@@ -1,8 +1,9 @@
 'use client'
 
 // גריד הגלריה: צ'יפים לסינון לפי קטגוריה + גריד תמונות אחיד + לייטבוקס.
-// ממזג תמונות סטטיות (props מהשרת) עם תמונות שהועלו מהאדמין
-// (siteImages, category='gallery') לפי gallerySection.
+// מקור התמונות: siteImages (category='gallery') — מנוהל במלואו מהאדמין
+// (קטגוריה, סדר, הסתרה, מחיקה). אם ה-DB ריק / לא זמין — fallback לרשימה
+// הסטטית שמגיעה מהשרת, כדי שהעמוד הציבורי לעולם לא יישאר ריק.
 
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -17,21 +18,25 @@ export interface GalleryItem {
   section: GallerySection
 }
 
-export default function GalleryGrid({ items }: { items: GalleryItem[] }) {
-  const [adminItems, setAdminItems] = useState<GalleryItem[]>([])
+export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryItem[] }) {
+  const [dbItems, setDbItems] = useState<GalleryItem[] | null>(null)
   const [activeSection, setActiveSection] = useState<'all' | GallerySection>('all')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
-  // תמונות שהועלו מהאדמין — מתווספות לגריד לפי הקטגוריה שנבחרה בהעלאה
+  // תמונות הגלריה מהאדמין — ממוינות לפי סדר תצוגה ואז לפי תאריך העלאה
   useEffect(() => {
     queryDocuments<SiteImage>('siteImages', [
       { field: 'category', operator: '==', value: 'gallery' },
     ])
       .then((data) =>
-        setAdminItems(
+        setDbItems(
           data
             .filter((img) => img.isActive && img.imageUrl)
-            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+            .sort(
+              (a, b) =>
+                (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+                (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0)
+            )
             .map((img) => ({
               src: img.imageUrl,
               alt: img.description || `${img.name} — עבודת הדפסה של בדפוס`,
@@ -42,7 +47,8 @@ export default function GalleryGrid({ items }: { items: GalleryItem[] }) {
       .catch(() => {})
   }, [])
 
-  const allItems = [...adminItems, ...items]
+  // DB ריק / עדיין נטען / שגיאה → fallback סטטי (העמוד לעולם לא ריק)
+  const allItems = dbItems && dbItems.length > 0 ? dbItems : fallbackItems
   const visibleItems =
     activeSection === 'all' ? allItems : allItems.filter((i) => i.section === activeSection)
 
