@@ -169,11 +169,18 @@ export default function AdminCouponsPage() {
 
                 <div className="flex gap-2 pt-4 border-t">
                   {!isExpired && (
-                    <Button size="sm" variant="outline" className="flex-1" onClick={() => handleToggle(coupon.id, coupon.isActive)}>
+                    <Button size="sm" variant="outline" className="flex-1 h-11 sm:h-9" onClick={() => handleToggle(coupon.id, coupon.isActive)}>
                       {coupon.isActive ? 'השבת' : 'הפעל'}
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" className="border-red-500 text-red-600 hover:bg-red-50" onClick={() => handleDelete(coupon.id)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    title="מחיקת קופון"
+                    aria-label="מחיקת קופון"
+                    className="shrink-0 h-11 w-11 p-0 sm:h-9 sm:w-auto sm:px-3 border-red-500 text-red-600 sm:border-red-200 sm:text-red-500 hover:bg-red-50 hover:border-red-400"
+                    onClick={() => handleDelete(coupon.id)}
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>

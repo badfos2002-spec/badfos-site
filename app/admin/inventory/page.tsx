@@ -153,17 +153,80 @@ export default function AdminInventoryPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            <Archive className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p className="text-lg font-medium">אין פריטי מלאי</p>
-          </div>
-        ) : (
+      {loading ? (
+        <div className="bg-white rounded-2xl shadow-lg flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-lg text-center py-20 text-gray-500">
+          <Archive className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p className="text-lg font-medium">אין פריטי מלאי</p>
+        </div>
+      ) : (
+        <>
+        {/* Mobile: card per item — quantity update with ≥44px tap targets */}
+        <div className="sm:hidden space-y-3">
+          {filtered.map((item) => {
+            const isLow = item.quantity < item.lowStockThreshold
+            return (
+              <div key={item.id} className="bg-white rounded-2xl shadow-lg p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-bold text-gray-900 truncate">
+                      {productTypeLabels[item.productType] ?? item.productType} · {item.color} · {item.size}
+                    </div>
+                    {item.fabricType && (
+                      <div className="text-xs text-gray-500 mt-0.5">בד: {item.fabricType}</div>
+                    )}
+                  </div>
+                  {isLow ? (
+                    <span className="shrink-0 inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                      <AlertTriangle className="w-3 h-3" />
+                      מלאי נמוך
+                    </span>
+                  ) : (
+                    <span className="shrink-0 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                      במלאי
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-sm text-gray-600">כמות במלאי:</span>
+                  <span className={`font-bold text-lg ${isLow ? 'text-red-600' : 'text-green-600'}`}>
+                    {item.quantity}
+                  </span>
+                </div>
+                <div className="pt-3 mt-2 border-t border-gray-100">
+                  {editingId === item.id ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={editQty}
+                        onChange={e => setEditQty(e.target.value)}
+                        className="flex-1 min-w-0 h-11"
+                      />
+                      <Button className="h-11 bg-green-500 hover:bg-green-600 text-white shrink-0" onClick={() => handleSaveQty(item.id)}>שמור</Button>
+                      <Button variant="outline" className="h-11 shrink-0" onClick={() => setEditingId(null)}>ביטול</Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full h-11"
+                      onClick={() => { setEditingId(item.id); setEditQty(String(item.quantity)) }}
+                    >
+                      עדכן כמות
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden sm:block bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b-2">
               <tr>
@@ -225,8 +288,10 @@ export default function AdminInventoryPage() {
               })}
             </tbody>
           </table>
-        )}
-      </div>
+          </div>
+        </div>
+        </>
+      )}
     </div>
   )
 }
