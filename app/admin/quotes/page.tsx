@@ -706,6 +706,10 @@ export default function AdminQuotesPage() {
             left: 0;
             margin: 0 auto !important;
             padding: 12mm !important; /* internal margin instead of @page margin */
+            /* Full A4 page height (footer pinned to bottom via flex); 296mm not 297mm
+               to avoid sub-pixel rounding creating a blank second page. Long quotes
+               grow beyond and flow to page 2. */
+            min-height: 296mm !important;
             box-shadow: none !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;

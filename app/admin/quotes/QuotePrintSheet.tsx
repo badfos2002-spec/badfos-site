@@ -38,13 +38,13 @@ export default function QuotePrintSheet({ quote }: { quote: QuotePrintData }) {
     <div
       id="quote-print-sheet"
       dir="rtl"
-      className="bg-white text-gray-900 w-full max-w-[794px] mx-auto shadow-2xl print:shadow-none"
+      className="bg-white text-gray-900 w-full max-w-[794px] min-h-[1123px] mx-auto shadow-2xl print:shadow-none flex flex-col"
       style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}
     >
       {/* Brand top bar */}
       <div className="h-3 bg-amber-500" />
 
-      <div className="px-10 py-8">
+      <div className="px-10 py-8 flex-1 flex flex-col">
         {/* Header: logo + business identity | quote title */}
         <div className="flex items-start justify-between gap-6 pb-6 border-b-2 border-amber-500">
           <div className="flex items-center gap-4">
@@ -150,13 +150,15 @@ export default function QuotePrintSheet({ quote }: { quote: QuotePrintData }) {
           </div>
         ) : null}
 
-        {/* Footer */}
-        <div className="mt-8 pt-4 border-t border-gray-200 text-center">
-          <div className="text-sm font-medium text-gray-700">
-            ההצעה בתוקף עד {fmtDate(quote.validUntil)} · תודה שבחרתם בבדפוס! 🙏
-          </div>
-          <div className="text-xs text-gray-400 mt-1">
-            בדפוס · דובנוב 10, ראשון לציון · 055-9885954 · badfos.co.il
+        {/* Footer — pinned to the bottom of the A4 page */}
+        <div className="mt-auto pt-8">
+          <div className="pt-4 border-t border-gray-200 text-center">
+            <div className="text-sm font-medium text-gray-700">
+              ההצעה בתוקף עד {fmtDate(quote.validUntil)} · תודה שבחרתם בבדפוס! 🙏
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              בדפוס · דובנוב 10, ראשון לציון · 055-9885954 · badfos.co.il
+            </div>
           </div>
         </div>
       </div>
