@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Plus, Trash2, Copy, Pencil, Loader2, Printer, ArrowRight } from 'lucide-react'
+import { FileText, Plus, Trash2, Copy, Pencil, Loader2, Printer, ArrowRight, Download, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -59,6 +59,33 @@ function fmt(n: number): string {
   return `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 2 })}`
 }
 
+/**
+ * Waits until #quote-print-sheet is mounted and fully rendered:
+ * element in DOM → fonts loaded → logo painted → double rAF paint tick.
+ * Shared by auto-print (desktop) and PDF generation (download/share).
+ */
+async function waitForSheetReady(): Promise<HTMLElement | null> {
+  let el: HTMLElement | null = null
+  for (let i = 0; i < 30 && !el; i++) {
+    el = document.getElementById('quote-print-sheet')
+    if (!el) await new Promise(r => requestAnimationFrame(r))
+  }
+  if (!el) return null
+  await document.fonts.ready
+  const img = el.querySelector('img')
+  if (img && !img.complete) {
+    await new Promise<void>(resolve => {
+      const done = () => resolve()
+      img.addEventListener('load', done, { once: true })
+      img.addEventListener('error', done, { once: true })
+      setTimeout(done, 2000) // safety net — never block forever
+    })
+  }
+  // Double rAF tick to guarantee the sheet is painted before capture/print
+  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  return el
+}
+
 function computeTotals(
   items: ItemDraft[],
   discountType: QuoteDiscountType,
@@ -100,6 +127,23 @@ export default function AdminQuotesPage() {
   const [formError, setFormError] = useState('')
   const [previewOpen, setPreviewOpen] = useState(false)
   const [autoPrint, setAutoPrint] = useState(false)
+  const [pdfBusy, setPdfBusy] = useState<'download' | 'share' | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+  const [shareSupported, setShareSupported] = useState(false)
+
+  // Device detection: on mobile the browser print dialog is clunky —
+  // we skip auto-print and offer a real PDF download / native share instead.
+  useEffect(() => {
+    setIsMobile(
+      window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(max-width: 768px)').matches
+    )
+    try {
+      const probe = new File(['x'], 'probe.pdf', { type: 'application/pdf' })
+      setShareSupported(!!navigator.canShare?.({ files: [probe] }))
+    } catch {
+      setShareSupported(false)
+    }
+  }, [])
 
   const loadQuotes = useCallback(async () => {
     try {
@@ -248,42 +292,127 @@ export default function AdminQuotesPage() {
   const handlePrint = async () => {
     const ok = await handleSave()
     if (ok) {
-      setAutoPrint(true)
+      // Mobile: the browser print dialog is clunky — open the preview with
+      // the PDF download/share buttons prominent instead of auto-printing.
+      setAutoPrint(!isMobile)
       setPreviewOpen(true)
     }
   }
 
-  // Auto-print once the preview sheet is fully rendered (fonts + logo painted)
+  // Desktop: auto-print once the preview sheet is fully rendered (fonts + logo painted)
   useEffect(() => {
     if (!previewOpen || !autoPrint) return
     let cancelled = false
-
-    const waitForLogo = () => {
-      const img = document.querySelector<HTMLImageElement>('#quote-print-sheet img')
-      if (!img || img.complete) return Promise.resolve()
-      return new Promise<void>(resolve => {
-        const done = () => resolve()
-        img.addEventListener('load', done, { once: true })
-        img.addEventListener('error', done, { once: true })
-        setTimeout(done, 2000) // safety net — never block printing forever
-      })
-    }
-
-    const run = async () => {
-      await document.fonts.ready
-      await waitForLogo()
-      // Double rAF tick to guarantee the sheet is painted before the print dialog freezes rendering
-      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    waitForSheetReady().then(() => {
       if (cancelled) return
       setAutoPrint(false)
       window.print()
-    }
-
-    run()
+    })
     return () => {
       cancelled = true
     }
   }, [previewOpen, autoPrint])
+
+  const pdfFileName = () =>
+    editingNumber ? `הצעת-מחיר-Q-${editingNumber}.pdf` : 'הצעת-מחיר.pdf'
+
+  /**
+   * Renders #quote-print-sheet to a real PDF file (A4 portrait).
+   * html2canvas rasterizes the DOM (Hebrew/RTL renders exactly as displayed),
+   * then the canvas is placed on A4 pages — sliced into multiple pages when
+   * the sheet grows beyond one page (long quotes).
+   */
+  const generatePdf = async () => {
+    const el = await waitForSheetReady()
+    if (!el) throw new Error('quote print sheet not rendered')
+    const html2canvas = (await import('html2canvas')).default
+    const { jsPDF } = await import('jspdf')
+
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      // Force desktop-like layout so the PDF is identical on phone & desktop
+      windowWidth: 900,
+      onclone: clonedDoc => {
+        const sheet = clonedDoc.getElementById('quote-print-sheet')
+        if (sheet) {
+          sheet.style.width = '794px'
+          sheet.style.maxWidth = '794px'
+          sheet.style.minHeight = '1123px' // A4 @96dpi — same ratio as 210×297mm
+          sheet.style.boxShadow = 'none'
+        }
+      },
+    })
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageW = 210
+    const pageH = 297
+    // Canvas pixels that fit one A4 page at full width
+    const pageHeightPx = Math.floor((canvas.width * pageH) / pageW)
+    // ≤2% overflow (sub-pixel rounding) still counts as a single page
+    const pageCount =
+      canvas.height <= pageHeightPx * 1.02 ? 1 : Math.ceil(canvas.height / pageHeightPx)
+
+    for (let page = 0; page < pageCount; page++) {
+      if (page > 0) doc.addPage()
+      let pageCanvas: HTMLCanvasElement = canvas
+      if (pageCount > 1) {
+        const slice = document.createElement('canvas')
+        slice.width = canvas.width
+        slice.height = Math.min(pageHeightPx, canvas.height - page * pageHeightPx)
+        const ctx = slice.getContext('2d')
+        if (!ctx) continue
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, slice.width, slice.height)
+        ctx.drawImage(canvas, 0, page * pageHeightPx, canvas.width, slice.height, 0, 0, canvas.width, slice.height)
+        pageCanvas = slice
+      }
+      const imgH = (pageCanvas.height * pageW) / pageCanvas.width
+      doc.addImage(pageCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageW, Math.min(imgH, pageH))
+    }
+    return doc
+  }
+
+  // Real PDF file download — saves to the device (mobile: Files/Downloads)
+  const handleDownloadPdf = async () => {
+    if (pdfBusy) return
+    setPdfBusy('download')
+    try {
+      const doc = await generatePdf()
+      doc.save(pdfFileName())
+    } catch (e) {
+      console.error(e)
+      alert('שגיאה ביצירת קובץ ה-PDF')
+    } finally {
+      setPdfBusy(null)
+    }
+  }
+
+  // Native share sheet (iPhone/Android): "שמירה בקבצים", WhatsApp, etc.
+  const handleSharePdf = async () => {
+    if (pdfBusy) return
+    setPdfBusy('share')
+    try {
+      const doc = await generatePdf()
+      const file = new File([doc.output('blob')], pdfFileName(), { type: 'application/pdf' })
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: pdfFileName() })
+        } catch (err) {
+          // User closed the share sheet — not an error; anything else → fall back to download
+          if ((err as DOMException)?.name !== 'AbortError') doc.save(pdfFileName())
+        }
+      } else {
+        doc.save(pdfFileName())
+      }
+    } catch (e) {
+      console.error(e)
+      alert('שגיאה ביצירת קובץ ה-PDF')
+    } finally {
+      setPdfBusy(null)
+    }
+  }
 
   const handleStatusChange = async (id: string, newStatus: QuoteStatus) => {
     try {
@@ -393,7 +522,55 @@ export default function AdminQuotesPage() {
             <p className="text-sm mt-1">לחצו על &quot;הצעה חדשה&quot; כדי ליצור את הראשונה</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <>
+          {/* Mobile: card per quote — actions always visible, ≥44px tap targets */}
+          <div className="sm:hidden space-y-3">
+            {quotes.map(q => (
+              <div key={q.id} className="bg-white rounded-2xl shadow-lg p-4">
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <div className="min-w-0">
+                    <div className="font-bold text-gray-900 whitespace-nowrap" dir="ltr">Q-{q.quoteNumber}</div>
+                    <div className="text-gray-900 font-medium truncate">{q.customerName}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {q.quoteDate?.toDate?.()?.toLocaleDateString('he-IL') ??
+                        q.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? ''}
+                      {' · '}
+                      <span className="font-bold text-gray-900">{fmt(q.total ?? 0)}</span>
+                    </div>
+                  </div>
+                  <select
+                    value={q.status}
+                    onChange={e => handleStatusChange(q.id, e.target.value as QuoteStatus)}
+                    className={`appearance-none rounded-lg px-3 py-2 text-xs font-semibold whitespace-nowrap cursor-pointer border border-gray-200 shadow-sm outline-none focus:ring-2 focus:ring-yellow-400 shrink-0 ${statusLabels[q.status]?.color ?? 'bg-gray-100 text-gray-700'}`}
+                  >
+                    {(Object.entries(statusLabels) as [QuoteStatus, { label: string }][]).map(([val, { label }]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 pt-3 mt-2 border-t border-gray-100">
+                  <Button variant="outline" className="flex-1 h-11" onClick={() => openEdit(q)}>
+                    <Pencil className="w-4 h-4 ml-2" />
+                    עריכה
+                  </Button>
+                  <Button variant="outline" className="h-11 w-11 p-0" title="שכפול" onClick={() => handleDuplicate(q)}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-11 w-11 p-0 border-red-500 text-red-600 hover:bg-red-50"
+                    title="מחיקה"
+                    onClick={() => handleDelete(q.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden sm:block bg-white rounded-2xl shadow-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -448,6 +625,7 @@ export default function AdminQuotesPage() {
               </table>
             </div>
           </div>
+          </>
         )}
       </div>
     )
@@ -674,12 +852,42 @@ export default function AdminQuotesPage() {
       {/* PDF preview overlay */}
       {previewOpen && (
         <div className="quote-preview-overlay fixed inset-0 z-[100] bg-gray-900/80 overflow-y-auto px-4 py-8">
-          <div className="quote-preview-actions max-w-[794px] mx-auto mb-4 flex items-center justify-between gap-3">
-            <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={() => window.print()}>
-              <Printer className="w-4 h-4 ml-2" />
-              הדפסה חוזרת
-            </Button>
-            <Button variant="outline" className="bg-white" onClick={() => { setAutoPrint(false); setPreviewOpen(false) }}>
+          <div className="quote-preview-actions max-w-[794px] mx-auto mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                className="bg-yellow-500 hover:bg-yellow-600 text-white min-h-[44px]"
+                onClick={handleDownloadPdf}
+                disabled={!!pdfBusy}
+              >
+                {pdfBusy === 'download' ? (
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                ) : (
+                  <Download className="w-4 h-4 ml-2" />
+                )}
+                ⬇️ שמירה כ-PDF למכשיר
+              </Button>
+              {shareSupported && (
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white min-h-[44px]"
+                  onClick={handleSharePdf}
+                  disabled={!!pdfBusy}
+                >
+                  {pdfBusy === 'share' ? (
+                    <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                  ) : (
+                    <Share2 className="w-4 h-4 ml-2" />
+                  )}
+                  📤 שיתוף / שמירה במכשיר
+                </Button>
+              )}
+              {!isMobile && (
+                <Button variant="outline" className="bg-white min-h-[44px]" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4 ml-2" />
+                  הדפסה
+                </Button>
+              )}
+            </div>
+            <Button variant="outline" className="bg-white min-h-[44px]" onClick={() => { setAutoPrint(false); setPreviewOpen(false) }}>
               סגירה
             </Button>
           </div>

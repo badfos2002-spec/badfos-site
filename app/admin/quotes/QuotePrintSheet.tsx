@@ -64,7 +64,8 @@ export default function QuotePrintSheet({ quote }: { quote: QuotePrintData }) {
             </div>
           </div>
           <div className="text-left shrink-0">
-            <div className="inline-block bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-right">
+            {/* block+w-fit (not inline-block): html2canvas drops inline-block text in RTL when rendering the PDF */}
+            <div className="block w-fit bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-right">
               <div className="text-xl font-extrabold text-gray-900">הצעת מחיר</div>
               <div className="text-lg font-bold text-amber-600" dir="ltr">
                 {quote.quoteNumber ? `Q-${quote.quoteNumber}` : '—'}
