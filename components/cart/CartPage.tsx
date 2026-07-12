@@ -402,6 +402,20 @@ export default function CartPage() {
         // Wait for order (critical) — share link can finish in background
         const orderId = await orderPromise
 
+        // Customer returned with a personal BACK5 recovery coupon → link this new
+        // order to the original abandoned one. Fire-and-forget: must never block
+        // or break checkout (keepalive survives the payment redirect).
+        try {
+          if (effectiveCouponCode && effectiveCouponCode.trim().toUpperCase().startsWith('BACK5')) {
+            fetch('/api/link-recovery', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId }),
+              keepalive: true,
+            }).catch(() => {})
+          }
+        } catch {}
+
         const orderJson = JSON.stringify({ orderId, customer: customerInfo, items: itemsForOrder, total: orderCalc.total, timestamp: Date.now() })
         sessionStorage.setItem('badfos_pending_order', orderJson)
         // Also save to cookie — survives cross-origin redirect from Grow
