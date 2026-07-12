@@ -86,6 +86,33 @@ async function waitForSheetReady(): Promise<HTMLElement | null> {
   return el
 }
 
+/**
+ * Pre-rasterizes the logo to a data URL (144×144 = 72px at capture scale 2).
+ * html2canvas on mobile Safari can mis-render <img> network sources (wrong
+ * intrinsic size → clipped circle); a same-document data URL swapped in via
+ * onclone removes network/decode/CORS from the capture path entirely.
+ * Cached after the first successful build.
+ */
+let logoDataUrlCache: string | null = null
+async function buildLogoDataUrl(): Promise<string | null> {
+  if (logoDataUrlCache) return logoDataUrlCache
+  try {
+    const img = new window.Image()
+    img.src = '/logo.png'
+    await img.decode()
+    const c = document.createElement('canvas')
+    c.width = 144
+    c.height = 144
+    const ctx = c.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(img, 0, 0, 144, 144)
+    logoDataUrlCache = c.toDataURL('image/png')
+    return logoDataUrlCache
+  } catch {
+    return null // capture falls back to the regular /logo.png src
+  }
+}
+
 function computeTotals(
   items: ItemDraft[],
   discountType: QuoteDiscountType,
@@ -356,19 +383,78 @@ export default function AdminQuotesPage() {
     const html2canvas = (await import('html2canvas')).default
     const { jsPDF } = await import('jspdf')
 
+    // Neutralize real scroll offsets before capture — html2canvas is sensitive to
+    // scrollX/scrollY, and a scrolled preview used to shift the crop (clipped logo).
+    // The preview overlay is fullscreen, so no need to store/restore positions.
+    const overlayEl = document.querySelector<HTMLElement>('.quote-preview-overlay')
+    if (overlayEl) {
+      overlayEl.scrollTop = 0
+      overlayEl.scrollLeft = 0
+    }
+    window.scrollTo(0, 0)
+
+    // offsetHeight ignores the mobile preview transform → true unscaled height
+    const sheetHeightPx = Math.max(el.offsetHeight, 1123)
+
+    // Pre-rasterized logo (data URL) — bulletproof against iOS Safari <img> quirks
+    const logoDataUrl = await buildLogoDataUrl()
+
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
+      // Explicit capture geometry — immune to any page/overlay scroll offset:
+      // onclone pins the sheet to the document origin, and we crop exactly there
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0,
+      width: 794,
       // Force desktop-like layout so the PDF is identical on phone & desktop
       windowWidth: 900,
+      windowHeight: sheetHeightPx,
       onclone: clonedDoc => {
+        // Zero out any scroll state carried into the cloned document
+        clonedDoc.defaultView?.scrollTo(0, 0)
+        clonedDoc.documentElement.scrollLeft = 0
+        clonedDoc.documentElement.scrollTop = 0
+        clonedDoc.body.scrollLeft = 0
+        clonedDoc.body.scrollTop = 0
+        clonedDoc.documentElement.style.margin = '0'
+        clonedDoc.body.style.margin = '0'
         const sheet = clonedDoc.getElementById('quote-print-sheet')
         if (sheet) {
           sheet.style.width = '794px'
           sheet.style.maxWidth = '794px'
           sheet.style.minHeight = '1123px' // A4 @96dpi — same ratio as 210×297mm
           sheet.style.boxShadow = 'none'
+          // Pin the sheet to (0,0) so the x:0,y:0 crop always starts on it (RTL-safe)
+          sheet.style.margin = '0'
+          sheet.style.transform = 'none'
+          sheet.style.position = 'absolute'
+          sheet.style.top = '0'
+          sheet.style.left = '0'
+          sheet.style.right = 'auto'
+          // Logo: fixed 72×72 box, no object-fit/srcset — swap in the data URL
+          const logo = sheet.querySelector<HTMLImageElement>('img[alt="בדפוס"]')
+          if (logo) {
+            if (logoDataUrl) {
+              logo.src = logoDataUrl
+              logo.removeAttribute('srcset')
+              logo.removeAttribute('sizes')
+            }
+            logo.width = 72
+            logo.height = 72
+            logo.style.width = '72px'
+            logo.style.height = '72px'
+            logo.style.objectFit = 'fill'
+          }
+        }
+        // Ancestors must not offset, scale or clip the pinned sheet
+        for (let node = sheet?.parentElement; node && node !== clonedDoc.body; node = node.parentElement) {
+          node.style.margin = '0'
+          node.style.transform = 'none'
+          node.style.position = 'static'
         }
         // Neutralize the mobile preview scale wrapper — capture must render unscaled
         const scaleEl = clonedDoc.querySelector<HTMLElement>('.quote-preview-scale')
@@ -379,6 +465,9 @@ export default function AdminQuotesPage() {
         }
         const wrapEl = clonedDoc.querySelector<HTMLElement>('.quote-preview-scale-wrap')
         if (wrapEl) wrapEl.style.height = 'auto'
+        // The preview action buttons must never paint into the capture
+        const actions = clonedDoc.querySelector<HTMLElement>('.quote-preview-actions')
+        if (actions) actions.style.display = 'none'
       },
     })
 
