@@ -187,8 +187,7 @@ export default function AdminQuotesPage() {
     setContactPerson('')
     setPhone('')
     setEmail('')
-    // Prefill business number from the most recent quote
-    setBusinessNumber(quotes[0]?.businessNumber ?? '')
+    setBusinessNumber('')
     setQuoteDate(todayStr())
     setValidUntil(plus14Str())
     setItems([emptyItem()])
