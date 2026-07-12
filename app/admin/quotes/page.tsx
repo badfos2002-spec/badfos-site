@@ -130,6 +130,8 @@ export default function AdminQuotesPage() {
   const [pdfBusy, setPdfBusy] = useState<'download' | 'share' | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [shareSupported, setShareSupported] = useState(false)
+  const [previewScale, setPreviewScale] = useState(1)
+  const [sheetHeight, setSheetHeight] = useState(0)
 
   // Device detection: on mobile the browser print dialog is clunky —
   // we skip auto-print and offer a real PDF download / native share instead.
@@ -313,6 +315,32 @@ export default function AdminQuotesPage() {
     }
   }, [previewOpen, autoPrint])
 
+  // Mobile: scale the fixed-width A4 sheet down so the whole page fits the screen.
+  // Preview only — PDF capture (onclone resets the transform) and window.print
+  // (@media print resets it) always render the sheet unscaled at 794px.
+  useEffect(() => {
+    if (!previewOpen) return
+    const update = () => {
+      const available = window.innerWidth - 32 // overlay px-4 padding
+      setPreviewScale(Math.min(1, available / 794))
+      const el = document.getElementById('quote-print-sheet')
+      if (el) setSheetHeight(el.offsetHeight) // offsetHeight ignores the transform
+    }
+    update()
+    // Re-measure once fonts + logo are painted (sheet height can change)
+    let cancelled = false
+    waitForSheetReady().then(() => {
+      if (!cancelled) update()
+    })
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => {
+      cancelled = true
+      window.removeEventListener('resize', update)
+      window.removeEventListener('orientationchange', update)
+    }
+  }, [previewOpen])
+
   const pdfFileName = () =>
     editingNumber ? `הצעת-מחיר-Q-${editingNumber}.pdf` : 'הצעת-מחיר.pdf'
 
@@ -342,6 +370,15 @@ export default function AdminQuotesPage() {
           sheet.style.minHeight = '1123px' // A4 @96dpi — same ratio as 210×297mm
           sheet.style.boxShadow = 'none'
         }
+        // Neutralize the mobile preview scale wrapper — capture must render unscaled
+        const scaleEl = clonedDoc.querySelector<HTMLElement>('.quote-preview-scale')
+        if (scaleEl) {
+          scaleEl.style.transform = 'none'
+          scaleEl.style.width = ''
+          scaleEl.style.maxWidth = ''
+        }
+        const wrapEl = clonedDoc.querySelector<HTMLElement>('.quote-preview-scale-wrap')
+        if (wrapEl) wrapEl.style.height = 'auto'
       },
     })
 
@@ -891,7 +928,29 @@ export default function AdminQuotesPage() {
               סגירה
             </Button>
           </div>
-          <QuotePrintSheet quote={printData} />
+          {/* Scale-to-fit wrapper: on narrow screens the 794px A4 sheet is scaled
+              down to the viewport width so the full page (incl. the logo) is visible.
+              Preview only — PDF capture and print render the sheet unscaled. */}
+          <div
+            className="quote-preview-scale-wrap flex justify-center"
+            style={previewScale < 1 ? { height: sheetHeight * previewScale } : undefined}
+          >
+            <div
+              className="quote-preview-scale w-full max-w-[794px] shrink-0"
+              style={
+                previewScale < 1
+                  ? {
+                      width: 794,
+                      maxWidth: 'none',
+                      transform: `scale(${previewScale})`,
+                      transformOrigin: 'top center',
+                    }
+                  : undefined
+              }
+            >
+              <QuotePrintSheet quote={printData} />
+            </div>
+          </div>
         </div>
       )}
 
@@ -917,6 +976,17 @@ export default function AdminQuotesPage() {
           }
           .quote-preview-actions {
             display: none !important;
+          }
+          /* The mobile scale-to-fit wrapper must not affect printing:
+             a transformed ancestor would become the containing block of the
+             absolutely-positioned sheet and shrink the printed page. */
+          .quote-preview-scale-wrap,
+          .quote-preview-scale {
+            display: block !important;
+            height: auto !important;
+            width: auto !important;
+            max-width: none !important;
+            transform: none !important;
           }
           #quote-print-sheet {
             position: absolute !important;
