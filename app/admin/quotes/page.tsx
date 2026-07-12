@@ -86,33 +86,6 @@ async function waitForSheetReady(): Promise<HTMLElement | null> {
   return el
 }
 
-/**
- * Pre-rasterizes the logo to a data URL (144×144 = 72px at capture scale 2).
- * html2canvas on mobile Safari can mis-render <img> network sources (wrong
- * intrinsic size → clipped circle); a same-document data URL swapped in via
- * onclone removes network/decode/CORS from the capture path entirely.
- * Cached after the first successful build.
- */
-let logoDataUrlCache: string | null = null
-async function buildLogoDataUrl(): Promise<string | null> {
-  if (logoDataUrlCache) return logoDataUrlCache
-  try {
-    const img = new window.Image()
-    img.src = '/logo.png'
-    await img.decode()
-    const c = document.createElement('canvas')
-    c.width = 144
-    c.height = 144
-    const ctx = c.getContext('2d')
-    if (!ctx) return null
-    ctx.drawImage(img, 0, 0, 144, 144)
-    logoDataUrlCache = c.toDataURL('image/png')
-    return logoDataUrlCache
-  } catch {
-    return null // capture falls back to the regular /logo.png src
-  }
-}
-
 function computeTotals(
   items: ItemDraft[],
   discountType: QuoteDiscountType,
@@ -396,9 +369,6 @@ export default function AdminQuotesPage() {
     // offsetHeight ignores the mobile preview transform → true unscaled height
     const sheetHeightPx = Math.max(el.offsetHeight, 1123)
 
-    // Pre-rasterized logo (data URL) — bulletproof against iOS Safari <img> quirks
-    const logoDataUrl = await buildLogoDataUrl()
-
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
@@ -435,20 +405,8 @@ export default function AdminQuotesPage() {
           sheet.style.top = '0'
           sheet.style.left = '0'
           sheet.style.right = 'auto'
-          // Logo: fixed 72×72 box, no object-fit/srcset — swap in the data URL
-          const logo = sheet.querySelector<HTMLImageElement>('img[alt="בדפוס"]')
-          if (logo) {
-            if (logoDataUrl) {
-              logo.src = logoDataUrl
-              logo.removeAttribute('srcset')
-              logo.removeAttribute('sizes')
-            }
-            logo.width = 72
-            logo.height = 72
-            logo.style.width = '72px'
-            logo.style.height = '72px'
-            logo.style.objectFit = 'fill'
-          }
+          // Logo needs no handling here: its src is a build-time inlined data URL
+          // (see logoData.ts), so the clone already renders it with zero network.
         }
         // Ancestors must not offset, scale or clip the pinned sheet
         for (let node = sheet?.parentElement; node && node !== clonedDoc.body; node = node.parentElement) {

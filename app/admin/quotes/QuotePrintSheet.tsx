@@ -1,5 +1,7 @@
 'use client'
 
+import { LOGO_DATA_URL } from './logoData'
+
 export interface QuotePrintData {
   quoteNumber: number | null
   quoteDate: Date
@@ -46,11 +48,12 @@ export default function QuotePrintSheet({ quote }: { quote: QuotePrintData }) {
         {/* Header: logo + business identity | quote title */}
         <div className="flex items-start justify-between gap-6 pb-6 border-b-2 border-amber-500">
           <div className="flex items-center gap-4">
-            {/* Plain <img>, fixed 72×72, no srcset/object-fit/wrapper clipping —
-                html2canvas on mobile Safari mis-renders optimizer/srcset images
-                (the round logo came out clipped in the generated PDF). */}
+            {/* Plain <img> with a build-time inlined data URL, fixed 72×72, no
+                srcset/object-fit/wrapper clipping. The same bytes render on screen,
+                in print and inside the html2canvas clone — zero network/decode at
+                capture time, so iOS Safari can never drop or clip the logo. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="בדפוס" width={72} height={72} className="w-[72px] h-[72px]" />
+            <img src={LOGO_DATA_URL} alt="בדפוס" width={72} height={72} className="w-[72px] h-[72px]" />
             <div>
               <div className="text-3xl font-extrabold text-gray-900 leading-tight">בדפוס</div>
               <div className="text-sm font-medium text-amber-600">הדפסת חולצות ומוצרי טקסטיל</div>
