@@ -109,6 +109,8 @@ const nextConfig = {
       // Deal → packages (deal page no longer exists)
       { source: '/Deal', destination: '/packages', permanent: true },
       { source: '/deal', destination: '/packages', permanent: true },
+      // Lion Roar campaign removed
+      { source: '/lion-roar', destination: '/', permanent: true },
       // Old misc pages
       { source: '/ads', destination: '/', permanent: true },
       { source: '/home', destination: '/', permanent: true },
