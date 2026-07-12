@@ -681,7 +681,7 @@ export default function AdminQuotesPage() {
         @media print {
           @page {
             size: A4;
-            margin: 10mm;
+            margin: 0; /* removes the browser-generated URL/date header & footer */
           }
           body * {
             visibility: hidden !important;
@@ -705,6 +705,7 @@ export default function AdminQuotesPage() {
             right: 0;
             left: 0;
             margin: 0 auto !important;
+            padding: 12mm !important; /* internal margin instead of @page margin */
             box-shadow: none !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
