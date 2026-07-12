@@ -330,6 +330,42 @@ export interface PackageOrder {
 }
 
 // ============================================================================
+// Quotes (הצעות מחיר)
+// ============================================================================
+
+export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected'
+
+export type QuoteDiscountType = 'none' | 'percent' | 'amount'
+
+export interface QuoteItem {
+  description: string
+  quantity: number
+  unitPrice: number
+}
+
+export interface Quote {
+  id: string
+  quoteNumber: number // Q-1001, Q-1002...
+  status: QuoteStatus
+  customerName: string
+  contactPerson?: string
+  phone?: string
+  email?: string
+  items: QuoteItem[]
+  discountType: QuoteDiscountType
+  discountValue: number
+  shippingPrice: number
+  businessNumber?: string // עוסק פטור מס׳ — מוצג ב-PDF אם מולא
+  quoteDate: Timestamp // תאריך ההצעה — נקבע ידנית ע"י בעל העסק
+  validUntil: Timestamp
+  notes?: string
+  subtotal: number
+  total: number
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// ============================================================================
 // Email Types
 // ============================================================================
 

@@ -31,6 +31,7 @@ import type {
   Package,
   PackageOrder,
   OrderItem,
+  Quote,
 } from './types'
 
 // ============================================================================
@@ -678,6 +679,82 @@ export async function createPackageOrder(
   orderData: Omit<PackageOrder, 'id' | 'createdAt'>
 ): Promise<string> {
   return await createDocument<PackageOrder>('packageOrders', orderData)
+}
+
+// ============================================================================
+// Quotes (הצעות מחיר)
+// ============================================================================
+
+/**
+ * Get the next quote number (auto-increment, Q-1001+)
+ */
+export async function getNextQuoteNumber(): Promise<number> {
+  ensureFirebase()
+  const counterRef = doc(db!, 'counters', 'quotes')
+  const counterSnap = await getDoc(counterRef)
+
+  if (counterSnap.exists()) {
+    const currentNumber = counterSnap.data().current || 1000
+    await updateDoc(counterRef, { current: increment(1) })
+    return currentNumber + 1
+  } else {
+    // Initialize counter if it doesn't exist
+    await setDoc(counterRef, { current: 1001 })
+    return 1001
+  }
+}
+
+/**
+ * Create a new quote (assigns the next quote number)
+ */
+export async function createQuote(
+  quoteData: Omit<Quote, 'id' | 'quoteNumber' | 'createdAt' | 'updatedAt'>
+): Promise<{ id: string; quoteNumber: number }> {
+  if (!quoteData.customerName?.trim()) throw new Error('Missing customer name')
+
+  const quoteNumber = await getNextQuoteNumber()
+
+  const quote: Omit<Quote, 'id'> = {
+    ...quoteData,
+    quoteNumber,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  }
+
+  const id = await createDocument<Quote>('quotes', quote)
+  return { id, quoteNumber }
+}
+
+/**
+ * Get all quotes (newest first)
+ */
+export async function getAllQuotes(): Promise<Quote[]> {
+  return await queryDocuments<Quote>('quotes', [], 'createdAt')
+}
+
+/**
+ * Get the most recent quote (for prefilling VAT mode + business number)
+ */
+export async function getLatestQuote(): Promise<Quote | null> {
+  const quotes = await queryDocuments<Quote>('quotes', [], 'createdAt', 1)
+  return quotes[0] ?? null
+}
+
+/**
+ * Update an existing quote
+ */
+export async function updateQuote(
+  quoteId: string,
+  data: Partial<Quote>
+): Promise<void> {
+  await updateDocument<Quote>('quotes', quoteId, data)
+}
+
+/**
+ * Delete a quote
+ */
+export async function deleteQuote(quoteId: string): Promise<void> {
+  await deleteDocument('quotes', quoteId)
 }
 
 // ============================================================================
