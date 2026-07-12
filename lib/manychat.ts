@@ -117,6 +117,43 @@ async function findSubscriber(variants: string[]): Promise<string | null> {
 }
 
 /**
+ * Last-resort lookup: search subscribers by name (findByName does substring
+ * matching) and return the one whose WhatsApp identity matches the given
+ * wa_id by last-9-digits comparison (handles '05X' vs '9725X' forms).
+ * Needed for contacts that messaged the business BEFORE the wa_phone mirror
+ * automation existed: their wa_phone custom field AND phone system field are
+ * both empty, so the two phone lookups can never find them.
+ * Best-effort: any API error or missing field is a miss (null), never throws.
+ */
+async function findByNameMatchingWaId(fullName: string, waId: string): Promise<string | null> {
+  try {
+    const name = fullName.trim()
+    const last9 = (waId || '').replace(/\D/g, '').slice(-9)
+    if (!name || last9.length < 9) return null
+
+    const found = await mcFetch(`/fb/subscriber/findByName?name=${encodeURIComponent(name)}`)
+    const candidates: any[] = Array.isArray(found?.data)
+      ? found.data
+      : found?.data
+        ? [found.data]
+        : []
+
+    for (const candidate of candidates) {
+      const matches = [candidate?.whatsapp_phone, candidate?.wa_id, candidate?.phone].some(
+        (p) => {
+          const digits = String(p ?? '').replace(/\D/g, '')
+          return digits.length >= 9 && digits.slice(-9) === last9
+        }
+      )
+      if (matches && candidate?.id != null) return String(candidate.id)
+    }
+  } catch {
+    // best-effort — treated as a miss
+  }
+  return null
+}
+
+/**
  * Find a ManyChat subscriber by phone, or create one (with WhatsApp opt-in).
  * Returns the subscriber id.
  *
@@ -125,7 +162,9 @@ async function findSubscriber(variants: string[]): Promise<string | null> {
  * Creation uses whatsapp_phone + WhatsApp opt-in only (account has no SMS
  * channel), and mirrors the number into `wa_phone` for future lookups.
  * If createSubscriber says the WhatsApp ID already exists, re-finds instead
- * of failing (the create error body usually carries the exact wa_id).
+ * of failing (the create error body usually carries the exact wa_id); if that
+ * still misses, falls back to findByName + wa_id verification (and self-heals
+ * wa_phone on match).
  */
 export async function findOrCreateSubscriber(
   phone: string,
@@ -181,6 +220,31 @@ export async function findOrCreateSubscriber(
       const retryVariants = waId ? [waId, `+${waId}`, ...variants] : variants
       const refound = await findSubscriber(retryVariants)
       if (refound) return refound
+
+      // Third fallback: contact predates the wa_phone mirror automation, so
+      // both phone lookups miss — search by name and verify by wa_id.
+      const byName = await findByNameMatchingWaId(`${firstName} ${lastName}`, waId ?? bare)
+      if (byName) {
+        // Self-heal: mirror the wa_id into wa_phone so future lookups find
+        // this contact directly. Non-fatal on failure.
+        try {
+          const waFieldId = await getFieldIdByName(WA_PHONE_FIELD_NAME)
+          if (waFieldId) {
+            await mcFetch('/fb/subscriber/setCustomField', {
+              method: 'POST',
+              body: JSON.stringify({
+                subscriber_id: byName,
+                field_id: waFieldId,
+                field_value: waId ?? bare,
+              }),
+            })
+          }
+        } catch {
+          // best-effort mirror — ignore
+        }
+        return byName
+      }
+
       throw new Error(
         `ManyChat says WhatsApp ID already exists but subscriber not findable — ${msg}`
       )
