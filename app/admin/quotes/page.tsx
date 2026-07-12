@@ -104,7 +104,22 @@ export default function AdminQuotesPage() {
   const loadQuotes = useCallback(async () => {
     try {
       const list = await getAllQuotes()
-      setQuotes(list)
+      // הצעה שנוצרה לפני 30+ יום — נמחקת אוטומטית (לפי createdAt בלבד)
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
+      const fresh: Quote[] = []
+      const expired: Quote[] = []
+      for (const q of list) {
+        if (q.createdAt && q.createdAt.toDate().getTime() < cutoff) expired.push(q)
+        else fresh.push(q)
+      }
+      setQuotes(fresh)
+      if (expired.length > 0) {
+        await Promise.all(
+          expired.map(q =>
+            deleteQuote(q.id).catch(e => console.error(`Failed to delete expired quote ${q.id}:`, e))
+          )
+        )
+      }
     } catch (e) {
       console.error(e)
     } finally {

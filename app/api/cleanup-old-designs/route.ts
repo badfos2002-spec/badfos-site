@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const CLEANUP_DAYS = 60
+const QUOTE_EXPIRY_DAYS = 30 // הצעת מחיר שעברו 30 יום מיצירתה — נמחקת מה-DB
 
 // Storage thresholds (in MB). Override via env vars if needed.
 // Firebase Spark (free) tier limit is 5000 MB.
@@ -34,8 +35,28 @@ export async function GET(req: NextRequest) {
   let cleaned = 0
   let errors = 0
   let emergencyDeleted = 0
+  let deletedQuotes = 0
 
   try {
+    // ── Expired quotes: delete quotes created 30+ days ago (by createdAt) ─
+    const quoteCutoff = new Date()
+    quoteCutoff.setDate(quoteCutoff.getDate() - QUOTE_EXPIRY_DAYS)
+    const quotesSnap = await adminDb
+      .collection('quotes')
+      .where('createdAt', '<', Timestamp.fromDate(quoteCutoff))
+      .limit(500)
+      .get()
+
+    for (const doc of quotesSnap.docs) {
+      try {
+        await doc.ref.delete()
+        deletedQuotes++
+      } catch (e) {
+        console.error(`Failed to delete expired quote ${doc.id}:`, e)
+        errors++
+      }
+    }
+
     // ── Layer 1: 60-day image cleanup (orders stay in admin) ────────────
     const snapshot = await adminDb
       .collection('orders')
@@ -104,6 +125,7 @@ export async function GET(req: NextRequest) {
       scanned,
       cleaned,
       emergencyDeleted,
+      deletedQuotes,
       errors,
       storageMB: Math.round(usageMB),
       filesCount,
