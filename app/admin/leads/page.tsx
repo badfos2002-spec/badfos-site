@@ -171,7 +171,7 @@ export default function AdminLeadsPage() {
 
                 <div className="pt-4 border-t border-gray-200 flex items-center gap-2" onClick={e => e.stopPropagation()}>
                   <select
-                    className="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-yellow-500 focus:outline-none"
+                    className="flex-1 min-w-0 border-2 border-gray-200 rounded-lg px-3 py-2 min-h-[44px] sm:min-h-0 text-sm focus:border-yellow-500 focus:outline-none"
                     value={lead.status}
                     onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                   >
@@ -182,7 +182,9 @@ export default function AdminLeadsPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-red-200 text-red-500 hover:bg-red-50 hover:border-red-400"
+                    title="מחיקת ליד"
+                    aria-label="מחיקת ליד"
+                    className="shrink-0 h-11 w-11 p-0 sm:h-9 sm:w-auto sm:px-3 border-red-500 text-red-600 sm:border-red-200 sm:text-red-500 hover:bg-red-50 hover:border-red-400"
                     onClick={() => handleDelete(lead.id)}
                   >
                     <Trash2 className="w-4 h-4" />
