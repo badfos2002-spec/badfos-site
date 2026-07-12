@@ -99,6 +99,7 @@ export default function AdminQuotesPage() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [autoPrint, setAutoPrint] = useState(false)
 
   const loadQuotes = useCallback(async () => {
     try {
@@ -231,8 +232,43 @@ export default function AdminQuotesPage() {
 
   const handlePrint = async () => {
     const ok = await handleSave()
-    if (ok) setPreviewOpen(true)
+    if (ok) {
+      setAutoPrint(true)
+      setPreviewOpen(true)
+    }
   }
+
+  // Auto-print once the preview sheet is fully rendered (fonts + logo painted)
+  useEffect(() => {
+    if (!previewOpen || !autoPrint) return
+    let cancelled = false
+
+    const waitForLogo = () => {
+      const img = document.querySelector<HTMLImageElement>('#quote-print-sheet img')
+      if (!img || img.complete) return Promise.resolve()
+      return new Promise<void>(resolve => {
+        const done = () => resolve()
+        img.addEventListener('load', done, { once: true })
+        img.addEventListener('error', done, { once: true })
+        setTimeout(done, 2000) // safety net — never block printing forever
+      })
+    }
+
+    const run = async () => {
+      await document.fonts.ready
+      await waitForLogo()
+      // Double rAF tick to guarantee the sheet is painted before the print dialog freezes rendering
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+      if (cancelled) return
+      setAutoPrint(false)
+      window.print()
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [previewOpen, autoPrint])
 
   const handleStatusChange = async (id: string, newStatus: QuoteStatus) => {
     try {
@@ -630,9 +666,9 @@ export default function AdminQuotesPage() {
           <div className="quote-preview-actions max-w-[794px] mx-auto mb-4 flex items-center justify-between gap-3">
             <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={() => window.print()}>
               <Printer className="w-4 h-4 ml-2" />
-              📄 הורדה כ-PDF / הדפסה
+              הדפסה חוזרת
             </Button>
-            <Button variant="outline" className="bg-white" onClick={() => setPreviewOpen(false)}>
+            <Button variant="outline" className="bg-white" onClick={() => { setAutoPrint(false); setPreviewOpen(false) }}>
               סגירה
             </Button>
           </div>
