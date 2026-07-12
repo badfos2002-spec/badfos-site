@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Plus, Trash2, Copy, Pencil, Loader2, Printer, ArrowRight, Save } from 'lucide-react'
+import { FileText, Plus, Trash2, Copy, Pencil, Loader2, Printer, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -464,12 +464,8 @@ export default function AdminQuotesPage() {
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
-          <Button variant="outline" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Save className="w-4 h-4 ml-2" />}
-            שמירה
-          </Button>
           <Button className="bg-yellow-500 hover:bg-yellow-600 text-white" onClick={handlePrint} disabled={saving}>
-            <Printer className="w-4 h-4 ml-2" />
+            {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Printer className="w-4 h-4 ml-2" />}
             📄 הורדה כ-PDF / הדפסה
           </Button>
         </div>
