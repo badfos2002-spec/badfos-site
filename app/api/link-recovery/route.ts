@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 
 /**
- * Link a recovered order to its original abandoned order via the personal
- * BACK5 coupon the customer redeemed.
+ * Recovery-coupon redemption: link the NEW order to the original abandoned
+ * order and remove the stale abandoned one.
  *
  * The BACK5 coupon doc stores the originating (abandoned) orderId — order A.
- * When a NEW order B is completed with that coupon, this endpoint stamps:
- * - Order B: recoveredFromOrderId / recoveredFromOrderNumber (+ recoverySentAt copied from A)
- * - Order A: recoveredByOrderId / recoveredByOrderNumber
+ * When a NEW order B is completed with that coupon:
+ * - Order B is stamped: recoveredFromOrderId / recoveredFromOrderNumber
+ *   (+ recoverySentAt copied from A, so the existing badge logic keys off it too)
+ * - Order A is DELETED from the orders collection — only if it's still
+ *   cart_abandoned / pending_payment. Paid-family orders are NEVER deleted;
+ *   in that case we fall back to linking only (skipped:true).
  *
  * Callable with { orderId } (order B) — used automatically by checkout —
  * or with { couponCode } (finds order B by the redeemed coupon) for
@@ -57,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Idempotency: already linked
-    if (orderB.recoveredFromOrderId) {
+    if (orderB.recoveredFromOrderNumber != null || orderB.recoveredFromOrderId) {
       return NextResponse.json({ success: true, alreadyLinked: true })
     }
 
@@ -81,7 +84,8 @@ export async function POST(req: NextRequest) {
 
     const orderASnap = await adminDb.collection('orders').doc(originOrderId).get()
     if (!orderASnap.exists) {
-      return NextResponse.json({ success: false, reason: 'origin_order_not_found' })
+      // Original abandoned order already gone — nothing left to do
+      return NextResponse.json({ success: true, alreadyDeleted: true })
     }
     const orderA = orderASnap.data()!
 
@@ -93,18 +97,31 @@ export async function POST(req: NextRequest) {
       ...(orderA.recoverySentAt && !orderB.recoverySentAt && { recoverySentAt: orderA.recoverySentAt }),
     })
 
-    // Stamp order A (the original abandoned order) as resolved
+    // Remove the stale abandoned order — but NEVER delete a paid-family order
+    const deletableStatuses = ['cart_abandoned', 'pending_payment']
+    if (deletableStatuses.includes(String(orderA.status))) {
+      await orderASnap.ref.delete()
+      console.log(
+        `Recovery: abandoned order #${orderA.orderNumber} deleted, replaced by new order #${orderB.orderNumber} (coupon ${couponCode})`
+      )
+      return NextResponse.json({
+        success: true,
+        deleted: true,
+        linked: { from: orderA.orderNumber ?? orderASnap.id, to: orderB.orderNumber ?? orderBRef.id },
+      })
+    }
+
+    // Paid-family origin order — keep it, link only
     await orderASnap.ref.update({
       recoveredByOrderId: orderBRef.id,
       ...(orderB.orderNumber != null && { recoveredByOrderNumber: orderB.orderNumber }),
     })
-
     console.log(
-      `Recovery linked: abandoned order #${orderA.orderNumber} → new order #${orderB.orderNumber} (coupon ${couponCode})`
+      `Recovery linked (delete skipped, status=${orderA.status}): order #${orderA.orderNumber} → new order #${orderB.orderNumber} (coupon ${couponCode})`
     )
-
     return NextResponse.json({
       success: true,
+      skipped: true,
       linked: { from: orderA.orderNumber ?? orderASnap.id, to: orderB.orderNumber ?? orderBRef.id },
     })
   } catch (e) {

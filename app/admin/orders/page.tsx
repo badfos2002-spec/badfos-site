@@ -121,8 +121,6 @@ export default function AdminOrdersPage() {
   // Eligible for cart recovery: abandoned, or pending_payment older than 10 minutes
   // (matches the client-side abandonment delay in CartPage)
   const isRecoveryEligible = (order: Order) => {
-    // Resolved: the customer already returned and completed a new order — nothing to recover
-    if ((order as any).recoveredByOrderId) return false
     if (order.status === 'cart_abandoned') return true
     if (order.status === 'pending_payment') {
       const created = order.createdAt?.toDate?.()
@@ -365,13 +363,7 @@ export default function AdminOrdersPage() {
                         הזמנה #{order.orderNumber}
                         {isRecoveredCustomer(order) && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-yellow-300 text-yellow-950 text-xs font-bold px-2.5 py-0.5 ring-2 ring-yellow-400 shadow-sm whitespace-nowrap">🎉 לקוח חזר אחרי קופון</span>
-                        )}
-                        {(order as any).recoveredByOrderId && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 text-xs font-bold px-2.5 py-0.5 ring-2 ring-green-300 shadow-sm whitespace-nowrap">
-                            ✅ הלקוח חזר — הזמנה חדשה{(order as any).recoveredByOrderNumber ? ` #${(order as any).recoveredByOrderNumber}` : ''}
-                          </span>
-                        )}
-                        {order.customer.notes && (
+                        )}                        {order.customer.notes && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 text-amber-950 text-xs font-bold px-2.5 py-0.5 ring-2 ring-amber-300 shadow-sm animate-pulse">
                             <StickyNote className="w-3.5 h-3.5 shrink-0" />
                             הערה
@@ -450,7 +442,7 @@ export default function AdminOrdersPage() {
                     )}
                     {(order as any).recoveredFromOrderId && (
                       <div className="mt-4 sm:mt-6 mb-2 text-sm font-bold text-yellow-800">
-                        🎉 חזר מהזמנה נטושה{(order as any).recoveredFromOrderNumber ? ` #${(order as any).recoveredFromOrderNumber}` : ''}
+                        🎉 חזר מעגלה נטושה{(order as any).recoveredFromOrderNumber ? ` #${(order as any).recoveredFromOrderNumber}` : ''}
                       </div>
                     )}
                     {isRecoveryEligible(order) && (
