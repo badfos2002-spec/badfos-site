@@ -467,6 +467,18 @@ export default function AdminOrdersPage() {
                         )}
                       </div>
                     )}
+                    {(order as any).syncHealedAt && (
+                      <div className="mt-4 sm:mt-6 mb-2">
+                        <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                          ⚠️ סנכרון עיצובים תוקן אוטומטית בתשלום
+                          {(order as any).syncHealedAt?.toDate?.() && (
+                            <span className="font-normal">
+                              ({(order as any).syncHealedAt.toDate().toLocaleDateString('he-IL')})
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    )}
                     {order.shipping?.method === 'pickup' && (order as any).pickupReadySentAt && (
                       <div className="mt-4 sm:mt-6 mb-2">
                         <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">

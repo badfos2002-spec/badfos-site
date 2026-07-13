@@ -106,6 +106,21 @@ export default function PaymentSuccessPage() {
             }),
           }).catch(console.error)
         }
+
+        // Runtime consistency guard: verify the Firestore order matches this
+        // snapshot (the exact items the design_mockup email was built from).
+        // The server self-heals + alerts the admin on mismatch. Fire-and-forget:
+        // must never block or break the success page.
+        try {
+          if (orderId && Array.isArray(items) && items.length > 0) {
+            fetch('/api/verify-order-sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId, items, total }),
+              keepalive: true,
+            }).catch(() => {})
+          }
+        } catch {}
       } catch (e) {
         console.error('Failed to process success page data:', e)
       }
