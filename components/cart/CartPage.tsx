@@ -180,7 +180,12 @@ export default function CartPage() {
     const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount)
     const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
     const total = orderCalc.total + packagesTotal
-    const cacheKey = `${customerInfo.phone}-${total}-${couponCode}`
+    // Fingerprint of cart contents — ANY cart mutation (item added/removed/edited,
+    // design swapped, quantity changed, package changed) must invalidate the cached link
+    const cartFingerprint = items
+      .map(i => `${i.id}:${i.totalQuantity}:${i.designs.map(d => `${d.area}.${d.imageUrl.length}`).join('+')}`)
+      .join('|') + '#' + packageItems.map(p => `${p.id}:${p.quantity}`).join('|')
+    const cacheKey = `${customerInfo.phone}-${total}-${couponCode}-${cartFingerprint}`
 
     // Skip if already fetching same data
     if (paymentCacheRef.current?.key === cacheKey) return
@@ -331,6 +336,37 @@ export default function CartPage() {
         // Skip creating order if one already exists (user pressed back and retried)
         if (existingOrderId) {
           const orderId = existingOrderId
+          // The cart may have changed since the order was created (items/designs
+          // added, removed or edited after pressing Back from the payment page).
+          // Sync the existing order from the SAME itemsForOrder payload that feeds
+          // the pending-order snapshot (which builds the design_mockup email) —
+          // otherwise the admin order and the email show different designs.
+          try {
+            const { updateDocument } = await import('@/lib/db')
+            await updateDocument('orders', orderId, stripUndefined({
+              customer: customerInfo,
+              shipping,
+              items: itemsForOrder,
+              packages: packageItems.map(pkg => ({
+                packageId: pkg.packageId,
+                packageName: pkg.packageName,
+                quantity: pkg.quantity,
+                pricePerUnit: pkg.pricePerUnit,
+                graphicDesignerCost: pkg.graphicDesignerCost,
+                totalPrice: pkg.totalPrice,
+              })),
+              subtotal: orderCalc.subtotal,
+              discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
+              couponCode: effectiveCouponCode || '',
+              total: orderCalc.total,
+              // Keep webhook matching working if a fresh payment link was created
+              paymentId: tempOrderId,
+            }) as any)
+          } catch (e) {
+            // A sync failure must not block checkout — payment still works,
+            // and the webhook/phone fallback will match the order.
+            console.error('Failed to sync existing order with current cart:', e)
+          }
           const orderJson = JSON.stringify({ orderId, customer: customerInfo, items: itemsForOrder, total: orderCalc.total, timestamp: Date.now() })
           sessionStorage.setItem('badfos_pending_order', orderJson)
           // Also save to cookie — survives cross-origin redirect from Grow
