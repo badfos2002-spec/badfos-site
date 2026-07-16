@@ -411,7 +411,12 @@ export default function AdminOrdersPage() {
                         </select>
                         <ChevronDown className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                       </div>
-                      <div className="font-bold text-base sm:text-lg whitespace-nowrap">₪{(order as any).paymentSum || order.total}</div>
+                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        {order.couponCode && (
+                          <span className="hidden sm:inline-flex items-center bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full text-xs" title={`קופון ${order.couponCode}`}>🎟️</span>
+                        )}
+                        <span className="font-bold text-base sm:text-lg">₪{(order as any).paymentSum || order.total}</span>
+                      </div>
                       <button
                         className="h-8 rounded-md text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 hidden sm:block"
                         title="מחק הזמנה"
@@ -661,7 +666,15 @@ export default function AdminOrdersPage() {
 
                           {/* Order Total */}
                           <div className="bg-gray-100 p-4 rounded-lg">
-                            {(order.discount ?? 0) > 0 && (
+                            {(order.subtotal ?? 0) > 0 && (
+                              <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                                <span>סכום ביניים</span>
+                                <span>₪{Math.round((order.subtotal ?? 0) * 100) / 100}</span>
+                              </div>
+                            )}
+                            {/* Coupon/discount line — shown also when only couponCode exists
+                                (pre-fix orders may have a coupon without a discount amount) */}
+                            {((order.discount ?? 0) > 0 || order.couponCode) && (
                               <div className="flex justify-between items-center text-sm mb-2">
                                 <span className="flex items-center gap-2 text-gray-600">
                                   הנחה
@@ -671,7 +684,9 @@ export default function AdminOrdersPage() {
                                     </span>
                                   )}
                                 </span>
-                                <span className="text-green-600 font-medium">-₪{Math.round((order.discount ?? 0) * 100) / 100}</span>
+                                <span className="text-green-600 font-medium">
+                                  {(order.discount ?? 0) > 0 ? `-₪${Math.round((order.discount ?? 0) * 100) / 100}` : '—'}
+                                </span>
                               </div>
                             )}
                             <div className="flex justify-between items-center text-sm text-gray-600 mb-2">

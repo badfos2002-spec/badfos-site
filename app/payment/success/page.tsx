@@ -31,7 +31,7 @@ export default function PaymentSuccessPage() {
     }
     if (orderDataStr) {
       try {
-        const { orderId, customer, items, total } = JSON.parse(orderDataStr)
+        const { orderId, customer, items, total, subtotal, discount, couponCode } = JSON.parse(orderDataStr)
 
         // Fallback: update to 'paid' via server API (in case webhook hasn't arrived yet)
         if (orderId && customer?.phone) {
@@ -116,7 +116,9 @@ export default function PaymentSuccessPage() {
             fetch('/api/verify-order-sync', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId, items, total }),
+              // subtotal/discount/couponCode travel with total so a pricing heal
+              // writes the whole set coherently (never total alone)
+              body: JSON.stringify({ orderId, items, total, subtotal, discount, couponCode }),
               keepalive: true,
             }).catch(() => {})
           }

@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/utils'
+import { round2, itemsSignature, sanitizeItems } from '@/lib/order-sanitize'
 
 /**
  * Runtime consistency guard: called (fire-and-forget) from /payment/success
@@ -30,67 +31,6 @@ function getResend(): Resend | null {
   return _resend
 }
 
-/** Cheap stable digest for design image strings (data URLs / storage URLs) —
- *  length + first/last 16 chars. Avoids hashing megabytes of base64. */
-function imageDigest(s: unknown): string {
-  if (typeof s !== 'string' || !s) return 'none'
-  return `${s.length}:${s.slice(0, 16)}:${s.slice(-16)}`
-}
-
-function round2(n: unknown): number {
-  const x = typeof n === 'number' && isFinite(n) ? n : 0
-  return Math.round(x * 100) / 100
-}
-
-/** Stable, order-insensitive signature of an items array. */
-function itemsSignature(items: any[]): string {
-  return items
-    .map((item) => {
-      const sizes = (Array.isArray(item?.sizes) ? item.sizes : [])
-        .filter((s: any) => (s?.quantity ?? 0) > 0)
-        .map((s: any) => `${s.size}x${s.quantity}`)
-        .sort()
-        .join(',')
-      const designs = (Array.isArray(item?.designs) ? item.designs : [])
-        .map((d: any) => `${d?.area || ''}~${imageDigest(d?.imageUrl)}`)
-        .sort()
-        .join(',')
-      return [
-        item?.productType || '',
-        item?.fabricType || '',
-        item?.color || '',
-        sizes,
-        designs,
-        item?.totalQuantity ?? 0,
-        round2(item?.totalPrice),
-      ].join('|')
-    })
-    .sort()
-    .join('||')
-}
-
-/** Whitelist snapshot fields before writing to Firestore (public endpoint). */
-function sanitizeItems(items: any[]): any[] {
-  return items.map((item) => ({
-    productType: item?.productType || '',
-    ...(item?.fabricType ? { fabricType: item.fabricType } : {}),
-    color: item?.color || '',
-    sizes: (Array.isArray(item?.sizes) ? item.sizes : []).map((s: any) => ({
-      size: String(s?.size || ''),
-      quantity: Number(s?.quantity) || 0,
-    })),
-    designs: (Array.isArray(item?.designs) ? item.designs : []).map((d: any) => ({
-      area: String(d?.area || ''),
-      areaName: String(d?.areaName || ''),
-      imageUrl: String(d?.imageUrl || ''),
-      fileName: String(d?.fileName || ''),
-    })),
-    pricePerUnit: round2(item?.pricePerUnit),
-    totalQuantity: Number(item?.totalQuantity) || 0,
-    totalPrice: round2(item?.totalPrice),
-  }))
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null)
@@ -112,24 +52,43 @@ export async function POST(req: NextRequest) {
     const orderSig = itemsSignature(Array.isArray(data.items) ? data.items : [])
     const snapshotSig = itemsSignature(items)
 
-    if (orderSig === snapshotSig) {
+    // Pricing coherence: the snapshot total is what the customer actually paid
+    // (coupon included). If the order doc's total diverged — e.g. a coupon was
+    // applied at re-checkout but the order sync didn't land — that's a mismatch
+    // too, even when the items themselves are identical (bug of order #1310:
+    // admin showed the pre-coupon price).
+    const snapTotalValid = typeof total === 'number' && isFinite(total) && total > 0
+    const itemsMismatch = orderSig !== snapshotSig
+    const totalMismatch = snapTotalValid && Math.abs(round2(data.total) - round2(total)) >= 0.5
+
+    if (!itemsMismatch && !totalMismatch) {
       return NextResponse.json({ consistent: true })
     }
 
     // MISMATCH — the order in Firestore diverged from what the customer paid
     // for (and from the design_mockup email). Self-heal from the snapshot.
     console.error(
-      `Order sync mismatch for order #${data.orderNumber} (${docRef.id}):\n  order:    ${orderSig}\n  snapshot: ${snapshotSig}`
+      `Order sync mismatch for order #${data.orderNumber} (${docRef.id}) [items=${itemsMismatch}, total=${totalMismatch}]:\n  order:    ${orderSig} (total ${data.total})\n  snapshot: ${snapshotSig} (total ${total})`
     )
 
     let healed = false
     const now = Timestamp.now()
     if (HEALABLE_STATUSES.includes(data.status)) {
+      // The pricing fields travel together as one coherent set — never write a
+      // discounted total while leaving subtotal/discount/couponCode stale.
+      const subtotal = body?.subtotal
+      const discount = body?.discount
+      const couponCode = body?.couponCode
       await docRef.update({
-        items: sanitizeItems(items),
-        ...(typeof total === 'number' && isFinite(total) && total > 0 ? { total } : {}),
+        ...(itemsMismatch ? { items: sanitizeItems(items) } : {}),
+        ...(snapTotalValid ? { total: round2(total) } : {}),
+        ...(typeof subtotal === 'number' && isFinite(subtotal) && subtotal >= 0 ? { subtotal: round2(subtotal) } : {}),
+        ...(typeof discount === 'number' && isFinite(discount) && discount >= 0 ? { discount: round2(discount) } : {}),
+        ...(typeof couponCode === 'string' ? { couponCode: couponCode.slice(0, 40) } : {}),
         syncHealedAt: now,
-        syncHealReason: 'items_signature_mismatch_at_payment_success',
+        syncHealReason: itemsMismatch
+          ? 'items_signature_mismatch_at_payment_success'
+          : 'total_mismatch_at_payment_success',
         updatedAt: now,
       })
       healed = true
