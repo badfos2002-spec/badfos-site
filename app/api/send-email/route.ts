@@ -102,17 +102,23 @@ export async function POST(request: NextRequest) {
         break
 
       case 'new_order':
-        const { customer: newOrderCustomer, itemsCount, total: newOrderTotal, orderId: newOrderId } = data as {
+        const { customer: newOrderCustomer, itemsCount, total: newOrderTotal, orderId: newOrderId, express: newOrderExpress } = data as {
           customer: { firstName: string; lastName: string; phone: string; email: string }
           itemsCount: number
           total: number
           orderId: string
+          express?: boolean
         }
         emailHtml = `
           <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff;">
             <div style="background: #fbbf24; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 24px;">
               <h1 style="margin: 0; color: #1e293b; font-size: 24px;">🛒 הזמנה חדשה התקבלה!</h1>
             </div>
+            ${newOrderExpress ? `
+            <div style="background: #ffedd5; border: 2px solid #f97316; padding: 14px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+              <span style="color: #c2410c; font-size: 18px; font-weight: bold;">⚡ אקספרס — 1-2 ימי עסקים!</span>
+            </div>
+            ` : ''}
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
               <tr><td style="padding: 8px 0; color: #64748b; width: 40%;">לקוח</td><td style="padding: 8px 0; font-weight: bold;">${escapeHtml(newOrderCustomer.firstName)} ${escapeHtml(newOrderCustomer.lastName)}</td></tr>
               <tr><td style="padding: 8px 0; color: #64748b;">טלפון</td><td style="padding: 8px 0; font-weight: bold;">${escapeHtml(newOrderCustomer.phone)}</td></tr>
@@ -125,7 +131,7 @@ export async function POST(request: NextRequest) {
             </div>
           </div>
         `
-        subject = `🛒 הזמנה חדשה — ${escapeHtml(newOrderCustomer.firstName)} ${escapeHtml(newOrderCustomer.lastName)} — ₪${newOrderTotal}`
+        subject = `${newOrderExpress ? '⚡ אקספרס! ' : ''}🛒 הזמנה חדשה — ${escapeHtml(newOrderCustomer.firstName)} ${escapeHtml(newOrderCustomer.lastName)} — ₪${newOrderTotal}`
         to = process.env.NEXT_PUBLIC_ADMIN_EMAIL!
         if (!to) return NextResponse.json({ error: 'Admin email not configured' }, { status: 500 })
         break

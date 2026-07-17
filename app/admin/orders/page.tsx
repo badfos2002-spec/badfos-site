@@ -350,7 +350,7 @@ export default function AdminOrdersPage() {
             const customerName = `${order.customer.firstName} ${order.customer.lastName}`
 
             return (
-              <div key={order.id} className={`rounded-xl border bg-white shadow overflow-hidden ${isRecoveredCustomer(order) ? 'border-yellow-400 bg-yellow-50/60 ring-1 ring-yellow-300' : ''}`}>
+              <div key={order.id} className={`rounded-xl border bg-white shadow overflow-hidden ${order.shipping?.express ? 'border-orange-400 bg-orange-50/70 ring-1 ring-orange-300' : isRecoveredCustomer(order) ? 'border-yellow-400 bg-yellow-50/60 ring-1 ring-yellow-300' : ''}`}>
                 {/* Card Header */}
                 <div
                   className="p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -361,6 +361,9 @@ export default function AdminOrdersPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-base sm:text-lg flex items-center gap-2 flex-wrap">
                         הזמנה #{order.orderNumber}
+                        {order.shipping?.express && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-500 text-white text-xs font-bold px-2.5 py-0.5 ring-2 ring-orange-300 shadow-sm whitespace-nowrap">⚡ אקספרס</span>
+                        )}
                         {isRecoveredCustomer(order) && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-yellow-300 text-yellow-950 text-xs font-bold px-2.5 py-0.5 ring-2 ring-yellow-400 shadow-sm whitespace-nowrap">🎉 לקוח חזר אחרי קופון</span>
                         )}                        {order.customer.notes && (
@@ -434,6 +437,12 @@ export default function AdminOrdersPage() {
                 {/* Expanded Content */}
                 {isExpanded && (
                   <div className="p-4 sm:p-6 pt-0 border-t bg-gray-50">
+                    {order.shipping?.express && (
+                      <div className="mt-4 sm:mt-6 mb-2 rounded-xl border-2 border-orange-500 bg-orange-50 px-4 py-3 shadow-lg shadow-orange-200/60">
+                        <span className="text-orange-700 font-extrabold text-base sm:text-lg">⚡ אקספרס — 1-2 ימי עסקים!</span>
+                        <span className="mr-2 text-sm font-bold text-red-600">(+₪{order.shipping.expressCost ?? 50} • איסוף עצמי בתיאום מראש)</span>
+                      </div>
+                    )}
                     {order.customer.notes && (
                       <div className="mt-4 sm:mt-6 mb-2 rounded-xl border-2 border-amber-500 bg-amber-50 shadow-lg shadow-amber-200/60 overflow-hidden animate-note-flash">
                         <div className="flex items-center gap-2 bg-amber-400 px-4 py-2.5 text-amber-950 font-extrabold text-base sm:text-lg">
@@ -534,6 +543,9 @@ export default function AdminOrdersPage() {
                               <div className="space-y-2">
                                 <div className="font-medium text-green-600">איסוף עצמי</div>
                                 <div className="text-gray-600">ראשון לציון</div>
+                                {order.shipping.express && (
+                                  <div className="font-bold text-orange-600">⚡ אקספרס — 1-2 ימי עסקים!</div>
+                                )}
                               </div>
                             ) : order.shipping?.address ? (
                               <div className="space-y-2">
@@ -721,6 +733,12 @@ export default function AdminOrdersPage() {
                               <span>משלוח</span>
                               <span>{order.shipping?.method === 'pickup' ? 'חינם' : `₪${order.shipping?.cost ?? 35}`}</span>
                             </div>
+                            {order.shipping?.express && (
+                              <div className="flex justify-between items-center text-sm font-bold text-orange-600 mb-2">
+                                <span>אקספרס ⚡</span>
+                                <span>₪{order.shipping.expressCost ?? 50}</span>
+                              </div>
+                            )}
                             {(order as any).paymentSum && (order as any).paymentSum !== order.total && (
                               <div className="flex justify-between items-center text-sm text-gray-400 line-through">
                                 <span>מחיר לפני הנחה:</span>

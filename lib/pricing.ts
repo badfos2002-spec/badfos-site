@@ -122,12 +122,14 @@ export function calculateOrderTotal(
   items: CartItem[],
   shippingMethod: 'delivery' | 'pickup' = 'delivery',
   couponDiscount: number = 0,
-  customQuantityDiscount?: number
+  customQuantityDiscount?: number,
+  expressCost: number = 0
 ): {
   subtotal: number
   quantityDiscount: number
   couponDiscount: number
   shipping: number
+  express: number
   total: number
   totalQuantity: number
 } {
@@ -146,15 +148,19 @@ export function calculateOrderTotal(
   // Calculate shipping
   const shipping = calculateShippingCost(shippingMethod)
 
+  // Express surcharge (pickup only) — flat fee, discounts never apply to it
+  const express = expressCost > 0 ? expressCost : 0
+
   // Calculate final total
   const total =
-    subtotal - quantityDiscount - couponDiscount + shipping
+    subtotal - quantityDiscount - couponDiscount + shipping + express
 
   return {
     subtotal,
     quantityDiscount,
     couponDiscount,
     shipping,
+    express,
     total: Math.max(0, total), // Ensure non-negative
     totalQuantity,
   }

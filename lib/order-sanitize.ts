@@ -93,6 +93,8 @@ export function sanitizeShipping(s: any): Record<string, unknown> {
   return {
     method,
     cost: round2(s?.cost),
+    // Express is pickup-only; the flat cost is fixed server-side (₪50) — never trusted from the client
+    ...(method === 'pickup' && s?.express === true ? { express: true, expressCost: 50 } : {}),
     ...(s?.additionalPhone ? { additionalPhone: str(s.additionalPhone, 30) } : {}),
     ...(s?.address && typeof s.address === 'object'
       ? {
@@ -107,6 +109,25 @@ export function sanitizeShipping(s: any): Record<string, unknown> {
         }
       : {}),
   }
+}
+
+/** Express pickup quantity limit (mirrors EXPRESS_PICKUP in lib/constants.ts). */
+export const EXPRESS_MAX_QUANTITY = 20
+
+/**
+ * Express pickup is limited to small orders (≤20 units) — strip a forged
+ * express flag so a crafted payload can never plant a ₪50 express fee on a
+ * big order. Returns the same shipping object (mutated) for convenience.
+ */
+export function stripIneligibleExpress(
+  shipping: Record<string, unknown>,
+  totalQuantity: number
+): Record<string, unknown> {
+  if (shipping.express && totalQuantity > EXPRESS_MAX_QUANTITY) {
+    delete shipping.express
+    delete shipping.expressCost
+  }
+  return shipping
 }
 
 /** Whitelist package cart items. */

@@ -31,7 +31,7 @@ export default function PaymentSuccessPage() {
     }
     if (orderDataStr) {
       try {
-        const { orderId, customer, items, total, subtotal, discount, couponCode } = JSON.parse(orderDataStr)
+        const { orderId, customer, items, total, subtotal, discount, couponCode, express } = JSON.parse(orderDataStr)
 
         // Fallback: update to 'paid' via server API (in case webhook hasn't arrived yet)
         if (orderId && customer?.phone) {
@@ -78,6 +78,7 @@ export default function PaymentSuccessPage() {
                 customer,
                 itemsCount: items?.length ?? 0,
                 total,
+                express: express === true,
               },
             }),
           }).catch(console.error)

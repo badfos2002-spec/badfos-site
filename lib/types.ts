@@ -95,6 +95,8 @@ export interface Shipping {
   address?: Address
   additionalPhone?: string // optional extra contact for the courier (delivery only)
   cost: number // 35 or 0
+  express?: boolean // pickup only: ready in 1-2 business days (max 20 units)
+  expressCost?: number // flat express surcharge (₪50), NOT discounted
 }
 
 export interface OrderItem {

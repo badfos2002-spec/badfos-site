@@ -345,6 +345,18 @@ export const PICKUP_LOCATION = {
   address: 'ראשון לציון, ישראל',
 } as const
 
+// Express pickup: order ready in 1-2 business days, flat surcharge.
+// Available ONLY for pickup orders with up to maxQuantity total units.
+export const EXPRESS_PICKUP = {
+  cost: 50,
+  maxQuantity: 20,
+} as const
+
+/** Express is offered only on pickup, and only for small orders (≤20 units) */
+export function isExpressEligible(method: 'delivery' | 'pickup', totalQuantity: number): boolean {
+  return method === 'pickup' && totalQuantity > 0 && totalQuantity <= EXPRESS_PICKUP.maxQuantity
+}
+
 // ============================================================================
 // Discount Thresholds
 // ============================================================================

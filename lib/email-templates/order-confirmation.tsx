@@ -181,6 +181,16 @@ export function OrderConfirmationEmail({
           <span class="info-label">משלוח:</span>
           <span class="info-value">₪${order.shipping.method === 'delivery' ? '35' : '0'}</span>
         </div>
+        ${
+          order.shipping.express
+            ? `
+        <div class="info-row">
+          <span class="info-label">אקספרס ⚡:</span>
+          <span class="info-value">₪${order.shipping.expressCost ?? 50}</span>
+        </div>
+        `
+            : ''
+        }
         <div class="info-row" style="border-top: 2px solid #FDB913; margin-top: 10px; padding-top: 10px;">
           <span class="info-label"><strong>סה"כ לתשלום:</strong></span>
           <span class="info-value"><strong>₪${order.total}</strong></span>
@@ -203,7 +213,7 @@ export function OrderConfirmationEmail({
       <div class="info-section">
         <h2>המשך תהליך</h2>
         <p>ההזמנה שלך נמצאת בתהליך עיבוד. נעדכן אותך במייל לגבי התקדמות ההזמנה.</p>
-        <p><strong>זמן אספקה משוער:</strong> 3-7 ימי עסקים</p>
+        <p><strong>זמן אספקה משוער:</strong> ${order.shipping.express ? '1-2 ימי עסקים (אקספרס ⚡)' : '3-7 ימי עסקים'}</p>
       </div>
     </div>
 

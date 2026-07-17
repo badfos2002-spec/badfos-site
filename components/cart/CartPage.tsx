@@ -14,6 +14,7 @@ import { createSharedCart, createOrder, validateCoupon } from '@/lib/db'
 import { phonesMatch } from '@/lib/utils'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { calculateOrderTotal } from '@/lib/pricing'
+import { EXPRESS_PICKUP } from '@/lib/constants'
 import type { CustomerInfo, Shipping } from '@/lib/types'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
 import { getGclid } from '@/lib/tracking'
@@ -53,6 +54,13 @@ function stripUndefined<T>(obj: T): T {
     ) as T
   }
   return obj
+}
+
+/** Flat express surcharge — pickup only, never discounted */
+function getExpressCost(shipping: Shipping | null): number {
+  return shipping?.method === 'pickup' && shipping.express
+    ? (shipping.expressCost ?? EXPRESS_PICKUP.cost)
+    : 0
 }
 
 export default function CartPage() {
@@ -193,7 +201,7 @@ export default function CartPage() {
     if (!customerInfo || !shipping || (items.length === 0 && packageItems.length === 0)) return
     if (!/^05\d{8}$/.test(customerInfo.phone)) return
 
-    const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount)
+    const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount, undefined, getExpressCost(shipping))
     const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
     const total = orderCalc.total + packagesTotal
     // Fingerprint of cart contents — ANY cart mutation (item added/removed/edited,
@@ -281,8 +289,9 @@ export default function CartPage() {
         } catch {}
       }
 
-      // Calculate correct totals (including quantity discount + coupon)
-      const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', effectiveCouponDiscount)
+      // Calculate correct totals (including quantity discount + coupon + express)
+      const expressCost = getExpressCost(shipping)
+      const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', effectiveCouponDiscount, undefined, expressCost)
       // Add package totals
       const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
       orderCalc.subtotal += packagesTotal
@@ -409,6 +418,7 @@ export default function CartPage() {
             description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
             items: items.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
             couponDiscount: effectiveCouponDiscount,
+            ...(expressCost > 0 && { express: true }),
             ...(getGclid() && { gclid: getGclid() }),
           }),
         }).then(r => r.json())
@@ -435,6 +445,7 @@ export default function CartPage() {
             discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
             couponCode: effectiveCouponCode || '',
             total: orderCalc.total,
+            express: expressCost > 0,
             timestamp: Date.now(),
           })
           sessionStorage.setItem('badfos_pending_order', orderJson)
@@ -532,6 +543,7 @@ export default function CartPage() {
           discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
           couponCode: effectiveCouponCode || '',
           total: orderCalc.total,
+          express: expressCost > 0,
           timestamp: Date.now(),
         })
         sessionStorage.setItem('badfos_pending_order', orderJson)
@@ -781,7 +793,10 @@ export default function CartPage() {
           <ContactForm onSubmit={setCustomerInfo} />
 
           {/* Shipping */}
-          <ShippingForm onSubmit={setShipping} />
+          <ShippingForm
+            onSubmit={setShipping}
+            totalQuantity={items.reduce((s, i) => s + i.totalQuantity, 0) + packageItems.reduce((s, p) => s + p.quantity, 0)}
+          />
         </div>
 
         {/* Sidebar - Order Summary */}

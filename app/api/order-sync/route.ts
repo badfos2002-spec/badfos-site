@@ -7,6 +7,7 @@ import {
   sanitizeCustomer,
   sanitizeShipping,
   sanitizePackages,
+  stripIneligibleExpress,
 } from '@/lib/order-sanitize'
 
 /**
@@ -82,7 +83,15 @@ export async function POST(req: NextRequest) {
       update.customer = sanitizeCustomer(body.customer)
     }
     if (body?.shipping && typeof body.shipping === 'object') {
-      update.shipping = sanitizeShipping(body.shipping)
+      // Express pickup is limited to small orders (≤20 units) — strip it on
+      // bigger orders so a forged payload can never plant a ₪50 express fee
+      const qtyItems = (Array.isArray(body?.items) ? body.items : [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .reduce((s: number, it: any) => s + (Number(it?.totalQuantity) || 0), 0)
+      const qtyPackages = (Array.isArray(body?.packages) ? body.packages : [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .reduce((s: number, p: any) => s + (Number(p?.quantity) || 0), 0)
+      update.shipping = stripIneligibleExpress(sanitizeShipping(body.shipping), qtyItems + qtyPackages)
     }
     if (Array.isArray(body?.packages)) {
       update.packages = sanitizePackages(body.packages)

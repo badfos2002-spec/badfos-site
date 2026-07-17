@@ -81,7 +81,9 @@ export default function OrderSummary({
 
   // Use 'pickup' (₪0) when shipping not yet selected, to avoid phantom shipping cost in total
   const shippingMethod = shipping?.method || 'pickup'
-  const orderTotal = calculateOrderTotal(discountableItems, shippingMethod, couponDiscount, firestoreQuantityDiscount)
+  // Express surcharge — pickup only, flat fee, never discounted
+  const expressCost = shipping?.method === 'pickup' && shipping.express ? (shipping.expressCost ?? 50) : 0
+  const orderTotal = calculateOrderTotal(discountableItems, shippingMethod, couponDiscount, firestoreQuantityDiscount, expressCost)
   // Add back non-discountable items to the totals
   const noDiscountTotal = items.filter(i => i.noDiscount).reduce((sum, item) => sum + item.totalPrice, 0)
   orderTotal.subtotal += noDiscountTotal
@@ -202,6 +204,13 @@ export default function OrderSummary({
             <div className="flex justify-between text-gray-400 text-sm">
               <span>משלוח:</span>
               <span>ייקבע בהמשך</span>
+            </div>
+          )}
+
+          {expressCost > 0 && (
+            <div className="flex justify-between text-orange-600">
+              <span>אקספרס ⚡:</span>
+              <span className="font-bold">{formatPrice(expressCost)}</span>
             </div>
           )}
         </div>

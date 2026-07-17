@@ -3,18 +3,30 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Shipping, Address } from '@/lib/types'
-import { SHIPPING_COSTS } from '@/lib/constants'
+import { SHIPPING_COSTS, EXPRESS_PICKUP, isExpressEligible } from '@/lib/constants'
 
 interface ShippingFormProps {
   onSubmit: (shipping: Shipping) => void
+  /** Total units in the cart (items + packages) — express is limited to small orders */
+  totalQuantity: number
 }
 
-export default function ShippingForm({ onSubmit }: ShippingFormProps) {
+export default function ShippingForm({ onSubmit, totalQuantity }: ShippingFormProps) {
   const [method, setMethod] = useState<'delivery' | 'pickup'>('delivery')
+  const [express, setExpress] = useState(false)
   const [isPrivateHouse, setIsPrivateHouse] = useState(false)
   const [address, setAddress] = useState<Address>({ street: '', number: '', city: '', apartment: '', floor: 'קרקע', entrance: '' })
   const [additionalPhone, setAdditionalPhone] = useState('')
   const [touched, setTouched] = useState(false)
+
+  const expressAvailable = isExpressEligible(method, totalQuantity)
+
+  // Express is pickup-only and limited to small orders — clear it the moment
+  // it stops being eligible (switch to delivery / quantity crosses the limit),
+  // so the ₪50 fee can never linger on an ineligible order
+  useEffect(() => {
+    if (!isExpressEligible(method, totalQuantity)) setExpress(false)
+  }, [method, totalQuantity])
 
   // When private house is selected, apartment becomes "בית פרטי" and floor becomes "קרקע"
   useEffect(() => {
@@ -28,14 +40,19 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
   // Auto-update parent with debounce (300ms)
   useEffect(() => {
     if (method === 'pickup') {
-      const timer = setTimeout(() => onSubmit({ method, cost: SHIPPING_COSTS[method] }), 300)
+      const withExpress = express && isExpressEligible(method, totalQuantity)
+      const timer = setTimeout(() => onSubmit({
+        method,
+        cost: SHIPPING_COSTS[method],
+        ...(withExpress && { express: true, expressCost: EXPRESS_PICKUP.cost }),
+      }), 300)
       return () => clearTimeout(timer)
     } else if (address.street && address.number && address.city && address.floor && address.apartment) {
       const timer = setTimeout(() => onSubmit({ method, address, ...(additionalPhone.trim() && { additionalPhone: additionalPhone.trim() }), cost: SHIPPING_COSTS[method] }), 300)
       return () => clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [method, address.street, address.number, address.city, address.apartment, address.floor, address.entrance, additionalPhone])
+  }, [method, express, totalQuantity, address.street, address.number, address.city, address.apartment, address.floor, address.entrance, additionalPhone])
 
   // Mark as touched after 3 seconds of delivery being selected
   useEffect(() => {
@@ -84,6 +101,29 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
               </div>
               <div className="font-bold text-black">₪0</div>
             </label>
+
+            {/* Express — pickup only, up to 20 units */}
+            {expressAvailable && (
+              <label
+                className={
+                  express
+                    ? 'flex items-center gap-3 p-4 border-2 border-orange-400 rounded-lg cursor-pointer transition-colors bg-gradient-to-l from-amber-50 to-orange-50 shadow-sm'
+                    : 'flex items-center gap-3 p-4 border-2 border-amber-200 rounded-lg cursor-pointer transition-colors bg-gradient-to-l from-amber-50 to-orange-50 hover:border-orange-300'
+                }
+              >
+                <input
+                  type="checkbox"
+                  checked={express}
+                  onChange={(e) => setExpress(e.target.checked)}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <div className="flex-1">
+                  <div className="font-bold text-orange-900">⚡ אקספרס — ההזמנה מוכנה תוך 1-2 ימי עסקים</div>
+                  <div className="text-sm text-orange-700">בתיאום מראש</div>
+                </div>
+                <div className="font-bold text-orange-600">+₪{EXPRESS_PICKUP.cost}</div>
+              </label>
+            )}
           </div>
 
           {/* Address Fields (only if delivery) */}

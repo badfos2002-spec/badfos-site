@@ -9,8 +9,11 @@ const SIZE_SURCHARGES: Record<string, number> = { '3XL': 12, '4XL': 12 }
 const SHIPPING_COST = 35
 const QUANTITY_DISCOUNT_THRESHOLD = 15
 const QUANTITY_DISCOUNT_PERCENT = 5
+// Express pickup surcharge — allowed only for small orders (mirrors EXPRESS_PICKUP in lib/constants.ts)
+const EXPRESS_COST = 50
+const EXPRESS_MAX_QUANTITY = 20
 
-function calculateServerAmount(items: any[], couponDiscount: number = 0): number {
+function calculateServerAmount(items: any[], couponDiscount: number = 0): { amount: number; totalQuantity: number } {
   let subtotal = 0
   let totalQuantity = 0
 
@@ -40,15 +43,18 @@ function calculateServerAmount(items: any[], couponDiscount: number = 0): number
     discount = subtotal * (QUANTITY_DISCOUNT_PERCENT / 100)
   }
 
-  return subtotal - discount - couponDiscount
+  return { amount: subtotal - discount - couponDiscount, totalQuantity }
 }
 
-function verifyAmount(items: any[], clientAmount: number, couponDiscount: number = 0): boolean {
+function verifyAmount(items: any[], clientAmount: number, couponDiscount: number = 0, express: boolean = false): boolean {
   if (!items || items.length === 0) return true
-  const serverAmount = calculateServerAmount(items, couponDiscount)
-  // Allow only shipping variance (₪0-35) + ₪2 rounding tolerance
+  const { amount: serverAmount, totalQuantity } = calculateServerAmount(items, couponDiscount)
+  // Express pickup surcharge is legitimate ONLY for small orders (≤20 units) —
+  // never a silent ₪50 allowance on a big order
+  const expressAllowance = express && totalQuantity <= EXPRESS_MAX_QUANTITY ? EXPRESS_COST : 0
+  // Allow only shipping variance (₪0-35) + express (when eligible) + ₪2 rounding tolerance
   const min = serverAmount - 2 // rounding
-  const max = serverAmount + SHIPPING_COST + 2 // shipping + rounding
+  const max = serverAmount + SHIPPING_COST + expressAllowance + 2 // shipping + express + rounding
   if (clientAmount < min || clientAmount > max) {
     console.error(`Price mismatch: server=${serverAmount}, client=${clientAmount}, diff=${clientAmount - serverAmount}`)
     return false
@@ -65,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, phone, email, amount, description, orderId, items, couponDiscount, gclid: rawGclid } = body
+    const { name, phone, email, amount, description, orderId, items, couponDiscount, express, gclid: rawGclid } = body
     const gclid = typeof rawGclid === 'string'
       ? rawGclid.trim().replace(/^gclid=/i, '')
       : undefined
@@ -84,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Server-side amount verification (if items provided)
     if (items && Array.isArray(items) && items.length > 0) {
-      if (!verifyAmount(items, verifiedAmount, couponDiscount || 0)) {
+      if (!verifyAmount(items, verifiedAmount, couponDiscount || 0, express === true)) {
         console.error('Amount mismatch: client sent', verifiedAmount, 'for items', JSON.stringify(items.map((i: any) => i.productType)))
         return NextResponse.json({ error: 'Amount verification failed' }, { status: 400 })
       }
