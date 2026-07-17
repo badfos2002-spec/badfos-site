@@ -9,6 +9,7 @@ import BusinessLayout from './BusinessLayout'
 import BirthdayLayout from './BirthdayLayout'
 import FamilyLayout from './FamilyLayout'
 import EndOfYearLayout from './EndOfYearLayout'
+import SoldiersLayout from './SoldiersLayout'
 import RishonLayout from './RishonLayout'
 import type { SeoLayoutProps } from './types'
 
@@ -21,5 +22,6 @@ export const LAYOUTS: Record<string, ComponentType<SeoLayoutProps>> = {
   'חולצות-ליום-הולדת': BirthdayLayout,
   'חולצות-משפחתיות': FamilyLayout,
   'חולצות-לסוף-שנה': EndOfYearLayout,
+  'חולצות-לחיילים': SoldiersLayout,
   'הדפסת-חולצות-בראשון-לציון': RishonLayout,
 }

@@ -6,7 +6,7 @@ import { LAYOUTS, DefaultLayout } from '@/components/seo/layouts'
 
 const BASE_URL = 'https://badfos.co.il'
 
-// Static generation of exactly the 6 SEO slugs — unknown slugs return 404
+// Static generation of exactly the SEO_PAGES slugs — unknown slugs return 404
 export const dynamicParams = false
 
 export function generateStaticParams() {
