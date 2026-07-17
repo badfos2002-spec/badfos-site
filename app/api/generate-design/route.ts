@@ -8,14 +8,42 @@ function getOpenAI(): OpenAI | null {
   return _openai
 }
 
+// Simple in-memory per-IP rate limiter (resets on redeploy). Each DALL-E 3 HD
+// call costs real money, so this unauthenticated endpoint must be throttled.
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_WINDOW = 60_000 // 1 minute
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
+    return false
+  }
+  entry.count++
+  return entry.count > RATE_LIMIT_MAX
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    if (isRateLimited(ip)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { prompt } = body
 
-    if (!prompt) {
+    if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json(
         { error: 'Missing required field: prompt' },
+        { status: 400 }
+      )
+    }
+    if (prompt.length > 1000) {
+      return NextResponse.json(
+        { error: 'Prompt too long (max 1000 characters)' },
         { status: 400 }
       )
     }

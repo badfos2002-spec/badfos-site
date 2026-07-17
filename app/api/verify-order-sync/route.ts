@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     const orderId = body?.orderId
     const items = body?.items
     const total = body?.total
+    const phone = body?.phone
 
     if (typeof orderId !== 'string' || !orderId.trim() || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ consistent: null, reason: 'invalid_payload' })
@@ -49,6 +50,16 @@ export async function POST(req: NextRequest) {
     }
 
     const data = snap.data()!
+
+    // Ownership gate (public endpoint, same model as /api/order-sync and
+    // /api/payment/client-confirm): the caller MUST prove knowledge of the
+    // order's phone before we ever overwrite items/total. Without this an
+    // attacker who learns any orderId could rewrite that order's contents.
+    const orderPhone = String(data.customer?.phone || '').replace(/[-\s]/g, '')
+    const requestPhone = typeof phone === 'string' ? phone.replace(/[-\s]/g, '') : ''
+    if (!orderPhone || !requestPhone || orderPhone !== requestPhone) {
+      return NextResponse.json({ consistent: null, reason: 'unauthorized' }, { status: 403 })
+    }
     const orderSig = itemsSignature(Array.isArray(data.items) ? data.items : [])
     const snapshotSig = itemsSignature(items)
 

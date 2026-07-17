@@ -119,7 +119,7 @@ export default function PaymentSuccessPage() {
               headers: { 'Content-Type': 'application/json' },
               // subtotal/discount/couponCode travel with total so a pricing heal
               // writes the whole set coherently (never total alone)
-              body: JSON.stringify({ orderId, items, total, subtotal, discount, couponCode }),
+              body: JSON.stringify({ orderId, items, total, subtotal, discount, couponCode, phone: customer?.phone }),
               keepalive: true,
             }).catch(() => {})
           }

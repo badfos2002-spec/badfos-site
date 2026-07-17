@@ -26,7 +26,9 @@ service cloud.firestore {
     // Approved reviews are public; anyone can submit; admin manages
     match /reviews/{reviewId} {
       allow read: if resource.data.status == 'approved';
-      allow create: if true;
+      // Public submissions must be pending — only an admin can approve, so an
+      // anonymous client can never publish a self-approved review.
+      allow create: if request.resource.data.status == 'pending';
       allow update, delete: if isAdmin();
     }
 
