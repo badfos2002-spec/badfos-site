@@ -14,7 +14,6 @@ import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { X, ChevronRight, ChevronLeft, ZoomIn, ArrowLeft } from 'lucide-react'
-import { queryDocuments } from '@/lib/db'
 import { GALLERY_SECTIONS } from '@/lib/constants'
 import type { SiteImage, GallerySection } from '@/lib/types'
 
@@ -88,10 +87,14 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   // תמונות הגלריה מהאדמין — ממוינות לפי סדר תצוגה ואז לפי תאריך העלאה
+  // import דינמי — ה-SDK של Firestore לא נכנס לבאנדל הראשוני של העמוד
   useEffect(() => {
-    queryDocuments<SiteImage>('siteImages', [
-      { field: 'category', operator: '==', value: 'gallery' },
-    ])
+    import('@/lib/db')
+      .then(({ queryDocuments }) =>
+        queryDocuments<SiteImage>('siteImages', [
+          { field: 'category', operator: '==', value: 'gallery' },
+        ])
+      )
       .then((data) =>
         setDbItems(
           data
@@ -212,7 +215,9 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
       {/* ── גריד תמונות אחיד; key מפעיל מחדש את אנימציית הכניסה בהחלפת פילטר ── */}
       <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">
         <div
-          key={`${activeSection}-${usingDb ? 'db' : 'fb'}`}
+          // key לפי הפילטר בלבד: החלפת מקור הנתונים (fallback→DB) לא מפרקת את כל
+          // הגריד — תמונות זהות נשארות מוצמדות ל-DOM (מונע קפיצת LCP וריצוד)
+          key={activeSection}
           className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4"
         >
           {visibleItems.map((item, idx) => (

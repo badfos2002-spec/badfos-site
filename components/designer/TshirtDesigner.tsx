@@ -312,6 +312,7 @@ export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.Re
           src={mockupSrc}
           alt="תצוגה מקדימה"
           fill
+          priority
           sizes="(max-width: 1024px) 100vw, 50vw"
           className="object-contain"
         />

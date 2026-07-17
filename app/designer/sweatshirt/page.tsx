@@ -454,6 +454,7 @@ export default function SweatshirtDesignerPage() {
           src={mockupSrc}
           alt="תצוגה מקדימה"
           fill
+          priority
           sizes="(max-width: 640px) 100vw, 400px"
           className="!relative w-full h-auto block"
         />

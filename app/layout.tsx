@@ -85,8 +85,7 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={`${rubik.variable} ${secularOne.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Fonts are self-hosted via next/font — no Google Fonts preconnect needed */}
         <link rel="alternate" hrefLang="he-IL" href="https://badfos.co.il" />
         <link rel="preconnect" href="https://firestore.googleapis.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />

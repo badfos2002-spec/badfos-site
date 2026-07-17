@@ -50,8 +50,11 @@ export default function HeroCarousel() {
       style={{ boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.08)' }}
     >
       <div className="relative w-full md:w-[550px] aspect-square mx-auto overflow-hidden rounded-[2rem]">
-        {/* Current slide */}
+        {/* Current slide — keyed by slide id so React never mutates the src of a
+            mounted <img> (a src swap on the painted LCP element pushes the LCP
+            timestamp to the slide-rotation time and tanks Core Web Vitals) */}
         <SlideImage
+          key={slide.id}
           slide={slide}
           className={`transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}
           priority={current === 0}
@@ -60,6 +63,7 @@ export default function HeroCarousel() {
         {/* Next slide (fades in on top) */}
         {nextSlide && (
           <SlideImage
+            key={nextSlide.id}
             slide={nextSlide}
             className={`transition-opacity duration-500 ${fading ? 'opacity-100' : 'opacity-0'}`}
             priority={false}

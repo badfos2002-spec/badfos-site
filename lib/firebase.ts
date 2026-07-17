@@ -1,5 +1,11 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
-import { getAuth, Auth } from 'firebase/auth'
+import {
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  Auth,
+} from 'firebase/auth'
 import { getFirestore, Firestore } from 'firebase/firestore'
 import { getStorage, FirebaseStorage } from 'firebase/storage'
 
@@ -32,7 +38,17 @@ let storage: FirebaseStorage | undefined
 if (typeof window !== 'undefined' && isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
-    auth = getAuth(app)
+    // initializeAuth without popupRedirectResolver — avoids eagerly loading the
+    // firebaseapp.com auth iframe (~130KB of JS) on every public page.
+    // The resolver is passed explicitly at the signInWithPopup call site (lib/auth.ts).
+    try {
+      auth = initializeAuth(app, {
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      })
+    } catch {
+      // Auth already initialized for this app (e.g. fast refresh) — reuse it
+      auth = getAuth(app)
+    }
     db = getFirestore(app)
     storage = getStorage(app)
   } catch (error) {

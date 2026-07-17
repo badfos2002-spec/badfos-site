@@ -1,5 +1,6 @@
 import {
   signInWithPopup,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   User,
@@ -26,7 +27,8 @@ export async function signInWithGoogle(): Promise<User> {
   const provider = new GoogleAuthProvider()
   provider.setCustomParameters({ prompt: 'select_account' })
 
-  const result = await signInWithPopup(auth!, provider)
+  // Resolver passed explicitly — auth is initialized without one (see lib/firebase.ts)
+  const result = await signInWithPopup(auth!, provider, browserPopupRedirectResolver)
 
   // Block any email that isn't admin
   if (result.user.email !== 'badfos2002@gmail.com') {

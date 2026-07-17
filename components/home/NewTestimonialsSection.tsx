@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Star } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { Button } from '@/components/ui/button'
@@ -123,7 +124,11 @@ function ReviewCard({ review, index }: { review: ReviewItem; index: number }) {
 
       {/* Author row */}
       <div className="flex items-center gap-3 mb-4">
-        {review.profile_photo_url ? (
+        {review.profile_photo_url?.includes('googleusercontent.com') ? (
+          // next/image — האווטארים של גוגל מוגשים כ-WebP מוקטן (~2KB במקום ~30KB PNG)
+          <Image src={review.profile_photo_url} alt={review.author_name} width={44} height={44} className="w-11 h-11 rounded-full object-cover flex-shrink-0 ring-2 ring-white shadow-sm" />
+        ) : review.profile_photo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={review.profile_photo_url} alt={review.author_name} className="w-11 h-11 rounded-full object-cover flex-shrink-0 ring-2 ring-white shadow-sm" loading="lazy" />
         ) : (
           <div
