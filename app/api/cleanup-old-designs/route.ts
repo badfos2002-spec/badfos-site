@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb, adminStorage } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
+import {
+  runUpscaleForOrder,
+  upscaleEntryMillis,
+  UPSCALABLE_STATUSES,
+  STUCK_PENDING_MS,
+} from '@/lib/upscale-order'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const CLEANUP_DAYS = 30
 const QUOTE_EXPIRY_DAYS = 30 // הצעת מחיר שעברו 30 יום מיצירתה — נמחקת מה-DB
+const UPSCALE_RETRY_DAYS = 14 // ריפוי עצמי של הגדלות: רק הזמנות מ-14 הימים האחרונים
 
 // Storage thresholds (in MB). Override via env vars if needed.
 // Firebase Spark (free) tier limit is 5000 MB.
@@ -15,6 +22,8 @@ const STORAGE_TARGET_MB = Number(process.env.STORAGE_TARGET_MB || 3000)
 const MAX_EMERGENCY_DELETIONS = 500 // safety cap per run
 
 /**
+ * Layer 0: Self-heal upscales — retry failed/stuck design upscales of recent
+ *          paid orders (up to 3 total attempts per design, then gave_up).
  * Layer 1: Delete design files of orders older than 30 days (keep order docs).
  * Layer 2: If Storage usage still high → delete entire oldest orders (doc + files) until safe.
  *
@@ -36,8 +45,51 @@ export async function GET(req: NextRequest) {
   let errors = 0
   let emergencyDeleted = 0
   let deletedQuotes = 0
+  let upscalesRetried = 0
+  let upscalesGaveUp = 0
 
   try {
+    // ── Layer 0: Self-healing upscale retries (paid orders, last 14 days) ─
+    try {
+      const retryCutoff = new Date()
+      retryCutoff.setDate(retryCutoff.getDate() - UPSCALE_RETRY_DAYS)
+      const recentSnap = await adminDb
+        .collection('orders')
+        .where('createdAt', '>=', Timestamp.fromDate(retryCutoff))
+        .limit(500)
+        .get()
+
+      for (const doc of recentSnap.docs) {
+        const order = doc.data()
+        if (!UPSCALABLE_STATUSES.includes(order.status)) continue
+        const upscales = order.upscales || {}
+        // Only orders with a failed entry, or a pending one older than 1h
+        // (lost webhook) — everything else is left untouched
+        const needsHealing = Object.values(upscales).some((u: any) => {
+          if (u?.status === 'failed') return true
+          if (u?.status !== 'pending') return false
+          const ms = upscaleEntryMillis(u.createdAt)
+          return ms === null || Date.now() - ms >= STUCK_PENDING_MS
+        })
+        if (!needsHealing) continue
+
+        try {
+          const r = await runUpscaleForOrder(doc.id, { retryStuckPending: true })
+          upscalesRetried += r.created
+          upscalesGaveUp += r.gaveUp
+          if (r.created || r.gaveUp) {
+            console.log(`Upscale self-heal: order ${doc.id} — retried ${r.created}, gave up ${r.gaveUp}`)
+          }
+        } catch (e) {
+          console.error(`Upscale self-heal failed for order ${doc.id}:`, e)
+          errors++
+        }
+      }
+    } catch (e) {
+      console.error('Upscale self-heal scan failed:', e)
+      errors++
+    }
+
     // ── Expired quotes: delete quotes created 30+ days ago (by createdAt) ─
     const quoteCutoff = new Date()
     quoteCutoff.setDate(quoteCutoff.getDate() - QUOTE_EXPIRY_DAYS)
@@ -126,6 +178,8 @@ export async function GET(req: NextRequest) {
       cleaned,
       emergencyDeleted,
       deletedQuotes,
+      upscalesRetried,
+      upscalesGaveUp,
       errors,
       storageMB: Math.round(usageMB),
       filesCount,

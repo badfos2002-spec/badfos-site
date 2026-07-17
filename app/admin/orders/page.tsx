@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
 import { Timestamp } from 'firebase/firestore'
 import { deleteFile } from '@/lib/storage'
-import type { Order } from '@/lib/types'
+import type { Order, DesignUpscale } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-800' },
@@ -40,6 +40,17 @@ const colorLabels: Record<string, string> = {
   navy: 'נייבי', beige: 'בז׳', burgundy: 'בורדו', olive: 'זית',
   blue: 'כחול', green: 'ירוק', purple: 'סגול', orange: 'כתום',
   turquoise: 'טורקיז', lightblue: 'תכלת', pink: 'ורוד',
+}
+
+// A pending upscale is shown as "in progress" only for 24h — after that
+// (lost webhook / gave up) the row falls back to the plain original download
+const UPSCALE_PENDING_UI_MS = 24 * 60 * 60 * 1000
+const isUpscaleInProgress = (u?: DesignUpscale) => {
+  if (u?.status !== 'pending') return false
+  const c = u.createdAt
+  const ms = c instanceof Date ? c.getTime()
+    : typeof c?.toMillis === 'function' ? c.toMillis() : NaN
+  return Number.isFinite(ms) && Date.now() - ms < UPSCALE_PENDING_UI_MS
 }
 
 export default function AdminOrdersPage() {
@@ -661,7 +672,7 @@ export default function AdminOrdersPage() {
                                             </div>
                                             <div>
                                               <span className="text-sm font-medium">{d.areaName ?? d.area}</span>
-                                              {upscale?.status === 'pending' && (
+                                              {isUpscaleInProgress(upscale) && (
                                                 <div className="text-xs text-gray-500">⏳ בהגדלה...</div>
                                               )}
                                             </div>

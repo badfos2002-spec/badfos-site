@@ -115,8 +115,11 @@ export interface OrderItem {
  * Keyed on the order as upscales[`${itemIndex}_${areaId}`].
  */
 export interface DesignUpscale {
-  status: 'pending' | 'done' | 'failed'
+  /** gave_up: retried 3 times without success — admin falls back to the original image */
+  status: 'pending' | 'done' | 'failed' | 'gave_up'
   predictionId?: string
+  /** Total Replicate predictions created for this design (capped at 3, then gave_up) */
+  attempts?: number
   /** Original design image URL sent to Replicate */
   sourceUrl?: string
   /** Firebase Storage download URL of the upscaled image (status: done) */
