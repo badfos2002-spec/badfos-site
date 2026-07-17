@@ -7,6 +7,7 @@ import {
   UPSCALABLE_STATUSES,
   STUCK_PENDING_MS,
 } from '@/lib/upscale-order'
+import { runBackup, BackupSummary } from '@/lib/backup'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const CLEANUP_DAYS = 30
@@ -22,6 +23,9 @@ const STORAGE_TARGET_MB = Number(process.env.STORAGE_TARGET_MB || 3000)
 const MAX_EMERGENCY_DELETIONS = 500 // safety cap per run
 
 /**
+ * Backup (runs FIRST, before any deletion — captures pre-cleanup state):
+ *          nightly full Firestore backup to Storage (lib/backup.ts).
+ *          A backup failure never blocks the cleanup, and vice versa.
  * Layer 0: Self-heal upscales — retry failed/stuck design upscales of recent
  *          paid orders (up to 3 total attempts per design, then gave_up).
  * Layer 1: Delete design files of orders older than 30 days (keep order docs).
@@ -47,6 +51,17 @@ export async function GET(req: NextRequest) {
   let deletedQuotes = 0
   let upscalesRetried = 0
   let upscalesGaveUp = 0
+
+  // ── Nightly backup — FIRST, before any deletion below. Failure here must
+  //    never block the cleanup (and cleanup failures never block the backup,
+  //    since it already completed by then). ─────────────────────────────────
+  let backup: BackupSummary | { error: string }
+  try {
+    backup = await runBackup()
+  } catch (e) {
+    console.error('Nightly backup failed (cleanup continues):', e)
+    backup = { error: e instanceof Error ? e.message : 'backup failed' }
+  }
 
   try {
     // ── Layer 0: Self-healing upscale retries (paid orders, last 14 days) ─
@@ -174,6 +189,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      backup,
       scanned,
       cleaned,
       emergencyDeleted,
@@ -187,7 +203,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (e) {
     console.error('Cleanup endpoint error:', e)
-    return NextResponse.json({ error: 'Cleanup failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Cleanup failed', backup }, { status: 500 })
   }
 }
 
