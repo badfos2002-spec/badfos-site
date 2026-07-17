@@ -120,6 +120,8 @@ export interface Order {
   discount: number
   couponCode?: string
   total: number
+  paymentSum?: number // actual sum charged, written by the payment webhook
+  gclid?: string // Google Ads click ID — order attributed to an ads click
   createdAt: Timestamp
   updatedAt: Timestamp
 }

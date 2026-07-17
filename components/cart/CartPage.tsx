@@ -354,6 +354,9 @@ export default function CartPage() {
               total: orderCalc.total,
               // Keep webhook matching working if a fresh payment link was created
               paymentId: tempOrderId,
+              // Attribution self-heal: fills a missing gclid on the existing
+              // order (server never overwrites an existing one)
+              ...(getGclid() && { gclid: getGclid() }),
             })),
           })
           const sync = await syncRes.json().catch(() => null)

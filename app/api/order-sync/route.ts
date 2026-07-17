@@ -91,6 +91,13 @@ export async function POST(req: NextRequest) {
       // Keep webhook matching working if a fresh payment link was created
       update.paymentId = body.paymentId.trim().slice(0, 60)
     }
+    // Google Ads attribution self-heal: if the browser carries a gclid but the
+    // order was created without one, store it now. NEVER overwrites an
+    // existing gclid (first click wins — matches the offline-conversion flow).
+    const rawGclid = typeof body?.gclid === 'string' ? body.gclid.trim().replace(/^gclid=/i, '') : ''
+    if (rawGclid && rawGclid.length <= 200 && /^[A-Za-z0-9_-]+$/.test(rawGclid) && !data.gclid) {
+      update.gclid = rawGclid
+    }
     if (data.status === 'cart_abandoned') {
       // ACTIVE re-checkout revives the order — the 10-minute abandonment only
       // applies while the customer is NOT completing checkout. Resetting the

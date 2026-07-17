@@ -2,17 +2,47 @@
 
 import { useState, useEffect } from 'react'
 import { TrendingUp, DollarSign, ShoppingBag, Users, BarChart3, Loader2 } from 'lucide-react'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { getAllOrders, getAllLeads } from '@/lib/db'
+import { AdsReportSection, type AdsMonthRow } from '@/components/admin/AdsReportSection'
 import type { Order, Lead } from '@/lib/types'
+
+const PAID_STATUSES = ['paid', 'in_production', 'shipped', 'completed']
+const MONTH_NAMES = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר']
 
 export default function AdminAnalyticsPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
+  // Monthly Google Ads spend, manually entered — settings/adsSpend: { 'YYYY-MM': number }
+  const [adsSpend, setAdsSpend] = useState<Record<string, number>>({})
+  const [spendDraft, setSpendDraft] = useState<Record<string, string>>({})
+  const [savingSpend, setSavingSpend] = useState(false)
+  const [spendSaved, setSpendSaved] = useState(false)
 
   useEffect(() => {
-    Promise.all([getAllOrders(), getAllLeads()])
-      .then(([o, l]) => { setOrders(o); setLeads(l) })
+    const spendPromise: Promise<Record<string, number>> = db
+      ? getDoc(doc(db, 'settings', 'adsSpend'))
+          .then(snap => {
+            if (!snap.exists()) return {}
+            const data = snap.data() as Record<string, unknown>
+            const map: Record<string, number> = {}
+            for (const [k, v] of Object.entries(data)) {
+              if (typeof v === 'number' && isFinite(v) && v >= 0) map[k] = v
+            }
+            return map
+          })
+          .catch(() => ({}))
+      : Promise.resolve({})
+
+    Promise.all([getAllOrders(), getAllLeads(), spendPromise])
+      .then(([o, l, spend]) => {
+        setOrders(o)
+        setLeads(l)
+        setAdsSpend(spend)
+        setSpendDraft(Object.fromEntries(Object.entries(spend).map(([k, v]) => [k, String(v)])))
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
@@ -62,6 +92,64 @@ export default function AdminAnalyticsPage() {
     },
   ]
 
+  // ── Google Ads report: current month first, back 6 months ────────────────
+  const orderRevenue = (o: Order) => o.paymentSum ?? o.total ?? 0
+  const adsMonths: AdsMonthRow[] = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const monthPaid = orders.filter(o => {
+      if (!PAID_STATUSES.includes(o.status)) return false
+      const cd = o.createdAt?.toDate?.()
+      return cd && cd.getFullYear() === d.getFullYear() && cd.getMonth() === d.getMonth()
+    })
+    const adsOrders = monthPaid.filter(o => o.gclid)
+    return {
+      key,
+      label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
+      adsCount: adsOrders.length,
+      adsRevenue: adsOrders.reduce((sum, o) => sum + orderRevenue(o), 0),
+      totalPaidCount: monthPaid.length,
+      totalPaidRevenue: monthPaid.reduce((sum, o) => sum + orderRevenue(o), 0),
+      spendInput: spendDraft[key] ?? '',
+    }
+  })
+
+  const spendDirty = adsMonths.some(m => {
+    const raw = m.spendInput.trim()
+    const draftNum = raw === '' ? undefined : Number(raw)
+    return draftNum !== (adsSpend[m.key] ?? undefined)
+  })
+
+  const handleSaveSpend = async () => {
+    if (!db) return
+    const map: Record<string, number> = { ...adsSpend }
+    for (const m of adsMonths) {
+      const raw = m.spendInput.trim()
+      if (raw === '') {
+        delete map[m.key]
+        continue
+      }
+      const num = Number(raw)
+      if (isNaN(num) || num < 0) {
+        alert(`הוצאה לא תקינה לחודש ${m.label} — נא להזין מספר`)
+        return
+      }
+      map[m.key] = num
+    }
+    setSavingSpend(true)
+    try {
+      await setDoc(doc(db, 'settings', 'adsSpend'), map)
+      setAdsSpend(map)
+      setSpendSaved(true)
+      setTimeout(() => setSpendSaved(false), 2000)
+    } catch (e) {
+      console.error(e)
+      alert('שגיאה בשמירת ההוצאה')
+    } finally {
+      setSavingSpend(false)
+    }
+  }
+
   const statusCounts = orders.reduce<Record<string, number>>((acc, o) => {
     acc[o.status] = (acc[o.status] ?? 0) + 1
     return acc
@@ -105,6 +193,15 @@ export default function AdminAnalyticsPage() {
               )
             })}
           </div>
+
+          <AdsReportSection
+            months={adsMonths}
+            onSpendChange={(key, value) => setSpendDraft(prev => ({ ...prev, [key]: value }))}
+            onSave={handleSaveSpend}
+            saving={savingSpend}
+            saved={spendSaved}
+            dirty={spendDirty}
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded-2xl shadow-lg p-6">
