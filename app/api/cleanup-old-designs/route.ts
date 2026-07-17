@@ -3,7 +3,7 @@ import { adminDb, adminStorage } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 
 const CRON_SECRET = process.env.CRON_SECRET
-const CLEANUP_DAYS = 60
+const CLEANUP_DAYS = 30
 const QUOTE_EXPIRY_DAYS = 30 // הצעת מחיר שעברו 30 יום מיצירתה — נמחקת מה-DB
 
 // Storage thresholds (in MB). Override via env vars if needed.
@@ -15,7 +15,7 @@ const STORAGE_TARGET_MB = Number(process.env.STORAGE_TARGET_MB || 3000)
 const MAX_EMERGENCY_DELETIONS = 500 // safety cap per run
 
 /**
- * Layer 1: Delete design files of orders older than 60 days (keep order docs).
+ * Layer 1: Delete design files of orders older than 30 days (keep order docs).
  * Layer 2: If Storage usage still high → delete entire oldest orders (doc + files) until safe.
  *
  * Triggered by Vercel Cron daily, or manually with the CRON_SECRET.
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // ── Layer 1: 60-day image cleanup (orders stay in admin) ────────────
+    // ── Layer 1: 30-day image cleanup (orders stay in admin) ────────────
     const snapshot = await adminDb
       .collection('orders')
       .where('createdAt', '<', cutoffTs)
