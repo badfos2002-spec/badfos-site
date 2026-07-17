@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
+import { findOrderByFallback } from '@/lib/order-fallback'
 
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
 
@@ -110,66 +111,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback: find by phone — try multiple formats (with/without dashes)
-    if (!order && payerPhone) {
-      const cleanPhone = payerPhone.replace(/[-\s()]/g, '')
-      const phonesToTry = [cleanPhone, payerPhone]
-      // Also try with dash: 05X-XXXXXXX
-      if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
-        phonesToTry.push(`${cleanPhone.slice(0, 3)}-${cleanPhone.slice(3)}`)
+    // Fallback: match by phone/email + amount (Grow sometimes omits cField1).
+    // Hardened matching (lib/payment-matching + lib/order-fallback): prefers
+    // the most recent open order, skips orders tied to a different payment
+    // link, and NEVER auto-marks when a same-sum sibling was already paid
+    // recently — that exact race double-marked orders #1312+#1313. On a
+    // suspect duplicate the admin gets an alert instead.
+    if (!order && (payerPhone || payerEmail)) {
+      const fallback = await findOrderByFallback({
+        payerPhone,
+        payerEmail,
+        paymentSum,
+        transactionPaymentId: paymentId || undefined,
+        transactionCode,
+        source: 'webhook',
+      })
+      if (fallback.outcome === 'flagged') {
+        // Deliberately 200 — retries won't change the manual-review outcome
+        return NextResponse.json({
+          success: false,
+          flagged: true,
+          message: 'Payment matches more than one order — admin alerted, manual review required',
+        }, { status: 200 })
       }
-
-      for (const phone of phonesToTry) {
-        if (order) break
-        const snapshot = await adminDb
-          .collection('orders')
-          .where('customer.phone', '==', phone)
-          .limit(10)
-          .get()
-        let pending = snapshot.docs
-          .map(d => ({ doc: d, data: d.data() }))
-          .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
-        // Match by amount when provided — prevents duplicate webhook from marking a second order paid
-        if (paymentSum) {
-          const paid = Number(paymentSum)
-          pending = pending.filter(x => Math.abs((Number(x.data.total) || 0) - paid) < 0.5)
-        }
-        pending.sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
-        if (pending.length > 1) {
-          console.warn(`Webhook: AMBIGUOUS — ${pending.length} pending orders for phone ${phone}, amount=${paymentSum || 'n/a'}. Skipping auto-match.`)
-          return NextResponse.json({ error: 'Ambiguous match — manual review required' }, { status: 409 })
-        }
-        if (pending.length === 1) {
-          orderDoc = pending[0].doc as FirebaseFirestore.QueryDocumentSnapshot
-          order = pending[0].data
-          console.log(`Webhook: found order by phone ${phone}, #${order.orderNumber}`)
-        }
-      }
-    }
-
-    // Fallback: find by email
-    if (!order && payerEmail) {
-      const snapshot = await adminDb
-        .collection('orders')
-        .where('customer.email', '==', payerEmail.toLowerCase())
-        .limit(10)
-        .get()
-      let pending = snapshot.docs
-        .map(d => ({ doc: d, data: d.data() }))
-        .filter(x => x.data.status === 'pending_payment' || x.data.status === 'cart_abandoned')
-      if (paymentSum) {
-        const paid = Number(paymentSum)
-        pending = pending.filter(x => Math.abs((Number(x.data.total) || 0) - paid) < 0.5)
-      }
-      pending.sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
-      if (pending.length > 1) {
-        console.warn(`Webhook: AMBIGUOUS — ${pending.length} pending orders for email ${payerEmail}, amount=${paymentSum || 'n/a'}. Skipping auto-match.`)
-        return NextResponse.json({ error: 'Ambiguous match — manual review required' }, { status: 409 })
-      }
-      if (pending.length === 1) {
-        orderDoc = pending[0].doc as FirebaseFirestore.QueryDocumentSnapshot
-        order = pending[0].data
-        console.log(`Webhook: found order by email ${payerEmail}, #${order.orderNumber}`)
+      if (fallback.outcome === 'match') {
+        orderDoc = fallback.doc
+        order = fallback.data
+        console.log(`Webhook: found order by fallback, #${order.orderNumber}`)
       }
     }
 

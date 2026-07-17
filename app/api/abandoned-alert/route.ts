@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/utils'
 import { sendRecoveryWhatsApp, normalizeIlPhone } from '@/lib/manychat'
+import { wasCompletedBySibling } from '@/lib/order-fallback'
 
 const STALE_MINUTES = 10 // pending_payment older than this → cart_abandoned
 
@@ -58,6 +59,18 @@ export async function POST(req: NextRequest) {
 
     const now = Timestamp.now()
     const status: string = data.status
+
+    // A cart that was actually completed under a duplicate (superseded) order
+    // must never trigger an alert or a recovery coupon.
+    if (status === 'pending_payment' || status === 'cart_abandoned') {
+      const sibling = await wasCompletedBySibling(data, docRef.id)
+      if (sibling.superseded) {
+        if (!data.supersededByOrderId && sibling.siblingId) {
+          await docRef.update({ supersededByOrderId: sibling.siblingId, updatedAt: now })
+        }
+        return NextResponse.json({ skipped: true, reason: 'superseded' })
+      }
+    }
 
     if (status === 'cart_abandoned') {
       // already marked (client/admin) — proceed to alert

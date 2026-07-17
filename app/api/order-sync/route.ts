@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
-import { Timestamp } from 'firebase-admin/firestore'
+import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 import {
   round2,
   sanitizeItems,
@@ -90,6 +90,17 @@ export async function POST(req: NextRequest) {
     if (typeof body?.paymentId === 'string' && body.paymentId.trim()) {
       // Keep webhook matching working if a fresh payment link was created
       update.paymentId = body.paymentId.trim().slice(0, 60)
+    }
+    if (data.status === 'cart_abandoned') {
+      // ACTIVE re-checkout revives the order — the 10-minute abandonment only
+      // applies while the customer is NOT completing checkout. Resetting the
+      // status + stamps keeps one order per cart (prevents the #1312/#1313
+      // duplicate) and lets the abandonment machinery treat any FUTURE
+      // abandonment of this order as a fresh one.
+      update.status = 'pending_payment'
+      update.abandonAlertSentAt = FieldValue.delete()
+      update.abandonNotifiedAt = FieldValue.delete()
+      update.supersededByOrderId = FieldValue.delete()
     }
 
     await docRef.update(update)

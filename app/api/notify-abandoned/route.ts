@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/utils'
 import { sendRecoveryWhatsApp, normalizeIlPhone } from '@/lib/manychat'
+import { wasCompletedBySibling } from '@/lib/order-fallback'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const STALE_MINUTES = 60 // pending_payment older than this → cart_abandoned
@@ -70,6 +71,14 @@ export async function GET(req: NextRequest) {
       marked++
       // Don't email orders already reported (e.g. by the instant abandoned-alert)
       if (createdAt.getTime() >= floodCutoff && !data.abandonNotifiedAt) {
+        // No recovery coupon for a cart completed under a duplicate order
+        const sibling = await wasCompletedBySibling(data, doc.id)
+        if (sibling.superseded) {
+          if (!data.supersededByOrderId && sibling.siblingId) {
+            await doc.ref.update({ supersededByOrderId: sibling.siblingId })
+          }
+          continue
+        }
         recentRows.push(toRow(data, createdAt))
         recoveryCandidates.push({ ref: doc.ref, data })
       }
@@ -90,6 +99,14 @@ export async function GET(req: NextRequest) {
       notified++
       const createdAt: Date = data.createdAt?.toDate?.() ?? new Date(0)
       if (createdAt.getTime() >= floodCutoff) {
+        // No recovery coupon for a cart completed under a duplicate order
+        const sibling = await wasCompletedBySibling(data, doc.id)
+        if (sibling.superseded) {
+          if (!data.supersededByOrderId && sibling.siblingId) {
+            await doc.ref.update({ supersededByOrderId: sibling.siblingId })
+          }
+          continue
+        }
         recentRows.push(toRow(data, createdAt))
         recoveryCandidates.push({ ref: doc.ref, data })
       }

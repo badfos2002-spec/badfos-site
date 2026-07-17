@@ -18,6 +18,7 @@ import type { CustomerInfo, Shipping } from '@/lib/types'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
 import { getGclid } from '@/lib/tracking'
 import { updateOrderStatus } from '@/lib/db'
+import { resolveCartRevisit, PENDING_ORDER_STALE_MS, CREATE_FRESH_ORDER_REASONS } from '@/lib/pending-order'
 
 async function blobToBase64(blobUrl: string): Promise<string> {
   // All designs are now base64 from upload time, so this is a passthrough
@@ -103,16 +104,16 @@ export default function CartPage() {
         // Wait at least 10 minutes from order creation before considering it abandoned
         // (gives customer time to complete 3DS verification + webhook transit time)
         const orderAge = Date.now() - (timestamp || 0)
-        if (orderAge < 10 * 60 * 1000) {
+        if (orderAge < PENDING_ORDER_STALE_MS) {
           // Too early — don't mark as abandoned yet, keep in sessionStorage
           return
         }
 
         const { getDocument } = await import('@/lib/db')
         const order = await getDocument<{ status: string }>('orders', orderId)
+        const action = resolveCartRevisit(orderAge, order?.status ?? null)
 
-        // Only mark as abandoned if still pending_payment
-        if (order && order.status === 'pending_payment') {
+        if (action === 'mark_abandoned') {
           updateOrderStatus(orderId, 'cart_abandoned').catch(console.error)
           // Instant abandoned-cart alert to the business owner (fire-and-forget)
           fetch('/api/abandoned-alert', {
@@ -122,7 +123,15 @@ export default function CartPage() {
           }).catch(() => {})
         }
 
-        sessionStorage.removeItem('badfos_pending_order')
+        if (action === 'forget') {
+          // Paid or deleted — stop tracking this order
+          sessionStorage.removeItem('badfos_pending_order')
+        }
+        // mark_abandoned / keep_for_reuse: KEEP badfos_pending_order — if the
+        // customer actively checks out again, the SAME order is reused and
+        // revived to pending_payment by /api/order-sync. This is what prevents
+        // duplicate orders (#1312/#1313: abandon+recreate → one payment,
+        // two orders marked paid).
         sessionStorage.removeItem('badfos_payment_cache')
       } catch {}
     }
@@ -137,6 +146,13 @@ export default function CartPage() {
       const pending = sessionStorage.getItem('badfos_pending_order')
       if (pending) {
         const { orderId } = JSON.parse(pending)
+        if (orderId) return orderId as string
+      }
+      // Fallback: the cookie survives new tabs / the cross-origin redirect from
+      // Grow — without it a new tab would create a duplicate order
+      const match = document.cookie.match(/(?:^|; )badfos_pending_order=([^;]+)/)
+      if (match) {
+        const { orderId } = JSON.parse(decodeURIComponent(match[1]))
         if (orderId) return orderId as string
       }
     } catch {}
@@ -274,7 +290,7 @@ export default function CartPage() {
 
       // Use pre-uploaded images from cache, fallback to upload now if needed
       const cache = uploadCacheRef.current
-      const tempOrderId = tempOrderIdRef.current
+      let tempOrderId = tempOrderIdRef.current
       const itemsForOrder = await Promise.all(
         items.map(async (item) => ({
           productType: item.productType,
@@ -298,6 +314,77 @@ export default function CartPage() {
           totalPrice: item.totalPrice,
         }))
       )
+
+      // ALWAYS reuse the existing pending order on an ACTIVE re-checkout —
+      // even if >10 minutes passed and it was marked cart_abandoned.
+      // Abandon+recreate is what produced duplicate orders #1312/#1313 (one
+      // payment, two orders marked paid). /api/order-sync revives a
+      // cart_abandoned order back to pending_payment.
+      let reuseOrderId: string | null = null
+      if (existingOrderId) {
+        // The cart may have changed since the order was created (items/designs
+        // added, removed or edited, coupon applied after pressing Back from the
+        // payment page). Sync the existing order from the SAME itemsForOrder
+        // payload that feeds the pending-order snapshot (which builds the
+        // design_mockup email) — otherwise the admin order and the email show
+        // different designs / a pre-coupon price.
+        // Runs SERVER-SIDE (/api/order-sync): Firestore rules only allow admins
+        // to update orders, so a client-side updateDocument always fails here.
+        try {
+          const syncRes = await fetch('/api/order-sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stripUndefined({
+              orderId: existingOrderId,
+              phone: customerInfo.phone,
+              customer: customerInfo,
+              shipping,
+              items: itemsForOrder,
+              packages: packageItems.map(pkg => ({
+                packageId: pkg.packageId,
+                packageName: pkg.packageName,
+                quantity: pkg.quantity,
+                pricePerUnit: pkg.pricePerUnit,
+                graphicDesignerCost: pkg.graphicDesignerCost,
+                totalPrice: pkg.totalPrice,
+              })),
+              subtotal: orderCalc.subtotal,
+              discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
+              couponCode: effectiveCouponCode || '',
+              total: orderCalc.total,
+              // Keep webhook matching working if a fresh payment link was created
+              paymentId: tempOrderId,
+            })),
+          })
+          const sync = await syncRes.json().catch(() => null)
+          if (sync?.synced) {
+            reuseOrderId = existingOrderId
+          } else if (CREATE_FRESH_ORDER_REASONS.includes(sync?.reason)) {
+            // The tracked order is paid/deleted/another customer's — paying
+            // against it would lose this payment. Start a clean order with a
+            // FRESH paymentId and a fresh payment link.
+            console.error('Order sync skipped, creating a fresh order:', sync?.reason)
+            tempOrderId = `order-${Date.now()}`
+            tempOrderIdRef.current = tempOrderId
+            paymentCacheRef.current = null
+            try {
+              sessionStorage.removeItem('badfos_payment_cache')
+              sessionStorage.removeItem('badfos_pending_order')
+              document.cookie = 'badfos_pending_order=; max-age=0; path=/'
+            } catch {}
+          } else {
+            // Transient server issue — sync is best-effort, keep reusing the
+            // order exactly like before (payment still matches via webhook).
+            console.error('Order sync skipped:', sync?.reason || syncRes.status)
+            reuseOrderId = existingOrderId
+          }
+        } catch (e) {
+          // A sync failure must not block checkout — payment still works,
+          // and the webhook/phone fallback will match the order.
+          console.error('Failed to sync existing order with current cart:', e)
+          reuseOrderId = existingOrderId
+        }
+      }
 
       setLoadingMessage('יוצר לינק תשלום...')
 
@@ -333,50 +420,10 @@ export default function CartPage() {
 
         setLoadingMessage('שומר הזמנה...')
 
-        // Skip creating order if one already exists (user pressed back and retried)
-        if (existingOrderId) {
-          const orderId = existingOrderId
-          // The cart may have changed since the order was created (items/designs
-          // added, removed or edited, coupon applied after pressing Back from the
-          // payment page). Sync the existing order from the SAME itemsForOrder
-          // payload that feeds the pending-order snapshot (which builds the
-          // design_mockup email) — otherwise the admin order and the email show
-          // different designs / a pre-coupon price.
-          // Runs SERVER-SIDE (/api/order-sync): Firestore rules only allow admins
-          // to update orders, so a client-side updateDocument always fails here.
-          try {
-            const syncRes = await fetch('/api/order-sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(stripUndefined({
-                orderId,
-                phone: customerInfo.phone,
-                customer: customerInfo,
-                shipping,
-                items: itemsForOrder,
-                packages: packageItems.map(pkg => ({
-                  packageId: pkg.packageId,
-                  packageName: pkg.packageName,
-                  quantity: pkg.quantity,
-                  pricePerUnit: pkg.pricePerUnit,
-                  graphicDesignerCost: pkg.graphicDesignerCost,
-                  totalPrice: pkg.totalPrice,
-                })),
-                subtotal: orderCalc.subtotal,
-                discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
-                couponCode: effectiveCouponCode || '',
-                total: orderCalc.total,
-                // Keep webhook matching working if a fresh payment link was created
-                paymentId: tempOrderId,
-              })),
-            })
-            const sync = await syncRes.json().catch(() => null)
-            if (!sync?.synced) console.error('Order sync skipped:', sync?.reason || syncRes.status)
-          } catch (e) {
-            // A sync failure must not block checkout — payment still works,
-            // and the webhook/phone fallback will match the order.
-            console.error('Failed to sync existing order with current cart:', e)
-          }
+        // Skip creating order if one already exists (user pressed back and
+        // retried, or came back to a cart_abandoned order — synced above)
+        if (reuseOrderId) {
+          const orderId = reuseOrderId
           const orderJson = JSON.stringify({
             orderId,
             customer: customerInfo,
