@@ -4,6 +4,7 @@ import IntroOverlay from '@/components/home/IntroOverlay'
 import NewHeroSection from '@/components/home/NewHeroSection'
 import NewWhyChooseSection from '@/components/home/NewWhyChooseSection'
 import NewPackagesSection from '@/components/home/NewPackagesSection'
+import EventLinksSection from '@/components/home/EventLinksSection'
 
 const SectionLoader = () => <div className="min-h-[200px]" />
 
@@ -21,6 +22,7 @@ export default function RootPage() {
         <NewWhyChooseSection />
         <NewPackagesSection />
         <NewHowItWorksSection />
+        <EventLinksSection />
         <NewContactFormSection />
         <NewTestimonialsSection />
         <NewFinalCTASection />

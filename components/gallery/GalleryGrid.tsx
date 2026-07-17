@@ -12,7 +12,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
-import { X, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react'
+import Link from 'next/link'
+import { X, ChevronRight, ChevronLeft, ZoomIn, ArrowLeft } from 'lucide-react'
 import { queryDocuments } from '@/lib/db'
 import { GALLERY_SECTIONS } from '@/lib/constants'
 import type { SiteImage, GallerySection } from '@/lib/types'
@@ -21,6 +22,15 @@ export interface GalleryItem {
   src: string
   alt: string
   section: GallerySection
+}
+
+// קטגוריית גלריה → עמוד הנחיתה המתאים (קישור פנימי עדין מתחת לגריד המסונן)
+const SECTION_LANDING: Partial<Record<GallerySection, { slug: string; label: string }>> = {
+  soldiers: { slug: 'חולצות-לחיילים', label: 'חולצות לחיילים' },
+  families: { slug: 'חולצות-משפחתיות', label: 'חולצות משפחתיות' },
+  bachelorette: { slug: 'חולצות-למסיבת-רווקות', label: 'חולצות למסיבת רווקות' },
+  birthday: { slug: 'חולצות-ליום-הולדת', label: 'חולצות ליום הולדת' },
+  business: { slug: 'הדפסת-חולצות-לעסקים', label: 'חולצות לעסקים' },
 }
 
 /* כרטיס בודד: שלד שימר עד שהתמונה נטענת + ריחוף (זום תמונה, צל, אייקון הגדלה) */
@@ -214,6 +224,19 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
             />
           ))}
         </div>
+
+        {/* קישור עדין לעמוד הנחיתה של הקטגוריה המסוננת */}
+        {activeSection !== 'all' && SECTION_LANDING[activeSection] && (
+          <p className="mt-6 text-center">
+            <Link
+              href={`/${SECTION_LANDING[activeSection]!.slug}`}
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-[#b45309] transition-colors hover:text-[#92400e]"
+            >
+              כל המידע על {SECTION_LANDING[activeSection]!.label}
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </p>
+        )}
       </div>
 
       {/* ── לייטבוקס ── */}

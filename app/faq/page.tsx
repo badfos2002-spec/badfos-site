@@ -1,15 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import Link from 'next/link'
 import { ChevronDown, HelpCircle } from 'lucide-react'
+
+/** קישור פנימי בתוך תשובה — עמודי הנחיתה לפי אירוע */
+function AnswerLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="font-bold text-indigo-600 underline underline-offset-2 hover:text-indigo-800"
+    >
+      {children}
+    </Link>
+  )
+}
 
 export default function FAQPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
-  const faqs = [
+  const faqs: { question: string; answer: ReactNode }[] = [
     {
       question: 'איך עובד תהליך עיצוב החולצה?',
-      answer: 'התהליך פשוט מאוד - נכנסים למעצב, בוחרים סוג חולצה וצבע, מעלים תמונה או עיצוב, בוחרים מידות וכמויות, ומקבלים תצוגה מקדימה מדויקת של איך החולצה תיראה. אחר כך פשוט מוסיפים לעגלה ומשלמים.',
+      answer: (
+        <>
+          התהליך פשוט מאוד - נכנסים למעצב, בוחרים סוג חולצה וצבע, מעלים תמונה או עיצוב, בוחרים
+          מידות וכמויות, ומקבלים תצוגה מקדימה מדויקת של איך החולצה תיראה. אחר כך פשוט מוסיפים
+          לעגלה ומשלמים. מחפשים השראה לאירוע מסוים? יש לנו עמודים מלאים ברעיונות — למשל{' '}
+          <AnswerLink href="/חולצות-ליום-הולדת">חולצות ליום הולדת</AnswerLink> או{' '}
+          <AnswerLink href="/חולצות-למסיבת-רווקות">חולצות למסיבת רווקות</AnswerLink>.
+        </>
+      ),
     },
     {
       question: 'באילו סוגי קבצים ניתן להשתמש?',
@@ -17,7 +38,14 @@ export default function FAQPage() {
     },
     {
       question: 'כמה זמן לוקח למשלוח להגיע?',
-      answer: 'זמן המשלוח הוא 3-7 ימי עסקים לכל הארץ. ניתן גם לבחור באיסוף עצמי חינם מהסניף שלנו בראשון לציון. לאחר ההזמנה תקבלו מייל עם פרטי המעקב.',
+      answer: (
+        <>
+          זמן המשלוח הוא 3-7 ימי עסקים לכל הארץ. ניתן גם לבחור באיסוף עצמי חינם מהסניף שלנו
+          בראשון לציון — כל הפרטים בעמוד{' '}
+          <AnswerLink href="/הדפסת-חולצות-בראשון-לציון">הדפסת חולצות בראשון לציון</AnswerLink>.
+          לאחר ההזמנה תקבלו מייל עם פרטי המעקב.
+        </>
+      ),
     },
     {
       question: 'מהי מדיניות ההחזרות?',
@@ -25,7 +53,14 @@ export default function FAQPage() {
     },
     {
       question: 'האם יש הנחה להזמנות גדולות?',
-      answer: 'כן! בהזמנות כמות גדולות ניתנת הנחה אוטומטית, ובנוסף יש חבילות מיוחדות להזמנות גדולות — ניתן לראות אותן בעמוד החבילות והמבצעים.',
+      answer: (
+        <>
+          כן! בהזמנות כמות גדולות ניתנת הנחה אוטומטית, ובנוסף יש חבילות מיוחדות להזמנות גדולות —
+          ניתן לראות אותן בעמוד החבילות והמבצעים. מזמינים לקבוצה שלמה? כדאי להציץ בעמודים על{' '}
+          <AnswerLink href="/הדפסת-חולצות-לעסקים">הדפסת חולצות לעסקים וצוותים</AnswerLink> ועל{' '}
+          <AnswerLink href="/חולצות-לחיילים">חולצות לפלוגה וליחידה</AnswerLink>.
+        </>
+      ),
     },
   ]
 
