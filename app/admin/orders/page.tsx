@@ -638,25 +638,53 @@ export default function AdminOrdersPage() {
                                   <div className="border-t pt-3">
                                     <h5 className="font-medium text-gray-900 mb-2">קבצי עיצוב:</h5>
                                     <div className="grid grid-cols-1 gap-2">
-                                      {item.designs.map((d, di) => (
-                                        <div key={di} className="flex items-center justify-between bg-blue-50 p-3 rounded">
+                                      {item.designs.map((d, di) => {
+                                        const upscale = order.upscales?.[`${idx}_${d.area}`]
+                                        return (
+                                        <div key={di} className="flex items-center justify-between gap-2 flex-wrap bg-blue-50 p-3 rounded">
                                           <div className="flex items-center">
                                             <div className="w-12 h-12 bg-gray-200 rounded mr-3 overflow-hidden flex-shrink-0">
                                               {/* eslint-disable-next-line @next/next/no-img-element */}
                                               <img src={d.imageUrl} alt={d.areaName ?? d.area} className="w-full h-full object-cover" />
                                             </div>
-                                            <span className="text-sm font-medium">{d.areaName ?? d.area}</span>
+                                            <div>
+                                              <span className="text-sm font-medium">{d.areaName ?? d.area}</span>
+                                              {upscale?.status === 'pending' && (
+                                                <div className="text-xs text-gray-500">⏳ בהגדלה...</div>
+                                              )}
+                                            </div>
                                           </div>
-                                          <a
-                                            href={d.imageUrl}
-                                            download={`עיצוב-${d.areaName ?? d.area}-${order.orderNumber}.${d.imageUrl.startsWith('data:image/png') ? 'png' : 'jpg'}`}
-                                            className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium h-8 rounded-md px-3 transition-colors"
-                                          >
-                                            <Download className="w-4 h-4 ml-1" />
-                                            הורד
-                                          </a>
+                                          {upscale?.status === 'done' && upscale.url ? (
+                                            <div className="flex items-center gap-3">
+                                              <a
+                                                href={upscale.url}
+                                                download={`עיצוב-לדפוס-${d.areaName ?? d.area}-${order.orderNumber}.png`}
+                                                className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium min-h-[44px] rounded-md px-3 transition-colors"
+                                              >
+                                                <Download className="w-4 h-4 ml-1" />
+                                                הורדה לדפוס ✨ (פי 4)
+                                              </a>
+                                              <a
+                                                href={d.imageUrl}
+                                                download={`עיצוב-${d.areaName ?? d.area}-${order.orderNumber}.${d.imageUrl.startsWith('data:image/png') ? 'png' : 'jpg'}`}
+                                                className="text-xs text-blue-600 hover:text-blue-800 underline py-3"
+                                              >
+                                                מקור
+                                              </a>
+                                            </div>
+                                          ) : (
+                                            <a
+                                              href={d.imageUrl}
+                                              download={`עיצוב-${d.areaName ?? d.area}-${order.orderNumber}.${d.imageUrl.startsWith('data:image/png') ? 'png' : 'jpg'}`}
+                                              className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium h-8 rounded-md px-3 transition-colors"
+                                            >
+                                              <Download className="w-4 h-4 ml-1" />
+                                              הורד
+                                            </a>
+                                          )}
                                         </div>
-                                      ))}
+                                        )
+                                      })}
                                     </div>
                                   </div>
                                 )}

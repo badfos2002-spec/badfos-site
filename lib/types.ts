@@ -108,6 +108,22 @@ export interface OrderItem {
   totalPrice: number
 }
 
+/**
+ * Automatic 4x upscale state for a single design image (Replicate Real-ESRGAN).
+ * Keyed on the order as upscales[`${itemIndex}_${areaId}`].
+ */
+export interface DesignUpscale {
+  status: 'pending' | 'done' | 'failed'
+  predictionId?: string
+  /** Original design image URL sent to Replicate */
+  sourceUrl?: string
+  /** Firebase Storage download URL of the upscaled image (status: done) */
+  url?: string
+  error?: string
+  createdAt?: Timestamp | Date
+  completedAt?: Timestamp | Date
+}
+
 export interface Order {
   id: string
   orderNumber: number // #1001, #1002...
@@ -121,6 +137,8 @@ export interface Order {
   couponCode?: string
   total: number
   paymentSum?: number // actual sum charged, written by the payment webhook
+  /** Per-design 4x upscale map, keyed `${itemIndex}_${areaId}` */
+  upscales?: Record<string, DesignUpscale>
   gclid?: string // Google Ads click ID — order attributed to an ads click
   createdAt: Timestamp
   updatedAt: Timestamp

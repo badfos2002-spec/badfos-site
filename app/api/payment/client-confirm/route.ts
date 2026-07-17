@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Only update if still pending or abandoned — use transaction to prevent race
+    let becamePaid = false
     if (order.status === 'pending_payment' || order.status === 'cart_abandoned') {
       const orderRef = adminDb.collection('orders').doc(orderDoc.id)
       await adminDb.runTransaction(async (transaction) => {
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
         const freshData = freshDoc.data()
         if (!freshData) return
         if (freshData.status !== 'pending_payment' && freshData.status !== 'cart_abandoned') return
+        becamePaid = true
 
         transaction.update(orderRef, {
           status: 'paid',
@@ -87,6 +89,15 @@ export async function POST(request: NextRequest) {
           }
         }
       })
+    }
+
+    // Upscale design images to print quality (fire-and-forget, idempotent)
+    if (becamePaid) {
+      fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'}/api/upscale-designs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-webhook-secret': process.env.WEBHOOK_SECRET || '' },
+        body: JSON.stringify({ orderId: orderDoc.id }),
+      }).catch(err => console.error('Failed to trigger design upscaling:', err))
     }
 
     return NextResponse.json({ success: true, status: order.status })
