@@ -53,6 +53,8 @@ export interface SeoPage {
   paragraphs: SeoPageParagraph[]
   faq: SeoPageFaq[]
   galleryImages: string[]
+  /** 1200x630 real-photo crop for WhatsApp/social shares (og:image), served from /public/og */
+  ogImage: string
   ctaText: string
   /** Sibling SEO pages for cross-linking ("אולי יעניין אתכם גם") */
   related: string[]
@@ -151,6 +153,7 @@ export const SEO_PAGES: SeoPage[] = [
       '/assets/c4660170b_IMG_6179.webp',
       '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.webp',
     ],
+    ogImage: '/og/business.jpg',
     ctaText: 'מעצבים חולצה לעסק עכשיו',
     related: ['הדפסת-חולצות-בראשון-לציון', 'חולצות-לסוף-שנה', 'חולצות-משפחתיות'],
   },
@@ -244,6 +247,7 @@ export const SEO_PAGES: SeoPage[] = [
       '/assets/seo/bachelorette-4.jpg',
       '/assets/seo/bachelorette-5.jpg',
     ],
+    ogImage: '/og/bachelorette.jpg',
     ctaText: 'מעצבות חולצות לרווקות',
     related: ['חולצות-ליום-הולדת', 'חולצות-משפחתיות', 'הדפסת-חולצות-בראשון-לציון'],
   },
@@ -336,6 +340,7 @@ export const SEO_PAGES: SeoPage[] = [
       '/assets/seo/birthday-3.jpg',
       '/assets/seo/birthday-4.jpg',
     ],
+    ogImage: '/og/birthday.jpg',
     ctaText: 'מעצבים חולצת יום הולדת',
     related: ['חולצות-משפחתיות', 'חולצות-למסיבת-רווקות', 'חולצות-לסוף-שנה'],
   },
@@ -428,6 +433,7 @@ export const SEO_PAGES: SeoPage[] = [
       '/assets/seo/family-3.jpg',
       '/assets/seo/family-4.jpg',
     ],
+    ogImage: '/og/family.jpg',
     ctaText: 'מעצבים חולצות למשפחה',
     related: ['חולצות-ליום-הולדת', 'חולצות-לחיילים', 'חולצות-לסוף-שנה'],
   },
@@ -524,6 +530,7 @@ export const SEO_PAGES: SeoPage[] = [
       '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.webp',
       '/assets/64ab08d41_IMG_3252.webp',
     ],
+    ogImage: '/og/end-of-year.jpg',
     ctaText: 'מעצבים חולצות לכיתה',
     related: ['חולצות-לחיילים', 'חולצות-משפחתיות', 'חולצות-ליום-הולדת'],
   },
@@ -620,6 +627,7 @@ export const SEO_PAGES: SeoPage[] = [
       '/assets/c4660170b_IMG_6179.webp',
       '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.webp',
     ],
+    ogImage: '/og/soldiers.jpg',
     ctaText: 'מעצבים חולצות לפלוגה',
     related: ['חולצות-לסוף-שנה', 'חולצות-משפחתיות', 'הדפסת-חולצות-בראשון-לציון'],
   },
@@ -691,6 +699,7 @@ export const SEO_PAGES: SeoPage[] = [
       '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp',
       '/assets/a189e74e3_IMG_0490.webp',
     ],
+    ogImage: '/og/rishon.jpg',
     ctaText: 'מעצבים חולצה עכשיו',
     related: ['הדפסת-חולצות-לעסקים', 'חולצות-לחיילים', 'חולצות-למסיבת-רווקות'],
   },

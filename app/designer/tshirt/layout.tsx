@@ -12,13 +12,13 @@ export const metadata: Metadata = {
     siteName: 'בדפוס',
     locale: 'he_IL',
     type: 'website',
-    images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - חולצה מודפסת' }],
+    images: [{ url: 'https://badfos.co.il/og/designer.jpg', width: 1200, height: 630, alt: 'בדפוס - חולצה מודפסת' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'עיצוב חולצה אישית | בדפוס',
     description: 'עצבו חולצה מותאמת אישית — הדפסה איכותית בישראל',
-    images: ['https://badfos.co.il/logo.png'],
+    images: ['https://badfos.co.il/og/designer.jpg'],
   },
 }
 
@@ -33,7 +33,11 @@ export default function TshirtLayout({ children }: { children: React.ReactNode }
             '@type': 'Product',
             name: 'חולצה בעיצוב אישי',
             description: 'חולצה מודפסת בהתאמה אישית — בחרו בד (כותנה, דרייפיט, פולו, אוברסייז), צבע ועיצוב.',
-            image: 'https://badfos.co.il/logo.png',
+            image: [
+              'https://badfos.co.il/assets/64ab08d41_IMG_3252.jpg',
+              'https://badfos.co.il/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.jpg',
+              'https://badfos.co.il/assets/a189e74e3_IMG_0490.jpg',
+            ],
             brand: { '@type': 'Brand', name: 'בדפוס' },
             offers: {
               '@type': 'Offer',

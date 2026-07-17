@@ -18,6 +18,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   if (!page) return {}
 
   const canonicalPath = `/${encodeURIComponent(page.slug)}`
+  const ogImageUrl = `${BASE_URL}${page.ogImage}`
   return {
     title: page.metaTitle,
     description: page.metaDescription,
@@ -29,6 +30,13 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       siteName: 'בדפוס',
       locale: 'he_IL',
       type: 'website',
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: page.h1 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: page.metaTitle,
+      description: page.metaDescription,
+      images: [ogImageUrl],
     },
   }
 }

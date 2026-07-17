@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     siteName: 'בדפוס',
     images: [
       {
-        url: 'https://badfos.co.il/og-image.jpg',
+        url: 'https://badfos.co.il/og/home.jpg',
         width: 1200,
         height: 630,
         alt: 'בדפוס - הדפסת חולצות בעיצוב אישי',
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
     description: 'עצבו חולצות מותאמות אישית עם הדפסה איכותית',
-    images: ['https://badfos.co.il/og-image.jpg'],
+    images: ['https://badfos.co.il/og/home.jpg'],
   },
   verification: {
     other: {
@@ -155,7 +155,7 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'LocalBusiness',
               name: 'בדפוס',
-              image: 'https://badfos.co.il/logo.png',
+              image: 'https://badfos.co.il/og/home.jpg',
               url: 'https://badfos.co.il',
               telephone: '+972559885954',
               email: 'badfos2002@gmail.com',
@@ -166,6 +166,13 @@ export default function RootLayout({
                 postalCode: '7520501',
                 addressCountry: 'IL',
               },
+              geo: {
+                '@type': 'GeoCoordinates',
+                latitude: 31.9635,
+                longitude: 34.8073,
+              },
+              hasMap: 'https://www.google.com/maps/place/?q=place_id:ChIJdWBwSp2984gRNGbFgb-Kykc',
+              areaServed: ['ראשון לציון', 'נס ציונה', 'רחובות', 'באר יעקב'],
               description: 'הדפסת חולצות בעיצוב אישי – חולצות, סווטשירטים, באפים ועוד. משלוח מהיר לכל הארץ.',
               priceRange: '₪₪',
               openingHoursSpecification: [

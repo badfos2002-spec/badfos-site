@@ -12,13 +12,13 @@ export const metadata: Metadata = {
     siteName: 'בדפוס',
     locale: 'he_IL',
     type: 'website',
-    images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - סינר מודפס' }],
+    images: [{ url: 'https://badfos.co.il/og/designer.jpg', width: 1200, height: 630, alt: 'בדפוס - סינר מודפס' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'עיצוב סינר אישי | בדפוס',
     description: 'עצבו סינר בעיצוב אישי — הדפסה איכותית בישראל',
-    images: ['https://badfos.co.il/logo.png'],
+    images: ['https://badfos.co.il/og/designer.jpg'],
   },
 }
 
@@ -33,7 +33,11 @@ export default function ApronLayout({ children }: { children: React.ReactNode })
             '@type': 'Product',
             name: 'סינר בעיצוב אישי',
             description: 'סינר מודפס בהתאמה אישית — העלו עיצוב והדפיסו. מושלם למטבח או כמתנה.',
-            image: 'https://badfos.co.il/logo.png',
+            image: [
+              'https://badfos.co.il' + encodeURI('/assets/סינר שחור.webp'),
+              'https://badfos.co.il' + encodeURI('/assets/סינר לבן.webp'),
+              'https://badfos.co.il' + encodeURI('/assets/סינר נייבי.webp'),
+            ],
             brand: { '@type': 'Brand', name: 'בדפוס' },
             offers: {
               '@type': 'Offer',

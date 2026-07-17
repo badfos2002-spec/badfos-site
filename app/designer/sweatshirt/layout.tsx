@@ -12,13 +12,13 @@ export const metadata: Metadata = {
     siteName: 'בדפוס',
     locale: 'he_IL',
     type: 'website',
-    images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - סווטשירט מודפס' }],
+    images: [{ url: 'https://badfos.co.il/og/designer.jpg', width: 1200, height: 630, alt: 'בדפוס - סווטשירט מודפס' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'עיצוב סווטשירט אישי | בדפוס',
     description: 'עצבו סווטשירט בעיצוב אישי — הדפסה איכותית בישראל',
-    images: ['https://badfos.co.il/logo.png'],
+    images: ['https://badfos.co.il/og/designer.jpg'],
   },
 }
 
@@ -33,7 +33,10 @@ export default function SweatshirtLayout({ children }: { children: React.ReactNo
             '@type': 'Product',
             name: 'סווטשירט בעיצוב אישי',
             description: 'סווטשירט מודפס בהתאמה אישית — העלו עיצוב, בחרו מידה והזמינו.',
-            image: 'https://badfos.co.il/logo.png',
+            image: [
+              'https://badfos.co.il' + encodeURI('/assets/סווטשרט חזית.webp'),
+              'https://badfos.co.il' + encodeURI('/assets/סווטשירט גב.webp'),
+            ],
             brand: { '@type': 'Brand', name: 'בדפוס' },
             offers: {
               '@type': 'Offer',

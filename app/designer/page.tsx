@@ -14,13 +14,13 @@ export const metadata: Metadata = {
     siteName: 'בדפוס',
     locale: 'he_IL',
     type: 'website',
-    images: [{ url: 'https://badfos.co.il/logo.png', width: 512, height: 512, alt: 'בדפוס - מעצב חולצות' }],
+    images: [{ url: 'https://badfos.co.il/og/designer.jpg', width: 1200, height: 630, alt: 'בדפוס - מעצב חולצות' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'מעצב חולצות | בדפוס',
     description: 'עצבו חולצה בעיצוב אישי — הדפסה איכותית בישראל',
-    images: ['https://badfos.co.il/logo.png'],
+    images: ['https://badfos.co.il/og/designer.jpg'],
   },
 }
 
