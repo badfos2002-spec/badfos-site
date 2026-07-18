@@ -47,6 +47,7 @@ const ContentSecurityPolicy = `
     https://*.firebaseapp.com;
   object-src 'none';
   base-uri 'self';
+  frame-ancestors 'self';
 `.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
 
 const securityHeaders = [

@@ -38,3 +38,6 @@ next-env.d.ts
 
 # secrets
 client_secret_*.json
+
+# scratchpad (local test scripts may contain live tokens)
+/scratchpad
