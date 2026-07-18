@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// Firebase Storage security rules for badfos-28b67.
+//
+// Threat closed: prior (console-managed) rules left `designs/` world-listable AND
+// world-readable, so anyone could enumerate + download every customer's uploaded
+// artwork by walking order IDs. These rules kill public listing and public reads.
+//
+// Read posture for designs/ = DENY (read: if false).
+// Rationale: every consumer of a design image uses a Firebase download-token URL
+// (`?alt=media&token=...`), and token URLs are served by the download endpoint which
+// BYPASSES these security rules. Verified consumers:
+//   - Upload: lib/storage.ts uploadDesignFile/uploadBase64Image -> getDownloadURL()
+//     (token URL) stored on order.designs[].imageUrl.
+//   - Customer email: lib/email-templates/design-mockup.tsx renders design.imageUrl
+//     (the stored token URL).
+//   - Admin orders page: app/admin/orders/page.tsx renders/links d.imageUrl (token URL).
+//   - Upscale pipeline: app/api/upscale-callback writes via Admin SDK (bypasses rules)
+//     and builds its own `?token=` URL.
+// Server-side listing/cleanup/backup all use the Admin SDK (adminStorage) which also
+// bypasses these rules. So read:false breaks no flow while eliminating direct reads.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Customer design uploads (anonymous checkout writes here).
+    match /designs/{orderId}/{fileName} {
+      // No public read and no listing. Consumers use token URLs which bypass rules.
+      allow read: if false;
+
+      // Anonymous checkout may upload images, constrained to <15MB and image/* only.
+      allow create: if request.resource.size < 15 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+
+      // Only authenticated admins (Firebase Auth) may delete (admin order deletion).
+      allow delete: if request.auth != null;
+    }
+
+    // Admin-managed public marketing assets (mockups + site images).
+    // Uploaded via client SDK from the admin panel (Firebase-authenticated), and
+    // displayed publicly on the site. Public read at the FILE level only (no prefix
+    // read => no enumeration); writes require authentication.
+    match /mockups/{category}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    match /site-images/{category}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Backups and everything else: no client access. Server uses the Admin SDK,
+    // which bypasses these rules.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
