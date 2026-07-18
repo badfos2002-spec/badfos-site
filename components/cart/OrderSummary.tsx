@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { CartItem, Shipping, Discount, PackageCartItem } from '@/lib/types'
 import { formatPrice, calculateOrderTotal } from '@/lib/pricing'
-import { validateCoupon, getActiveDiscounts } from '@/lib/db'
-import { phonesMatch } from '@/lib/utils'
+import { getActiveDiscounts } from '@/lib/db'
 import { CheckCircle, X, Loader2 } from 'lucide-react'
 
 interface OrderSummaryProps {
@@ -98,34 +97,31 @@ export default function OrderSummary({
     setApplying(true)
     setCouponStatus('idle')
     try {
-      const coupon = await validateCoupon(couponCode.trim().toUpperCase())
-      if (coupon && coupon.restrictedPhone) {
-        // Personal coupon — only valid for the phone it was issued to
-        if (!customerPhone) {
-          setCouponStatus('invalid')
-          setCouponError('קופון אישי — נא למלא קודם את מספר הטלפון בפרטי ההזמנה ואז להזין את הקופון')
-          setCouponDiscount(0)
-          onDiscountApplied(0, '')
-          return
-        }
-        if (!phonesMatch(coupon.restrictedPhone, customerPhone)) {
-          setCouponStatus('invalid')
-          setCouponError('הקופון הזה אישי ואינו תקף למספר הטלפון שהוזן')
-          setCouponDiscount(0)
-          onDiscountApplied(0, '')
-          return
-        }
-      }
-      if (coupon) {
+      // Coupon validation runs server-side (admin SDK) — the browser no longer
+      // reads the coupons collection. The endpoint returns only this coupon's
+      // result and never leaks other codes or the personal restrictedPhone.
+      const res = await fetch('/api/coupon/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode.trim().toUpperCase(), phone: customerPhone || '' }),
+      })
+      const data = await res.json()
+      if (data?.valid) {
         const itemsSubtotal = items.filter(i => !i.noDiscount).reduce((sum, item) => sum + item.totalPrice, 0)
         const pkgSubtotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
-        const discount = Math.round((itemsSubtotal + pkgSubtotal) * coupon.discountPercent / 100)
+        const discount = Math.round((itemsSubtotal + pkgSubtotal) * data.discountPercent / 100)
         setCouponDiscount(discount)
         setCouponStatus('valid')
         onDiscountApplied(discount, couponCode.trim().toUpperCase())
       } else {
         setCouponStatus('invalid')
-        setCouponError(DEFAULT_COUPON_ERROR)
+        setCouponError(
+          data?.reason === 'personal_needs_phone'
+            ? 'קופון אישי — נא למלא קודם את מספר הטלפון בפרטי ההזמנה ואז להזין את הקופון'
+            : data?.reason === 'personal_wrong_phone'
+            ? 'הקופון הזה אישי ואינו תקף למספר הטלפון שהוזן'
+            : DEFAULT_COUPON_ERROR
+        )
         setCouponDiscount(0)
         onDiscountApplied(0, '')
       }

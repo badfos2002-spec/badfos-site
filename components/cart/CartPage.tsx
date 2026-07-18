@@ -10,8 +10,7 @@ import ContactForm from './ContactForm'
 import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
 import { ArrowRight, ShoppingBag, Check, Share2, Loader2, Package, Trash2 } from 'lucide-react'
-import { createSharedCart, createOrder, validateCoupon } from '@/lib/db'
-import { phonesMatch } from '@/lib/utils'
+import { createSharedCart, createOrder } from '@/lib/db'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { calculateOrderTotal } from '@/lib/pricing'
 import { EXPRESS_PICKUP } from '@/lib/constants'
@@ -275,8 +274,16 @@ export default function CartPage() {
       let effectiveCouponCode = couponCode
       if (couponCode) {
         try {
-          const coupon = await validateCoupon(couponCode.trim().toUpperCase())
-          if (coupon?.restrictedPhone && !phonesMatch(coupon.restrictedPhone, customerInfo.phone)) {
+          // Server-side re-validation (admin SDK) — strips a personal coupon
+          // that belongs to a different phone. The browser no longer reads the
+          // coupons collection directly.
+          const res = await fetch('/api/coupon/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: couponCode.trim().toUpperCase(), phone: customerInfo.phone }),
+          })
+          const data = await res.json().catch(() => null)
+          if (data && data.valid === false && data.reason === 'personal_wrong_phone') {
             effectiveCouponDiscount = 0
             effectiveCouponCode = ''
             setCouponDiscount(0)

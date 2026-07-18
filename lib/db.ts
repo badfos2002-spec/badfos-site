@@ -180,19 +180,16 @@ export async function getAllDocuments<T>(
  * Get the next order number (auto-increment)
  */
 export async function getNextOrderNumber(): Promise<number> {
-  ensureFirebase()
-  const counterRef = doc(db!, 'counters', 'orders')
-  const counterSnap = await getDoc(counterRef)
-
-  if (counterSnap.exists()) {
-    const currentNumber = counterSnap.data().current || 1000
-    await updateDoc(counterRef, { current: increment(1) })
-    return currentNumber + 1
-  } else {
-    // Initialize counter if it doesn't exist
-    await setDoc(counterRef, { current: 1001 })
-    return 1001
+  // Allocated server-side (admin SDK) so the browser never touches
+  // `counters/orders` — firestore.rules lock `counters` to admins only.
+  // The transaction there guarantees atomic, duplicate-free numbering.
+  const res = await fetch('/api/order/next-number', { method: 'POST' })
+  if (!res.ok) throw new Error('Failed to allocate order number')
+  const data = await res.json()
+  if (typeof data?.orderNumber !== 'number') {
+    throw new Error('Invalid order number response')
   }
+  return data.orderNumber
 }
 
 /**

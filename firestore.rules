@@ -33,9 +33,11 @@ service cloud.firestore {
     }
 
     // ── Coupons ───────────────────────────────────────────────────────────────
-    // Public read needed for checkout validation; only admin writes
+    // No client read — validation runs server-side via /api/coupon/validate
+    // (admin SDK), which never leaks the code list or a coupon's restrictedPhone.
+    // Only admin writes (recovery/share coupons are created with the admin SDK).
     match /coupons/{couponId} {
-      allow read: if true;
+      allow read: if false;
       allow write: if isAdmin();
     }
 
@@ -88,9 +90,12 @@ service cloud.firestore {
     }
 
     // ── Counters ──────────────────────────────────────────────────────────────
-    // Read + write open — used by server-side createOrder to increment order number
+    // Admin only. Order numbering runs server-side via /api/order/next-number
+    // (admin SDK, bypasses rules); admin quote numbering runs client-side and
+    // stays allowed via isAdmin(). Anonymous clients can no longer read or
+    // overwrite the counters.
     match /counters/{counterId} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
     }
 
     // ── Shared Designs ────────────────────────────────────────────────────────
