@@ -513,28 +513,6 @@ export async function createRecoveryCoupon(orderId: string, restrictedPhone?: st
 }
 
 /**
- * Validate and get coupon by code
- */
-export async function validateCoupon(code: string): Promise<Coupon | null> {
-  const coupons = await queryDocuments<Coupon>('coupons', [
-    { field: 'code', operator: '==', value: code },
-    { field: 'isActive', operator: '==', value: true },
-    { field: 'isUsed', operator: '==', value: false },
-  ])
-
-  if (coupons.length > 0) {
-    const coupon = coupons[0]
-    // Check if expired
-    const now = Timestamp.now()
-    if (coupon.expiresAt.seconds > now.seconds) {
-      return coupon
-    }
-  }
-
-  return null
-}
-
-/**
  * Mark coupon as used
  */
 export async function markCouponAsUsed(couponId: string): Promise<void> {
