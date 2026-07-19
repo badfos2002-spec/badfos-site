@@ -178,8 +178,8 @@ export function OrderConfirmationEmail({
             : ''
         }
         <div class="info-row">
-          <span class="info-label">משלוח:</span>
-          <span class="info-value">₪${order.shipping.method === 'delivery' ? '35' : '0'}</span>
+          <span class="info-label">${order.shipping.method === 'delivery' ? 'משלוח:' : 'איסוף עצמי:'}</span>
+          <span class="info-value">${order.shipping.method === 'delivery' ? '₪35' : 'חינם'}</span>
         </div>
         ${
           order.shipping.express

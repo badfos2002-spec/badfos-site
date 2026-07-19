@@ -741,7 +741,7 @@ export default function AdminOrdersPage() {
                               </div>
                             )}
                             <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
-                              <span>משלוח</span>
+                              <span>{order.shipping?.method === 'pickup' ? 'איסוף עצמי' : 'משלוח'}</span>
                               <span>{order.shipping?.method === 'pickup' ? 'חינם' : `₪${order.shipping?.cost ?? 35}`}</span>
                             </div>
                             {order.shipping?.express && (

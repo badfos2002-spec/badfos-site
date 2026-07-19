@@ -193,8 +193,8 @@ export default function OrderSummary({
 
           {shipping ? (
             <div className="flex justify-between">
-              <span>משלוח:</span>
-              <span className="font-bold text-black">{formatPrice(shipping.cost)}</span>
+              <span>{shipping.method === 'pickup' ? 'איסוף עצמי:' : 'משלוח:'}</span>
+              <span className="font-bold text-black">{shipping.method === 'pickup' ? 'חינם' : formatPrice(shipping.cost)}</span>
             </div>
           ) : (
             <div className="flex justify-between text-gray-400 text-sm">
