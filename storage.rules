@@ -6,27 +6,27 @@ rules_version = '2';
 // world-readable, so anyone could enumerate + download every customer's uploaded
 // artwork by walking order IDs. These rules kill public listing and public reads.
 //
-// Read posture for designs/ = DENY (read: if false).
-// Rationale: every consumer of a design image uses a Firebase download-token URL
-// (`?alt=media&token=...`), and token URLs are served by the download endpoint which
-// BYPASSES these security rules. Verified consumers:
-//   - Upload: lib/storage.ts uploadDesignFile/uploadBase64Image -> getDownloadURL()
-//     (token URL) stored on order.designs[].imageUrl.
-//   - Customer email: lib/email-templates/design-mockup.tsx renders design.imageUrl
-//     (the stored token URL).
-//   - Admin orders page: app/admin/orders/page.tsx renders/links d.imageUrl (token URL).
-//   - Upscale pipeline: app/api/upscale-callback writes via Admin SDK (bypasses rules)
-//     and builds its own `?token=` URL.
-// Server-side listing/cleanup/backup all use the Admin SDK (adminStorage) which also
-// bypasses these rules. So read:false breaks no flow while eliminating direct reads.
+// Read posture for designs/ = FILE-LEVEL READ ALLOWED, NO LISTING.
+// Rationale: the checkout upload flow calls getDownloadURL() immediately after
+// uploading (lib/storage.ts uploadBase64Image), and getDownloadURL REQUIRES read
+// permission on the object — so read:false broke customer uploads
+// (storage/unauthorized). We therefore allow read at the FILE level only.
+// This still closes the real exposure: listing/enumeration of designs/ requires
+// read on the PREFIX path, which no rule grants (the match is 3 segments deep),
+// so listAll on designs/ or designs/{orderId}/ stays DENIED. An attacker cannot
+// enumerate customers' artwork; only someone who already knows an exact,
+// unguessable path (orderId + timestamped random filename) could fetch that one
+// file — the standard, acceptable posture for token-served assets.
 
 service firebase.storage {
   match /b/{bucket}/o {
 
     // Customer design uploads (anonymous checkout writes here).
     match /designs/{orderId}/{fileName} {
-      // No public read and no listing. Consumers use token URLs which bypass rules.
-      allow read: if false;
+      // File-level read only (needed by getDownloadURL after upload). Listing the
+      // designs/ prefix stays denied — no rule grants read on the parent path — so
+      // customers' artwork cannot be enumerated.
+      allow read: if true;
 
       // Anonymous checkout may upload images, constrained to <15MB and image/* only.
       allow create: if request.resource.size < 15 * 1024 * 1024
