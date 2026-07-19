@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb, adminStorage } from '@/lib/firebase-admin'
+import { PIXEL_LIMIT_ERROR } from '@/lib/upscale'
 import { randomUUID } from 'crypto'
 
 // Downloading a 4x image (can be several MB) + re-uploading to Storage
@@ -59,6 +60,18 @@ export async function POST(request: NextRequest) {
 
     if (status !== 'succeeded') {
       const reason = typeof body?.error === 'string' ? body.error.slice(0, 300) : `prediction ${status}`
+      // Safety net: an oversized input isn't a real failure — the original is
+      // already high-res, so fall back to it as the print file (not "failed").
+      if (PIXEL_LIMIT_ERROR.test(reason) && typeof entry.sourceUrl === 'string' && entry.sourceUrl) {
+        await orderRef.update({
+          [`upscales.${key}.status`]: 'done',
+          [`upscales.${key}.url`]: entry.sourceUrl,
+          [`upscales.${key}.alreadyHighRes`]: true,
+          [`upscales.${key}.completedAt`]: new Date(),
+        })
+        console.log(`Upscale callback: order ${orderId} [${key}] input too large for model — using original as print file`)
+        return NextResponse.json({ success: true, alreadyHighRes: true })
+      }
       await orderRef.update({
         [`upscales.${key}.status`]: 'failed',
         [`upscales.${key}.error`]: reason,

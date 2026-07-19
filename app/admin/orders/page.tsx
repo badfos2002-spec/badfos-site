@@ -685,7 +685,7 @@ export default function AdminOrdersPage() {
                                                 className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium min-h-[44px] rounded-md px-3 transition-colors"
                                               >
                                                 <Download className="w-4 h-4 ml-1" />
-                                                הורדה לדפוס ✨ (פי 4)
+                                                {upscale.alreadyHighRes ? 'הורדה לדפוס ✨ (איכות מקורית גבוהה)' : 'הורדה לדפוס ✨ (פי 4)'}
                                               </a>
                                               <a
                                                 href={d.imageUrl}

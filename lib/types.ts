@@ -124,6 +124,9 @@ export interface DesignUpscale {
   sourceUrl?: string
   /** Firebase Storage download URL of the upscaled image (status: done) */
   url?: string
+  /** True when `url` is the ORIGINAL image (already high-res, above the model's
+   *  input limit) rather than a 4x upscale — still fully print-ready */
+  alreadyHighRes?: boolean
   error?: string
   createdAt?: Timestamp | Date
   completedAt?: Timestamp | Date

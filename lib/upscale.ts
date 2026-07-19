@@ -13,6 +13,33 @@
 export const REAL_ESRGAN_VERSION =
   'f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa'
 
+/**
+ * Hard input limit of this real-esrgan version. Inputs with more pixels than
+ * this are rejected by the model with:
+ *   "...total number of pixels N greater than the max size that fits in GPU
+ *    memory on this hardware, 2096704. Resize input image and try again."
+ * Empirically confirmed via the Replicate API (2026-07): 2.00MP accepted,
+ * 2.25MP rejected — the model's stated cap is exactly 2,096,704 px (1448²).
+ */
+export const MODEL_MAX_INPUT_PIXELS = 2_096_704
+
+/**
+ * At/above this pixel count we skip upscaling and use the ORIGINAL image as the
+ * print file — it's already high-res, and 4x would exceed the model cap anyway.
+ * Kept a safe margin below MODEL_MAX_INPUT_PIXELS so anything we still send to
+ * the model is guaranteed to be under its limit.
+ */
+export const SKIP_UPSCALE_PIXELS = 2_000_000
+
+/**
+ * Matches a Replicate/model error meaning the input was too large for the GPU.
+ * Such images are already high-res, so we fall back to the original instead of
+ * marking the upscale failed. The real error contains both "number of pixels"
+ * and "dimensions" and "max size that fits".
+ */
+export const PIXEL_LIMIT_ERROR =
+  /maximum allowed|number of pixels|max size that fits|too large|dimensions/i
+
 const REPLICATE_PREDICTIONS_URL = 'https://api.replicate.com/v1/predictions'
 
 /**

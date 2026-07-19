@@ -7,6 +7,7 @@ import {
   UPSCALABLE_STATUSES,
   STUCK_PENDING_MS,
 } from '@/lib/upscale-order'
+import { PIXEL_LIMIT_ERROR } from '@/lib/upscale'
 import { runBackup, BackupSummary } from '@/lib/backup'
 
 const CRON_SECRET = process.env.CRON_SECRET
@@ -51,6 +52,8 @@ export async function GET(req: NextRequest) {
   let deletedQuotes = 0
   let upscalesRetried = 0
   let upscalesGaveUp = 0
+  let upscalesHealed = 0
+  let upscalesSkipped = 0
 
   // ── Nightly backup — FIRST, before any deletion below. Failure here must
   //    never block the cleanup (and cleanup failures never block the backup,
@@ -82,6 +85,9 @@ export async function GET(req: NextRequest) {
         // (lost webhook) — everything else is left untouched
         const needsHealing = Object.values(upscales).some((u: any) => {
           if (u?.status === 'failed') return true
+          // gave_up entries that hit the model's pixel limit can be healed
+          // in-place to done+original (they're already high-res)
+          if (u?.status === 'gave_up') return typeof u?.error === 'string' && PIXEL_LIMIT_ERROR.test(u.error)
           if (u?.status !== 'pending') return false
           const ms = upscaleEntryMillis(u.createdAt)
           return ms === null || Date.now() - ms >= STUCK_PENDING_MS
@@ -92,8 +98,10 @@ export async function GET(req: NextRequest) {
           const r = await runUpscaleForOrder(doc.id, { retryStuckPending: true })
           upscalesRetried += r.created
           upscalesGaveUp += r.gaveUp
-          if (r.created || r.gaveUp) {
-            console.log(`Upscale self-heal: order ${doc.id} — retried ${r.created}, gave up ${r.gaveUp}`)
+          upscalesHealed += r.healed
+          upscalesSkipped += r.skipped
+          if (r.created || r.gaveUp || r.healed || r.skipped) {
+            console.log(`Upscale self-heal: order ${doc.id} — retried ${r.created}, gave up ${r.gaveUp}, healed ${r.healed}, skipped ${r.skipped}`)
           }
         } catch (e) {
           console.error(`Upscale self-heal failed for order ${doc.id}:`, e)
@@ -196,6 +204,8 @@ export async function GET(req: NextRequest) {
       deletedQuotes,
       upscalesRetried,
       upscalesGaveUp,
+      upscalesHealed,
+      upscalesSkipped,
       errors,
       storageMB: Math.round(usageMB),
       filesCount,

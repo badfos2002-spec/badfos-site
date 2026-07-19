@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin'
-import { createUpscalePrediction } from '@/lib/upscale'
+import { createUpscalePrediction, SKIP_UPSCALE_PIXELS, PIXEL_LIMIT_ERROR } from '@/lib/upscale'
+import { readImagePixels } from '@/lib/image-dims'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'
 
@@ -35,6 +36,10 @@ export interface UpscaleRunResult {
   created: number
   total: number
   gaveUp: number
+  /** Designs already at/above the model limit — used the original as print file */
+  skipped: number
+  /** Existing pixel-limit failures/gave_ups converted in-place to done+original */
+  healed: number
 }
 
 /**
@@ -64,12 +69,14 @@ export async function runUpscaleForOrder(
   let notFound = false
   let wrongStatus: string | null = null
   let gaveUp = 0
+  let healed = 0
 
   await adminDb.runTransaction(async (tx) => {
     claimed.length = 0
     notFound = false
     wrongStatus = null
     gaveUp = 0
+    healed = 0
 
     const snap = await tx.get(orderRef)
     if (!snap.exists) {
@@ -97,6 +104,24 @@ export async function runUpscaleForOrder(
 
         const key = `${itemIdx}_${area}`
         const existing = upscales[key]
+
+        // Self-heal: an entry that failed/gave up on the model's pixel limit is
+        // actually already high-res — convert it in place to done+original.
+        // No network I/O here — pure data, safe inside the transaction.
+        if (
+          existing &&
+          (existing.status === 'failed' || existing.status === 'gave_up') &&
+          typeof existing.error === 'string' &&
+          PIXEL_LIMIT_ERROR.test(existing.error)
+        ) {
+          updates[`upscales.${key}.status`] = 'done'
+          updates[`upscales.${key}.url`] = existing.sourceUrl || imageUrl
+          updates[`upscales.${key}.alreadyHighRes`] = true
+          updates[`upscales.${key}.completedAt`] = new Date()
+          healed++
+          return
+        }
+
         let attempts = 0
         if (existing) {
           if (existing.status === 'done' || existing.status === 'gave_up') return
@@ -132,12 +157,32 @@ export async function runUpscaleForOrder(
     }
   })
 
-  if (notFound) return { notFound: true, created: 0, total: 0, gaveUp: 0 }
-  if (wrongStatus) return { wrongStatus, created: 0, total: 0, gaveUp: 0 }
+  if (notFound) return { notFound: true, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0 }
+  if (wrongStatus) return { wrongStatus, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0 }
 
-  // Create Replicate predictions (completion webhook — we don't wait)
+  // Create Replicate predictions (completion webhook — we don't wait).
+  // Network I/O only — never inside the claim transaction above.
   let created = 0
+  let skipped = 0
   for (const { key, imageUrl } of claimed) {
+    // Pre-check: images already at/above the model's usable size can't be
+    // upscaled (the model rejects them) and don't need to be — they're already
+    // print-ready. Use the original as the print file, skip the prediction.
+    // Unknown dimensions (null) → fall through and let the model try; the
+    // callback safety-net catches a pixel-limit failure.
+    const px = await readImagePixels(imageUrl)
+    if (px !== null && px >= SKIP_UPSCALE_PIXELS) {
+      await orderRef.update({
+        [`upscales.${key}.status`]: 'done',
+        [`upscales.${key}.url`]: imageUrl,
+        [`upscales.${key}.alreadyHighRes`]: true,
+        [`upscales.${key}.completedAt`]: new Date(),
+      }).catch(() => {})
+      skipped++
+      console.log(`Upscale designs: order ${orderRef.id} [${key}] is ${px}px (>= ${SKIP_UPSCALE_PIXELS}) — using original as print file`)
+      continue
+    }
+
     const callbackUrl =
       `${SITE_URL}/api/upscale-callback?orderId=${encodeURIComponent(orderRef.id)}&key=${encodeURIComponent(key)}`
     try {
@@ -154,5 +199,5 @@ export async function runUpscaleForOrder(
     }
   }
 
-  return { created, total: claimed.length, gaveUp }
+  return { created, total: claimed.length, gaveUp, skipped, healed }
 }
