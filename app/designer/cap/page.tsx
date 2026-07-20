@@ -7,6 +7,7 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { confirmDesignReplace } from '@/lib/utils'
 import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
@@ -232,7 +233,7 @@ export default function CapDesignerPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
                       className="hidden"
-                      onChange={e => setDesignFile(e.target.files?.[0] || null)}
+                      onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace(availableAreas.find(a => a.id === selectedArea)?.name || 'קידמי'))) setDesignFile(f); e.target.value = '' }}
                     />
                   </label>
                 </div>
@@ -250,7 +251,7 @@ export default function CapDesignerPage() {
                     type="file"
                     accept="image/png, image/jpeg, image/jpg"
                     className="hidden"
-                    onChange={e => setDesignFile(e.target.files?.[0] || null)}
+                    onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace(availableAreas.find(a => a.id === selectedArea)?.name || 'קידמי'))) setDesignFile(f); e.target.value = '' }}
                   />
                 </label>
               )}

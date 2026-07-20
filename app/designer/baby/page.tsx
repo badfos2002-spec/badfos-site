@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Minus, Plus } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { BABY_COLORS, BABY_SIZES } from '@/lib/constants'
+import { confirmDesignReplace } from '@/lib/utils'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const babyMockups: Record<string, string> = {
@@ -165,7 +166,7 @@ export default function BabyDesignerPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
                       className="hidden"
-                      onChange={e => setDesignFile(e.target.files?.[0] || null)}
+                      onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace('קידמי'))) setDesignFile(f); e.target.value = '' }}
                     />
                   </label>
                 </div>
@@ -183,7 +184,7 @@ export default function BabyDesignerPage() {
                     type="file"
                     accept="image/png, image/jpeg, image/jpg"
                     className="hidden"
-                    onChange={e => setDesignFile(e.target.files?.[0] || null)}
+                    onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace('קידמי'))) setDesignFile(f); e.target.value = '' }}
                   />
                 </label>
               )}

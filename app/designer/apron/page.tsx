@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload, CheckCircle, X } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { confirmDesignReplace } from '@/lib/utils'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const apronMockups: Record<string, string> = {
@@ -163,7 +164,7 @@ export default function ApronDesignerPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
                       className="hidden"
-                      onChange={e => setDesignFile(e.target.files?.[0] || null)}
+                      onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace('מרכזי'))) setDesignFile(f); e.target.value = '' }}
                     />
                   </label>
                 </div>
@@ -181,7 +182,7 @@ export default function ApronDesignerPage() {
                     type="file"
                     accept="image/png, image/jpeg, image/jpg"
                     className="hidden"
-                    onChange={e => setDesignFile(e.target.files?.[0] || null)}
+                    onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace('מרכזי'))) setDesignFile(f); e.target.value = '' }}
                   />
                 </label>
               )}

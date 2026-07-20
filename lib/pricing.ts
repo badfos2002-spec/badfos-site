@@ -180,6 +180,15 @@ export function formatPriceDetailed(price: number): string {
   return `₪${price.toFixed(2)}`
 }
 
+/** Small deterministic 32-bit string hash (djb2) for cart-item design fingerprinting. */
+function hashString(str: string): string {
+  let h = 5381
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h + str.charCodeAt(i)) | 0
+  }
+  return (h >>> 0).toString(36)
+}
+
 /**
  * Generate a unique cart item ID based on configuration
  * This allows us to detect duplicate items in the cart
@@ -192,8 +201,13 @@ export function generateCartItemId(config: ProductConfig): string {
 
   const { productType, fabricType, color, designs } = config
 
+  // Fingerprint each design by area + file name + content hash. Two items with the
+  // same product/color/area but DIFFERENT uploaded designs must NOT collapse into one
+  // cart entry (that would silently drop the second design — critical for large orders
+  // where many shirts share the same product/color but each has its own artwork).
+  // Identical re-adds still yield the same id and merge quantities, as before.
   const designIds = designs
-    .map((d) => d.area)
+    .map((d) => `${d.area}:${d.fileName || ''}:${hashString(d.imageUrl || '')}`)
     .sort()
     .join('-')
 

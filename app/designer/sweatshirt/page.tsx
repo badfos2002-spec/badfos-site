@@ -11,6 +11,7 @@ import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { useCart } from '@/hooks/useCart'
+import { confirmDesignReplace } from '@/lib/utils'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
@@ -121,9 +122,14 @@ export default function SweatshirtDesignerPage() {
       return
     }
 
+    const areaId = selectedAreaId as DesignArea['area']
+
+    // Never silently overwrite: if this area already holds a design in the current
+    // session, require explicit confirmation. On cancel, keep the existing design.
+    if (hasDesign(areaId) && !confirmDesignReplace(selectedArea.name, true)) return
+
     // Show preview immediately with blob URL
     const previewUrl = URL.createObjectURL(file)
-    const areaId = selectedAreaId as DesignArea['area']
     const tempDesign: DesignArea = {
       area: areaId,
       areaName: selectedArea.name,
@@ -213,7 +219,8 @@ export default function SweatshirtDesignerPage() {
       case 2:
         return (
           <div>
-            <p className="text-sm text-gray-500 mb-4">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
+            <p className="text-sm text-gray-500 mb-1">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
+            <p className="text-xs text-gray-400 mb-4">רוצה כמה עיצובים שונים? העלו לאזור אחר, או סיימו והוסיפו לעגלה ואז התחילו פריט חדש.</p>
 
             {/* Area selector tabs */}
             <div className="grid gap-2 mb-4 grid-cols-2">
@@ -272,7 +279,7 @@ export default function SweatshirtDesignerPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
                       className="hidden"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); if (e.target) e.target.value = '' }}
                     />
                   </label>
                 </div>
@@ -290,7 +297,7 @@ export default function SweatshirtDesignerPage() {
                     type="file"
                     accept="image/png, image/jpeg, image/jpg"
                     className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); if (e.target) e.target.value = '' }}
                   />
                 </label>
               )}

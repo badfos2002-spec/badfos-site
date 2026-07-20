@@ -146,6 +146,25 @@ export function phonesMatch(a?: string, b?: string): boolean {
 }
 
 /**
+ * Ask the user to confirm replacing an existing design in a given area.
+ * Guards against silently discarding a design the user already uploaded in the
+ * CURRENT designer session. Returns true only if the user explicitly confirms.
+ * `multiArea` = true when the product genuinely supports separate designs per area
+ * (t-shirt / sweatshirt), so the guidance can suggest uploading to another area.
+ */
+export function confirmDesignReplace(areaName: string, multiArea = false): boolean {
+  const guidance = multiArea
+    ? 'רוצה כמה עיצובים שונים? העלה לאזור אחר, או סיים והוסף לעגלה ואז התחל פריט חדש.'
+    : 'רוצה עוד עיצוב? סיים והוסף לעגלה, ואז התחל פריט חדש.'
+  return window.confirm(
+    `כבר העלית עיצוב לאזור "${areaName}" 🎨\n` +
+    `העלאה חדשה תחליף את הקיים.\n` +
+    `${guidance}\n\n` +
+    `להחליף את העיצוב הקיים?`
+  )
+}
+
+/**
  * Escape HTML special characters to prevent HTML injection
  */
 export function escapeHtml(str: string): string {

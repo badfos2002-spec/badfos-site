@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { TSHIRT_DESIGN_AREAS } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
+import { confirmDesignReplace } from '@/lib/utils'
 import { ImagePlus, CheckCircle, X } from 'lucide-react'
 
 interface DesignStepProps {
@@ -100,6 +101,11 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
 
   const handleFileSelectForArea = async (areaId: string, file: File) => {
     const area = TSHIRT_DESIGN_AREAS.find(a => a.id === areaId)!
+
+    // Never silently overwrite: if this area already holds a design in the current
+    // session, require explicit confirmation. On cancel, keep the existing design.
+    if (hasDesign(areaId) && !confirmDesignReplace(area.name, true)) return
+
     setProcessingAreaId(areaId)
 
     try {
@@ -158,7 +164,8 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-4">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
+      <p className="text-sm text-gray-500 mb-1">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
+      <p className="text-xs text-gray-400 mb-4">רוצה כמה עיצובים שונים? העלו לאזור אחר, או סיימו והוסיפו לעגלה ואז התחילו פריט חדש.</p>
 
       {/* ── MOBILE: merged area + upload buttons ── */}
       <div className="lg:hidden grid gap-3 mb-4 grid-cols-2">
@@ -276,7 +283,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                   type="file"
                   accept="image/png, image/jpeg, image/jpg, image/heic, image/heif, .heic, .heif"
                   className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); if (e.target) e.target.value = '' }}
                 />
               </label>
             </div>
@@ -294,7 +301,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                 type="file"
                 accept="image/png, image/jpeg, image/jpg, image/heic, image/heif, .heic, .heif"
                 className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); if (e.target) e.target.value = '' }}
               />
             </label>
           )}
