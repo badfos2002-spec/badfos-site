@@ -180,7 +180,11 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                 </div>
               )}
               <label
-                className={`cursor-pointer block border-2 border-dashed rounded-xl p-3 text-center transition-all ${
+                role="button"
+                tabIndex={0}
+                aria-label={`${uploaded ? 'החלפת' : 'העלאת'} עיצוב לאזור ${area.name}`}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
+                className={`cursor-pointer block border-2 border-dashed rounded-xl p-3 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 ${
                   uploaded
                     ? 'border-green-400 bg-green-50'
                     : 'border-yellow-300 bg-white hover:border-yellow-400 hover:bg-yellow-50'
@@ -214,6 +218,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
               {uploaded && (
                 <button
                   onClick={(e) => { e.stopPropagation(); removeDesign(area.id) }}
+                  aria-label={`הסרת עיצוב מאזור ${area.name}`}
                   className="absolute top-1 left-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center z-10"
                 >
                   <X className="w-3 h-3" />
@@ -235,6 +240,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
               <button
                 key={area.id}
                 onClick={() => handleAreaSelect(area.id)}
+                aria-pressed={isActive}
                 className={`relative text-xs h-16 px-2 py-2 rounded-md border font-medium transition-all flex items-center justify-center ${
                   isActive
                     ? 'gradient-yellow text-white border-transparent shadow'
@@ -267,7 +273,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                   <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                   <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{currentDesign.fileName}</span>
                 </div>
-                <button onClick={() => removeDesign(selectedAreaId)} className="text-red-400 hover:text-red-600 shrink-0 mr-1">
+                <button onClick={() => removeDesign(selectedAreaId)} aria-label={`הסרת עיצוב מאזור ${selectedArea.name}`} className="text-red-400 hover:text-red-600 shrink-0 mr-1">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -275,7 +281,13 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={currentDesign.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
               </div>
-              <label className="cursor-pointer block">
+              <label
+                role="button"
+                tabIndex={0}
+                aria-label={`החלפת עיצוב לאזור ${selectedArea.name}`}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
+                className="cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg"
+              >
                 <div className="w-full text-center py-2 px-3 border border-dashed border-yellow-300 rounded-lg hover:border-yellow-400 hover:bg-yellow-50 transition-all text-xs text-gray-500 font-medium">
                   החלף קובץ
                 </div>
@@ -288,7 +300,13 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
               </label>
             </div>
           ) : (
-            <label className="cursor-pointer block">
+            <label
+              role="button"
+              tabIndex={0}
+              aria-label={`העלאת עיצוב לאזור ${selectedArea.name}`}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
+              className="cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg"
+            >
               <div className="border-2 border-dashed border-yellow-300 rounded-lg p-6 text-center hover:border-yellow-400 hover:bg-yellow-50 transition-all mx-auto max-w-xs">
                 <div className="w-12 h-12 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-3">
                   <ImagePlus className="w-6 h-6 text-white" />
@@ -309,7 +327,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
       </div>
 
       {designs.length === 0 && (
-        <p className="text-sm text-red-500 mt-4">יש להעלות לפחות קובץ אחד כדי להמשיך.</p>
+        <p role="alert" className="text-sm text-red-500 mt-4">יש להעלות לפחות קובץ אחד כדי להמשיך.</p>
       )}
 
       {/* Uploaded areas summary — desktop only (mobile shows inline) */}
@@ -322,7 +340,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                 <span className="font-medium text-green-700">{d.areaName}</span>
                 <span className="text-gray-400 truncate max-w-[100px]">{d.fileName}</span>
               </div>
-              <button onClick={() => removeDesign(d.area)} className="text-red-400 hover:text-red-600 mr-1">
+              <button onClick={() => removeDesign(d.area)} aria-label={`הסרת עיצוב מאזור ${d.areaName}`} className="text-red-400 hover:text-red-600 mr-1">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>

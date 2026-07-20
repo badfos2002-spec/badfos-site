@@ -225,7 +225,13 @@ export default function CapDesignerPage() {
                       <img src={designPreviewUrl} alt="עיצוב" className="w-full h-full object-contain" />
                     )}
                   </div>
-                  <label className="cursor-pointer block">
+                  <label
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`החלפת עיצוב לאזור ${availableAreas.find(a => a.id === selectedArea)?.name || 'קידמי'}`}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
+                    className="cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg"
+                  >
                     <div className="w-full text-center py-2 px-3 border border-dashed border-yellow-300 rounded-lg hover:border-yellow-400 hover:bg-yellow-50 transition-all text-xs text-gray-500 font-medium">
                       החלף קובץ
                     </div>
@@ -238,7 +244,13 @@ export default function CapDesignerPage() {
                   </label>
                 </div>
               ) : (
-                <label className="cursor-pointer block">
+                <label
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`העלאת עיצוב לאזור ${availableAreas.find(a => a.id === selectedArea)?.name || 'קידמי'}`}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
+                  className="cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg"
+                >
                   <div className="border-2 border-dashed border-yellow-300 rounded-lg p-4 sm:p-6 text-center hover:border-yellow-400 hover:bg-yellow-50 transition-all mx-auto w-full sm:max-w-xs">
                     <div className="w-12 h-12 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-3">
                       <ImagePlus className="w-6 h-6 text-white" />

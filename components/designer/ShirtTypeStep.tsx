@@ -15,6 +15,7 @@ export default function ShirtTypeStep({ selectedType, onSelect }: ShirtTypeStepP
             <button
               key={fabric.id}
               onClick={() => onSelect(fabric.id)}
+              aria-pressed={isSelected}
               className={`items-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors border shadow-sm px-4 py-2 h-16 text-sm lg:h-24 lg:text-lg flex flex-col justify-center ${
                 isSelected
                   ? 'border-yellow-500 bg-yellow-50 text-yellow-800'
@@ -31,7 +32,7 @@ export default function ShirtTypeStep({ selectedType, onSelect }: ShirtTypeStepP
       </div>
 
       {!selectedType && (
-        <p className="text-sm text-red-500 mt-4">יש לבחור סוג חולצה כדי להמשיך.</p>
+        <p role="alert" className="text-sm text-red-500 mt-4">יש לבחור סוג חולצה כדי להמשיך.</p>
       )}
     </div>
   )

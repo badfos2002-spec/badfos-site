@@ -10,12 +10,13 @@
 // צ'יפ פעיל בגרדיאנט המותג עם טקסט כהה (ניגודיות WCAG), לייטבוקס עם
 // טשטוש רקע, כיתוב ומונה. prefers-reduced-motion מכובה גלובלית ב-globals.css.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { X, ChevronRight, ChevronLeft, ZoomIn, ArrowLeft } from 'lucide-react'
 import { GALLERY_SECTIONS } from '@/lib/constants'
 import type { SiteImage, GallerySection } from '@/lib/types'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 
 export interface GalleryItem {
   src: string
@@ -85,6 +86,7 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
   const [dbItems, setDbItems] = useState<GalleryItem[] | null>(null)
   const [activeSection, setActiveSection] = useState<'all' | GallerySection>('all')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const lightboxRef = useRef<HTMLDivElement>(null)
 
   // תמונות הגלריה מהאדמין — ממוינות לפי סדר תצוגה ואז לפי תאריך העלאה
   // import דינמי — ה-SDK של Firestore לא נכנס לבאנדל הראשוני של העמוד
@@ -156,6 +158,9 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
       document.body.style.overflow = prevOverflow
     }
   }, [lightboxIndex, close, next, prev])
+
+  // Focus management for the lightbox: focus in on open, trap Tab, return focus on close
+  useFocusTrap(lightboxRef, lightboxIndex !== null, close)
 
   const current = lightboxIndex !== null ? visibleItems[lightboxIndex] : null
 
@@ -247,7 +252,9 @@ export default function GalleryGrid({ fallbackItems }: { fallbackItems: GalleryI
       {/* ── לייטבוקס ── */}
       {current && (
         <div
-          className="animate-lightbox-fade fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          ref={lightboxRef}
+          tabIndex={-1}
+          className="animate-lightbox-fade fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm focus:outline-none"
           role="dialog"
           aria-modal="true"
           aria-label={current.alt}

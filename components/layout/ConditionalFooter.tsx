@@ -9,6 +9,7 @@ import Footer from './Footer'
 import WhatsAppButton from './WhatsAppButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 
 const CookieConsent = dynamic(() => import('@/components/common/CookieConsent'), { ssr: false })
 
@@ -19,6 +20,7 @@ function SimpleLeadPopup() {
   const [phoneError, setPhoneError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle')
   const lastSubmitRef = useRef(0)
+  const popupRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     try {
@@ -85,20 +87,29 @@ function SimpleLeadPopup() {
     }
   }
 
+  useFocusTrap(popupRef, isOpen, handleClose)
+
   if (!isOpen) return null
 
   return (
     <>
       <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm" onClick={handleClose} />
       <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none" dir="rtl">
-        <div className="bg-white rounded-2xl shadow-2xl p-7 sm:p-8 md:p-10 border border-gray-100 relative w-full max-w-[420px] md:max-w-md lg:max-w-lg pointer-events-auto">
+        <div
+          ref={popupRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lead-popup-title"
+          tabIndex={-1}
+          className="bg-white rounded-2xl shadow-2xl p-7 sm:p-8 md:p-10 border border-gray-100 relative w-full max-w-[420px] md:max-w-md lg:max-w-lg pointer-events-auto focus:outline-none"
+        >
           <button onClick={handleClose} className="absolute top-3 left-3 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors" aria-label="סגור">
             <X className="w-6 h-6" />
           </button>
 
           <div className="flex flex-col items-center text-center mb-6">
             <Image src="/logo.png" alt="בדפוס" width={56} height={56} className="h-12 w-auto md:h-14 mb-3" />
-            <h3 className="text-gray-900 font-bold text-xl md:text-2xl">רוצים שנחזור אליכם?</h3>
+            <h3 id="lead-popup-title" className="text-gray-900 font-bold text-xl md:text-2xl">רוצים שנחזור אליכם?</h3>
             <p className="text-gray-500 text-base md:text-lg mt-1">השאירו פרטים ונחזור בהקדם</p>
           </div>
 

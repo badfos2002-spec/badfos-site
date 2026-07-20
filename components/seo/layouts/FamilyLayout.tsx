@@ -61,7 +61,7 @@ export default function FamilyLayout({ page, waUrl }: SeoLayoutProps) {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
   return (
-    <main className="min-h-screen bg-white" dir="rtl">
+    <div className="min-h-screen bg-white" dir="rtl">
       {/* 1. Hero — soft warm band, no diagonal (photo-album warmth, not party energy) */}
       <HeroBand
         bgClass="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500"
@@ -259,6 +259,6 @@ export default function FamilyLayout({ page, waUrl }: SeoLayoutProps) {
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>
       </div>
-    </main>
+    </div>
   )
 }

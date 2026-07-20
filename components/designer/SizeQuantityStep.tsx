@@ -43,7 +43,7 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
           })}
         </div>
         {!selectedQty && (
-          <p className="text-sm text-red-500 mt-4">יש לבחור כמות כדי להמשיך.</p>
+          <p role="alert" className="text-sm text-red-500 mt-4">יש לבחור כמות כדי להמשיך.</p>
         )}
       </div>
     )
@@ -98,6 +98,7 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
                 type="number"
                 min="0"
                 placeholder="0"
+                aria-label={`כמות למידה ${size.name}`}
                 value={quantity || ''}
                 onChange={(e) => setQuantity(size.id, parseInt(e.target.value) || 0)}
                 className="w-16 sm:w-20 text-center font-bold h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -109,6 +110,7 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
                   type="button"
                   disabled={quantity === 0}
                   onClick={() => updateQuantity(size.id, -1)}
+                  aria-label={`הפחתת כמות למידה ${size.name}`}
                   className="h-8 w-8"
                 >
                   <Minus className="w-4 h-4" />
@@ -118,6 +120,7 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
                   size="icon"
                   type="button"
                   onClick={() => updateQuantity(size.id, 1)}
+                  aria-label={`הוספת כמות למידה ${size.name}`}
                   className="h-8 w-8"
                 >
                   <Plus className="w-4 h-4" />
@@ -129,7 +132,7 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
       </div>
 
       {totalQuantity === 0 && (
-        <p className="text-sm text-red-500 mt-4">יש לבחור לפחות פריט אחד כדי להמשיך.</p>
+        <p role="alert" className="text-sm text-red-500 mt-4">יש לבחור לפחות פריט אחד כדי להמשיך.</p>
       )}
     </div>
   )

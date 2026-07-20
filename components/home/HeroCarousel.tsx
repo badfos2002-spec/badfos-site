@@ -35,6 +35,8 @@ export default function HeroCarousel() {
   }, [current, fading])
 
   useEffect(() => {
+    // Respect prefers-reduced-motion — skip auto-advance for users who opt out of motion
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const id = setInterval(() => {
       goTo((current + 1) % SLIDES.length)
     }, 5000)

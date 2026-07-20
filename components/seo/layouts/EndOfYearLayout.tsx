@@ -65,7 +65,7 @@ export default function EndOfYearLayout({ page, waUrl }: SeoLayoutProps) {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
   return (
-    <main className="min-h-screen bg-white" dir="rtl">
+    <div className="min-h-screen bg-white" dir="rtl">
       {/* 1. Hero — emerald→teal diagonal band, school-year energy */}
       <HeroBand
         bgClass="bg-gradient-to-br from-emerald-600 via-teal-600 to-green-700"
@@ -266,6 +266,6 @@ export default function EndOfYearLayout({ page, waUrl }: SeoLayoutProps) {
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>
       </div>
-    </main>
+    </div>
   )
 }

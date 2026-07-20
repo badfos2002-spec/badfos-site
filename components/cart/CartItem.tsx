@@ -227,6 +227,8 @@ export default function CartItem({ item }: CartItemProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => removeItem(item.id)}
+                  aria-label="הסרת פריט מהעגלה"
+                  title="הסר פריט"
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Trash2 className="h-5 w-5" />

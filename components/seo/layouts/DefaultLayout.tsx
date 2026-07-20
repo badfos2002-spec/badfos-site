@@ -27,7 +27,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
   return (
-    <main className="min-h-screen bg-[#fffdf5]" dir="rtl">
+    <div className="min-h-screen bg-[#fffdf5]" dir="rtl">
       <div className="mx-auto max-w-5xl px-4 md:px-8 py-10 md:py-16">
         {/* Breadcrumb */}
         <nav aria-label="פירורי לחם" className="mb-6 text-sm text-gray-500">
@@ -279,6 +279,6 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   )
 }

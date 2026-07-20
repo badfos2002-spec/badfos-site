@@ -213,22 +213,25 @@ export default function OrderSummary({
 
         {/* Coupon Code */}
         <div className="border-t pt-4">
-          <label className="block text-sm font-medium mb-2">קוד קופון</label>
+          <label htmlFor="coupon-code" className="block text-sm font-medium mb-2">קוד קופון</label>
           {couponStatus === 'valid' ? (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
               <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
               <span className="text-sm text-green-700 font-medium flex-1">{couponCode} — הנחה של {formatPrice(couponDiscount)}</span>
-              <button onClick={handleRemoveCoupon} className="text-gray-400 hover:text-red-500">
+              <button onClick={handleRemoveCoupon} aria-label="הסרת קופון" className="text-gray-400 hover:text-red-500">
                 <X className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <div className="flex gap-2">
               <input
+                id="coupon-code"
                 type="text"
                 value={couponCode}
                 onChange={(e) => { onCouponChange(e.target.value); setCouponStatus('idle') }}
                 placeholder="הכנס קוד"
+                aria-invalid={couponStatus === 'invalid'}
+                aria-describedby={couponStatus === 'invalid' ? 'coupon-error' : undefined}
                 className="flex-1 px-3 py-2 border rounded-lg text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
               />
@@ -243,7 +246,7 @@ export default function OrderSummary({
             </div>
           )}
           {couponStatus === 'invalid' && (
-            <p className="text-xs text-red-500 mt-1">{couponError}</p>
+            <p id="coupon-error" role="alert" className="text-xs text-red-500 mt-1">{couponError}</p>
           )}
         </div>
 

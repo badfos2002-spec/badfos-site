@@ -709,7 +709,7 @@ export default function CartPage() {
     <>
     {loading && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm mx-4">
+        <div className="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm mx-4" role="status" aria-live="polite">
           <Loader2 className="w-14 h-14 text-yellow-500 animate-spin mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">{loadingMessage || 'מעבד את ההזמנה שלך...'}</h2>
           <p className="text-gray-500 text-sm">אנא המתן, זה ייקח מספר שניות</p>
@@ -784,6 +784,7 @@ export default function CartPage() {
                         <span className="font-bold text-lg">₪{pkg.totalPrice}</span>
                         <button
                           onClick={() => removePackage(pkg.id)}
+                          aria-label={`הסרת חבילה ${pkg.packageName}`}
                           className="text-red-400 hover:text-red-600 transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />

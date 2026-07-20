@@ -55,7 +55,7 @@ export default function RishonLayout({ page, waUrl }: SeoLayoutProps) {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
   return (
-    <main className="min-h-screen bg-white" dir="rtl">
+    <div className="min-h-screen bg-white" dir="rtl">
       {/* 1. Hero — full-bleed brand-yellow band with diagonal bottom edge */}
       <HeroBand
         bgClass="bg-gradient-to-br from-[#f59e0b] via-[#fbbf24] to-[#ffc32e]"
@@ -200,6 +200,6 @@ export default function RishonLayout({ page, waUrl }: SeoLayoutProps) {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   )
 }

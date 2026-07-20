@@ -59,7 +59,7 @@ export default function BirthdayLayout({ page, waUrl }: SeoLayoutProps) {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
   return (
-    <main className="min-h-screen bg-white" dir="rtl">
+    <div className="min-h-screen bg-white" dir="rtl">
       {/* 1. Hero — diagonal purple band with floating party confetti emoji */}
       <div className="relative">
         <HeroBand
@@ -273,6 +273,6 @@ export default function BirthdayLayout({ page, waUrl }: SeoLayoutProps) {
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>
       </div>
-    </main>
+    </div>
   )
 }

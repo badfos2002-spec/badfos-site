@@ -65,7 +65,7 @@ export default function SoldiersLayout({ page, waUrl }: SeoLayoutProps) {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
   return (
-    <main className="min-h-screen bg-white" dir="rtl">
+    <div className="min-h-screen bg-white" dir="rtl">
       {/* 1. Hero — dark olive-drab band, amber insignia accents */}
       <HeroBand
         bgClass="bg-gradient-to-br from-[#4a5228] via-[#3a4423] to-[#272e18]"
@@ -275,6 +275,6 @@ export default function SoldiersLayout({ page, waUrl }: SeoLayoutProps) {
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>
       </div>
-    </main>
+    </div>
   )
 }

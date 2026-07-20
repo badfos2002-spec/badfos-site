@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { X } from 'lucide-react'
+import { useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 
 interface MobileMenuProps {
   open: boolean
@@ -10,6 +12,9 @@ interface MobileMenuProps {
 }
 
 export default function MobileMenu({ open, onClose }: MobileMenuProps) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(panelRef, open, onClose)
+
   if (!open) return null
 
   return (
@@ -21,11 +26,19 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
       />
 
       {/* Menu Panel (slides from right in RTL) */}
-      <div className="fixed top-0 right-0 z-[110] h-full w-80 max-w-full bg-white shadow-xl">
+      <div
+        ref={panelRef}
+        id="mobile-menu"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-menu-title"
+        tabIndex={-1}
+        className="fixed top-0 right-0 z-[110] h-full w-80 max-w-full bg-white shadow-xl focus:outline-none"
+      >
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between border-b p-4">
-            <h2 className="text-lg font-bold">תפריט</h2>
+            <h2 id="mobile-menu-title" className="text-lg font-bold">תפריט</h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-6 w-6" />
               <span className="sr-only">סגור תפריט</span>

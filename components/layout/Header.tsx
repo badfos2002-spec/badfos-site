@@ -38,6 +38,8 @@ export default function Header() {
                 size="icon"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="פתח תפריט"
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-menu"
               >
                 <Menu className="h-6 w-6" />
               </Button>

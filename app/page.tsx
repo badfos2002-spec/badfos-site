@@ -15,7 +15,7 @@ const NewFinalCTASection = dynamic(() => import('@/components/home/NewFinalCTASe
 
 export default function RootPage() {
   return (
-    <main>
+    <div>
       <IntroOverlay />
       <SmoothScrollProvider>
         <NewHeroSection />
@@ -27,6 +27,6 @@ export default function RootPage() {
         <NewTestimonialsSection />
         <NewFinalCTASection />
       </SmoothScrollProvider>
-    </main>
+    </div>
   )
 }

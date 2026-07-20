@@ -30,6 +30,7 @@ export default function ColorStep({ selectedColor, onSelect, fabricType }: Color
               onClick={() => onSelect(color.id)}
               className="flex flex-col items-center gap-2 group"
               aria-label={color.name}
+              aria-pressed={isSelected}
             >
               <div
                 className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${'border' in color && color.border ? 'border-2 border-gray-300' : ''} ${
@@ -50,7 +51,7 @@ export default function ColorStep({ selectedColor, onSelect, fabricType }: Color
       </div>
 
       {!selectedColor && (
-        <p className="text-sm text-red-500 mt-4">יש לבחור צבע כדי להמשיך.</p>
+        <p role="alert" className="text-sm text-red-500 mt-4">יש לבחור צבע כדי להמשיך.</p>
       )}
     </div>
   )

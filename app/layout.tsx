@@ -193,6 +193,14 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background antialiased">
+        {/* Skip to main content — first focusable element, visible only on keyboard focus */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-[10001] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-black focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        >
+          דלג לתוכן הראשי
+        </a>
+
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe
@@ -217,7 +225,7 @@ export default function RootLayout({
         <TrackingScripts />
         <PricingLoader />
         <ConditionalHeader />
-        <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+        <main id="main" className="min-h-[calc(100vh-4rem)]">{children}</main>
         <ConditionalFooter />
       </body>
     </html>

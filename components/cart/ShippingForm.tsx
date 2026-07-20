@@ -69,7 +69,8 @@ export default function ShippingForm({ onSubmit, totalQuantity }: ShippingFormPr
       <CardContent>
         <div className="space-y-4">
           {/* Shipping Method */}
-          <div className="space-y-3">
+          <fieldset className="space-y-3 border-0 p-0 m-0 min-w-0">
+            <legend className="font-bold mb-1">בחירת שיטת אספקה</legend>
             <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover:border-primary transition-colors">
               <input
                 type="radio"
@@ -124,7 +125,7 @@ export default function ShippingForm({ onSubmit, totalQuantity }: ShippingFormPr
                 <div className="font-bold text-orange-600">+₪{EXPRESS_PICKUP.cost}</div>
               </label>
             )}
-          </div>
+          </fieldset>
 
           {/* Address Fields (only if delivery) */}
           {method === 'delivery' && (
@@ -133,50 +134,61 @@ export default function ShippingForm({ onSubmit, totalQuantity }: ShippingFormPr
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">רחוב <span className="text-red-500">*</span></label>
+                  <label htmlFor="ship-street" className="block text-sm font-medium mb-2">רחוב <span className="text-red-500">*</span></label>
                   <input
+                    id="ship-street"
                     type="text"
                     name="street"
                     required
                     autoComplete="street-address"
                     value={address.street}
                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                    aria-invalid={!address.street && touched}
+                    aria-describedby={!address.street && touched ? 'ship-street-error' : undefined}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${!address.street && touched ? 'border-red-500' : ''}`}
                   />
-                  {!address.street && touched && <p className="text-red-500 text-sm mt-1">שדה חובה</p>}
+                  {!address.street && touched && <p id="ship-street-error" role="alert" className="text-red-500 text-sm mt-1">שדה חובה</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">מספר בית/בניין <span className="text-red-500">*</span></label>
+                  <label htmlFor="ship-number" className="block text-sm font-medium mb-2">מספר בית/בניין <span className="text-red-500">*</span></label>
                   <input
+                    id="ship-number"
                     type="text"
                     name="houseNumber"
                     required
                     autoComplete="address-line2"
                     value={address.number}
                     onChange={(e) => setAddress({ ...address, number: e.target.value })}
+                    aria-invalid={!address.number && touched}
+                    aria-describedby={!address.number && touched ? 'ship-number-error' : undefined}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${!address.number && touched ? 'border-red-500' : ''}`}
                   />
-                  {!address.number && touched && <p className="text-red-500 text-sm mt-1">שדה חובה</p>}
+                  {!address.number && touched && <p id="ship-number-error" role="alert" className="text-red-500 text-sm mt-1">שדה חובה</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">עיר <span className="text-red-500">*</span></label>
+                  <label htmlFor="ship-city" className="block text-sm font-medium mb-2">עיר <span className="text-red-500">*</span></label>
                   <input
+                    id="ship-city"
                     type="text"
                     name="city"
                     required
                     autoComplete="address-level2"
                     value={address.city}
                     onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                    aria-invalid={!address.city && touched}
+                    aria-describedby={!address.city && touched ? 'ship-city-error' : undefined}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${!address.city && touched ? 'border-red-500' : ''}`}
                   />
-                  {!address.city && touched && <p className="text-red-500 text-sm mt-1">שדה חובה</p>}
+                  {!address.city && touched && <p id="ship-city-error" role="alert" className="text-red-500 text-sm mt-1">שדה חובה</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">קומה <span className="text-red-500">*</span></label>
+                  <label htmlFor="ship-floor" className="block text-sm font-medium mb-2">קומה <span className="text-red-500">*</span></label>
                   <select
+                    id="ship-floor"
+                    aria-label="קומה"
                     value={address.floor}
                     onChange={(e) => setAddress({ ...address, floor: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary bg-white"
@@ -202,10 +214,11 @@ export default function ShippingForm({ onSubmit, totalQuantity }: ShippingFormPr
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="ship-apartment" className="block text-sm font-medium mb-2">
                     דירה {!isPrivateHouse && <span className="text-red-500">*</span>}
                   </label>
                   <input
+                    id="ship-apartment"
                     type="text"
                     name="apartment"
                     autoComplete="off"
@@ -213,14 +226,17 @@ export default function ShippingForm({ onSubmit, totalQuantity }: ShippingFormPr
                     disabled={isPrivateHouse}
                     value={address.apartment}
                     onChange={(e) => setAddress({ ...address, apartment: e.target.value })}
+                    aria-invalid={!address.apartment && touched && !isPrivateHouse}
+                    aria-describedby={!address.apartment && touched && !isPrivateHouse ? 'ship-apartment-error' : undefined}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${!address.apartment && touched && !isPrivateHouse ? 'border-red-500' : ''} ${isPrivateHouse ? 'bg-gray-100 text-gray-500' : ''}`}
                     placeholder={isPrivateHouse ? 'בית פרטי' : 'מספר דירה'}
                   />
-                  {!address.apartment && touched && !isPrivateHouse && <p className="text-red-500 text-sm mt-1">שדה חובה</p>}
+                  {!address.apartment && touched && !isPrivateHouse && <p id="ship-apartment-error" role="alert" className="text-red-500 text-sm mt-1">שדה חובה</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">כניסה</label>
+                  <label htmlFor="ship-entrance" className="block text-sm font-medium mb-2">כניסה</label>
                   <input
+                    id="ship-entrance"
                     type="text"
                     name="entrance"
                     autoComplete="off"
@@ -234,8 +250,9 @@ export default function ShippingForm({ onSubmit, totalQuantity }: ShippingFormPr
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">טלפון נוסף (אופציונלי)</label>
+                  <label htmlFor="ship-additionalPhone" className="block text-sm font-medium mb-2">טלפון נוסף (אופציונלי)</label>
                   <input
+                    id="ship-additionalPhone"
                     type="tel"
                     name="additionalPhone"
                     autoComplete="tel"

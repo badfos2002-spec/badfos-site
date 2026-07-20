@@ -49,7 +49,7 @@ export default function BusinessLayout({ page, waUrl }: SeoLayoutProps) {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
   return (
-    <main className="min-h-screen bg-white" dir="rtl">
+    <div className="min-h-screen bg-white" dir="rtl">
       {/* 1. Hero — straight navy band, no diagonal (professional, composed) */}
       <HeroBand
         bgClass="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800"
@@ -241,6 +241,6 @@ export default function BusinessLayout({ page, waUrl }: SeoLayoutProps) {
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>
       </div>
-    </main>
+    </div>
   )
 }

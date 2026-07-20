@@ -1,22 +1,33 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { MessageCircle, Accessibility, X, Type, Contrast, MousePointer, Underline, Space, Eye, Palette } from 'lucide-react'
 import { CONTACT_INFO } from '@/lib/constants'
 import { trackWhatsAppClick } from '@/lib/tracking'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
+
+const A11Y_KEY = 'badfos-a11y'
+/** Read persisted accessibility settings (client only) */
+function loadA11y(): Record<string, unknown> | null {
+  if (typeof window === 'undefined') return null
+  try { return JSON.parse(localStorage.getItem(A11Y_KEY) || 'null') } catch { return null }
+}
 
 export default function WhatsAppButton() {
   const whatsappUrl = `https://wa.me/${CONTACT_INFO.whatsapp}`
   const [showAccessibility, setShowAccessibility] = useState(false)
-  const [fontSize, setFontSize] = useState(0)
-  const [contrast, setContrast] = useState<'normal' | 'dark' | 'light' | 'invert'>('normal')
-  const [highlightLinks, setHighlightLinks] = useState(false)
-  const [letterSpacing, setLetterSpacing] = useState(0)
-  const [lineHeight, setLineHeight] = useState(0)
-  const [hideImages, setHideImages] = useState(false)
-  const [readableFont, setReadableFont] = useState(false)
-  const [bigCursor, setBigCursor] = useState(false)
-  const [stopAnimations, setStopAnimations] = useState(false)
+  const [fontSize, setFontSize] = useState<number>(() => (loadA11y()?.fontSize as number) ?? 0)
+  const [contrast, setContrast] = useState<'normal' | 'dark' | 'light' | 'invert'>(() => (loadA11y()?.contrast as 'normal' | 'dark' | 'light' | 'invert') ?? 'normal')
+  const [highlightLinks, setHighlightLinks] = useState<boolean>(() => (loadA11y()?.highlightLinks as boolean) ?? false)
+  const [letterSpacing, setLetterSpacing] = useState<number>(() => (loadA11y()?.letterSpacing as number) ?? 0)
+  const [lineHeight, setLineHeight] = useState<number>(() => (loadA11y()?.lineHeight as number) ?? 0)
+  const [hideImages, setHideImages] = useState<boolean>(() => (loadA11y()?.hideImages as boolean) ?? false)
+  const [readableFont, setReadableFont] = useState<boolean>(() => (loadA11y()?.readableFont as boolean) ?? false)
+  const [bigCursor, setBigCursor] = useState<boolean>(() => (loadA11y()?.bigCursor as boolean) ?? false)
+  const [stopAnimations, setStopAnimations] = useState<boolean>(() => (loadA11y()?.stopAnimations as boolean) ?? false)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useFocusTrap(panelRef, showAccessibility, () => setShowAccessibility(false))
 
   const handleWhatsAppClick = () => {
     trackWhatsAppClick('floating_button')
@@ -65,6 +76,13 @@ export default function WhatsAppButton() {
 
     // Stop animations
     html.classList.toggle('a11y-stop-animations', stopAnimations)
+
+    // Persist settings so they survive reloads / navigation
+    try {
+      localStorage.setItem(A11Y_KEY, JSON.stringify({
+        fontSize, contrast, highlightLinks, letterSpacing, lineHeight, hideImages, readableFont, bigCursor, stopAnimations,
+      }))
+    } catch {}
   }, [fontSize, contrast, highlightLinks, letterSpacing, lineHeight, hideImages, readableFont, bigCursor, stopAnimations])
 
   const resetAll = useCallback(() => {
@@ -101,13 +119,19 @@ export default function WhatsAppButton() {
       {showAccessibility && (
         <div className="fixed inset-0 z-50 sm:flex sm:items-center sm:justify-center sm:bg-black/30" onClick={() => setShowAccessibility(false)}>
           <div
-            className="bg-white sm:rounded-2xl shadow-2xl w-full sm:w-[360px] h-full sm:h-auto sm:max-h-[80vh] overflow-y-auto overscroll-contain p-5 sm:p-6"
+            ref={panelRef}
+            id="a11y-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="a11y-title"
+            tabIndex={-1}
+            className="bg-white sm:rounded-2xl shadow-2xl w-full sm:w-[360px] h-full sm:h-auto sm:max-h-[80vh] overflow-y-auto overscroll-contain p-5 sm:p-6 focus:outline-none"
             dir="rtl"
             onClick={e => e.stopPropagation()}
           >
             {/* Header — sticky on mobile */}
             <div className="flex items-center justify-between mb-4 sticky top-0 bg-white pb-2 pt-1 -mt-1 z-10">
-              <h2 className="text-xl font-bold text-gray-800">כלי נגישות</h2>
+              <h2 id="a11y-title" className="text-xl font-bold text-gray-800">כלי נגישות</h2>
               <button onClick={() => setShowAccessibility(false)} className="p-2 hover:bg-gray-100 rounded-full" aria-label="סגור כלי נגישות">
                 <X className="h-5 w-5" />
               </button>
@@ -215,6 +239,8 @@ export default function WhatsAppButton() {
           onClick={() => setShowAccessibility(true)}
           className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:scale-110 transition-transform"
           aria-label="כלי נגישות"
+          aria-expanded={showAccessibility}
+          aria-controls="a11y-panel"
         >
           <Accessibility className="h-6 w-6 sm:h-7 sm:w-7" />
         </button>

@@ -42,51 +42,63 @@ export default function AccessibilityPage() {
 
         <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
           <CardContent className="p-8 space-y-6">
+            <p className="text-sm text-gray-500">עודכן לאחרונה: 20.07.2026</p>
+
             <p className="text-lg leading-relaxed bg-gradient-to-r from-blue-50/50 to-cyan-50/50 rounded-lg p-4">
               אתר זה מייחס חשיבות רבה להנגשת השימוש בו לכלל האוכלוסייה ועושה כל שביכולתו
-              להבטיח שאנשים עם מוגבלות יוכלו להפיק את המיטב מהתכנים המוצגים בו. אתר זה משתמש
-              בתוסף נגישות מתקדם על מנת לנסות ולהנגיש ככל שניתן את האתר לבעלי מוגבלויות.
+              להבטיח שאנשים עם מוגבלות יוכלו להפיק את המיטב מהתכנים המוצגים בו. אנו פועלים
+              לשיפור מתמיד של נגישות האתר ומשלבים בו כלי נגישות ועקרונות עיצוב נגישים.
             </p>
 
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-lg border border-yellow-200 shadow-sm">
-              <h3 className="font-bold text-lg mb-3 text-yellow-800">דפדפנים נתמכים:</h3>
-              <p className="text-yellow-700">פיירפוקס, כרום, אקספלורר</p>
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-lg border border-indigo-200 shadow-sm">
+              <h3 className="font-bold text-lg mb-3 text-indigo-800">התקן שלפיו אנו פועלים:</h3>
+              <p className="text-indigo-700">
+                אנו שואפים כי האתר יעמוד בדרישות תקן ישראלי ת&quot;י 5568 חלק 1, ברמת AA
+                (התואם להנחיות WCAG 2.1 ברמה AA) של ארגון התקינה הבינלאומי W3C.
+              </p>
             </div>
 
             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 rounded-lg border border-blue-200 shadow-sm">
               <h3 className="font-bold text-lg mb-3 text-blue-800">איך להפעיל את כלי הנגישות:</h3>
-              <p className="mb-3 text-blue-700">על מנת לפתוח את כלי הנגישות יש ללחוץ על האייקון הכחול בצד ימין או להקיש <strong>Control + U</strong></p>
+              <p className="mb-3 text-blue-700">על מנת לפתוח את כלי הנגישות יש ללחוץ על האייקון הכחול בצד ימין למטה, או להקיש <strong>Control + U</strong>.</p>
             </div>
 
             <div className="bg-gradient-to-r from-teal-50 to-green-50 p-6 rounded-lg border border-teal-200 shadow-sm">
               <h3 className="font-bold text-xl mb-4 text-teal-800">באמצעות כלי הנגישות תוכלו:</h3>
               <ul className="space-y-3 list-disc list-inside text-teal-700">
-                <li>לשנות את ניגודיות הצבעים – היפוך צבעים, ניגודיות כהה, ניגודיות בהירה</li>
-                <li>להדגיש את הקישורים לדפים אחרים באתר</li>
                 <li>לשנות את גודל הטקסט באתר</li>
-                <li>לשנות את ריווח הטקסט בין אות לאות</li>
+                <li>לשנות את ניגודיות הצבעים – ניגודיות כהה, ניגודיות בהירה, היפוך צבעים</li>
+                <li>להדגיש את הקישורים באתר</li>
+                <li>לשנות את ריווח האותיות</li>
                 <li>לשנות את גובה השורה של הטקסט</li>
-                <li>לשנות את יישור הטקסט</li>
-                <li>לשנות את צבעי האתר – רווי יותר, רווי פחות, ללא צבע</li>
-                <li>לשנות לגופן קריא יותר</li>
-                <li>לבטל את ההנפשות באתר</li>
+                <li>לעבור לגופן קריא יותר</li>
+                <li>להגדיל את סמן העכבר (סמן גדול)</li>
+                <li>לבטל הנפשות ואנימציות באתר</li>
                 <li>להסתיר תמונות</li>
-                <li>תמיכה בדיסלקסיה</li>
-                <li>לשנות את הסמן – סמן גדול, מסכת קריאה, מדריך קריאה</li>
               </ul>
             </div>
 
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-6 rounded-lg border border-gray-200 shadow-sm">
-              <p className="text-sm leading-relaxed text-gray-700">
-                למרות המאמצים על מנת שכלי הנגישות יעזור לבעלי מוגבלויות ייתכנו מצבים כי לא תהיה
-                אפשרות להנגיש חלק מתכני האתר דרך גורמי צד שלישי. חשוב לציין כי אנו עושים כל
-                שביכולתנו על מנת שהאתר יונגש כראוי.
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-lg border border-amber-200 shadow-sm">
+              <h3 className="font-bold text-lg mb-3 text-amber-800">מגבלות ידועות:</h3>
+              <p className="text-amber-700 leading-relaxed">
+                אנו ממשיכים לשפר את נגישות האתר באופן שוטף. נכון למועד עדכון הצהרה זו, ייתכנו
+                אזורים מסוימים שטרם הונגשו במלואם – בהם רכיבים המוטמעים מגורמי צד שלישי, וכן
+                בחינה מתמשכת של ניגודיות הצבעים בחלק מרכיבי המותג. אנו פועלים לתקן ליקויים אלו,
+                ונשמח לקבל מכם דיווח על כל בעיה שנתקלתם בה.
               </p>
             </div>
 
             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 rounded-lg border border-blue-200 shadow-sm">
-              <h3 className="font-bold text-lg mb-3 text-blue-800">יצירת קשר בנושא נגישות:</h3>
-              <p className="text-blue-700">נתקלתם בבעיית נגישות? נשמח לשמוע — <a href="mailto:badfos2002@gmail.com" className="underline font-medium">badfos2002@gmail.com</a></p>
+              <h3 className="font-bold text-lg mb-3 text-blue-800">פנייה בנושאי נגישות:</h3>
+              <p className="text-blue-700 leading-relaxed">
+                נתקלתם בבעיית נגישות באתר? נשמח שתעדכנו אותנו כדי שנוכל לטפל בכך. ניתן לפנות אלינו
+                בכל אחת מהדרכים הבאות:
+              </p>
+              <ul className="mt-3 space-y-2 text-blue-700">
+                <li>טלפון: <a href="tel:+972559885954" className="underline font-medium" dir="ltr">055-988-5954</a></li>
+                <li>דוא&quot;ל: <a href="mailto:badfos2002@gmail.com" className="underline font-medium">badfos2002@gmail.com</a></li>
+              </ul>
+              {/* TODO owner: להוסיף שם רכז נגישות ספציפי */}
             </div>
           </CardContent>
         </Card>

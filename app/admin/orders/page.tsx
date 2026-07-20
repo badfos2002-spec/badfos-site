@@ -434,6 +434,7 @@ export default function AdminOrdersPage() {
                       <button
                         className="h-8 rounded-md text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 hidden sm:block"
                         title="מחק הזמנה"
+                        aria-label="מחק הזמנה"
                         onClick={(e) => { e.stopPropagation(); handleDelete(order.id) }}
                       >
                         <Trash2 className="w-4 h-4" />

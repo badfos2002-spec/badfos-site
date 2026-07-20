@@ -180,7 +180,7 @@ export default function GalleryPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
       />
 
-      <main className="min-h-screen bg-white" dir="rtl">
+      <div className="min-h-screen bg-white" dir="rtl">
         {/* כותרת קומפקטית בשפת האתר — ממורכזת, באדג' צהוב, מילת הדגשה ענברית ורקע קרם עם גלואים */}
         <div className="relative overflow-hidden bg-gradient-to-b from-[#fffdf5] via-[#fffdf5] to-white">
           <div
@@ -248,7 +248,7 @@ export default function GalleryPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </>
   )
 }

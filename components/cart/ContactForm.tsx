@@ -37,8 +37,9 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">שם פרטי *</label>
+              <label htmlFor="contact-firstName" className="block text-sm font-medium mb-2">שם פרטי *</label>
               <input
+                id="contact-firstName"
                 type="text"
                 name="firstName"
                 autoComplete="given-name"
@@ -49,8 +50,9 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">שם משפחה *</label>
+              <label htmlFor="contact-lastName" className="block text-sm font-medium mb-2">שם משפחה *</label>
               <input
+                id="contact-lastName"
                 type="text"
                 name="lastName"
                 autoComplete="family-name"
@@ -63,27 +65,31 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">אימייל *</label>
+            <label htmlFor="contact-email" className="block text-sm font-medium mb-2">אימייל *</label>
             <input
+              id="contact-email"
               type="email"
               name="email"
               autoComplete="email"
               required
               value={formData.email}
               onChange={e => update('email', e.target.value)}
+              aria-invalid={!!(formData.email && !isValidEmail(formData.email))}
+              aria-describedby={formData.email && !isValidEmail(formData.email) ? 'contact-email-error' : undefined}
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${
                 formData.email && !isValidEmail(formData.email) ? 'border-red-400' : ''
               }`}
             />
             {formData.email && !isValidEmail(formData.email) && (
-              <p className="text-xs text-red-500 mt-1">נא להזין כתובת אימייל תקינה</p>
+              <p id="contact-email-error" role="alert" className="text-xs text-red-500 mt-1">נא להזין כתובת אימייל תקינה</p>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">טלפון *</label>
+              <label htmlFor="contact-phone" className="block text-sm font-medium mb-2">טלפון *</label>
               <input
+                id="contact-phone"
                 type="tel"
                 name="phone"
                 autoComplete="tel"
@@ -91,18 +97,21 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
                 maxLength={10}
                 value={formData.phone}
                 onChange={e => update('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                aria-invalid={!!(formData.phone && !isValidPhone(formData.phone))}
+                aria-describedby={formData.phone && !isValidPhone(formData.phone) ? 'contact-phone-error' : undefined}
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${
                   formData.phone && !isValidPhone(formData.phone) ? 'border-red-400' : ''
                 }`}
                 placeholder="05XXXXXXXX"
               />
               {formData.phone && !isValidPhone(formData.phone) && (
-                <p className="text-xs text-red-500 mt-1">נא להזין מספר פלאפון תקין (10 ספרות, מתחיל ב-05)</p>
+                <p id="contact-phone-error" role="alert" className="text-xs text-red-500 mt-1">נא להזין מספר פלאפון תקין (10 ספרות, מתחיל ב-05)</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">טלפון נוסף</label>
+              <label htmlFor="contact-phoneSecondary" className="block text-sm font-medium mb-2">טלפון נוסף</label>
               <input
+                id="contact-phoneSecondary"
                 type="tel"
                 name="phoneSecondary"
                 autoComplete="tel"
@@ -116,8 +125,9 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">הערות</label>
+            <label htmlFor="contact-notes" className="block text-sm font-medium mb-2">הערות</label>
             <textarea
+              id="contact-notes"
               rows={3}
               value={formData.notes}
               onChange={e => update('notes', e.target.value)}

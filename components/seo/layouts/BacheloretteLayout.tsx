@@ -59,7 +59,7 @@ export default function BacheloretteLayout({ page, waUrl }: SeoLayoutProps) {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
   return (
-    <main className="min-h-screen bg-white" dir="rtl">
+    <div className="min-h-screen bg-white" dir="rtl">
       {/* 1. Hero — full-bleed pink band with diagonal bottom edge */}
       <HeroBand
         bgClass="bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600"
@@ -252,6 +252,6 @@ export default function BacheloretteLayout({ page, waUrl }: SeoLayoutProps) {
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>
       </div>
-    </main>
+    </div>
   )
 }
