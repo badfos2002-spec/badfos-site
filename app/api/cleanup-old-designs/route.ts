@@ -81,18 +81,32 @@ export async function GET(req: NextRequest) {
         const order = doc.data()
         if (!UPSCALABLE_STATUSES.includes(order.status)) continue
         const upscales = order.upscales || {}
-        // Only orders with a failed entry, or a pending one older than 1h
-        // (lost webhook) — everything else is left untouched
-        const needsHealing = Object.values(upscales).some((u: any) => {
+        // Heal when EITHER:
+        //  (a) an existing entry is retryable — failed, a pixel-limit gave_up
+        //      (already high-res, convert in place), or a pending one older than
+        //      1h (lost webhook); OR
+        //  (b) a design has a source image but NO upscale entry at all — the
+        //      paid trigger never ran, or the design was base64 and skipped by
+        //      the old code. This is what heals the owner's oversized order and
+        //      every past order whose designs stayed base64.
+        const hasRetryableEntry = Object.values(upscales).some((u: any) => {
           if (u?.status === 'failed') return true
-          // gave_up entries that hit the model's pixel limit can be healed
-          // in-place to done+original (they're already high-res)
           if (u?.status === 'gave_up') return typeof u?.error === 'string' && PIXEL_LIMIT_ERROR.test(u.error)
           if (u?.status !== 'pending') return false
           const ms = upscaleEntryMillis(u.createdAt)
           return ms === null || Date.now() - ms >= STUCK_PENDING_MS
         })
-        if (!needsHealing) continue
+        const items = Array.isArray(order.items) ? order.items : []
+        const hasUnupscaledDesign = items.some((item: any, itemIdx: number) =>
+          (Array.isArray(item?.designs) ? item.designs : []).some((d: any) => {
+            const area = typeof d?.area === 'string' ? d.area : ''
+            const imageUrl = typeof d?.imageUrl === 'string' ? d.imageUrl : ''
+            // Only designs that actually carry a source image and have no entry
+            if (!area || !imageUrl) return false
+            return upscales[`${itemIdx}_${area}`] === undefined
+          })
+        )
+        if (!hasRetryableEntry && !hasUnupscaledDesign) continue
 
         try {
           const r = await runUpscaleForOrder(doc.id, { retryStuckPending: true })
