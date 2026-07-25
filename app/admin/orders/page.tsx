@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
 import { Timestamp } from 'firebase/firestore'
 import { deleteFile } from '@/lib/storage'
+import { auth } from '@/lib/firebase'
 import type { Order, DesignUpscale } from '@/lib/types'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -60,6 +61,7 @@ export default function AdminOrdersPage() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterShipping, setFilterShipping] = useState<'all' | 'delivery' | 'pickup'>('all')
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null)
 
   // Real-time listener — orders update automatically when payment confirmed
   useEffect(() => {
@@ -204,6 +206,53 @@ export default function AdminOrdersPage() {
       setOrders(prev => prev.map(o => o.id === order.id ? ({ ...o, reviewRequestSentAt } as any) : o))
     } catch (e) {
       console.error(e)
+    }
+  }
+
+  // Download a design file through the same-origin, admin-authenticated proxy.
+  // The proxy streams with Content-Disposition: attachment, and blob: URLs are
+  // same-origin so the `download` attribute is honored (cross-origin Storage
+  // URLs silently ignore `download` and open in a new tab instead).
+  const downloadDesign = async (
+    orderId: string,
+    itemIdx: number,
+    area: string,
+    variant: 'source' | 'upscale',
+    baseName: string,
+  ) => {
+    const key = `${orderId}_${itemIdx}_${area}_${variant}`
+    if (downloadingKey) return
+    setDownloadingKey(key)
+    try {
+      const token = await auth?.currentUser?.getIdToken()
+      if (!token) { alert('נדרשת התחברות מחדש כדי להוריד קבצים'); return }
+      const res = await fetch(
+        `/api/admin/download-design?orderId=${encodeURIComponent(orderId)}&itemIdx=${itemIdx}&area=${encodeURIComponent(area)}&variant=${variant}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (data?.error === 'file_missing') {
+          alert('לא נמצא קובץ עיצוב שמור להזמנה הזו — ייתכן שהקובץ לא נשמר בעת ההזמנה. פנה/י לתמיכה.')
+        } else {
+          alert('ההורדה נכשלה, נסה/י שוב בעוד רגע')
+        }
+        return
+      }
+      const blob = await res.blob()
+      const ext = blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'image/webp' ? 'webp' : 'png'
+      const objectUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objectUrl
+      a.download = `${baseName}.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      alert('ההורדה נכשלה, נסה/י שוב בעוד רגע')
+    } finally {
+      setDownloadingKey(null)
     }
   }
 
@@ -680,31 +729,38 @@ export default function AdminOrdersPage() {
                                           </div>
                                           {upscale?.status === 'done' && upscale.url ? (
                                             <div className="flex items-center gap-3">
-                                              <a
-                                                href={upscale.url}
-                                                download={`עיצוב-לדפוס-${d.areaName ?? d.area}-${order.orderNumber}.png`}
-                                                className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium min-h-[44px] rounded-md px-3 transition-colors"
+                                              <button
+                                                type="button"
+                                                onClick={() => downloadDesign(order.id, idx, d.area, 'upscale', `עיצוב-לדפוס-${d.areaName ?? d.area}-${order.orderNumber}`)}
+                                                disabled={downloadingKey === `${order.id}_${idx}_${d.area}_upscale`}
+                                                className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium min-h-[44px] rounded-md px-3 transition-colors disabled:opacity-60"
                                               >
-                                                <Download className="w-4 h-4 ml-1" />
+                                                {downloadingKey === `${order.id}_${idx}_${d.area}_upscale`
+                                                  ? <Loader2 className="w-4 h-4 ml-1 animate-spin" />
+                                                  : <Download className="w-4 h-4 ml-1" />}
                                                 {upscale.alreadyHighRes ? 'הורדה לדפוס ✨ (איכות מקורית גבוהה)' : 'הורדה לדפוס ✨ (פי 4)'}
-                                              </a>
-                                              <a
-                                                href={d.imageUrl}
-                                                download={`עיצוב-${d.areaName ?? d.area}-${order.orderNumber}.${d.imageUrl.startsWith('data:image/png') ? 'png' : 'jpg'}`}
-                                                className="text-xs text-blue-600 hover:text-blue-800 underline py-3"
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => downloadDesign(order.id, idx, d.area, 'source', `עיצוב-${d.areaName ?? d.area}-${order.orderNumber}`)}
+                                                disabled={downloadingKey === `${order.id}_${idx}_${d.area}_source`}
+                                                className="text-xs text-blue-600 hover:text-blue-800 underline py-3 disabled:opacity-60"
                                               >
                                                 מקור
-                                              </a>
+                                              </button>
                                             </div>
                                           ) : (
-                                            <a
-                                              href={d.imageUrl}
-                                              download={`עיצוב-${d.areaName ?? d.area}-${order.orderNumber}.${d.imageUrl.startsWith('data:image/png') ? 'png' : 'jpg'}`}
-                                              className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium h-8 rounded-md px-3 transition-colors"
+                                            <button
+                                              type="button"
+                                              onClick={() => downloadDesign(order.id, idx, d.area, 'source', `עיצוב-${d.areaName ?? d.area}-${order.orderNumber}`)}
+                                              disabled={downloadingKey === `${order.id}_${idx}_${d.area}_source`}
+                                              className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium h-8 rounded-md px-3 transition-colors disabled:opacity-60"
                                             >
-                                              <Download className="w-4 h-4 ml-1" />
+                                              {downloadingKey === `${order.id}_${idx}_${d.area}_source`
+                                                ? <Loader2 className="w-4 h-4 ml-1 animate-spin" />
+                                                : <Download className="w-4 h-4 ml-1" />}
                                               הורד
-                                            </a>
+                                            </button>
                                           )}
                                         </div>
                                         )
