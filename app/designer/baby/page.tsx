@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Minus, Plus } from 'lucide-react'
+import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Minus, Plus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { BABY_COLORS, BABY_SIZES } from '@/lib/constants'
 import { confirmDesignReplace } from '@/lib/utils'
+import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const babyMockups: Record<string, string> = {
@@ -35,6 +36,8 @@ export default function BabyDesignerPage() {
   const [selectedColor, setSelectedColor] = useState('')
   const [designFile, setDesignFile] = useState<File | null>(null)
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({})
+  const sessionId = useState(() => `baby-${Date.now()}`)[0]
+  const [addingToCart, setAddingToCart] = useState(false)
 
   const totalQuantity = Object.values(sizeQuantities).reduce((sum, q) => sum + q, 0)
   const pricePerUnit = designFile ? BASE_PRICE + DESIGN_COST : BASE_PRICE
@@ -55,17 +58,26 @@ export default function BabyDesignerPage() {
     })
   }
 
-  const handleAddToCart = () => {
-    if (!designFile || totalQuantity === 0) return
-    const imageUrl = URL.createObjectURL(designFile)
-    const sizes = Object.entries(sizeQuantities).map(([size, quantity]) => ({ size, quantity }))
-    addItem({
-      productType: 'baby',
-      color: selectedColor,
-      sizes,
-      designs: [{ area: 'front_full', areaName: 'קידמי', imageUrl, fileName: designFile.name }],
-    })
-    router.push('/cart')
+  const handleAddToCart = async () => {
+    if (!designFile || totalQuantity === 0 || addingToCart) return
+    setAddingToCart(true)
+    try {
+      const uniqueName = generateUniqueFileName(designFile.name)
+      const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
+      const sizes = Object.entries(sizeQuantities).map(([size, quantity]) => ({ size, quantity }))
+      addItem({
+        productType: 'baby',
+        color: selectedColor,
+        sizes,
+        designs: [{ area: 'front_full', areaName: 'קידמי', imageUrl, fileName: designFile.name }],
+      })
+      router.push('/cart')
+    } catch (err) {
+      console.error('Design upload failed:', err)
+      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
+    } finally {
+      setAddingToCart(false)
+    }
   }
 
   const canProceed = () => {
@@ -362,10 +374,10 @@ export default function BabyDesignerPage() {
       ) : (
         <Button
           onClick={handleAddToCart}
-          disabled={!canProceed()}
-          className={`gradient-yellow text-white ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
+          disabled={!canProceed() || addingToCart}
+          className={`gradient-yellow text-white disabled:opacity-60 ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
         >
-          הוסף לעגלה 🛒
+          {addingToCart ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />מעלה...</span> : 'הוסף לעגלה 🛒'}
         </Button>
       )}
     </>
@@ -413,10 +425,10 @@ export default function BabyDesignerPage() {
             ) : (
               <Button
                 onClick={handleAddToCart}
-                disabled={!canProceed()}
-                className="gradient-yellow text-white"
+                disabled={!canProceed() || addingToCart}
+                className="gradient-yellow text-white disabled:opacity-60"
               >
-                הוסף לעגלה 🛒
+                {addingToCart ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />מעלה...</span> : 'הוסף לעגלה 🛒'}
               </Button>
             )}
           </div>

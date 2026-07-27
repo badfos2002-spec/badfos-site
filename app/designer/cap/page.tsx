@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus } from 'lucide-react'
+import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
+import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
@@ -34,6 +35,8 @@ export default function CapDesignerPage() {
   const [selectedArea, setSelectedArea] = useState<DesignAreaType>('center')
   const [designFile, setDesignFile] = useState<File | null>(null)
   const [quantity, setQuantity] = useState(CAP_MIN_QUANTITY)
+  const sessionId = useState(() => `cap-${Date.now()}`)[0]
+  const [addingToCart, setAddingToCart] = useState(false)
 
   const pricePerUnit = designFile ? BASE_PRICE + DESIGN_COST : BASE_PRICE
   const total = quantity * pricePerUnit
@@ -55,19 +58,27 @@ export default function CapDesignerPage() {
     return CAP_DESIGN_AREAS.filter(a => allowed.includes(a.id))
   }, [selectedType])
 
-  const handleAddToCart = () => {
-    if (!designFile || !selectedType) return
-    if (quantity < CAP_MIN_QUANTITY) return
-    const imageUrl = URL.createObjectURL(designFile)
-    const areaConfig = CAP_DESIGN_AREAS.find(a => a.id === selectedArea)
-    addItem({
-      productType: 'cap',
-      fabricType: selectedType,
-      color: selectedColor,
-      sizes: [{ size: 'ONE_SIZE', quantity }],
-      designs: [{ area: selectedArea, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: designFile.name }],
-    })
-    router.push('/cart')
+  const handleAddToCart = async () => {
+    if (!designFile || !selectedType || quantity < CAP_MIN_QUANTITY || addingToCart) return
+    setAddingToCart(true)
+    try {
+      const uniqueName = generateUniqueFileName(designFile.name)
+      const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
+      const areaConfig = CAP_DESIGN_AREAS.find(a => a.id === selectedArea)
+      addItem({
+        productType: 'cap',
+        fabricType: selectedType,
+        color: selectedColor,
+        sizes: [{ size: 'ONE_SIZE', quantity }],
+        designs: [{ area: selectedArea, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: designFile.name }],
+      })
+      router.push('/cart')
+    } catch (err) {
+      console.error('Design upload failed:', err)
+      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
+    } finally {
+      setAddingToCart(false)
+    }
   }
 
   const canProceed = () => {
@@ -441,10 +452,10 @@ export default function CapDesignerPage() {
       ) : (
         <Button
           onClick={handleAddToCart}
-          disabled={!canProceed()}
-          className={`gradient-yellow text-white ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
+          disabled={!canProceed() || addingToCart}
+          className={`gradient-yellow text-white disabled:opacity-60 ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
         >
-          הוסף לעגלה 🛒
+          {addingToCart ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />מעלה...</span> : 'הוסף לעגלה 🛒'}
         </Button>
       )}
     </>
@@ -492,10 +503,10 @@ export default function CapDesignerPage() {
             ) : (
               <Button
                 onClick={handleAddToCart}
-                disabled={!canProceed()}
-                className="gradient-yellow text-white"
+                disabled={!canProceed() || addingToCart}
+                className="gradient-yellow text-white disabled:opacity-60"
               >
-                הוסף לעגלה 🛒
+                {addingToCart ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />מעלה...</span> : 'הוסף לעגלה 🛒'}
               </Button>
             )}
           </div>
