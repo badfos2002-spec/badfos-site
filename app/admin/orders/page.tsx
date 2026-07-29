@@ -70,6 +70,7 @@ export default function AdminOrdersPage() {
   const [filterShipping, setFilterShipping] = useState<'all' | 'delivery' | 'pickup'>('all')
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null)
+  const [retryingUpscaleOrderId, setRetryingUpscaleOrderId] = useState<string | null>(null)
 
   // Real-time listener — orders update automatically when payment confirmed
   useEffect(() => {
@@ -261,6 +262,37 @@ export default function AdminOrdersPage() {
       alert('ההורדה נכשלה, נסה/י שוב בעוד רגע')
     } finally {
       setDownloadingKey(null)
+    }
+  }
+
+  const retryUpscale = async (orderId: string) => {
+    if (retryingUpscaleOrderId) return
+    setRetryingUpscaleOrderId(orderId)
+    try {
+      const token = await auth?.currentUser?.getIdToken()
+      if (!token) { alert('נדרשת התחברות מחדש'); return }
+      const res = await fetch('/api/admin/retry-upscale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        if (data?.error === 'order_not_paid') alert('אי אפשר להגדיל — ההזמנה לא שולמה')
+        else alert('ההפעלה נכשלה, נסה/י שוב בעוד רגע')
+        return
+      }
+      if ((data.created ?? 0) > 0) {
+        alert(`הופעלו ${data.created} הגדלות. ייקח דקה־שתיים — רענן/י את העמוד ותראה/י "פי 4".`)
+      } else if ((data.healed ?? 0) + (data.skipped ?? 0) > 0) {
+        alert('העיצובים סומנו כמוכנים לדפוס (איכות מקורית גבוהה). רענן/י את העמוד.')
+      } else {
+        alert('אין עיצובים חדשים להגדלה (כבר קיימת הגדלה, או שאין קובץ מקור שמור).')
+      }
+    } catch {
+      alert('ההפעלה נכשלה, נסה/י שוב בעוד רגע')
+    } finally {
+      setRetryingUpscaleOrderId(null)
     }
   }
 
@@ -717,7 +749,19 @@ export default function AdminOrdersPage() {
                                 {/* Design Files */}
                                 {item.designs && item.designs.length > 0 && (
                                   <div className="border-t pt-3">
-                                    <h5 className="font-medium text-gray-900 mb-2">קבצי עיצוב:</h5>
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <h5 className="font-medium text-gray-900">קבצי עיצוב:</h5>
+                                      <button
+                                        type="button"
+                                        onClick={() => retryUpscale(order.id)}
+                                        disabled={retryingUpscaleOrderId === order.id}
+                                        className="text-xs text-blue-600 hover:text-blue-800 underline disabled:opacity-60"
+                                      >
+                                        {retryingUpscaleOrderId === order.id
+                                          ? <span className="inline-flex items-center"><Loader2 className="w-3 h-3 ml-1 animate-spin" />מגדיל…</span>
+                                          : '🔄 נסה שוב הגדלה'}
+                                      </button>
+                                    </div>
                                     <div className="grid grid-cols-1 gap-2">
                                       {item.designs.map((d, di) => {
                                         const upscale = order.upscales?.[`${idx}_${d.area}`]

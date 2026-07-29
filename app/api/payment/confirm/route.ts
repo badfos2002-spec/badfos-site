@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { waitUntil } from '@vercel/functions'
 import { adminDb } from '@/lib/firebase-admin'
 import { sendServerConversions } from '@/lib/server-tracking'
 import { findOrderByFallback } from '@/lib/order-fallback'
@@ -170,11 +171,11 @@ export async function POST(request: NextRequest) {
     console.log(`Payment confirm: order ${orderDoc.id} (#${order.orderNumber}) → paid`)
 
     // Upscale design images to print quality (fire-and-forget, idempotent)
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'}/api/upscale-designs`, {
+    waitUntil(fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'}/api/upscale-designs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WEBHOOK_SECRET },
       body: JSON.stringify({ orderId: orderDoc.id }),
-    }).catch(err => console.error('Failed to trigger design upscaling:', err))
+    }).catch(err => console.error('Failed to trigger design upscaling:', err)))
 
     // Send confirmation email
     const email = order.customer?.email

@@ -1,0 +1,58 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { adminAuth } from '@/lib/firebase-admin'
+import { runUpscaleForOrder } from '@/lib/upscale-order'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
+
+export async function POST(request: NextRequest) {
+  try {
+    // --- Auth: Bearer <idToken> + admin identity check (matches lib/auth.ts isAdmin) ---
+    const authHeader = request.headers.get('authorization') ?? ''
+    if (!authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+    const idToken = authHeader.slice('Bearer '.length).trim()
+    if (!idToken) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+    let decoded
+    try {
+      decoded = await adminAuth.verifyIdToken(idToken)
+    } catch {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+    if (decoded.email !== 'badfos2002@gmail.com' || decoded.email_verified !== true) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+    }
+
+    // --- Validate params ---
+    const body = await request.json().catch(() => ({}))
+    const orderId = body?.orderId
+    if (!orderId || typeof orderId !== 'string' || !/^[A-Za-z0-9_-]+$/.test(orderId)) {
+      return NextResponse.json({ error: 'bad_params' }, { status: 400 })
+    }
+
+    const result = await runUpscaleForOrder(orderId, { retryStuckPending: true, force: true })
+
+    if (result.notFound) {
+      return NextResponse.json({ error: 'order_not_found' }, { status: 404 })
+    }
+    if (result.wrongStatus) {
+      return NextResponse.json({ error: 'order_not_paid', status: result.wrongStatus }, { status: 400 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      created: result.created,
+      total: result.total,
+      gaveUp: result.gaveUp ?? 0,
+      healed: result.healed ?? 0,
+      skipped: result.skipped ?? 0,
+    })
+  } catch (err) {
+    console.error('retry-upscale error:', err)
+    return NextResponse.json({ error: 'server_error' }, { status: 500 })
+  }
+}

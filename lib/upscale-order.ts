@@ -142,7 +142,7 @@ export interface UpscaleRunResult {
  */
 export async function runUpscaleForOrder(
   orderId: string,
-  opts: { retryStuckPending?: boolean } = {}
+  opts: { retryStuckPending?: boolean; force?: boolean } = {}
 ): Promise<UpscaleRunResult> {
   const orderRef = adminDb.collection('orders').doc(orderId)
 
@@ -185,7 +185,13 @@ export async function runUpscaleForOrder(
         if (!area) return
 
         const key = `${itemIdx}_${area}`
-        const existing = upscales[key]
+        const rawExisting = upscales[key]
+        let existing = rawExisting
+        if (opts.force && rawExisting && rawExisting.status !== 'done') {
+          const ms = upscaleEntryMillis(rawExisting.createdAt)
+          const freshPending = rawExisting.status === 'pending' && ms !== null && (Date.now() - ms) < STUCK_PENDING_MS
+          if (!freshPending) existing = undefined   // re-attempt failed / gave_up / stuck-pending as a fresh design
+        }
 
         // A base64/data: design is claimed too — it's uploaded to Storage in the
         // prediction loop below (Replicate can't fetch data: blobs). Only a truly

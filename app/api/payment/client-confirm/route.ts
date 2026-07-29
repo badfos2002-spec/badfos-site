@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { waitUntil } from '@vercel/functions'
 import { adminDb } from '@/lib/firebase-admin'
 
 /**
@@ -93,11 +94,11 @@ export async function POST(request: NextRequest) {
 
     // Upscale design images to print quality (fire-and-forget, idempotent)
     if (becamePaid) {
-      fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'}/api/upscale-designs`, {
+      waitUntil(fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'}/api/upscale-designs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-webhook-secret': process.env.WEBHOOK_SECRET || '' },
         body: JSON.stringify({ orderId: orderDoc.id }),
-      }).catch(err => console.error('Failed to trigger design upscaling:', err))
+      }).catch(err => console.error('Failed to trigger design upscaling:', err)))
     }
 
     return NextResponse.json({ success: true, status: order.status })
