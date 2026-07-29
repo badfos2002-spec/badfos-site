@@ -43,15 +43,23 @@ const colorLabels: Record<string, string> = {
   turquoise: 'טורקיז', lightblue: 'תכלת', pink: 'ורוד',
 }
 
-// A pending upscale is shown as "in progress" only for 24h — after that
-// (lost webhook / gave up) the row falls back to the plain original download
-const UPSCALE_PENDING_UI_MS = 24 * 60 * 60 * 1000
-const isUpscaleInProgress = (u?: DesignUpscale) => {
-  if (u?.status !== 'pending') return false
-  const c = u.createdAt
-  const ms = c instanceof Date ? c.getTime()
-    : typeof c?.toMillis === 'function' ? c.toMillis() : NaN
-  return Number.isFinite(ms) && Date.now() - ms < UPSCALE_PENDING_UI_MS
+// Human-readable Hebrew label for a NON-done upscale entry, so the admin can see
+// why a design has no "פי 4" print file. Returns null when status is 'done'
+// (that case is fully handled by the download buttons).
+function upscaleStatusInfo(u?: DesignUpscale): { text: string; tone: 'muted' | 'error' | 'warn' } | null {
+  if (!u) return { text: 'ℹ️ ללא רשומת הגדלה', tone: 'muted' }
+  if (u.status === 'done') return null            // handled by the download buttons
+  if (u.status === 'pending') return { text: '⏳ בהגדלה…', tone: 'muted' }
+  if (u.status === 'failed') {
+    const why = u.error ? `: ${u.error}` : ''
+    return { text: `❌ הגדלה נכשלה${why} (ניסיון ${u.attempts ?? 1})`, tone: 'error' }
+  }
+  if (u.status === 'gave_up') {
+    if (u.error === 'no_source_image') return { text: '⚠️ אין קובץ מקור להגדלה (הקובץ לא נשמר בעת ההזמנה)', tone: 'warn' }
+    const why = u.error ? `: ${u.error}` : ''
+    return { text: `⚠️ הגדלה לא בוצעה${why}`, tone: 'warn' }
+  }
+  return { text: `ℹ️ סטטוס הגדלה: ${String(u.status)}`, tone: 'muted' }
 }
 
 export default function AdminOrdersPage() {
@@ -722,9 +730,12 @@ export default function AdminOrdersPage() {
                                             </div>
                                             <div>
                                               <span className="text-sm font-medium">{d.areaName ?? d.area}</span>
-                                              {isUpscaleInProgress(upscale) && (
-                                                <div className="text-xs text-gray-500">⏳ בהגדלה...</div>
-                                              )}
+                                              {(() => {
+                                                const info = upscaleStatusInfo(upscale)
+                                                if (!info) return null
+                                                const toneClass = info.tone === 'error' ? 'text-red-600' : info.tone === 'warn' ? 'text-amber-600' : 'text-gray-500'
+                                                return <div className={`text-xs mt-0.5 ${toneClass}`}>{info.text}</div>
+                                              })()}
                                             </div>
                                           </div>
                                           {upscale?.status === 'done' && upscale.url ? (
