@@ -725,7 +725,7 @@ export default function AdminOrdersPage() {
                         <div className="space-y-4">
                           {order.items.map((item, idx) => {
                             const fabricName = item.fabricType ? (fabricLabels[item.fabricType] ?? item.fabricType) : ''
-                            const productName = `${productLabels[item.productType] ?? item.productType}${fabricName ? ` ${fabricName}` : ''} מעוצבת`
+                            const productName = `${productLabels[item.productType] ?? item.productType}${fabricName ? ` ${fabricName}` : ''} ${item.productType === 'tshirt' ? 'מעוצבת' : 'מעוצב'}`
 
                             return (
                               <div key={idx} className="bg-white border rounded-lg p-4">
