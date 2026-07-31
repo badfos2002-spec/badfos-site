@@ -34,6 +34,8 @@ const fabricLabels: Record<string, string> = {
   'dri-fit': 'דרייפיט',
   polo: 'פולו',
   oversized: 'אוברסייז',
+  mesh: 'רשת',
+  tembel: 'טמבל',
 }
 
 const colorLabels: Record<string, string> = {
