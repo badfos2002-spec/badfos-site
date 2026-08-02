@@ -337,7 +337,7 @@ export default function IntroOverlay() {
               style={{ opacity: 0 }}
             />
             <div data-intro-logo-m className="relative z-[2] h-24 w-24">
-              <Image src="/logo.png" alt="" fill priority sizes="112px" className="object-contain" />
+              <Image src="/logo.png" alt="" fill priority sizes="336px" quality={95} className="object-contain" />
             </div>
           </div>
         </div>
@@ -410,7 +410,7 @@ export default function IntroOverlay() {
           data-intro-logo
           className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 sm:h-28 sm:w-28 z-[2]"
         >
-          <Image src="/logo.png" alt="" fill priority sizes="112px" className="object-contain" />
+          <Image src="/logo.png" alt="" fill priority sizes="336px" quality={95} className="object-contain" />
         </div>
 
         {/* Rotating ring container — holds the orbiting tiles (does NOT clip 3D). */}
