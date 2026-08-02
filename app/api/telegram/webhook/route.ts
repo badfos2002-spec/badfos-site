@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
-import { sendTelegramMessage, parseSale } from '@/lib/telegram'
+import { sendTelegramMessage, parseSale, extractSaleFromPhoto } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 const HELP = `👋 היי! אני העוזר של בדפוס — יומן העסקאות הידניות שלך.
 
@@ -70,12 +71,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    // 5. Empty text.
+    // 5. Photo → read the payment screenshot with vision AI.
+    // Must run before the empty-text return, since photos carry no text.
+    if (Array.isArray(msg.photo) && msg.photo.length > 0) {
+      const fileId = msg.photo[msg.photo.length - 1].file_id // largest size
+      const caption = (msg.caption || '').trim()
+      await sendTelegramMessage(chatId, '📸 קורא את הצילום…')
+      const sale = await extractSaleFromPhoto(fileId, caption)
+      if (!sale || sale.amount <= 0) {
+        await sendTelegramMessage(chatId, 'לא הצלחתי לקרוא את הסכום מהצילום 🤔 — נסה/י לשלוח את הפרטים בטקסט (שם טלפון סכום סוג-תשלום).')
+        return NextResponse.json({ ok: true })
+      }
+      await adminDb.collection('manualSales').add({
+        name: sale.name,
+        phone: sale.phone,
+        amount: sale.amount,
+        paymentType: sale.paymentType,
+        enteredBy: fromName,
+        enteredById: String(fromId),
+        createdAt: new Date(),
+        receiptIssued: false,
+        source: 'photo',
+      })
+      const phoneLine = sale.phone ? `\n📞 ${sale.phone}` : ''
+      await sendTelegramMessage(chatId, `📸 נרשם מצילום: ${sale.name} · ${sale.amount}₪ · ${sale.paymentType}${phoneLine}\nנרשם ע"י ${fromName}`)
+      return NextResponse.json({ ok: true })
+    }
+
+    // 6. Empty text.
     if (!text) {
       return NextResponse.json({ ok: true })
     }
 
-    // 6. Commands.
+    // 7. Commands.
     if (text === '/start' || text === 'start' || text === 'עזרה' || text === '/help') {
       await sendTelegramMessage(chatId, HELP)
       return NextResponse.json({ ok: true })
@@ -134,7 +162,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    // 7. Otherwise, treat as a sale entry.
+    // 8. Otherwise, treat as a sale entry.
     const sale = parseSale(text)
     if (!sale) {
       await sendTelegramMessage(
@@ -153,6 +181,7 @@ export async function POST(request: NextRequest) {
       enteredById: String(fromId),
       createdAt: new Date(),
       receiptIssued: false,
+      source: 'text',
     })
 
     await sendTelegramMessage(
