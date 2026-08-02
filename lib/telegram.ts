@@ -20,7 +20,7 @@ export async function sendTelegramMessage(
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+      body: JSON.stringify({ chat_id: chatId, text }),
     })
   } catch (err) {
     console.error('sendTelegramMessage error:', err)
@@ -76,12 +76,19 @@ export async function notifyOwnerNewOrder(order: any): Promise<void> {
       `🚚 ${shippingLabel}`,
     ].join('\n')
 
-    const ids = (process.env.TELEGRAM_ALLOWED_IDS || '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-    for (const id of ids) {
-      await sendTelegramMessage(id, text)
+    // If a group chat is configured, send the alert there only; otherwise
+    // fall back to messaging each allowed owner id directly.
+    const groupChatId = (process.env.TELEGRAM_GROUP_CHAT_ID || '').trim()
+    if (groupChatId) {
+      await sendTelegramMessage(groupChatId, text)
+    } else {
+      const ids = (process.env.TELEGRAM_ALLOWED_IDS || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+      for (const id of ids) {
+        await sendTelegramMessage(id, text)
+      }
     }
   } catch (err) {
     console.error('notifyOwnerNewOrder error:', err)

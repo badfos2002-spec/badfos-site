@@ -11,11 +11,11 @@ const HELP = `👋 היי! אני העוזר של בדפוס — יומן העס
 📝 לרשום עסקה: שלח לי
    שם  טלפון  סכום  סוג-תשלום
    למשל: יוסי כהן 0501234567 150 ביט
+   (בקבוצה — התחל עם המילה: מכירה)
 
-📊 פקודות:
-   היום — סיכום היום
-   החודש — סיכום החודש
-   רשימה — 10 האחרונות
+📸 אפשר גם לשלוח צילום של אישור תשלום (בקבוצה — עם כיתוב "מכירה").
+
+📊 פקודות: היום · החודש · רשימה
 
 ⚠️ זה תיעוד פרטי בלבד, לא קבלה רשמית.`
 
@@ -61,12 +61,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
+    // In groups the bot must stay silent unless explicitly addressed.
+    const chatType = msg?.chat?.type
+    const isGroup = chatType === 'group' || chatType === 'supergroup'
+    // Strip the bot's @mention (groups deliver "@Badfos_assistant_bot ...") and a single leading slash later
+    const cleanText = (text || '').replace(/@[A-Za-z0-9_]*bot\b/gi, '').trim()
+
     // 4. Allowlist check.
     const allowed = (process.env.TELEGRAM_ALLOWED_IDS || '')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean)
     if (!allowed.includes(String(fromId))) {
+      // In groups, stay silent — never announce "no permission".
+      if (isGroup) {
+        return NextResponse.json({ ok: true })
+      }
       await sendTelegramMessage(chatId, 'אין לך הרשאה להשתמש בבוט הזה.')
       return NextResponse.json({ ok: true })
     }
@@ -74,8 +84,12 @@ export async function POST(request: NextRequest) {
     // 5. Photo → read the payment screenshot with vision AI.
     // Must run before the empty-text return, since photos carry no text.
     if (Array.isArray(msg.photo) && msg.photo.length > 0) {
+      const caption = (msg.caption || '').replace(/@[A-Za-z0-9_]*bot\b/gi, '').trim()
+      // In groups, only react to photos explicitly marked as a sale.
+      if (isGroup && !caption.includes('מכירה')) {
+        return NextResponse.json({ ok: true })
+      }
       const fileId = msg.photo[msg.photo.length - 1].file_id // largest size
-      const caption = (msg.caption || '').trim()
       await sendTelegramMessage(chatId, '📸 קורא את הצילום…')
       const sale = await extractSaleFromPhoto(fileId, caption)
       if (!sale || sale.amount <= 0) {
@@ -99,24 +113,31 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Empty text.
-    if (!text) {
+    if (!cleanText) {
       return NextResponse.json({ ok: true })
     }
 
-    // 7. Commands.
-    if (text === '/start' || text === 'start' || text === 'עזרה' || text === '/help') {
+    // 7. Commands (both "היום" and "/היום" work).
+    const cmd = cleanText.replace(/^\//, '')
+
+    if (cmd === 'start' || cmd === 'עזרה' || cmd === 'help') {
       await sendTelegramMessage(chatId, HELP)
       return NextResponse.json({ ok: true })
     }
 
-    if (text === 'היום' || text === 'החודש') {
+    if (cmd === 'chatid') {
+      await sendTelegramMessage(chatId, `ה-chat_id של הצ'אט הזה:\n${chatId}`)
+      return NextResponse.json({ ok: true })
+    }
+
+    if (cmd === 'היום' || cmd === 'החודש') {
       const snap = await adminDb
         .collection('manualSales')
         .orderBy('createdAt', 'desc')
         .limit(500)
         .get()
 
-      const isToday = text === 'היום'
+      const isToday = cmd === 'היום'
       const todayKey = jslDateKey(new Date())
       const monthKey = todayKey.slice(0, 7)
 
@@ -128,19 +149,19 @@ export async function POST(request: NextRequest) {
         })
 
       if (matched.length === 0) {
-        await sendTelegramMessage(chatId, `📊 אין עסקאות ל${text}`)
+        await sendTelegramMessage(chatId, `📊 אין עסקאות ל${cmd}`)
         return NextResponse.json({ ok: true })
       }
 
       const sum = matched.reduce((acc, data) => acc + (Number(data.amount) || 0), 0)
       await sendTelegramMessage(
         chatId,
-        `📊 ${text}: ${matched.length} עסקאות · סה"כ ${sum}₪`
+        `📊 ${cmd}: ${matched.length} עסקאות · סה"כ ${sum}₪`
       )
       return NextResponse.json({ ok: true })
     }
 
-    if (text === 'רשימה') {
+    if (cmd === 'רשימה') {
       const snap = await adminDb
         .collection('manualSales')
         .orderBy('createdAt', 'desc')
@@ -163,7 +184,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 8. Otherwise, treat as a sale entry.
-    const sale = parseSale(text)
+    // In groups, require the explicit "מכירה" prefix so random chatter is ignored silently.
+    let saleText: string
+    if (isGroup) {
+      if (!cleanText.startsWith('מכירה')) {
+        return NextResponse.json({ ok: true })
+      }
+      saleText = cleanText.replace(/^מכירה/, '').trim()
+    } else {
+      saleText = cleanText
+    }
+
+    const sale = parseSale(saleText)
     if (!sale) {
       await sendTelegramMessage(
         chatId,
