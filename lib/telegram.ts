@@ -28,6 +28,67 @@ export async function sendTelegramMessage(
 }
 
 /**
+ * Notify every owner in TELEGRAM_ALLOWED_IDS about a new PAID order.
+ * Fire-and-forget: never throws — logs and swallows any error so the payment
+ * flow is never affected.
+ */
+export async function notifyOwnerNewOrder(order: any): Promise<void> {
+  try {
+    // Customer name — firstName + lastName, fallback to name, fallback 'לקוח'
+    const first = (order?.customer?.firstName || '').toString().trim()
+    const last = (order?.customer?.lastName || '').toString().trim()
+    let customerName = `${first} ${last}`.trim()
+    if (!customerName) customerName = (order?.customer?.name || '').toString().trim()
+    if (!customerName) customerName = 'לקוח'
+
+    const phone = (order?.customer?.phone || '').toString().trim()
+
+    // Items line
+    const productLabels: Record<string, string> = {
+      tshirt: 'חולצה',
+      sweatshirt: 'סווטשרט',
+      buff: 'באף',
+      cap: 'כובע',
+      apron: 'סינר',
+      baby: 'בגד גוף תינוק',
+    }
+    const items = Array.isArray(order?.items) ? order.items : []
+    const itemParts = items.slice(0, 4).map((it: any) => {
+      const label = productLabels[it?.productType] || it?.productType || ''
+      const fabricPart = it?.fabricType ? ` ${it.fabricType}` : ''
+      const colorPart = it?.color ? ` ${it.color}` : ''
+      return `${it?.totalQuantity ?? ''}× ${label}${fabricPart}${colorPart}`
+    })
+    let itemsLine = itemParts.join(', ')
+    if (items.length > 4) itemsLine += `, ועוד ${items.length - 4}...`
+
+    const total = order?.total ?? 0
+
+    const method = order?.shipping?.method
+    const shippingLabel = method === 'pickup' ? 'איסוף עצמי' : method ? 'משלוח' : ''
+
+    const nameLine = phone ? `👤 ${customerName} · ${phone}` : `👤 ${customerName}`
+    const text = [
+      `💰 הזמנה חדשה #${order?.orderNumber ?? ''}`,
+      nameLine,
+      `🛒 ${itemsLine}`,
+      `💵 ${total}₪`,
+      `🚚 ${shippingLabel}`,
+    ].join('\n')
+
+    const ids = (process.env.TELEGRAM_ALLOWED_IDS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    for (const id of ids) {
+      await sendTelegramMessage(id, text)
+    }
+  } catch (err) {
+    console.error('notifyOwnerNewOrder error:', err)
+  }
+}
+
+/**
  * Lenient parser for a manual sale message, e.g. "יוסי כהן 0501234567 150 ביט".
  * Returns null when a phone or an amount can't be found.
  */

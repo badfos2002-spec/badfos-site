@@ -3,6 +3,7 @@ import { waitUntil } from '@vercel/functions'
 import { adminDb } from '@/lib/firebase-admin'
 import { sendServerConversions } from '@/lib/server-tracking'
 import { findOrderByFallback } from '@/lib/order-fallback'
+import { notifyOwnerNewOrder } from '@/lib/telegram'
 
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
 
@@ -176,6 +177,9 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WEBHOOK_SECRET },
       body: JSON.stringify({ orderId: orderDoc.id }),
     }).catch(err => console.error('Failed to trigger design upscaling:', err)))
+
+    // Notify the owner on Telegram about the new paid order (reliable via waitUntil)
+    waitUntil(notifyOwnerNewOrder(order).catch(err => console.error('Failed to notify owner on Telegram:', err)))
 
     // Send confirmation email
     const email = order.customer?.email
