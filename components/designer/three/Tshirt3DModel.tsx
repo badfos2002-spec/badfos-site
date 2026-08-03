@@ -46,15 +46,15 @@ const TSHIRT_GUIDES: Record<string, GuideBox> = {
 // back artwork projects −z onto the back panel.
 const POLO_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.08, 0.36], rotation: [0, 0, 0], size: 0.52, depth: 0.5, panel: 'front' },
-  back: { position: [0, 0.12, -0.36], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.5, panel: 'back' },
-  chest_logo: { position: [-0.24, 0.4, 0.34], rotation: [0, 0, 0], size: 0.15, depth: 0.4, panel: 'front' },
-  chest_logo_right: { position: [0.24, 0.4, 0.34], rotation: [0, 0, 0], size: 0.15, depth: 0.4, panel: 'front' },
+  back: { position: [0, 0.12, -0.36], rotation: [0, Math.PI, 0], size: 0.71, depth: 0.5, panel: 'back' },
+  chest_logo: { position: [-0.24, 0.44, 0.34], rotation: [0, 0, 0], size: 0.22, depth: 0.4, panel: 'front' },
+  chest_logo_right: { position: [0.24, 0.44, 0.34], rotation: [0, 0, 0], size: 0.22, depth: 0.4, panel: 'front' },
 };
 const POLO_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.4, h: 0.5, label: 'קדמי מלא' },
-  back: { w: 0.5, h: 0.62, label: 'גב' },
-  chest_logo: { w: 0.14, h: 0.14, label: 'סמל שמאל' },
-  chest_logo_right: { w: 0.14, h: 0.14, label: 'סמל ימין' },
+  back: { w: 0.575, h: 0.71, label: 'גב' },
+  chest_logo: { w: 0.2, h: 0.2, label: 'סמל שמאל' },
+  chest_logo_right: { w: 0.2, h: 0.2, label: 'סמל ימין' },
 };
 
 const VARIANTS = {
