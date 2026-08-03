@@ -541,7 +541,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
                 <div className="font-semibold leading-none tracking-tight flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Eye className="w-5 h-5 text-yellow-500" />
-                    <span>תצוגה מקדימה</span>
+                    <span>{use3DPreview ? 'תצוגה 360°' : 'תצוגה מקדימה'}</span>
                   </div>
                   {config.designs && config.designs.length > 0 && (
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
