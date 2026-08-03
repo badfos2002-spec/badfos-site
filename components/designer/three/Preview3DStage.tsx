@@ -130,8 +130,10 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
             <Lightformer intensity={1.0} position={[0, -3, 3]} scale={[8, 3, 1]} color="#ffffff" />
           </Environment>
           {/* key on the model → Bounds remounts and re-fits the framing when
-              the shirt swaps (the polo is ~100× larger in world units). */}
-          <Bounds key={modelUrl ?? 'tshirt'} fit clip observe margin={fitMargin}>
+              the shirt swaps (the polo is ~100× larger in world units). No
+              `observe`: it must NOT re-fit on container resize between steps —
+              the camera distance stays constant across all steps. */}
+          <Bounds key={modelUrl ?? 'tshirt'} fit clip margin={fitMargin}>
             <Turntable focusArea={activeArea} onFirstInteract={() => setInteracted(true)}>
               <Tshirt3DModel
                 color={colorHex}
