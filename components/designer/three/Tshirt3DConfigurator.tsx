@@ -52,9 +52,8 @@ export default function Tshirt3DConfigurator() {
             shadows
             dpr={[1, 2]}
             camera={{ position: CAMERA.position, fov: CAMERA.fov }}
-            gl={{ preserveDrawingBuffer: true, antialias: true }}
+            gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
           >
-            <color attach="background" args={['#f2f0e9']} />
             <ambientLight intensity={0.75} />
             <hemisphereLight args={['#ffffff', '#c3bba6', 0.6]} />
             <directionalLight position={[4, 6, 5]} intensity={1.0} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
@@ -144,7 +143,7 @@ const CSS = `
   font-family:"Assistant","Rubik",system-ui,-apple-system,sans-serif;
   color:#17181A;
 }
-.t3d-stage{ position:relative; flex:1 1 50%; min-width:0; }
+.t3d-stage{ position:relative; flex:1 1 50%; min-width:0; background:url(/assets/designer-3d-bg.png) center / cover no-repeat; }
 .t3d-note{
   position:absolute; bottom:14px; left:0; right:0; text-align:center;
   font-size:13px; color:#6b6a63; pointer-events:none;
