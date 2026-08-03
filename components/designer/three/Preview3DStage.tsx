@@ -88,6 +88,17 @@ function Turntable({
   return <group ref={group}>{children}</group>;
 }
 
+// A white shirt barely separates from the light background, so it gets a drop
+// shadow. Every other colour reads fine on its own and keeps a clean edge.
+function isNearWhite(hex: string): boolean {
+  const h = hex.replace('#', '');
+  if (h.length < 6) return false;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return r > 209 && g > 209 && b > 209;
+}
+
 /**
  * Reusable 3D shirt stage: transparent Canvas + procedural studio lighting,
  * turntable rotation, and the shirt model, over the branded background.
@@ -108,9 +119,10 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
         dpr={[1, 2]}
         camera={{ position: CAMERA.position, fov: CAMERA.fov }}
         gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
-        // The canvas is transparent except where the shirt is drawn, so a CSS
-        // drop-shadow follows the shirt silhouette and lifts it off the bg.
-        style={{ filter: 'drop-shadow(0 9px 20px rgba(0,0,0,0.32))' }}
+        // White-only: the canvas is transparent except where the shirt is
+        // drawn, so a CSS drop-shadow follows the silhouette and lifts a white
+        // shirt off the light bg. Other colours read fine and stay shadow-free.
+        style={{ filter: isNearWhite(colorHex) ? 'drop-shadow(0 9px 20px rgba(0,0,0,0.32))' : 'none' }}
       >
         <ambientLight intensity={0.3} />
         <directionalLight position={[4, 6, 5]} intensity={1.15} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
