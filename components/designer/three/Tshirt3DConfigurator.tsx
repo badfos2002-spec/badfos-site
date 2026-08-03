@@ -4,7 +4,6 @@ import { Suspense, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import {
   OrbitControls,
-  Environment,
   ContactShadows,
   Loader,
 } from '@react-three/drei';
@@ -52,10 +51,12 @@ export default function Tshirt3DConfigurator() {
           gl={{ preserveDrawingBuffer: true, antialias: true }}
         >
           <color attach="background" args={['#f2f0e9']} />
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[3, 5, 4]} intensity={1.1} castShadow />
+          <ambientLight intensity={0.55} />
+          <hemisphereLight args={['#ffffff', '#b7ae99', 0.55]} />
+          <directionalLight position={[4, 6, 5]} intensity={1.35} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+          <directionalLight position={[-5, 2, 2]} intensity={0.5} />
+          <directionalLight position={[0, 3, -6]} intensity={0.7} />
           <Suspense fallback={null}>
-            <Environment preset="city" />
             <Tshirt3DModel color={color} decalUrl={decalUrl} />
             <ContactShadows
               position={[0, -0.9, 0]}
