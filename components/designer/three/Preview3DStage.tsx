@@ -108,6 +108,9 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
         dpr={[1, 2]}
         camera={{ position: CAMERA.position, fov: CAMERA.fov }}
         gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
+        // The canvas is transparent except where the shirt is drawn, so a CSS
+        // drop-shadow follows the shirt silhouette and lifts it off the bg.
+        style={{ filter: 'drop-shadow(0 9px 20px rgba(0,0,0,0.32))' }}
       >
         <ambientLight intensity={0.3} />
         <directionalLight position={[4, 6, 5]} intensity={1.15} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
