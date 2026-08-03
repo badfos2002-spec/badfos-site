@@ -104,7 +104,7 @@ export const TSHIRT_COLORS = [
 // Colors available per fabric type (undefined = all TSHIRT_COLORS)
 export const FABRIC_COLOR_FILTER: Record<string, string[]> = {
   oversized: ['white', 'black', 'beige'],
-  polo: ['white', 'black', 'red'],
+  polo: ['white', 'black', 'gray'],
 }
 
 export const SWEATSHIRT_COLORS = [
