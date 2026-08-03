@@ -9,14 +9,14 @@ import {
   Environment,
   Lightformer,
 } from '@react-three/drei';
-import Tshirt3DModel from './Tshirt3DModel';
+import Tshirt3DModel, { ShirtDesign } from './Tshirt3DModel';
 
 // Camera position sets the viewing angle; Bounds auto-fits the distance.
 const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
 
 interface Preview3DStageProps {
   colorHex: string;
-  designUrl: string | null;
+  designs: ShirtDesign[];
 }
 
 /**
@@ -26,7 +26,7 @@ interface Preview3DStageProps {
  * stepped designer share the exact same scene. (Loader lives outside — the
  * caller renders it if needed.)
  */
-export default function Preview3DStage({ colorHex, designUrl }: Preview3DStageProps) {
+export default function Preview3DStage({ colorHex, designs }: Preview3DStageProps) {
   return (
     <div
       style={{
@@ -58,12 +58,13 @@ export default function Preview3DStage({ colorHex, designUrl }: Preview3DStagePr
             <Lightformer intensity={1.0} position={[0, -3, 3]} scale={[8, 3, 1]} color="#ffffff" />
           </Environment>
           <Bounds fit clip observe margin={1.0}>
-            <Tshirt3DModel color={colorHex} decalUrl={designUrl} />
+            <Tshirt3DModel color={colorHex} designs={designs} />
           </Bounds>
           <ContactShadows position={[0, -1.05, 0]} opacity={0.45} scale={6} blur={2.6} far={2} />
         </Suspense>
         <OrbitControls
           makeDefault
+          target={[0, 0, 0]}
           enableZoom={false}
           enablePan={false}
           minPolarAngle={Math.PI / 2}

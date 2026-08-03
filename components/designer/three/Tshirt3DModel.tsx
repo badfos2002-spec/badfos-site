@@ -9,12 +9,9 @@ import { useLoader } from '@react-three/fiber';
  * TUNABLE CONSTANTS — adjust after seeing the model on the page.
  * ------------------------------------------------------------------ */
 
-// Whole-model transform. The GLB has 2 flat nodes (no nested groups),
-// each carrying its own local translation + uniform scale which, because
-// the hierarchy is flat, IS its world transform. We therefore render each
-// mesh with its own position/rotation/scale (see below) and wrap everything
-// in <Center> to auto-center the bounding box at the origin. This group
-// then lets you nudge/scale/rotate the centered result.
+// Whole-model transform. The GLB has flat nodes (no nested groups); we render
+// each mesh with its own local transform and wrap everything in <Center> to
+// auto-center the bounding box at the origin, so the shirt spins ON ITS AXIS.
 const MODEL: {
   scale: number;
   rotation: [number, number, number];
@@ -25,32 +22,35 @@ const MODEL: {
   position: [0, 0, 0],
 };
 
-// Chest decal placement, in the BODY mesh's LOCAL space (the body mesh has
-// its own scale ~0.339, so these values live in that pre-scale coordinate
-// space). Tune position/scale to land the artwork on the chest.
-const DECAL: {
+// Per-AREA artwork placement, in the BODY mesh's LOCAL space (the body mesh
+// carries its own scale ~0.339, so these values live in that pre-scale space).
+// Each decal is a CHILD of the body mesh → it is welded to the fabric and
+// rotates together with the shirt. Front artwork faces +Z, back faces -Z.
+// Tune position/scale per area after seeing it on the model.
+type Placement = {
   position: [number, number, number];
   rotation: [number, number, number];
-  scale: number;
-} = {
-  position: [0, 0.05, 0.15],
-  rotation: [0, 0, 0],
-  scale: 0.25,
+  scale: [number, number, number] | number;
+};
+
+const AREA_DECALS: Record<string, Placement> = {
+  front_full: { position: [0, 0.05, 0.15], rotation: [0, 0, 0], scale: 0.25 },
+  back: { position: [0, 0.05, -0.15], rotation: [0, Math.PI, 0], scale: 0.25 },
+  chest_logo: { position: [-0.07, 0.13, 0.15], rotation: [0, 0, 0], scale: 0.09 },
+  chest_logo_right: { position: [0.07, 0.13, 0.15], rotation: [0, 0, 0], scale: 0.09 },
+  center: { position: [0, 0.05, 0.15], rotation: [0, 0, 0], scale: 0.25 },
+  center_wide: { position: [0, 0.05, 0.15], rotation: [0, 0, 0], scale: 0.28 },
 };
 
 /* ------------------------------------------------------------------ */
 
-interface ShirtDecalProps {
-  decalUrl: string;
-}
-
 /**
- * Decal is isolated in its own component so the texture-loading hook is
- * always called unconditionally (this component only mounts when a decal
- * exists). It must render <Decal> directly so drei can find the parent mesh.
+ * One artwork decal welded to the shirt body. Isolated so the texture-loading
+ * hook is always called unconditionally. Must render <Decal> directly so drei
+ * can find the parent mesh.
  */
-function ShirtDecal({ decalUrl }: ShirtDecalProps) {
-  const texture = useLoader(THREE.TextureLoader, decalUrl);
+function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
+  const texture = useLoader(THREE.TextureLoader, url);
 
   useMemo(() => {
     texture.anisotropy = 8;
@@ -59,7 +59,7 @@ function ShirtDecal({ decalUrl }: ShirtDecalProps) {
   }, [texture]);
 
   return (
-    <Decal position={DECAL.position} rotation={DECAL.rotation} scale={DECAL.scale}>
+    <Decal position={placement.position} rotation={placement.rotation} scale={placement.scale}>
       <meshStandardMaterial
         map={texture}
         transparent
@@ -71,17 +71,22 @@ function ShirtDecal({ decalUrl }: ShirtDecalProps) {
   );
 }
 
-interface Tshirt3DModelProps {
-  color: string;
-  decalUrl: string | null;
+export interface ShirtDesign {
+  area: string;
+  url: string;
 }
 
-export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
+interface Tshirt3DModelProps {
+  color: string;
+  designs: ShirtDesign[];
+}
+
+export default function Tshirt3DModel({ color, designs }: Tshirt3DModelProps) {
   const { scene } = useGLTF('/models/tshirt-web.glb');
 
-  // Pure black (#000000) on a matte fabric shows no folds/shading — it collapses
-  // into a flat silhouette. Lift ONLY near-black colors to a dark charcoal so the
-  // form stays visible; every other color is passed through untouched.
+  // Pure black (#000000) on matte fabric collapses into a flat silhouette (no
+  // folds/shading). Lift ONLY near-black colors to a dark charcoal so the form
+  // stays visible; every other color passes through untouched.
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
     if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.195, 0.2, 0.21);
@@ -89,7 +94,7 @@ export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
   }, [color]);
 
   // Clone the scene and collect every mesh, sorted by vertex count desc.
-  // The largest mesh is the shirt body (it receives the decal).
+  // The largest mesh is the shirt body (it receives the decals).
   const meshes = useMemo(() => {
     const cloned = scene.clone(true);
     const collected: THREE.Mesh[] = [];
@@ -109,11 +114,7 @@ export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
   const bodyMesh = meshes[0];
 
   return (
-    <group
-      scale={MODEL.scale}
-      rotation={MODEL.rotation}
-      position={MODEL.position}
-    >
+    <group scale={MODEL.scale} rotation={MODEL.rotation} position={MODEL.position}>
       <Center>
         {meshes.map((mesh, i) => {
           const isBody = mesh === bodyMesh;
@@ -130,12 +131,18 @@ export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
               receiveShadow
             >
               <meshStandardMaterial
-                color={color}
+                color={shirtColor}
                 roughness={0.85}
                 metalness={0.05}
                 side={THREE.DoubleSide}
               />
-              {isBody && decalUrl ? <ShirtDecal decalUrl={decalUrl} /> : null}
+              {isBody
+                ? designs.map((d) => {
+                    const placement = AREA_DECALS[d.area];
+                    if (!placement || !d.url) return null;
+                    return <ShirtDecal key={d.area} url={d.url} placement={placement} />;
+                  })
+                : null}
             </mesh>
           );
         })}

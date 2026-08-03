@@ -310,7 +310,6 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   ) : null
 
   const shirtHex = TSHIRT_COLORS.find(c => c.id === config.color)?.hex ?? '#C9C9C9'
-  const frontDesignUrl = (config.designs || []).find(d => d.area === 'front_full')?.imageUrl ?? null
 
   const mockupDesigns = config.designs || []
   const tshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
@@ -379,7 +378,12 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const mockupElement = use3DPreview ? (
     <ThreeErrorBoundary fallback={static2D}>
       <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
-        <Preview3DStage colorHex={shirtHex} designUrl={frontDesignUrl} />
+        <Preview3DStage
+          colorHex={shirtHex}
+          designs={(config.designs || [])
+            .filter((d) => d.imageUrl)
+            .map((d) => ({ area: d.area, url: d.imageUrl }))}
+        />
       </div>
     </ThreeErrorBoundary>
   ) : static2D

@@ -39,7 +39,10 @@ export default function Tshirt3DConfigurator() {
       <div className="t3d-root">
         {/* LEFT half — the 3D shirt */}
         <div className="t3d-stage">
-          <Preview3DStage colorHex={color} designUrl={decalUrl} />
+          <Preview3DStage
+            colorHex={color}
+            designs={decalUrl ? [{ area: 'front_full', url: decalUrl }] : []}
+          />
           <div className="t3d-note">גררו לסובב · העלו עיצוב</div>
         </div>
 
