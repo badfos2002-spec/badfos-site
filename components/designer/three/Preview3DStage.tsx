@@ -203,6 +203,25 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           </div>
         </div>
       </div>
+
+      {/* Caption below the shirt — illustration disclaimer (black). */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 10,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          pointerEvents: 'none',
+          zIndex: 4,
+          color: '#141414',
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: '"Assistant","Rubik",system-ui,sans-serif',
+        }}
+      >
+        סקיצה להמחשה בלבד
+      </div>
     </div>
   );
 }
