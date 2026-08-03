@@ -9,9 +9,6 @@ import { useLoader } from '@react-three/fiber';
  * TUNABLE CONSTANTS — adjust after seeing the model on the page.
  * ------------------------------------------------------------------ */
 
-// Whole-model transform. The GLB has flat nodes; we render each mesh with its
-// own local transform and wrap everything in <Center> to auto-center the
-// bounding box at the origin, so the shirt spins ON ITS AXIS.
 const MODEL: {
   scale: number;
   rotation: [number, number, number];
@@ -23,11 +20,9 @@ const MODEL: {
 };
 
 // Per-AREA artwork placement, in the body geometry's normalized local space:
-// x ∈ [-0.8,0.8] (width), y ∈ [-1,1] (height, +y=up/shoulders), z ∈ [-0.4,0.4]
-// (+z = front / camera side). `size` is the MAX extent of the artwork on the
-// fabric — the actual width/height are derived from the image aspect ratio so
-// the print is NEVER stretched. `depth` is the projector depth (straddles the
-// curved surface). Each decal is a child of the body mesh → welded to the cloth.
+// x ∈ [-0.8,0.8] (width), y ∈ [-1,1] (+y=up), z ∈ [-0.4,0.4] (+z=front).
+// `size` is the MAX extent of the artwork; the real w/h come from the image
+// aspect so the print is never stretched. `depth` straddles the curved surface.
 type Placement = {
   position: [number, number, number];
   rotation: [number, number, number];
@@ -36,21 +31,104 @@ type Placement = {
 };
 
 const AREA_DECALS: Record<string, Placement> = {
-  front_full: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
-  back: { position: [0, 0.28, -0.3], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.55 },
-  chest_logo: { position: [-0.22, 0.46, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
-  chest_logo_right: { position: [0.22, 0.46, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
-  center: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
-  center_wide: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
+  // front_full sits lower (chest→belly) so it clears the chest logos above it.
+  front_full: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
+  back: { position: [0, 0.16, -0.3], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.55 },
+  // chest logos: higher on the chest and spread further apart (left ↔ right).
+  chest_logo: { position: [-0.31, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  chest_logo_right: { position: [0.31, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  center: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
+  center_wide: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
+};
+
+// The design-area guide blocks drawn ON the shirt (like the 2D designer): a
+// dashed labelled rectangle per area, welded to the fabric so it rotates with
+// the shirt. Shown only for EMPTY areas while on the design step.
+const GUIDE_AREAS = ['front_full', 'back', 'chest_logo', 'chest_logo_right'] as const;
+const GUIDE_BOX: Record<string, { w: number; h: number; label: string }> = {
+  front_full: { w: 0.5, h: 0.62, label: 'קדמי מלא' },
+  back: { w: 0.5, h: 0.62, label: 'גב' },
+  chest_logo: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
+  chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל ימין' },
 };
 
 /* ------------------------------------------------------------------ */
 
+function makeGuideTexture(label: string, color: string, wOverH: number): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const H = 256;
+  const W = Math.round(H * wOverH);
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.clearRect(0, 0, W, H);
+
+  // dashed rounded rectangle border
+  const m = 14;
+  const r = 22;
+  const x = m,
+    y = m,
+    w = W - 2 * m,
+    h = H - 2 * m;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 8;
+  ctx.setLineDash([20, 13]);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  ctx.stroke();
+
+  // centered label
+  ctx.setLineDash([]);
+  ctx.fillStyle = color;
+  const fs = Math.max(18, Math.min(34, W / (label.length * 0.62)));
+  ctx.font = `bold ${Math.round(fs)}px Arial, "Assistant", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, W / 2, H / 2);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/** Dashed labelled area guide, welded to the shirt. */
+function GuideDecal({ area, active }: { area: string; active: boolean }) {
+  const placement = AREA_DECALS[area];
+  const box = GUIDE_BOX[area];
+  const color = active ? '#22c55e' : '#8b95a3';
+  const texture = useMemo(() => makeGuideTexture(box.label, color, box.w / box.h), [box, color]);
+  if (!placement || !box || !texture) return null;
+  return (
+    <Decal
+      position={placement.position}
+      rotation={placement.rotation}
+      scale={[box.w, box.h, placement.depth]}
+      depthTest
+    >
+      <meshStandardMaterial
+        map={texture}
+        transparent
+        depthWrite={false}
+        polygonOffset
+        polygonOffsetFactor={-8}
+        roughness={0.9}
+      />
+    </Decal>
+  );
+}
+
 /**
- * One artwork decal welded to the shirt body. The decal box is sized to the
- * image's aspect ratio (max extent = placement.size) so the print keeps its
- * proportions instead of being stretched to fill the zone. Isolated so the
- * texture-loading hook is always called unconditionally.
+ * One artwork decal welded to the shirt body, sized to the image aspect (max
+ * extent = placement.size) so the print keeps its proportions.
  */
 function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
   const texture = useLoader(THREE.TextureLoader, url);
@@ -71,12 +149,12 @@ function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
   }, [texture, placement]);
 
   return (
-    <Decal position={placement.position} rotation={placement.rotation} scale={scale}>
+    <Decal position={placement.position} rotation={placement.rotation} scale={scale} depthTest>
       <meshStandardMaterial
         map={texture}
         transparent
         polygonOffset
-        polygonOffsetFactor={-4}
+        polygonOffsetFactor={-6}
         roughness={0.9}
       />
     </Decal>
@@ -91,28 +169,23 @@ export interface ShirtDesign {
 interface Tshirt3DModelProps {
   color: string;
   designs: ShirtDesign[];
+  showGuides?: boolean;
+  activeArea?: string;
 }
 
-export default function Tshirt3DModel({ color, designs }: Tshirt3DModelProps) {
+export default function Tshirt3DModel({ color, designs, showGuides, activeArea }: Tshirt3DModelProps) {
   const { scene } = useGLTF('/models/tshirt-web.glb');
 
-  // Pure black (#000000) on matte fabric collapses into a flat silhouette. Lift
-  // ONLY near-black colors to a very dark charcoal so the folds stay visible;
-  // every other color passes through untouched.
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
     if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.09, 0.093, 0.1);
     return c;
   }, [color]);
 
-  // Clone the scene and collect every mesh, sorted by vertex count desc.
-  // The largest mesh is the shirt body (it receives the decals).
   const meshes = useMemo(() => {
     const cloned = scene.clone(true);
     const collected: THREE.Mesh[] = [];
     cloned.traverse((obj) => {
-      // Keep the model's original normals — they carry the realistic fabric
-      // texture. (Recomputing them flattened the shirt and lost the texture.)
       if ((obj as THREE.Mesh).isMesh) collected.push(obj as THREE.Mesh);
     });
     collected.sort(
@@ -124,6 +197,7 @@ export default function Tshirt3DModel({ color, designs }: Tshirt3DModelProps) {
   }, [scene]);
 
   const bodyMesh = meshes[0];
+  const uploaded = useMemo(() => new Set(designs.filter((d) => d.url).map((d) => d.area)), [designs]);
 
   return (
     <group scale={MODEL.scale} rotation={MODEL.rotation} position={MODEL.position}>
@@ -146,13 +220,20 @@ export default function Tshirt3DModel({ color, designs }: Tshirt3DModelProps) {
                 metalness={0.05}
                 side={THREE.DoubleSide}
               />
-              {isBody
-                ? designs.map((d) => {
+              {isBody ? (
+                <>
+                  {designs.map((d) => {
                     const placement = AREA_DECALS[d.area];
                     if (!placement || !d.url) return null;
                     return <ShirtDecal key={d.area} url={d.url} placement={placement} />;
-                  })
-                : null}
+                  })}
+                  {showGuides
+                    ? GUIDE_AREAS.filter((a) => !uploaded.has(a)).map((a) => (
+                        <GuideDecal key={`guide-${a}`} area={a} active={a === activeArea} />
+                      ))
+                    : null}
+                </>
+              ) : null}
             </mesh>
           );
         })}

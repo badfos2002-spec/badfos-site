@@ -12,6 +12,8 @@ const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
 interface Preview3DStageProps {
   colorHex: string;
   designs: ShirtDesign[];
+  showGuides?: boolean;
+  activeArea?: string;
 }
 
 /**
@@ -20,10 +22,21 @@ interface Preview3DStageProps {
  * page normally instead of getting trapped by the 3D view (the old OrbitControls
  * blocked page scroll on mobile). Camera stays fixed — only the shirt spins.
  */
-function Turntable({ children }: { children: React.ReactNode }) {
+function Turntable({ focusArea, children }: { focusArea?: string; children: React.ReactNode }) {
   const group = useRef<THREE.Group>(null);
   const target = useRef(0);
   const { gl } = useThree();
+
+  // Clicking a design area spins the shirt to face it (back = 180°, everything
+  // else = front). Rotate the SHORT way around from wherever it currently is.
+  useEffect(() => {
+    if (!focusArea) return;
+    const angle = focusArea === 'back' ? Math.PI : 0;
+    const twoPi = Math.PI * 2;
+    const cur = target.current;
+    const diff = ((((angle - cur + Math.PI) % twoPi) + twoPi) % twoPi) - Math.PI;
+    target.current = cur + diff;
+  }, [focusArea]);
 
   useEffect(() => {
     const el = gl.domElement;
@@ -70,7 +83,7 @@ function Turntable({ children }: { children: React.ReactNode }) {
  * Reusable 3D shirt stage: transparent Canvas + procedural studio lighting,
  * turntable rotation, and the shirt model, over the branded background.
  */
-export default function Preview3DStage({ colorHex, designs }: Preview3DStageProps) {
+export default function Preview3DStage({ colorHex, designs, showGuides, activeArea }: Preview3DStageProps) {
   return (
     <div
       style={{
@@ -100,8 +113,8 @@ export default function Preview3DStage({ colorHex, designs }: Preview3DStageProp
             <Lightformer intensity={1.0} position={[0, -3, 3]} scale={[8, 3, 1]} color="#ffffff" />
           </Environment>
           <Bounds fit clip observe margin={1.0}>
-            <Turntable>
-              <Tshirt3DModel color={colorHex} designs={designs} />
+            <Turntable focusArea={activeArea}>
+              <Tshirt3DModel color={colorHex} designs={designs} showGuides={showGuides} activeArea={activeArea} />
             </Turntable>
           </Bounds>
           <ContactShadows position={[0, -1.05, 0]} opacity={0.45} scale={6} blur={2.6} far={2} />
