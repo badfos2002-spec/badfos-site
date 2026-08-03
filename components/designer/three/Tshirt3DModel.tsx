@@ -33,7 +33,7 @@ type Placement = {
 const AREA_DECALS: Record<string, Placement> = {
   // front_full sits lower (chest→belly) so it clears the chest logos above it.
   front_full: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
-  back: { position: [0, 0.16, -0.3], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.55 },
+  back: { position: [0, 0.16, -0.3], rotation: [0, Math.PI, 0], size: 0.71, depth: 0.55 },
   // chest logos: higher on the chest and spread further apart (left ↔ right).
   chest_logo: { position: [-0.31, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.31, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
@@ -47,7 +47,7 @@ const AREA_DECALS: Record<string, Placement> = {
 const GUIDE_AREAS = ['front_full', 'back', 'chest_logo', 'chest_logo_right'] as const;
 const GUIDE_BOX: Record<string, { w: number; h: number; label: string }> = {
   front_full: { w: 0.5, h: 0.62, label: 'קדמי מלא' },
-  back: { w: 0.5, h: 0.62, label: 'גב' },
+  back: { w: 0.575, h: 0.71, label: 'גב' },
   chest_logo: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
   chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל ימין' },
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ContactShadows, Bounds, Environment, Lightformer } from '@react-three/drei';
@@ -22,7 +22,15 @@ interface Preview3DStageProps {
  * page normally instead of getting trapped by the 3D view (the old OrbitControls
  * blocked page scroll on mobile). Camera stays fixed — only the shirt spins.
  */
-function Turntable({ focusArea, children }: { focusArea?: string; children: React.ReactNode }) {
+function Turntable({
+  focusArea,
+  onFirstInteract,
+  children,
+}: {
+  focusArea?: string;
+  onFirstInteract?: () => void;
+  children: React.ReactNode;
+}) {
   const group = useRef<THREE.Group>(null);
   const target = useRef(0);
   const { gl } = useThree();
@@ -48,6 +56,7 @@ function Turntable({ focusArea, children }: { focusArea?: string; children: Reac
       dragging = true;
       lastX = e.clientX;
       el.style.cursor = 'grabbing';
+      onFirstInteract?.();
     };
     const move = (e: PointerEvent) => {
       if (!dragging) return;
@@ -84,6 +93,7 @@ function Turntable({ focusArea, children }: { focusArea?: string; children: Reac
  * turntable rotation, and the shirt model, over the branded background.
  */
 export default function Preview3DStage({ colorHex, designs, showGuides, activeArea }: Preview3DStageProps) {
+  const [interacted, setInteracted] = useState(false);
   return (
     <div
       style={{
@@ -113,7 +123,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
             <Lightformer intensity={1.0} position={[0, -3, 3]} scale={[8, 3, 1]} color="#ffffff" />
           </Environment>
           <Bounds fit clip observe margin={1.0}>
-            <Turntable focusArea={activeArea}>
+            <Turntable focusArea={activeArea} onFirstInteract={() => setInteracted(true)}>
               <Tshirt3DModel color={colorHex} designs={designs} showGuides={showGuides} activeArea={activeArea} />
             </Turntable>
           </Bounds>
@@ -137,6 +147,47 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/assets/icon-360.png" alt="" width={64} height={64} style={{ display: 'block' }} />
+      </div>
+
+      {/* "It's 3D — drag to rotate" hint. Fades out on first interaction. */}
+      <style>{`@keyframes t3dHintBob{0%,100%{transform:translateX(-5px)}50%{transform:translateX(5px)}}`}</style>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 16,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+          zIndex: 3,
+          opacity: interacted ? 0 : 1,
+          transition: 'opacity 0.5s ease',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'rgba(20,20,20,0.72)',
+            color: '#ffffff',
+            padding: '8px 15px',
+            borderRadius: 999,
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: '"Assistant","Rubik",system-ui,sans-serif',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.28)',
+            animation: 't3dHintBob 1.8s ease-in-out infinite',
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFC32E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8 7 L4 12 L8 17" />
+            <path d="M16 7 L20 12 L16 17" />
+            <path d="M4 12 H20" />
+          </svg>
+          <span>גררו לסיבוב · תצוגת 360°</span>
+        </div>
       </div>
     </div>
   );
