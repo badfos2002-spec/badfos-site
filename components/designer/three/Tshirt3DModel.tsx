@@ -178,15 +178,29 @@ export default function Tshirt3DModel({
 
   const meshes = useMemo(() => {
     const cloned = scene.clone(true);
-    const collected: THREE.Mesh[] = [];
+    let collected: THREE.Mesh[] = [];
     cloned.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) collected.push(obj as THREE.Mesh);
     });
+    // The polo model ships with stray flat horizontal "disc/ring" geometry that
+    // cuts across the shirt. Drop meshes that are very thin in Y but wide in
+    // X & Z (a garment panel is always tall). Tshirt has no such parts.
+    if (variant === 'polo') {
+      collected = collected.filter((m) => {
+        m.geometry.computeBoundingBox();
+        const bb = m.geometry.boundingBox!;
+        const dx = bb.max.x - bb.min.x;
+        const dy = bb.max.y - bb.min.y;
+        const dz = bb.max.z - bb.min.z;
+        const isDisc = dy < 0.3 * dx && dy < 0.6 * dz && dx > 0.5;
+        return !isDisc;
+      });
+    }
     collected.sort(
       (a, b) => (b.geometry.attributes.position?.count ?? 0) - (a.geometry.attributes.position?.count ?? 0)
     );
     return collected;
-  }, [scene]);
+  }, [scene, variant]);
 
   // Which mesh each artwork projects onto. Single-body models (tshirt) put
   // every decal on the largest mesh. Multi-panel models (polo) route front
