@@ -89,7 +89,7 @@ export default function Tshirt3DModel({ color, designs }: Tshirt3DModelProps) {
   // stays visible; every other color passes through untouched.
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
-    if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.195, 0.2, 0.21);
+    if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.15, 0.155, 0.165);
     return c;
   }, [color]);
 
