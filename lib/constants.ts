@@ -94,10 +94,10 @@ export const TSHIRT_COLORS = [
   { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },
   { id: 'black', name: 'שחור', hex: '#000000' },
   { id: 'gray', name: 'אפור', hex: '#9CA3AF' },
-  { id: 'red', name: 'אדום', hex: '#EF4444' },
-  { id: 'navy', name: 'נייבי', hex: '#1E3A8A' },
-  { id: 'beige', name: 'בז׳', hex: '#E8DFCD' },
-  { id: 'burgundy', name: 'בורדו', hex: '#7C2D12' },
+  { id: 'red', name: 'אדום', hex: '#A81C22' },
+  { id: 'navy', name: 'נייבי', hex: '#172138' },
+  { id: 'beige', name: 'בז׳', hex: '#F0E7CE' },
+  { id: 'burgundy', name: 'בורדו', hex: '#6E2A48' },
   { id: 'olive', name: 'זית', hex: '#6B7245' },
 ] as const
 
