@@ -540,8 +540,18 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
               <div className="flex flex-col space-y-1.5 p-6">
                 <div className="font-semibold leading-none tracking-tight flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Eye className="w-5 h-5 text-yellow-500" />
-                    <span>{use3DPreview ? 'תצוגה 360°' : 'תצוגה מקדימה'}</span>
+                    {use3DPreview ? (
+                      <svg viewBox="0 0 40 34" className="w-9 h-8 text-yellow-500 shrink-0" fill="none" aria-hidden="true">
+                        <text x="19" y="15" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontSize="15" fontWeight="800" fill="currentColor">360°</text>
+                        <path d="M5 21 C5 25 11.3 28 19 28 C26.7 28 33 25 33 21" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+                        <path d="M5 21 C5 17.7 9 15.2 14.5 14.1" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+                        <path d="M33 21 C33 18.4 29.4 16.2 24.4 15.1" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+                        <path d="M28 12 l5 2.8 -2.8 5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <Eye className="w-5 h-5 text-yellow-500" />
+                    )}
+                    <span>{use3DPreview ? 'תצוגה' : 'תצוגה מקדימה'}</span>
                   </div>
                   {config.designs && config.designs.length > 0 && (
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
