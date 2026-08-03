@@ -122,7 +122,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
         // White-only: the canvas is transparent except where the shirt is
         // drawn, so a CSS drop-shadow follows the silhouette and lifts a white
         // shirt off the light bg. Other colours read fine and stay shadow-free.
-        style={{ filter: isNearWhite(colorHex) ? 'drop-shadow(0 9px 20px rgba(0,0,0,0.32))' : 'none' }}
+        style={{ filter: isNearWhite(colorHex) ? 'drop-shadow(0 7px 18px rgba(0,0,0,0.20))' : 'none' }}
       >
         <ambientLight intensity={0.3} />
         <directionalLight position={[4, 6, 5]} intensity={1.15} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
