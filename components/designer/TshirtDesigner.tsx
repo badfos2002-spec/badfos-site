@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import type { ProductConfig, SizeQuantity, DesignArea } from '@/lib/types'
+import ThreeErrorBoundary from './three/ThreeErrorBoundary'
 import StepIndicator from './StepIndicator'
 import ShirtTypeStep from './ShirtTypeStep'
 import ColorStep from './ColorStep'
@@ -14,7 +16,17 @@ import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { FABRIC_COLOR_FILTER } from '@/lib/constants'
+import { FABRIC_COLOR_FILTER, TSHIRT_COLORS } from '@/lib/constants'
+
+// The R3F Canvas cannot be server-rendered, so load the 3D stage client-side
+// only. A 3D failure never breaks the page — it's wrapped in an error boundary
+// that falls back to the static 2D mockup.
+const Preview3DStage = dynamic(() => import('./three/Preview3DStage'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center text-gray-400">טוען תצוגה תלת-מימדית…</div>
+  ),
+})
 
 /** Convert blob URL to base64 so it survives localStorage persistence.
  *  Uses XMLHttpRequest instead of fetch() for Safari compatibility with blob: URLs. */
@@ -118,7 +130,7 @@ function clearDesignerSession() {
   try { sessionStorage.removeItem(DESIGNER_SESSION_KEY) } catch { /* ignore */ }
 }
 
-export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.ReactNode } = {}) {
+export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { breadcrumbs?: React.ReactNode; use3DPreview?: boolean } = {}) {
   const router = useRouter()
   const addItem = useCart((state) => state.addItem)
   const replaceItem = useCart((state) => state.replaceItem)
@@ -278,7 +290,7 @@ export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.Re
     }
   })()
 
-  const ViewTabs = () => currentStep >= 3 ? (
+  const ViewTabs = () => currentStep >= 3 && !use3DPreview ? (
     <div className="flex justify-center gap-2 mt-3">
       <button
         onClick={() => setPreviewView('front')}
@@ -297,6 +309,9 @@ export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.Re
     </div>
   ) : null
 
+  const shirtHex = TSHIRT_COLORS.find(c => c.id === config.color)?.hex ?? '#C9C9C9'
+  const frontDesignUrl = (config.designs || []).find(d => d.area === 'front_full')?.imageUrl ?? null
+
   const mockupDesigns = config.designs || []
   const tshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
   const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
@@ -305,7 +320,7 @@ export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.Re
     const hasDesign = mockupDesigns.some(d => d.area === areaId)
     return currentStep === 3 || hasDesign
   })
-  const mockupElement = (
+  const static2D = (
     <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
       {mockupSrc ? (
         <Image
@@ -358,6 +373,16 @@ export default function TshirtDesigner({ breadcrumbs }: { breadcrumbs?: React.Re
       })}
     </div>
   )
+
+  // In 3D mode, show the live 3D shirt; any 3D failure cleanly falls back to
+  // the static 2D mockup via the error boundary. Otherwise keep the 2D preview.
+  const mockupElement = use3DPreview ? (
+    <ThreeErrorBoundary fallback={static2D}>
+      <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+        <Preview3DStage colorHex={shirtHex} designUrl={frontDesignUrl} />
+      </div>
+    </ThreeErrorBoundary>
+  ) : static2D
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
