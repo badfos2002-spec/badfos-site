@@ -438,23 +438,25 @@ export default function CapDesignerPage() {
   const capColorHex = CAP_COLORS.find(c => c.id === selectedColor)?.hex ?? '#FFFFFF'
   const capDesigns = designPreviewUrl ? [{ area: 'center', url: designPreviewUrl }] : []
   const use3DCap = selectedType !== 'mesh'
-  const PreviewElement = () =>
-    use3DCap ? (
-      <ThreeErrorBoundary fallback={<MockupImage />}>
-        <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
-          <Preview3DStage
-            colorHex={capColorHex}
-            designs={capDesigns}
-            showGuides={currentStep === 3}
-            activeArea="center"
-            variant="cap"
-            modelUrl="/models/cap-web.glb"
-          />
-        </div>
-      </ThreeErrorBoundary>
-    ) : (
-      <MockupImage />
-    )
+  // A JSX element (NOT a component) so React keeps the same Preview3DStage
+  // instance across re-renders — otherwise the scene reloads and the one-time
+  // drag hint reappears on every colour change.
+  const previewElement = use3DCap ? (
+    <ThreeErrorBoundary fallback={<MockupImage />}>
+      <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+        <Preview3DStage
+          colorHex={capColorHex}
+          designs={capDesigns}
+          showGuides={currentStep === 3}
+          activeArea="center"
+          variant="cap"
+          modelUrl="/models/cap-web.glb"
+        />
+      </div>
+    </ThreeErrorBoundary>
+  ) : (
+    <MockupImage />
+  )
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
@@ -542,7 +544,7 @@ export default function CapDesignerPage() {
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
-              <PreviewElement />
+              {previewElement}
               {designFile && (
                 <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   ✓ עיצוב הועלה
@@ -597,7 +599,7 @@ export default function CapDesignerPage() {
               </div>
               <div className="p-6 pt-0">
                 <div className="relative mx-auto max-w-md">
-                  <PreviewElement />
+                  {previewElement}
                 </div>
               </div>
             </div>

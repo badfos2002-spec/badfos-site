@@ -111,8 +111,8 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
         camera={{ position: CAMERA.position, fov: CAMERA.fov }}
         gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
       >
-        <ambientLight intensity={0.3} />
-        <directionalLight position={[4, 6, 5]} intensity={1.15} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+        <ambientLight intensity={0.22} />
+        <directionalLight position={[4, 6, 5]} intensity={1.45} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
         {/* Rim light from behind — separates a white shirt from the light bg
             and lets a black shirt's edges/folds catch light. */}
         <directionalLight position={[-3, 4, -5]} intensity={0.8} />

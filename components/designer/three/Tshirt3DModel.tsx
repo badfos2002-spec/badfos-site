@@ -88,7 +88,7 @@ const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   polo: { areas: POLO_AREAS, guides: POLO_GUIDES, panels: true },
   oversized: { areas: OVERSIZED_AREAS, guides: OVERSIZED_GUIDES, panels: false },
-  cap: { areas: CAP_AREAS, guides: CAP_GUIDES, panels: false },
+  cap: { areas: CAP_AREAS, guides: CAP_GUIDES, panels: false, normalMapUrl: '/models/tex/cap-normal.png' },
 } as const;
 
 export type ShirtVariant = keyof typeof VARIANTS;
@@ -169,6 +169,53 @@ function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
   );
 }
 
+/** Plain fabric material — used by most models (their geometry carries the weave). */
+function ShirtMaterial({ color, emissiveIntensity }: { color: THREE.Color; emissiveIntensity: number }) {
+  return (
+    <meshStandardMaterial
+      color={color}
+      emissive="#ffffff"
+      emissiveIntensity={emissiveIntensity}
+      roughness={0.85}
+      metalness={0.05}
+      side={THREE.DoubleSide}
+    />
+  );
+}
+
+/** Fabric material with a normal map — adds woven texture to low-poly models
+ *  (the bucket hat) that would otherwise render smooth/plastic. */
+function TexturedMaterial({
+  color,
+  emissiveIntensity,
+  normalMapUrl,
+}: {
+  color: THREE.Color;
+  emissiveIntensity: number;
+  normalMapUrl: string;
+}) {
+  const normalMap = useLoader(THREE.TextureLoader, normalMapUrl);
+  useMemo(() => {
+    normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+    normalMap.colorSpace = THREE.NoColorSpace;
+    normalMap.anisotropy = 4;
+    normalMap.needsUpdate = true;
+  }, [normalMap]);
+  const normalScale = useMemo(() => new THREE.Vector2(0.9, 0.9), []);
+  return (
+    <meshStandardMaterial
+      color={color}
+      emissive="#ffffff"
+      emissiveIntensity={emissiveIntensity}
+      roughness={0.92}
+      metalness={0.04}
+      normalMap={normalMap}
+      normalScale={normalScale}
+      side={THREE.DoubleSide}
+    />
+  );
+}
+
 export interface ShirtDesign {
   area: string;
   url: string;
@@ -193,6 +240,7 @@ export default function Tshirt3DModel({
 }: Tshirt3DModelProps) {
   const { scene } = useGLTF(modelUrl);
   const cfg = VARIANTS[variant] ?? VARIANTS.tshirt;
+  const normalMapUrl = (cfg as { normalMapUrl?: string }).normalMapUrl;
 
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
@@ -202,7 +250,7 @@ export default function Tshirt3DModel({
 
   const emissiveIntensity = useMemo(() => {
     const c = new THREE.Color(color);
-    return c.r > 0.82 && c.g > 0.82 && c.b > 0.82 ? 0.32 : 0;
+    return c.r > 0.82 && c.g > 0.82 && c.b > 0.82 ? 0.12 : 0;
   }, [color]);
 
   const meshes = useMemo(() => {
@@ -288,14 +336,11 @@ export default function Tshirt3DModel({
             castShadow
             receiveShadow
           >
-            <meshStandardMaterial
-              color={shirtColor}
-              emissive="#ffffff"
-              emissiveIntensity={emissiveIntensity}
-              roughness={0.85}
-              metalness={0.05}
-              side={THREE.DoubleSide}
-            />
+            {normalMapUrl ? (
+              <TexturedMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} normalMapUrl={normalMapUrl} />
+            ) : (
+              <ShirtMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} />
+            )}
             {designs.map((d) => {
               const placement = cfg.areas[d.area];
               if (!placement || !d.url || targetFor(d.area) !== mesh) return null;
