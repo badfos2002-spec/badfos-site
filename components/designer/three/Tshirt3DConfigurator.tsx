@@ -61,12 +61,20 @@ export default function Tshirt3DConfigurator() {
             <directionalLight position={[-5, 2, 2]} intensity={0.45} />
             <directionalLight position={[0, 3, -6]} intensity={0.55} />
             <Suspense fallback={null}>
-              <Bounds fit clip observe margin={0.9}>
+              <Bounds fit clip observe margin={1.3}>
                 <Tshirt3DModel color={color} decalUrl={decalUrl} />
               </Bounds>
               <ContactShadows position={[0, -1.05, 0]} opacity={0.4} scale={6} blur={2.6} far={2} />
             </Suspense>
-            <OrbitControls makeDefault enableZoom={false} enablePan={false} enableDamping dampingFactor={0.1} />
+            <OrbitControls
+              makeDefault
+              enableZoom={false}
+              enablePan={false}
+              minPolarAngle={Math.PI / 2}
+              maxPolarAngle={Math.PI / 2}
+              enableDamping
+              dampingFactor={0.1}
+            />
           </Canvas>
           <div className="t3d-note">גררו לסובב · העלו עיצוב</div>
         </div>
