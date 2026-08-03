@@ -124,6 +124,7 @@ export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
                 color={color}
                 roughness={0.85}
                 metalness={0.05}
+                side={THREE.DoubleSide}
               />
               {isBody && decalUrl ? <ShirtDecal decalUrl={decalUrl} /> : null}
             </mesh>
