@@ -163,6 +163,9 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           zIndex: 3,
           opacity: interacted ? 0 : 1,
           transition: 'opacity 0.6s ease',
+          background: 'rgba(12,12,16,0.42)',
+          backdropFilter: 'blur(2px)',
+          WebkitBackdropFilter: 'blur(2px)',
         }}
       >
         <div
@@ -170,11 +173,11 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
             display: 'flex',
             alignItems: 'center',
             gap: 12,
-            background: 'rgba(20,20,20,0.55)',
+            background: 'rgba(20,20,20,0.72)',
             color: '#ffffff',
-            padding: '14px 22px',
+            padding: '16px 26px',
             borderRadius: 18,
-            boxShadow: '0 4px 18px rgba(0,0,0,0.30)',
+            boxShadow: '0 4px 22px rgba(0,0,0,0.35)',
             fontFamily: '"Assistant","Rubik",system-ui,sans-serif',
           }}
         >
