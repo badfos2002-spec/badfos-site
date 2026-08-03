@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react'
 import type { ProductConfig } from '@/lib/types'
 import {
   calculateItemPrice,
@@ -5,7 +6,7 @@ import {
   formatPrice,
   getPriceBreakdown,
 } from '@/lib/pricing'
-import { getLiveQuantityDiscount } from '@/lib/constants'
+import { getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 
 interface PriceSummaryProps {
   config: ProductConfig
@@ -13,6 +14,11 @@ interface PriceSummaryProps {
 
 export default function PriceSummary({ config }: PriceSummaryProps) {
   const { designs, sizes } = config
+
+  // Admin price overrides load async into a module variable; subscribe so the
+  // summary re-renders (with the real base price) the moment they arrive,
+  // instead of showing the ₪37 default until an unrelated change.
+  useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
 
   const breakdown = getPriceBreakdown(config)
   const pricePerUnit = calculateItemPrice(config)

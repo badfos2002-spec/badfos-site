@@ -385,6 +385,8 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
             .map((d) => ({ area: d.area, url: d.imageUrl }))}
           showGuides={currentStep === 3}
           activeArea={activeDesignArea}
+          variant={config.fabricType === 'polo' ? 'polo' : 'tshirt'}
+          modelUrl={config.fabricType === 'polo' ? '/models/polo-web.glb' : '/models/tshirt-web.glb'}
         />
       </div>
     </ThreeErrorBoundary>

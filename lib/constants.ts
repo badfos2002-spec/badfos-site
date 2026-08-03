@@ -475,8 +475,27 @@ type PricingOverrides = {
 
 let _pricingOverrides: PricingOverrides = {}
 
+// Admin price overrides load asynchronously (see PricingLoader). Because the
+// prices above are read from a plain module variable, components that show a
+// price must re-render once the overrides arrive — otherwise they keep showing
+// the hardcoded defaults (e.g. ₪37) until some unrelated state change. These
+// let a component subscribe (via usePricingVersion) and re-render on load.
+let _pricingVersion = 0
+const _pricingListeners = new Set<() => void>()
+
 export function applyPricingOverrides(data: PricingOverrides) {
   _pricingOverrides = data
+  _pricingVersion++
+  _pricingListeners.forEach((fn) => fn())
+}
+
+export function subscribePricing(fn: () => void): () => void {
+  _pricingListeners.add(fn)
+  return () => _pricingListeners.delete(fn)
+}
+
+export function getPricingVersion(): number {
+  return _pricingVersion
 }
 
 // ============================================================================
