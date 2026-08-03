@@ -440,7 +440,7 @@ export default function CapDesignerPage() {
   // 3D preview for the bucket hat (כובע טמבל). The mesh/trucker cap has no
   // model yet → keep the 2D mockup. Any 3D failure falls back to 2D.
   const capColorHex = CAP_COLORS.find(c => c.id === selectedColor)?.hex ?? '#FFFFFF'
-  const capDesigns = designPreviewUrl ? [{ area: 'center', url: designPreviewUrl }] : []
+  const capDesigns = designPreviewUrl ? [{ area: selectedArea, url: designPreviewUrl }] : []
   const use3DCap = selectedType !== 'mesh'
   // A JSX element (NOT a component) so React keeps the same Preview3DStage
   // instance across re-renders — otherwise the scene reloads and the one-time
@@ -452,7 +452,7 @@ export default function CapDesignerPage() {
           colorHex={capColorHex}
           designs={capDesigns}
           showGuides={currentStep === 3}
-          activeArea="center"
+          activeArea={currentStep === 3 ? selectedArea : undefined}
           variant="cap"
           modelUrl="/models/cap-web.glb"
         />

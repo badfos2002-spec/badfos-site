@@ -77,11 +77,13 @@ const OVERSIZED_GUIDES: Record<string, GuideBox> = {
 // CAP (bucket hat) — one low-poly mesh. Y is up, the round brim is in the XZ
 // plane; a single front logo projects +z onto the crown (local z up to 1.0).
 const CAP_AREAS: Record<string, Placement> = {
-  center: { position: [0, 0.15, 0.55], rotation: [0, 0, 0], size: 0.6, depth: 0.9 },
-  front_full: { position: [0, 0.15, 0.55], rotation: [0, 0, 0], size: 0.6, depth: 0.9 },
+  center: { position: [0, 0.2, 0.55], rotation: [0, 0, 0], size: 0.36, depth: 0.9 },
+  center_wide: { position: [0, 0.1, 0.55], rotation: [0, 0, 0], size: 0.62, depth: 0.9 },
+  front_full: { position: [0, 0.2, 0.55], rotation: [0, 0, 0], size: 0.36, depth: 0.9 },
 };
 const CAP_GUIDES: Record<string, GuideBox> = {
-  center: { w: 0.62, h: 0.26, label: 'קדמי' },
+  center: { w: 0.36, h: 0.34, label: 'קדמי' },
+  center_wide: { w: 0.62, h: 0.26, label: 'קדמי רוחבי' },
 };
 
 const VARIANTS = {
@@ -94,6 +96,7 @@ const VARIANTS = {
     panels: false,
     normalMapUrl: '/models/tex/cap-normal.png',
     roughMapUrl: '/models/tex/cap-rough.png',
+    singleArea: true, // areas are mutually exclusive → show only the active one
   },
 } as const;
 
@@ -254,6 +257,7 @@ export default function Tshirt3DModel({
   const cfg = VARIANTS[variant] ?? VARIANTS.tshirt;
   const normalMapUrl = (cfg as { normalMapUrl?: string }).normalMapUrl;
   const roughMapUrl = (cfg as { roughMapUrl?: string }).roughMapUrl;
+  const singleArea = (cfg as { singleArea?: boolean }).singleArea;
 
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
@@ -366,7 +370,13 @@ export default function Tshirt3DModel({
             })}
             {showGuides
               ? guideAreas
-                  .filter((a) => !uploaded.has(a) && cfg.areas[a] && targetFor(a) === mesh)
+                  .filter(
+                    (a) =>
+                      !uploaded.has(a) &&
+                      cfg.areas[a] &&
+                      targetFor(a) === mesh &&
+                      (!singleArea || a === activeArea)
+                  )
                   .map((a) => (
                     <GuideDecal key={`guide-${a}`} placement={cfg.areas[a]} box={cfg.guides[a]} active={a === activeArea} />
                   ))
