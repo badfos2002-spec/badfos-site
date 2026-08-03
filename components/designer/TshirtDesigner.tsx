@@ -6,6 +6,7 @@ import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import type { ProductConfig, SizeQuantity, DesignArea } from '@/lib/types'
 import ThreeErrorBoundary from './three/ThreeErrorBoundary'
+import DesignAreaSchematic from './three/DesignAreaSchematic'
 import StepIndicator from './StepIndicator'
 import ShirtTypeStep from './ShirtTypeStep'
 import ColorStep from './ColorStep'
@@ -376,16 +377,23 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   // In 3D mode, show the live 3D shirt; any 3D failure cleanly falls back to
   // the static 2D mockup via the error boundary. Otherwise keep the 2D preview.
   const mockupElement = use3DPreview ? (
-    <ThreeErrorBoundary fallback={static2D}>
-      <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
-        <Preview3DStage
-          colorHex={shirtHex}
-          designs={(config.designs || [])
-            .filter((d) => d.imageUrl)
-            .map((d) => ({ area: d.area, url: d.imageUrl }))}
-        />
-      </div>
-    </ThreeErrorBoundary>
+    <div>
+      <ThreeErrorBoundary fallback={static2D}>
+        <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+          <Preview3DStage
+            colorHex={shirtHex}
+            designs={(config.designs || [])
+              .filter((d) => d.imageUrl)
+              .map((d) => ({ area: d.area, url: d.imageUrl }))}
+          />
+        </div>
+      </ThreeErrorBoundary>
+      {/* Illustration-only area map below the shirt — always visible. */}
+      <DesignAreaSchematic
+        uploadedAreas={new Set((config.designs || []).filter((d) => d.imageUrl).map((d) => d.area))}
+        activeArea={activeDesignArea}
+      />
+    </div>
   ) : static2D
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
