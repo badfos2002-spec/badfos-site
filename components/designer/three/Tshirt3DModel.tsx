@@ -79,6 +79,15 @@ interface Tshirt3DModelProps {
 export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
   const { scene } = useGLTF('/models/tshirt-web.glb');
 
+  // Pure black (#000000) on a matte fabric shows no folds/shading — it collapses
+  // into a flat silhouette. Lift ONLY near-black colors to a dark charcoal so the
+  // form stays visible; every other color is passed through untouched.
+  const shirtColor = useMemo(() => {
+    const c = new THREE.Color(color);
+    if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.11, 0.115, 0.125);
+    return c;
+  }, [color]);
+
   // Clone the scene and collect every mesh, sorted by vertex count desc.
   // The largest mesh is the shirt body (it receives the decal).
   const meshes = useMemo(() => {
