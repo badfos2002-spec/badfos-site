@@ -105,6 +105,7 @@ const HOODIE_GUIDES: Record<string, GuideBox> = {
 
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
+  sweatshirt: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   hoodie: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   ziphoodie: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   polo: { areas: POLO_AREAS, guides: POLO_GUIDES, panels: true },
@@ -411,5 +412,6 @@ useGLTF.preload('/models/tshirt-web.glb');
 useGLTF.preload('/models/polo-web.glb');
 useGLTF.preload('/models/oversized-web.glb');
 useGLTF.preload('/models/cap-web.glb');
+useGLTF.preload('/models/sweatshirt-web.glb');
 useGLTF.preload('/models/hoodie-web.glb');
 useGLTF.preload('/models/ziphoodie-web.glb');
