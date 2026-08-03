@@ -96,7 +96,7 @@ export const TSHIRT_COLORS = [
   { id: 'gray', name: 'אפור', hex: '#9CA3AF' },
   { id: 'red', name: 'אדום', hex: '#A81C22' },
   { id: 'navy', name: 'נייבי', hex: '#1D2E50' },
-  { id: 'beige', name: 'בז׳', hex: '#F3EAC4' },
+  { id: 'beige', name: 'בז׳', hex: '#F4E7B6' },
   { id: 'burgundy', name: 'בורדו', hex: '#6E2A48' },
   { id: 'olive', name: 'זית', hex: '#6B7245' },
 ] as const

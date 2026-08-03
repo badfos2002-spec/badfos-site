@@ -84,7 +84,7 @@ export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
   // form stays visible; every other color is passed through untouched.
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
-    if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.165, 0.17, 0.18);
+    if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.195, 0.2, 0.21);
     return c;
   }, [color]);
 
