@@ -81,7 +81,7 @@ const CAP_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.15, 0.55], rotation: [0, 0, 0], size: 0.6, depth: 0.9 },
 };
 const CAP_GUIDES: Record<string, GuideBox> = {
-  center: { w: 0.52, h: 0.42, label: 'קדמי' },
+  center: { w: 0.62, h: 0.26, label: 'קדמי' },
 };
 
 const VARIANTS = {
