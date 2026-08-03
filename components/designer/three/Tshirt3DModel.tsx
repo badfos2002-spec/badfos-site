@@ -182,6 +182,15 @@ export default function Tshirt3DModel({ color, designs, showGuides, activeArea }
     return c;
   }, [color]);
 
+  // A white shirt reads grey under the studio shading. For near-white colors
+  // ONLY, add a white self-illumination so the shaded folds lift back toward
+  // white (a "brightness" boost); every other color is left untouched.
+  const emissiveIntensity = useMemo(() => {
+    const c = new THREE.Color(color);
+    const isNearWhite = c.r > 0.82 && c.g > 0.82 && c.b > 0.82;
+    return isNearWhite ? 0.32 : 0;
+  }, [color]);
+
   const meshes = useMemo(() => {
     const cloned = scene.clone(true);
     const collected: THREE.Mesh[] = [];
@@ -216,6 +225,8 @@ export default function Tshirt3DModel({ color, designs, showGuides, activeArea }
             >
               <meshStandardMaterial
                 color={shirtColor}
+                emissive="#ffffff"
+                emissiveIntensity={emissiveIntensity}
                 roughness={0.85}
                 metalness={0.05}
                 side={THREE.DoubleSide}
