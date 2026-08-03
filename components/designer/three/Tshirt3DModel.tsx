@@ -57,9 +57,27 @@ const POLO_GUIDES: Record<string, GuideBox> = {
   chest_logo_right: { w: 0.2, h: 0.2, label: 'סמל ימין' },
 };
 
+// OVERSIZED — one wide body mesh (local x ∈ [-1,1], front +z). Like the tshirt
+// but baggier, so artwork sits a touch lower/larger and logos spread wider.
+const OVERSIZED_AREAS: Record<string, Placement> = {
+  front_full: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.66, depth: 0.55 },
+  back: { position: [0, 0.11, -0.3], rotation: [0, Math.PI, 0], size: 0.74, depth: 0.55 },
+  chest_logo: { position: [-0.3, 0.52, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
+  chest_logo_right: { position: [0.3, 0.52, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
+  center: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.66, depth: 0.55 },
+  center_wide: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.78, depth: 0.55 },
+};
+const OVERSIZED_GUIDES: Record<string, GuideBox> = {
+  front_full: { w: 0.54, h: 0.64, label: 'קדמי מלא' },
+  back: { w: 0.6, h: 0.74, label: 'גב' },
+  chest_logo: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
+  chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל ימין' },
+};
+
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   polo: { areas: POLO_AREAS, guides: POLO_GUIDES, panels: true },
+  oversized: { areas: OVERSIZED_AREAS, guides: OVERSIZED_GUIDES, panels: false },
 } as const;
 
 export type ShirtVariant = keyof typeof VARIANTS;
@@ -288,3 +306,4 @@ export default function Tshirt3DModel({
 
 useGLTF.preload('/models/tshirt-web.glb');
 useGLTF.preload('/models/polo-web.glb');
+useGLTF.preload('/models/oversized-web.glb');

@@ -311,6 +311,15 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
 
   const shirtHex = TSHIRT_COLORS.find(c => c.id === config.color)?.hex ?? '#000000'
 
+  // Which 3D model each fabric shows (cotton & dri-fit use the regular tshirt).
+  const model3d = ({
+    polo: { variant: 'polo' as const, url: '/models/polo-web.glb' },
+    oversized: { variant: 'oversized' as const, url: '/models/oversized-web.glb' },
+  } as Record<string, { variant: 'tshirt' | 'polo' | 'oversized'; url: string }>)[config.fabricType || ''] ?? {
+    variant: 'tshirt' as const,
+    url: '/models/tshirt-web.glb',
+  }
+
   const mockupDesigns = config.designs || []
   const tshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
   const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
@@ -385,8 +394,8 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
             .map((d) => ({ area: d.area, url: d.imageUrl }))}
           showGuides={currentStep === 3}
           activeArea={activeDesignArea}
-          variant={config.fabricType === 'polo' ? 'polo' : 'tshirt'}
-          modelUrl={config.fabricType === 'polo' ? '/models/polo-web.glb' : '/models/tshirt-web.glb'}
+          variant={model3d.variant}
+          modelUrl={model3d.url}
         />
       </div>
     </ThreeErrorBoundary>
@@ -475,20 +484,18 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
 
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
-          {/* Step 3 (design): mockup ABOVE step content so user sees preview */}
-          {currentStep === 3 && (
-            <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
-              <div className="relative mx-auto max-w-sm">
-                {mockupElement}
-                {config.designs && config.designs.length > 0 && (
-                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    ✓ {config.designs.length} עיצובים
-                  </span>
-                )}
-              </div>
-              <ViewTabs />
+          {/* 3D preview always on top on mobile — it is the focus */}
+          <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
+            <div className="relative mx-auto max-w-sm">
+              {mockupElement}
+              {config.designs && config.designs.length > 0 && (
+                <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  ✓ {config.designs.length} עיצובים
+                </span>
+              )}
             </div>
-          )}
+            <ViewTabs />
+          </div>
 
           {/* Step content card */}
           <div className="rounded-xl border bg-white border-yellow-200 shadow-sm">
@@ -500,21 +507,6 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
               {stepContent}
             </div>
           </div>
-
-          {/* Steps 1,2,4: mockup BELOW step content */}
-          {currentStep !== 3 && (
-            <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
-              <div className="relative mx-auto max-w-sm">
-                {mockupElement}
-                {config.designs && config.designs.length > 0 && (
-                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    ✓ {config.designs.length} עיצובים
-                  </span>
-                )}
-              </div>
-              <ViewTabs />
-            </div>
-          )}
 
           {/* Price summary on mobile */}
           <PriceSummary config={config as ProductConfig} />
