@@ -74,10 +74,21 @@ const OVERSIZED_GUIDES: Record<string, GuideBox> = {
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל ימין' },
 };
 
+// CAP (bucket hat) — one low-poly mesh. Y is up, the round brim is in the XZ
+// plane; a single front logo projects +z onto the crown (local z up to 1.0).
+const CAP_AREAS: Record<string, Placement> = {
+  center: { position: [0, 0.15, 0.55], rotation: [0, 0, 0], size: 0.6, depth: 0.9 },
+  front_full: { position: [0, 0.15, 0.55], rotation: [0, 0, 0], size: 0.6, depth: 0.9 },
+};
+const CAP_GUIDES: Record<string, GuideBox> = {
+  center: { w: 0.52, h: 0.42, label: 'קדמי' },
+};
+
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   polo: { areas: POLO_AREAS, guides: POLO_GUIDES, panels: true },
   oversized: { areas: OVERSIZED_AREAS, guides: OVERSIZED_GUIDES, panels: false },
+  cap: { areas: CAP_AREAS, guides: CAP_GUIDES, panels: false },
 } as const;
 
 export type ShirtVariant = keyof typeof VARIANTS;
@@ -307,3 +318,4 @@ export default function Tshirt3DModel({
 useGLTF.preload('/models/tshirt-web.glb');
 useGLTF.preload('/models/polo-web.glb');
 useGLTF.preload('/models/oversized-web.glb');
+useGLTF.preload('/models/cap-web.glb');

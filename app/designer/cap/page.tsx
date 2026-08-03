@@ -13,6 +13,10 @@ import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
+import nextDynamic from 'next/dynamic'
+import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
+
+const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
 
 const stepConfig = [
   { title: 'בחר סוג כובע', icon: Shirt },
@@ -429,6 +433,29 @@ export default function CapDesignerPage() {
     </div>
   )
 
+  // 3D preview for the bucket hat (כובע טמבל). The mesh/trucker cap has no
+  // model yet → keep the 2D mockup. Any 3D failure falls back to 2D.
+  const capColorHex = CAP_COLORS.find(c => c.id === selectedColor)?.hex ?? '#FFFFFF'
+  const capDesigns = designPreviewUrl ? [{ area: 'center', url: designPreviewUrl }] : []
+  const use3DCap = selectedType !== 'mesh'
+  const PreviewElement = () =>
+    use3DCap ? (
+      <ThreeErrorBoundary fallback={<MockupImage />}>
+        <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+          <Preview3DStage
+            colorHex={capColorHex}
+            designs={capDesigns}
+            showGuides={currentStep === 3}
+            activeArea="center"
+            variant="cap"
+            modelUrl="/models/cap-web.glb"
+          />
+        </div>
+      </ThreeErrorBoundary>
+    ) : (
+      <MockupImage />
+    )
+
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
       <Button
@@ -515,7 +542,7 @@ export default function CapDesignerPage() {
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
-              <MockupImage />
+              <PreviewElement />
               {designFile && (
                 <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   ✓ עיצוב הועלה
@@ -570,7 +597,7 @@ export default function CapDesignerPage() {
               </div>
               <div className="p-6 pt-0">
                 <div className="relative mx-auto max-w-md">
-                  <MockupImage />
+                  <PreviewElement />
                 </div>
               </div>
             </div>
