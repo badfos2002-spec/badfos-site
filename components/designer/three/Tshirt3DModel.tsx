@@ -85,7 +85,16 @@ export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
     const cloned = scene.clone(true);
     const collected: THREE.Mesh[] = [];
     cloned.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) collected.push(obj as THREE.Mesh);
+      if ((obj as THREE.Mesh).isMesh) {
+        const m = obj as THREE.Mesh;
+        // Recompute smooth vertex normals — the CLO model's baked/quantized
+        // normals produce a strange diagonal "weave" on flat colors. Averaging
+        // fresh normals from the geometry gives a clean, smooth fabric surface.
+        m.geometry = m.geometry.clone();
+        m.geometry.deleteAttribute('normal');
+        m.geometry.computeVertexNormals();
+        collected.push(m);
+      }
     });
     collected.sort(
       (a, b) =>
@@ -120,8 +129,8 @@ export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
             >
               <meshStandardMaterial
                 color={color}
-                roughness={0.82}
-                metalness={0.05}
+                roughness={1}
+                metalness={0}
               />
               {isBody && decalUrl ? <ShirtDecal decalUrl={decalUrl} /> : null}
             </mesh>

@@ -55,18 +55,18 @@ export default function Tshirt3DConfigurator() {
             gl={{ preserveDrawingBuffer: true, antialias: true }}
           >
             <color attach="background" args={['#f2f0e9']} />
-            <ambientLight intensity={0.55} />
-            <hemisphereLight args={['#ffffff', '#b7ae99', 0.55]} />
-            <directionalLight position={[4, 6, 5]} intensity={1.35} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
-            <directionalLight position={[-5, 2, 2]} intensity={0.5} />
-            <directionalLight position={[0, 3, -6]} intensity={0.7} />
+            <ambientLight intensity={0.75} />
+            <hemisphereLight args={['#ffffff', '#c3bba6', 0.6]} />
+            <directionalLight position={[4, 6, 5]} intensity={1.0} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+            <directionalLight position={[-5, 2, 2]} intensity={0.45} />
+            <directionalLight position={[0, 3, -6]} intensity={0.55} />
             <Suspense fallback={null}>
               <Bounds fit clip observe margin={0.9}>
                 <Tshirt3DModel color={color} decalUrl={decalUrl} />
               </Bounds>
               <ContactShadows position={[0, -1.05, 0]} opacity={0.4} scale={6} blur={2.6} far={2} />
             </Suspense>
-            <OrbitControls makeDefault enablePan={false} enableDamping dampingFactor={0.1} />
+            <OrbitControls makeDefault enableZoom={false} enablePan={false} enableDamping dampingFactor={0.1} />
           </Canvas>
           <div className="t3d-note">גררו לסובב · העלו עיצוב</div>
         </div>
