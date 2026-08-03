@@ -88,7 +88,13 @@ const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   polo: { areas: POLO_AREAS, guides: POLO_GUIDES, panels: true },
   oversized: { areas: OVERSIZED_AREAS, guides: OVERSIZED_GUIDES, panels: false },
-  cap: { areas: CAP_AREAS, guides: CAP_GUIDES, panels: false, normalMapUrl: '/models/tex/cap-normal.png' },
+  cap: {
+    areas: CAP_AREAS,
+    guides: CAP_GUIDES,
+    panels: false,
+    normalMapUrl: '/models/tex/cap-normal.png',
+    roughMapUrl: '/models/tex/cap-rough.png',
+  },
 } as const;
 
 export type ShirtVariant = keyof typeof VARIANTS;
@@ -189,28 +195,34 @@ function TexturedMaterial({
   color,
   emissiveIntensity,
   normalMapUrl,
+  roughMapUrl,
 }: {
   color: THREE.Color;
   emissiveIntensity: number;
   normalMapUrl: string;
+  roughMapUrl: string;
 }) {
-  const normalMap = useLoader(THREE.TextureLoader, normalMapUrl);
+  const [normalMap, roughMap] = useLoader(THREE.TextureLoader, [normalMapUrl, roughMapUrl]);
   useMemo(() => {
-    normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
-    normalMap.colorSpace = THREE.NoColorSpace;
-    normalMap.anisotropy = 4;
-    normalMap.needsUpdate = true;
-  }, [normalMap]);
-  const normalScale = useMemo(() => new THREE.Vector2(0.9, 0.9), []);
+    [normalMap, roughMap].forEach((t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.flipY = false; // match glTF UV origin (top-left)
+      t.colorSpace = THREE.NoColorSpace;
+      t.anisotropy = 4;
+      t.needsUpdate = true;
+    });
+  }, [normalMap, roughMap]);
+  const normalScale = useMemo(() => new THREE.Vector2(1.3, 1.3), []);
   return (
     <meshStandardMaterial
       color={color}
       emissive="#ffffff"
       emissiveIntensity={emissiveIntensity}
-      roughness={0.92}
+      roughness={1}
       metalness={0.04}
       normalMap={normalMap}
       normalScale={normalScale}
+      roughnessMap={roughMap}
       side={THREE.DoubleSide}
     />
   );
@@ -241,6 +253,7 @@ export default function Tshirt3DModel({
   const { scene } = useGLTF(modelUrl);
   const cfg = VARIANTS[variant] ?? VARIANTS.tshirt;
   const normalMapUrl = (cfg as { normalMapUrl?: string }).normalMapUrl;
+  const roughMapUrl = (cfg as { roughMapUrl?: string }).roughMapUrl;
 
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
@@ -336,8 +349,13 @@ export default function Tshirt3DModel({
             castShadow
             receiveShadow
           >
-            {normalMapUrl ? (
-              <TexturedMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} normalMapUrl={normalMapUrl} />
+            {normalMapUrl && roughMapUrl ? (
+              <TexturedMaterial
+                color={shirtColor}
+                emissiveIntensity={emissiveIntensity}
+                normalMapUrl={normalMapUrl}
+                roughMapUrl={roughMapUrl}
+              />
             ) : (
               <ShirtMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} />
             )}

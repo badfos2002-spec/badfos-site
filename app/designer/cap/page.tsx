@@ -15,8 +15,12 @@ import type { DesignAreaType } from '@/lib/types'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
+import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
 
-const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
+const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Preview3DStage'), {
+  ssr: false,
+  loading: () => <Preview3DLoading />,
+})
 
 const stepConfig = [
   { title: 'בחר סוג כובע', icon: Shirt },

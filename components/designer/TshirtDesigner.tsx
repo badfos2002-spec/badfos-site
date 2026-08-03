@@ -6,6 +6,7 @@ import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import type { ProductConfig, SizeQuantity, DesignArea } from '@/lib/types'
 import ThreeErrorBoundary from './three/ThreeErrorBoundary'
+import Preview3DLoading from './three/Preview3DLoading'
 import StepIndicator from './StepIndicator'
 import ShirtTypeStep from './ShirtTypeStep'
 import ColorStep from './ColorStep'
@@ -23,9 +24,7 @@ import { FABRIC_COLOR_FILTER, TSHIRT_COLORS } from '@/lib/constants'
 // that falls back to the static 2D mockup.
 const Preview3DStage = dynamic(() => import('./three/Preview3DStage'), {
   ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center text-gray-400">טוען תצוגה תלת-מימדית…</div>
-  ),
+  loading: () => <Preview3DLoading />,
 })
 
 /** Convert blob URL to base64 so it survives localStorage persistence.
