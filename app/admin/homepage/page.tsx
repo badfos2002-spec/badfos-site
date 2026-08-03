@@ -11,12 +11,12 @@ import { db } from '@/lib/firebase'
 const HOMEPAGE_DEFAULTS: Record<string, string> = {
   // Hero
   hero_badge: 'עיצובים אישיים ייחודיים',
-  hero_title1: 'הפוך את הרעיונות שלך',
-  hero_title2: 'לחולצות מדהימות',
+  hero_title1: 'הפכו את הרעיונות שלכם',
+  hero_title2: 'לבגדים מדהימים',
   hero_subtitle: 'דיוק • איכות • מיתוג',
   hero_desc1: 'במקום אחד - העלה תמונה, בחר עיצוב, וקבל',
   hero_desc2: 'חולצה איכותית עם הדיזיין האישי שלך.',
-  hero_ctaText: 'לעיצוב חולצה',
+  hero_ctaText: 'התחילו לעצב',
   // Why Choose
   why_title: 'למה לבחור בנו?',
   why_subtitle: 'הכנסה לחשבון, עיצוב חולצה ותפוקה — כל זה מיידי ויעיל ביותר',

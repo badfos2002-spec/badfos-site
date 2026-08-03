@@ -159,7 +159,7 @@ export default function LandingPage() {
               <div className={`flex justify-center justify-center flex-wrap gap-4 sm:gap-5 mb-6 transition-all duration-700 delay-300 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
                 <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium"><span aria-hidden="true">✅</span> 500+ לקוחות</div>
                 <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium">
-                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" aria-hidden="true" /> 4.8 בגוגל
+                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" aria-hidden="true" /> 5 בגוגל
                 </div>
                 <div className="flex items-center gap-1.5 text-white/55 text-xs sm:text-sm font-medium"><span aria-hidden="true">🛡️</span> ערבות איכות</div>
               </div>
@@ -192,7 +192,7 @@ export default function LandingPage() {
               <Star key={i} className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 fill-yellow-400 drop-shadow-sm" aria-hidden="true" />
             ))}
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mb-0.5">4.8 מתוך 5</p>
+          <p className="text-2xl sm:text-3xl font-black text-gray-900 mb-0.5">5 מתוך 5</p>
           <p className="text-base text-gray-500">30+ ביקורות מאומתות בגוגל</p>
           <div className="flex items-center justify-center gap-2 mt-2">
             <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -276,7 +276,7 @@ export default function LandingPage() {
 
             <div className="flex items-center justify-center gap-1 pt-1">
               {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" aria-hidden="true" />)}
-              <span className="text-gray-400 text-xs mr-1.5">4.8 מתוך 5 | 30+ ביקורות בגוגל</span>
+              <span className="text-gray-400 text-xs mr-1.5">5 מתוך 5 | 30+ ביקורות בגוגל</span>
             </div>
 
             <button type="submit" disabled={status === 'loading'}

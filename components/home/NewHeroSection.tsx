@@ -12,12 +12,12 @@ import { useTilt } from '@/components/common/useTilt'
 
 const D = {
   hero_badge: 'עיצובים אישיים ייחודיים',
-  hero_title1: 'הפוך את הרעיונות שלך',
-  hero_title2: 'לחולצות מדהימות',
+  hero_title1: 'הפכו את הרעיונות שלכם',
+  hero_title2: 'לבגדים מדהימים',
   hero_subtitle: 'דיוק • איכות • מיתוג',
   hero_desc1: 'במקום אחד - העלה תמונה, בחר עיצוב, וקבל',
   hero_desc2: 'חולצה איכותית עם הדיזיין האישי שלך.',
-  hero_ctaText: 'לעיצוב חולצה',
+  hero_ctaText: 'התחילו לעצב',
 }
 
 export default function NewHeroSection() {
@@ -136,7 +136,7 @@ export default function NewHeroSection() {
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/70 backdrop-blur-sm rounded-full border border-[#fde047]/70 shadow-sm">
                 <Star className="w-4 h-4 text-[#f59e0b] fill-[#f59e0b]" />
-                דירוג 4.8
+                דירוג 5
               </span>
             </div>
 
@@ -149,7 +149,7 @@ export default function NewHeroSection() {
                   </div>
                 ))}
               </div>
-              <span>4.8 מתוך 5 | 30+ ביקורות מאומתות בגוגל</span>
+              <span>5 מתוך 5 | 30+ ביקורות מאומתות בגוגל</span>
             </div>
           </div>
 
