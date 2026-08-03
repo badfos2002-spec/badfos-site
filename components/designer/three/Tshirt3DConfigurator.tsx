@@ -18,7 +18,7 @@ const COLORS: { name: string; hex: string }[] = [
 ];
 
 export default function Tshirt3DConfigurator() {
-  const [color, setColor] = useState('#ffffff');
+  const [color, setColor] = useState('#17181A');
   const [decalUrl, setDecalUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
