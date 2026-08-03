@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { useGLTF, Decal, Center } from '@react-three/drei';
+import { useGLTF, Decal } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
 
 /* ------------------------------------------------------------------ *
@@ -212,9 +212,29 @@ export default function Tshirt3DModel({
   const uploaded = useMemo(() => new Set(designs.filter((d) => d.url).map((d) => d.area)), [designs]);
   const guideAreas = Object.keys(cfg.guides);
 
+  // Normalize every model to a consistent size + centre it, using PROPS (not an
+  // effect like <Center>), so <Bounds> measures the real framed object on its
+  // first render. The tshirt is ~0.7 units, the polo ~76 — this evens them out.
+  const { normScale, center } = useMemo(() => {
+    const box = new THREE.Box3();
+    const tmp = new THREE.Box3();
+    meshes.forEach((m) => {
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      m.updateMatrix();
+      tmp.copy(m.geometry.boundingBox as THREE.Box3).applyMatrix4(m.matrix);
+      box.union(tmp);
+    });
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const c = new THREE.Vector3();
+    box.getCenter(c);
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    return { normScale: 2.0 / maxDim, center: c };
+  }, [meshes]);
+
   return (
-    <group scale={MODEL.scale} rotation={MODEL.rotation} position={MODEL.position}>
-      <Center>
+    <group scale={normScale * MODEL.scale} rotation={MODEL.rotation}>
+      <group position={[-center.x, -center.y, -center.z]}>
         {meshes.map((mesh, i) => (
           <mesh
             key={mesh.uuid ?? i}
@@ -247,7 +267,7 @@ export default function Tshirt3DModel({
               : null}
           </mesh>
         ))}
-      </Center>
+      </group>
     </group>
   );
 }
