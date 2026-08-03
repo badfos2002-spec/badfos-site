@@ -73,6 +73,29 @@ export default function Preview3DStage({ colorHex, designs }: Preview3DStageProp
           dampingFactor={0.1}
         />
       </Canvas>
+
+      {/* 360° badge — centered on the branded background, top of the stage. */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 18,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+          zIndex: 2,
+        }}
+      >
+        <svg viewBox="0 0 40 34" width="52" height="44" fill="none">
+          <text x="19" y="15" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontSize="15" fontWeight="800" fill="#141414">360°</text>
+          <path d="M5 21 C5 25 11.3 28 19 28 C26.7 28 33 25 33 21" stroke="#141414" strokeWidth="2.6" strokeLinecap="round" />
+          <path d="M5 21 C5 17.7 9 15.2 14.5 14.1" stroke="#141414" strokeWidth="2.6" strokeLinecap="round" />
+          <path d="M33 21 C33 18.4 29.4 16.2 24.4 15.1" stroke="#141414" strokeWidth="2.6" strokeLinecap="round" />
+          <path d="M28 12 l5 2.8 -2.8 5" stroke="#141414" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
     </div>
   );
 }

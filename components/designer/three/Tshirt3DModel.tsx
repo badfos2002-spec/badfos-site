@@ -33,13 +33,17 @@ type Placement = {
   scale: [number, number, number] | number;
 };
 
+// Values are in the body geometry's normalized local space:
+// x ∈ [-0.8,0.8] (width), y ∈ [-1,1] (height, +y=up/shoulders), z ∈ [-0.4,0.4]
+// (+z = front / camera side). The scale is the projector box [w,h,depth]; a
+// generous depth ensures the box straddles the curved fabric surface.
 const AREA_DECALS: Record<string, Placement> = {
-  front_full: { position: [0, 0.05, 0.15], rotation: [0, 0, 0], scale: 0.25 },
-  back: { position: [0, 0.05, -0.15], rotation: [0, Math.PI, 0], scale: 0.25 },
-  chest_logo: { position: [-0.07, 0.13, 0.15], rotation: [0, 0, 0], scale: 0.09 },
-  chest_logo_right: { position: [0.07, 0.13, 0.15], rotation: [0, 0, 0], scale: 0.09 },
-  center: { position: [0, 0.05, 0.15], rotation: [0, 0, 0], scale: 0.25 },
-  center_wide: { position: [0, 0.05, 0.15], rotation: [0, 0, 0], scale: 0.28 },
+  front_full: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], scale: [0.58, 0.64, 0.55] },
+  back: { position: [0, 0.28, -0.3], rotation: [0, Math.PI, 0], scale: [0.58, 0.64, 0.55] },
+  chest_logo: { position: [-0.22, 0.46, 0.28], rotation: [0, 0, 0], scale: [0.16, 0.16, 0.45] },
+  chest_logo_right: { position: [0.22, 0.46, 0.28], rotation: [0, 0, 0], scale: [0.16, 0.16, 0.45] },
+  center: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], scale: [0.58, 0.64, 0.55] },
+  center_wide: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], scale: [0.72, 0.52, 0.55] },
 };
 
 /* ------------------------------------------------------------------ */
