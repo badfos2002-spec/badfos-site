@@ -5,14 +5,15 @@ import { Canvas } from '@react-three/fiber';
 import {
   OrbitControls,
   ContactShadows,
+  Bounds,
   Loader,
 } from '@react-three/drei';
 import Tshirt3DModel from './Tshirt3DModel';
 
 const GOLD = '#FFC32E';
 
-// Camera position is tunable — nudge to frame the shirt nicely.
-const CAMERA = { position: [0, 0.1, 2.6] as [number, number, number], fov: 35 };
+// Camera position is tunable — Bounds auto-fits, this sets the viewing angle.
+const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
 
 const COLORS: { name: string; hex: string }[] = [
   { name: 'לבן', hex: '#FFFFFF' },
@@ -57,22 +58,22 @@ export default function Tshirt3DConfigurator() {
           <directionalLight position={[-5, 2, 2]} intensity={0.5} />
           <directionalLight position={[0, 3, -6]} intensity={0.7} />
           <Suspense fallback={null}>
-            <Tshirt3DModel color={color} decalUrl={decalUrl} />
+            <Bounds fit clip observe margin={1.15}>
+              <Tshirt3DModel color={color} decalUrl={decalUrl} />
+            </Bounds>
             <ContactShadows
-              position={[0, -0.9, 0]}
-              opacity={0.5}
-              scale={5}
-              blur={2.4}
+              position={[0, -1.05, 0]}
+              opacity={0.45}
+              scale={6}
+              blur={2.6}
               far={2}
             />
           </Suspense>
           <OrbitControls
-            autoRotate
-            autoRotateSpeed={1.1}
+            makeDefault
             enablePan={false}
-            minDistance={1.6}
-            maxDistance={4}
             enableDamping
+            dampingFactor={0.1}
           />
         </Canvas>
 
