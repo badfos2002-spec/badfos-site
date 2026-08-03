@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { useGLTF, Decal, Center } from '@react-three/drei';
+import { useGLTF, Decal, Center, useTexture } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
 
 /* ------------------------------------------------------------------ *
@@ -79,6 +79,23 @@ interface Tshirt3DModelProps {
 export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
   const { scene } = useGLTF('/models/tshirt-web.glb');
 
+  // Fabric maps (real woven-cotton detail from the model's textures).
+  // normalMap makes light play on the weave — so white/black read as real
+  // fabric, and the chosen color sits on the weave like a Photoshop Multiply.
+  const [normalMap, roughnessMap] = useTexture([
+    '/models/tex/tshirt_normal.png',
+    '/models/tex/tshirt_roughness.png',
+  ]);
+  useMemo(() => {
+    [normalMap, roughnessMap].forEach((t) => {
+      if (!t) return;
+      t.flipY = false; // match the glTF UV convention
+      t.colorSpace = THREE.NoColorSpace;
+      t.anisotropy = 8;
+      t.needsUpdate = true;
+    });
+  }, [normalMap, roughnessMap]);
+
   // Clone the scene and collect every mesh, sorted by vertex count desc.
   // The largest mesh is the shirt body (it receives the decal).
   const meshes = useMemo(() => {
@@ -122,8 +139,10 @@ export default function Tshirt3DModel({ color, decalUrl }: Tshirt3DModelProps) {
             >
               <meshStandardMaterial
                 color={color}
-                roughness={0.85}
-                metalness={0.05}
+                normalMap={normalMap}
+                roughnessMap={roughnessMap}
+                roughness={1}
+                metalness={0}
                 side={THREE.DoubleSide}
               />
               {isBody && decalUrl ? <ShirtDecal decalUrl={decalUrl} /> : null}
