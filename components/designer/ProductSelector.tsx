@@ -1,7 +1,23 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { PRODUCT_CATEGORIES } from '@/lib/constants'
+
+// Warm the 3D model into the browser cache when a category is hovered/tapped,
+// so the designer opens with the model ready (no loader needed).
+const MODEL_BY_CATEGORY: Record<string, string> = {
+  tshirt: '/models/tshirt-web.glb',
+  cap: '/models/cap-web.glb',
+}
+const warmed = new Set<string>()
+function warmModel(id: string) {
+  const url = MODEL_BY_CATEGORY[id]
+  if (!url || warmed.has(url)) return
+  warmed.add(url)
+  fetch(url).catch(() => {})
+}
 
 const categoryDetails: Record<string, { title: string; description: string; image?: string }> = {
   tshirt: {
@@ -49,6 +65,9 @@ export default function ProductSelector() {
             key={category.id}
             href={isComingSoon ? '#' : `/designer/${category.id}`}
             className={isComingSoon ? 'pointer-events-none' : ''}
+            onMouseEnter={() => warmModel(category.id)}
+            onTouchStart={() => warmModel(category.id)}
+            onClick={() => warmModel(category.id)}
           >
             <Card
               className={`${category.color} border-2 rounded-xl hover:shadow-xl transition-all hover:scale-105 relative overflow-hidden h-[382px] flex flex-col ${

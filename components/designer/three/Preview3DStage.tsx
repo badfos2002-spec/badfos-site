@@ -3,9 +3,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { ContactShadows, Bounds, Environment, Lightformer, useProgress } from '@react-three/drei';
+import { ContactShadows, Bounds, Environment, Lightformer } from '@react-three/drei';
 import Tshirt3DModel, { ShirtDesign, ShirtVariant } from './Tshirt3DModel';
-import Preview3DLoading from './Preview3DLoading';
 
 // Camera position sets the viewing angle; Bounds auto-fits the distance.
 const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
@@ -97,7 +96,6 @@ function Turntable({
  */
 export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
-  const { active: loading } = useProgress();
   // The bucket hat's wide brim fills the frame — give it more margin so it
   // reads a touch smaller than the shirts.
   const fitMargin = variant === 'cap' ? 1.4 : 1.0;
@@ -148,9 +146,6 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           <ContactShadows position={[0, -1.05, 0]} opacity={0.45} scale={6} blur={2.6} far={2} />
         </Suspense>
       </Canvas>
-
-      {/* Spinner while the model / textures download. */}
-      {loading ? <Preview3DLoading overlay /> : null}
 
       {/* 360° badge — centered on the branded background, top of the stage. */}
       <div
