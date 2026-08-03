@@ -139,7 +139,9 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
             <Lightformer intensity={1.9} position={[4, 1, 4]} scale={[3, 5, 1]} />
             <Lightformer intensity={1.0} position={[0, -3, 3]} scale={[8, 3, 1]} color="#ffffff" />
           </Environment>
-          <Bounds fit clip observe margin={1.0}>
+          {/* key on the model → Bounds remounts and re-fits the framing when
+              the shirt swaps (the polo is ~100× larger in world units). */}
+          <Bounds key={modelUrl ?? 'tshirt'} fit clip observe margin={1.0}>
             <Turntable focusArea={activeArea} onFirstInteract={() => setInteracted(true)}>
               <Tshirt3DModel
                 color={colorHex}
