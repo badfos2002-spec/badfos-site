@@ -35,8 +35,8 @@ const AREA_DECALS: Record<string, Placement> = {
   front_full: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
   back: { position: [0, 0.14, -0.3], rotation: [0, Math.PI, 0], size: 0.8, depth: 0.55 },
   // chest logos: higher on the chest and spread further apart (left ↔ right).
-  chest_logo: { position: [-0.31, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
-  chest_logo_right: { position: [0.31, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  chest_logo: { position: [-0.27, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  chest_logo_right: { position: [0.27, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   center: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
   center_wide: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
 };
