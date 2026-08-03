@@ -310,7 +310,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     </div>
   ) : null
 
-  const shirtHex = TSHIRT_COLORS.find(c => c.id === config.color)?.hex ?? '#C9C9C9'
+  const shirtHex = TSHIRT_COLORS.find(c => c.id === config.color)?.hex ?? '#FFFFFF'
 
   const mockupDesigns = config.designs || []
   const tshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']

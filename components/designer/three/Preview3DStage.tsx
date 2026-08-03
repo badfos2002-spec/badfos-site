@@ -1,14 +1,9 @@
 'use client';
 
-import { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import {
-  OrbitControls,
-  ContactShadows,
-  Bounds,
-  Environment,
-  Lightformer,
-} from '@react-three/drei';
+import { Suspense, useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { ContactShadows, Bounds, Environment, Lightformer } from '@react-three/drei';
 import Tshirt3DModel, { ShirtDesign } from './Tshirt3DModel';
 
 // Camera position sets the viewing angle; Bounds auto-fits the distance.
@@ -20,11 +15,60 @@ interface Preview3DStageProps {
 }
 
 /**
+ * Turntable: rotates the shirt around its vertical axis from HORIZONTAL drags
+ * only. The canvas keeps `touch-action: pan-y`, so a VERTICAL swipe scrolls the
+ * page normally instead of getting trapped by the 3D view (the old OrbitControls
+ * blocked page scroll on mobile). Camera stays fixed — only the shirt spins.
+ */
+function Turntable({ children }: { children: React.ReactNode }) {
+  const group = useRef<THREE.Group>(null);
+  const target = useRef(0);
+  const { gl } = useThree();
+
+  useEffect(() => {
+    const el = gl.domElement;
+    el.style.touchAction = 'pan-y';
+    el.style.cursor = 'grab';
+    let dragging = false;
+    let lastX = 0;
+    const down = (e: PointerEvent) => {
+      dragging = true;
+      lastX = e.clientX;
+      el.style.cursor = 'grabbing';
+    };
+    const move = (e: PointerEvent) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      lastX = e.clientX;
+      target.current += dx * 0.01;
+    };
+    const up = () => {
+      dragging = false;
+      el.style.cursor = 'grab';
+    };
+    el.addEventListener('pointerdown', down);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    return () => {
+      el.removeEventListener('pointerdown', down);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+    };
+  }, [gl]);
+
+  useFrame(() => {
+    const g = group.current;
+    if (g) g.rotation.y += (target.current - g.rotation.y) * 0.15;
+  });
+
+  return <group ref={group}>{children}</group>;
+}
+
+/**
  * Reusable 3D shirt stage: transparent Canvas + procedural studio lighting,
- * turntable OrbitControls, and the shirt model, over the branded background.
- * Extracted from Tshirt3DConfigurator so both the standalone prototype and the
- * stepped designer share the exact same scene. (Loader lives outside — the
- * caller renders it if needed.)
+ * turntable rotation, and the shirt model, over the branded background.
  */
 export default function Preview3DStage({ colorHex, designs }: Preview3DStageProps) {
   return (
@@ -48,9 +92,7 @@ export default function Preview3DStage({ colorHex, designs }: Preview3DStageProp
             and lets a black shirt's edges/folds catch light. */}
         <directionalLight position={[-3, 4, -5]} intensity={0.8} />
         <Suspense fallback={null}>
-          {/* Procedural studio environment (no external HDRI → CSP-safe).
-              Gives the fabric soft highlights + graded shading so colors
-              read like real dyed cloth instead of a flat fill. */}
+          {/* Procedural studio environment (no external HDRI → CSP-safe). */}
           <Environment resolution={256}>
             <Lightformer intensity={2.6} rotation-x={Math.PI / 2} position={[0, 5, -2]} scale={[10, 5, 1]} />
             <Lightformer intensity={1.9} position={[-4, 1, 4]} scale={[3, 5, 1]} />
@@ -58,20 +100,12 @@ export default function Preview3DStage({ colorHex, designs }: Preview3DStageProp
             <Lightformer intensity={1.0} position={[0, -3, 3]} scale={[8, 3, 1]} color="#ffffff" />
           </Environment>
           <Bounds fit clip observe margin={1.0}>
-            <Tshirt3DModel color={colorHex} designs={designs} />
+            <Turntable>
+              <Tshirt3DModel color={colorHex} designs={designs} />
+            </Turntable>
           </Bounds>
           <ContactShadows position={[0, -1.05, 0]} opacity={0.45} scale={6} blur={2.6} far={2} />
         </Suspense>
-        <OrbitControls
-          makeDefault
-          target={[0, 0, 0]}
-          enableZoom={false}
-          enablePan={false}
-          minPolarAngle={Math.PI / 2}
-          maxPolarAngle={Math.PI / 2}
-          enableDamping
-          dampingFactor={0.1}
-        />
       </Canvas>
 
       {/* 360° badge — centered on the branded background, top of the stage. */}

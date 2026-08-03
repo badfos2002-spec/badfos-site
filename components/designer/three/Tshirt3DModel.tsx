@@ -9,9 +9,9 @@ import { useLoader } from '@react-three/fiber';
  * TUNABLE CONSTANTS — adjust after seeing the model on the page.
  * ------------------------------------------------------------------ */
 
-// Whole-model transform. The GLB has flat nodes (no nested groups); we render
-// each mesh with its own local transform and wrap everything in <Center> to
-// auto-center the bounding box at the origin, so the shirt spins ON ITS AXIS.
+// Whole-model transform. The GLB has flat nodes; we render each mesh with its
+// own local transform and wrap everything in <Center> to auto-center the
+// bounding box at the origin, so the shirt spins ON ITS AXIS.
 const MODEL: {
   scale: number;
   rotation: [number, number, number];
@@ -22,36 +22,35 @@ const MODEL: {
   position: [0, 0, 0],
 };
 
-// Per-AREA artwork placement, in the BODY mesh's LOCAL space (the body mesh
-// carries its own scale ~0.339, so these values live in that pre-scale space).
-// Each decal is a CHILD of the body mesh → it is welded to the fabric and
-// rotates together with the shirt. Front artwork faces +Z, back faces -Z.
-// Tune position/scale per area after seeing it on the model.
+// Per-AREA artwork placement, in the body geometry's normalized local space:
+// x ∈ [-0.8,0.8] (width), y ∈ [-1,1] (height, +y=up/shoulders), z ∈ [-0.4,0.4]
+// (+z = front / camera side). `size` is the MAX extent of the artwork on the
+// fabric — the actual width/height are derived from the image aspect ratio so
+// the print is NEVER stretched. `depth` is the projector depth (straddles the
+// curved surface). Each decal is a child of the body mesh → welded to the cloth.
 type Placement = {
   position: [number, number, number];
   rotation: [number, number, number];
-  scale: [number, number, number] | number;
+  size: number;
+  depth: number;
 };
 
-// Values are in the body geometry's normalized local space:
-// x ∈ [-0.8,0.8] (width), y ∈ [-1,1] (height, +y=up/shoulders), z ∈ [-0.4,0.4]
-// (+z = front / camera side). The scale is the projector box [w,h,depth]; a
-// generous depth ensures the box straddles the curved fabric surface.
 const AREA_DECALS: Record<string, Placement> = {
-  front_full: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], scale: [0.58, 0.64, 0.55] },
-  back: { position: [0, 0.28, -0.3], rotation: [0, Math.PI, 0], scale: [0.58, 0.64, 0.55] },
-  chest_logo: { position: [-0.22, 0.46, 0.28], rotation: [0, 0, 0], scale: [0.16, 0.16, 0.45] },
-  chest_logo_right: { position: [0.22, 0.46, 0.28], rotation: [0, 0, 0], scale: [0.16, 0.16, 0.45] },
-  center: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], scale: [0.58, 0.64, 0.55] },
-  center_wide: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], scale: [0.72, 0.52, 0.55] },
+  front_full: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
+  back: { position: [0, 0.28, -0.3], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.55 },
+  chest_logo: { position: [-0.22, 0.46, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  chest_logo_right: { position: [0.22, 0.46, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  center: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
+  center_wide: { position: [0, 0.28, 0.3], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
 };
 
 /* ------------------------------------------------------------------ */
 
 /**
- * One artwork decal welded to the shirt body. Isolated so the texture-loading
- * hook is always called unconditionally. Must render <Decal> directly so drei
- * can find the parent mesh.
+ * One artwork decal welded to the shirt body. The decal box is sized to the
+ * image's aspect ratio (max extent = placement.size) so the print keeps its
+ * proportions instead of being stretched to fill the zone. Isolated so the
+ * texture-loading hook is always called unconditionally.
  */
 function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
   const texture = useLoader(THREE.TextureLoader, url);
@@ -62,8 +61,17 @@ function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
     texture.needsUpdate = true;
   }, [texture]);
 
+  const scale = useMemo<[number, number, number]>(() => {
+    const img = texture.image as { width?: number; height?: number } | undefined;
+    const aspect = img?.width && img?.height ? img.width / img.height : 1;
+    const s = placement.size;
+    const sx = aspect >= 1 ? s : s * aspect;
+    const sy = aspect >= 1 ? s / aspect : s;
+    return [sx, sy, placement.depth];
+  }, [texture, placement]);
+
   return (
-    <Decal position={placement.position} rotation={placement.rotation} scale={placement.scale}>
+    <Decal position={placement.position} rotation={placement.rotation} scale={scale}>
       <meshStandardMaterial
         map={texture}
         transparent
@@ -88,12 +96,12 @@ interface Tshirt3DModelProps {
 export default function Tshirt3DModel({ color, designs }: Tshirt3DModelProps) {
   const { scene } = useGLTF('/models/tshirt-web.glb');
 
-  // Pure black (#000000) on matte fabric collapses into a flat silhouette (no
-  // folds/shading). Lift ONLY near-black colors to a dark charcoal so the form
-  // stays visible; every other color passes through untouched.
+  // Pure black (#000000) on matte fabric collapses into a flat silhouette. Lift
+  // ONLY near-black colors to a very dark charcoal so the folds stay visible;
+  // every other color passes through untouched.
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
-    if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.15, 0.155, 0.165);
+    if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.09, 0.093, 0.1);
     return c;
   }, [color]);
 
@@ -126,8 +134,6 @@ export default function Tshirt3DModel({ color, designs }: Tshirt3DModelProps) {
             <mesh
               key={mesh.uuid ?? i}
               geometry={mesh.geometry}
-              // Flat hierarchy => the mesh's local transform is its world
-              // transform, so we forward it verbatim.
               position={mesh.position}
               rotation={mesh.rotation}
               scale={mesh.scale}
