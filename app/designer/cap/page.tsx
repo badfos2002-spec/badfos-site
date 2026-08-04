@@ -10,7 +10,7 @@ import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
+import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
@@ -451,15 +451,15 @@ export default function CapDesignerPage() {
     </div>
   )
 
-  // 3D preview for the bucket hat (כובע טמבל). The mesh/trucker cap has no
-  // model yet → keep the 2D mockup. Any 3D failure falls back to 2D.
+  // 3D preview per cap type — bucket hat (כובע טמבל) and trucker/mesh cap
+  // (כובע רשת) each have their own model. Any 3D failure falls back to 2D.
   const capColorHex = CAP_COLORS.find(c => c.id === selectedColor)?.hex ?? '#FFFFFF'
   const capDesigns = designPreviewUrl ? [{ area: selectedArea, url: designPreviewUrl }] : []
-  const use3DCap = selectedType !== 'mesh'
+  const capModel = getModel3D('cap', selectedType) ?? { variant: 'cap', url: '/models/cap-web.glb' }
   // A JSX element (NOT a component) so React keeps the same Preview3DStage
   // instance across re-renders — otherwise the scene reloads and the one-time
   // drag hint reappears on every colour change.
-  const previewElement = use3DCap ? (
+  const previewElement = (
     <ThreeErrorBoundary fallback={<MockupImage />}>
       <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
@@ -467,13 +467,12 @@ export default function CapDesignerPage() {
           designs={capDesigns}
           showGuides={currentStep === 3}
           activeArea={currentStep === 3 ? selectedArea : undefined}
-          variant="cap"
-          modelUrl="/models/cap-web.glb"
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          variant={capModel.variant as any}
+          modelUrl={capModel.url}
         />
       </div>
     </ThreeErrorBoundary>
-  ) : (
-    <MockupImage />
   )
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (

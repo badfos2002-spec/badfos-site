@@ -645,7 +645,10 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
     if (fabricType === 'zip') return { variant: 'ziphoodie', url: '/models/ziphoodie-web.glb' }
     return { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' }
   }
-  if (productType === 'cap' && fabricType !== 'mesh') return { variant: 'cap', url: '/models/cap-web.glb' }
+  if (productType === 'cap') {
+    if (fabricType === 'mesh') return { variant: 'meshcap', url: '/models/meshcap-web.glb' }
+    return { variant: 'cap', url: '/models/cap-web.glb' }
+  }
   if (productType === 'tote') return { variant: 'tote', url: '/models/tote-web.glb' }
   return null
 }

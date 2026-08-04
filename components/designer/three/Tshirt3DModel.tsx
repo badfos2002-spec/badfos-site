@@ -125,6 +125,15 @@ const TOTE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.6, h: 0.78, label: 'קדמי' },
 };
 
+// Trucker / mesh cap — front panel faces +Z; the print sits centred on the
+// front panel (upper-middle of the cap).
+const MESHCAP_AREAS: Record<string, Placement> = {
+  center: { position: [0, 0.08, 0.5], rotation: [0, 0, 0], size: 0.46, depth: 0.9 },
+};
+const MESHCAP_GUIDES: Record<string, GuideBox> = {
+  center: { w: 0.46, h: 0.4, label: 'קדמי' },
+};
+
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   tote: { areas: TOTE_AREAS, guides: TOTE_GUIDES, panels: false },
@@ -140,6 +149,14 @@ const VARIANTS = {
     normalMapUrl: '/models/tex/cap-normal.png',
     roughMapUrl: '/models/tex/cap-rough.png',
     singleArea: true, // areas are mutually exclusive → show only the active one
+  },
+  meshcap: {
+    areas: MESHCAP_AREAS,
+    guides: MESHCAP_GUIDES,
+    panels: false,
+    normalMapUrl: '/models/tex/meshcap-normal.png',
+    roughMapUrl: '/models/tex/meshcap-rough.png',
+    singleArea: true,
   },
 } as const;
 
@@ -502,3 +519,4 @@ useGLTF.preload('/models/sweatshirt-web.glb');
 useGLTF.preload('/models/hoodie-web.glb');
 useGLTF.preload('/models/ziphoodie-web.glb');
 useGLTF.preload('/models/tote-web.glb');
+useGLTF.preload('/models/meshcap-web.glb');
