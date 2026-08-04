@@ -241,8 +241,8 @@ function TexturedMaterial({
       color={color}
       emissive="#ffffff"
       emissiveIntensity={emissiveIntensity}
-      roughness={0.72}
-      metalness={0.04}
+      roughness={0.97}
+      metalness={0}
       normalMap={normalMap}
       normalScale={normalScale}
       roughnessMap={roughMap}
@@ -291,7 +291,7 @@ export default function Tshirt3DModel({
     if (variant === 'cap') {
       const hsl = { h: 0, s: 0, l: 0 };
       c.getHSL(hsl);
-      c.setHSL(hsl.h, Math.min(1, hsl.s * 1.4), Math.min(1, hsl.l * 1.06));
+      c.setHSL(hsl.h, Math.min(1, hsl.s * 1.12), hsl.l);
     }
     return c;
   }, [color, variant]);
