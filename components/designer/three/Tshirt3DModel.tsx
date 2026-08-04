@@ -166,6 +166,12 @@ const VARIANTS = {
     normalMapUrl: '/models/tex/meshcap-normal.png',
     roughMapUrl: '/models/tex/meshcap-rough.png',
     normalScale: 2.6, // trucker fabric + mesh weave reads clearly even on light colours
+    // Two-tone trucker: the basecolor texture is WHITE on the front panels and
+    // black everywhere else (mesh, visor, straps). We tint only the black
+    // regions with the selected colour — the front panel stays white, exactly
+    // like a real trucker cap. The AO map bakes the mesh weave into the map.
+    baseMapUrl: '/models/tex/meshcap-base.png',
+    aoMapUrl: '/models/tex/meshcap-ao.png',
     singleArea: true,
   },
 } as const;
@@ -355,6 +361,83 @@ function TexturedMaterial({
   );
 }
 
+/** Two-tone trucker material. The base map is white on the front panels and
+ *  black on the mesh/visor/straps. Compositing on a canvas — base, then a
+ *  `lighten` fill with the selected colour (white stays white, black becomes
+ *  the colour), then the AO map with `multiply` (bakes the mesh weave and
+ *  stitch shading into the map) — gives a real trucker look: white front,
+ *  coloured mesh, visible weave. */
+function TwoToneCapMaterial({
+  color,
+  baseMapUrl,
+  aoMapUrl,
+  normalMapUrl,
+  roughMapUrl,
+  strength = 1.3,
+}: {
+  color: THREE.Color;
+  baseMapUrl: string;
+  aoMapUrl: string;
+  normalMapUrl: string;
+  roughMapUrl: string;
+  strength?: number;
+}) {
+  const [baseMap, aoMap, normalMap, roughMap] = useLoader(THREE.TextureLoader, [
+    baseMapUrl, aoMapUrl, normalMapUrl, roughMapUrl,
+  ]);
+  useMemo(() => {
+    [normalMap, roughMap].forEach((t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.flipY = false;
+      t.colorSpace = THREE.NoColorSpace;
+      t.anisotropy = 4;
+      t.needsUpdate = true;
+    });
+  }, [normalMap, roughMap]);
+  const map = useMemo(() => {
+    if (typeof document === 'undefined') return null;
+    const img = baseMap.image as HTMLImageElement | undefined;
+    const ao = aoMap.image as HTMLImageElement | undefined;
+    if (!img?.width) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    ctx.globalCompositeOperation = 'lighten';
+    ctx.fillStyle = `#${color.getHexString()}`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (ao?.width) {
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(ao, 0, 0, canvas.width, canvas.height);
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.flipY = false; // match glTF UV origin (top-left)
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    tex.needsUpdate = true;
+    return tex;
+  }, [baseMap, aoMap, color]);
+  useEffect(() => {
+    return () => { map?.dispose(); };
+  }, [map]);
+  const normalScale = useMemo(() => new THREE.Vector2(strength, strength), [strength]);
+  if (!map) return <ShirtMaterial color={color} emissiveIntensity={0} />;
+  return (
+    <meshStandardMaterial
+      map={map}
+      color="#ffffff"
+      roughness={0.97}
+      metalness={0}
+      normalMap={normalMap}
+      normalScale={normalScale}
+      roughnessMap={roughMap}
+      side={THREE.DoubleSide}
+    />
+  );
+}
+
 export interface ShirtDesign {
   area: string;
   url: string;
@@ -382,6 +465,8 @@ export default function Tshirt3DModel({
   const normalMapUrl = (cfg as { normalMapUrl?: string }).normalMapUrl;
   const roughMapUrl = (cfg as { roughMapUrl?: string }).roughMapUrl;
   const normalStrength = (cfg as { normalScale?: number }).normalScale;
+  const baseMapUrl = (cfg as { baseMapUrl?: string }).baseMapUrl;
+  const aoMapUrl = (cfg as { aoMapUrl?: string }).aoMapUrl;
   const singleArea = (cfg as { singleArea?: boolean }).singleArea;
 
   const shirtColor = useMemo(() => {
@@ -489,7 +574,16 @@ export default function Tshirt3DModel({
             castShadow
             receiveShadow
           >
-            {normalMapUrl && roughMapUrl ? (
+            {baseMapUrl && aoMapUrl && normalMapUrl && roughMapUrl ? (
+              <TwoToneCapMaterial
+                color={shirtColor}
+                baseMapUrl={baseMapUrl}
+                aoMapUrl={aoMapUrl}
+                normalMapUrl={normalMapUrl}
+                roughMapUrl={roughMapUrl}
+                strength={normalStrength}
+              />
+            ) : normalMapUrl && roughMapUrl ? (
               <TexturedMaterial
                 color={shirtColor}
                 emissiveIntensity={emissiveIntensity}
