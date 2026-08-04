@@ -127,8 +127,8 @@ const TOTE_GUIDES: Record<string, GuideBox> = {
 
 // Volume tote — fuller body, front panel sits further out on +Z than the flat tote.
 const TOTEVOL_AREAS: Record<string, Placement> = {
-  front_full: { position: [0, -0.2, 0.34], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
-  back: { position: [0, -0.2, -0.34], rotation: [0, Math.PI, 0], size: 0.72, depth: 0.55 },
+  front_full: { position: [0, -0.28, 0.34], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
+  back: { position: [0, -0.28, -0.34], rotation: [0, Math.PI, 0], size: 0.72, depth: 0.55 },
 };
 const TOTEVOL_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.6, h: 0.68, label: 'צד קדמי' },
