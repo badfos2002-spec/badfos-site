@@ -562,7 +562,7 @@ export default function SweatshirtDesignerPage() {
 
   // 3D preview: replaces the 2D mockup once a sweatshirt type is chosen.
   // Any 3D failure falls back to the 2D MockupImage.
-  const sweatColorHex = SWEATSHIRT_COLORS.find(c => c.id === selectedColor)?.hex ?? '#9CA3AF'
+  const sweatColorHex = SWEATSHIRT_COLORS.find(c => c.id === selectedColor)?.hex ?? '#000000'
   const sweatDesigns = designs.filter(d => d.imageUrl).map(d => ({ area: d.area, url: d.imageUrl }))
   const sweatModel = ({
     kangaroo: { variant: 'hoodie', url: '/models/hoodie-web.glb' },
