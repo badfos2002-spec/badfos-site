@@ -573,7 +573,7 @@ export default function SweatshirtDesignerPage() {
     kangaroo: { variant: 'hoodie', url: '/models/hoodie-web.glb' },
     putter: { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' },
     zip: { variant: 'ziphoodie', url: '/models/ziphoodie-web.glb' },
-  } as Record<string, { variant: string; url: string }>)[selectedType] ?? { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' }
+  } as Record<string, { variant: string; url: string }>)[selectedType] ?? { variant: 'hoodie', url: '/models/hoodie-web.glb' }
   // A JSX element (NOT a component) so React keeps the same Preview3DStage
   // instance across re-renders — otherwise the scene reloads on every change.
   const previewElement = (

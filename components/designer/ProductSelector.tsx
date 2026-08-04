@@ -10,7 +10,7 @@ import { PRODUCT_CATEGORIES } from '@/lib/constants'
 const MODEL_BY_CATEGORY: Record<string, string> = {
   tshirt: '/models/tshirt-web.glb',
   cap: '/models/cap-web.glb',
-  sweatshirt: '/models/sweatshirt-web.glb',
+  sweatshirt: '/models/hoodie-web.glb',
 }
 const warmed = new Set<string>()
 function warmModel(id: string) {
