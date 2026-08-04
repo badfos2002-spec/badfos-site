@@ -33,14 +33,20 @@ export function middleware(request: NextRequest) {
 
   // Redirect uppercase URLs to lowercase (Google Tag Assistant sends /Designer/Designer)
   // Decode first — percent-encoded Hebrew paths (e.g. /%D7%94...) must NOT be redirected,
-  // since lowercasing the hex digits of the encoding creates a redirect loop for Googlebot
+  // since lowercasing the hex digits of the encoding creates a redirect loop for Googlebot.
+  // /share/* is EXCLUDED: its path segment is a case-SENSITIVE Firestore document id —
+  // lowercasing it breaks almost every share/sketch link ("העיצוב לא נמצא").
   let decodedPathname: string
   try {
     decodedPathname = decodeURIComponent(pathname)
   } catch {
     decodedPathname = pathname
   }
-  if (/[A-Z]/.test(decodedPathname) && !pathname.startsWith('/api/')) {
+  if (
+    /[A-Z]/.test(decodedPathname) &&
+    !pathname.startsWith('/api/') &&
+    !pathname.startsWith('/share/')
+  ) {
     const url = request.nextUrl.clone()
     url.pathname = decodedPathname.toLowerCase()
     return NextResponse.redirect(url, 301)
