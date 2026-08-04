@@ -570,7 +570,7 @@ export default function SweatshirtDesignerPage() {
   } as Record<string, { variant: string; url: string }>)[selectedType] ?? { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' }
   // A JSX element (NOT a component) so React keeps the same Preview3DStage
   // instance across re-renders — otherwise the scene reloads on every change.
-  const previewElement = selectedType ? (
+  const previewElement = (
     <ThreeErrorBoundary fallback={<MockupImage />}>
       <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
@@ -584,8 +584,6 @@ export default function SweatshirtDesignerPage() {
         />
       </div>
     </ThreeErrorBoundary>
-  ) : (
-    <MockupImage />
   )
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (

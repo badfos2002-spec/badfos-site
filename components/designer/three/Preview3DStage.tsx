@@ -177,7 +177,8 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           justifyContent: 'center',
           pointerEvents: 'none',
           zIndex: 3,
-          opacity: interacted ? 0 : 1,
+          // Only on the design/upload step (showGuides), and until the first drag.
+          opacity: showGuides && !interacted ? 1 : 0,
           transition: 'opacity 0.6s ease',
           background: 'rgba(12,12,16,0.42)',
           backdropFilter: 'blur(2px)',
