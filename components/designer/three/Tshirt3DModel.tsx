@@ -137,6 +137,17 @@ export type ShirtVariant = keyof typeof VARIANTS;
 
 /* ------------------------------------------------------------------ */
 
+/** Perceptual luminance test on the selected swatch hex. Dark fabrics (black,
+ *  navy, gray, melange, olive, burgundy…) need a white guide outline instead of
+ *  the default gray, which would otherwise disappear against the fabric. */
+function isDarkFabric(hex: string): boolean {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec((hex ?? '').trim());
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b < 172;
+}
+
 function makeGuideTexture(label: string, color: string, wOverH: number): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null;
   const H = 256;
@@ -178,8 +189,10 @@ function makeGuideTexture(label: string, color: string, wOverH: number): THREE.C
   return tex;
 }
 
-function GuideDecal({ placement, box, active }: { placement: Placement; box: GuideBox; active: boolean }) {
-  const color = active ? '#22c55e' : '#8b95a3';
+function GuideDecal({ placement, box, active, dark }: { placement: Placement; box: GuideBox; active: boolean; dark: boolean }) {
+  // Active area stays green (reads on any fabric). Inactive areas: white on dark
+  // fabrics, the usual gray on light ones.
+  const color = active ? '#22c55e' : dark ? '#ffffff' : '#8b95a3';
   const texture = useMemo(() => makeGuideTexture(box.label, color, box.w / box.h), [box, color]);
   if (!texture) return null;
   return (
@@ -348,6 +361,9 @@ export default function Tshirt3DModel({
     return c;
   }, [color, variant]);
 
+  // Dark fabrics get white area-guides instead of the low-contrast gray.
+  const guideDark = useMemo(() => isDarkFabric(color as string), [color]);
+
   const emissiveIntensity = 0;
 
   const meshes = useMemo(() => {
@@ -458,7 +474,7 @@ export default function Tshirt3DModel({
                       (!singleArea || a === activeArea)
                   )
                   .map((a) => (
-                    <GuideDecal key={`guide-${a}`} placement={cfg.areas[a]} box={cfg.guides[a]} active={a === activeArea} />
+                    <GuideDecal key={`guide-${a}`} placement={cfg.areas[a]} box={cfg.guides[a]} active={a === activeArea} dark={guideDark} />
                   ))
               : null}
           </mesh>
