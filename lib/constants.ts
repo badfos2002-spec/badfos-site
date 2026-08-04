@@ -146,6 +146,12 @@ export const CAP_TYPES = [
   },
 ] as const
 
+export const SWEATSHIRT_TYPES = [
+  { id: 'kangaroo', name: 'קנגרו', description: 'סווטשירט עם ברדס, בלי רוכסן', surcharge: 0 },
+  { id: 'putter', name: 'פוטר', description: 'סווטשירט קלאסי, בלי ברדס ובלי רוכסן', surcharge: 0 },
+  { id: 'zip', name: 'סווטשירט עם רוכסן', description: 'סווטשירט עם ברדס ורוכסן', surcharge: 0 },
+] as const
+
 export const CAP_COLORS = [
   { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },
   { id: 'black', name: 'שחור', hex: '#000000' },

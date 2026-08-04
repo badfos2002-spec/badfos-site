@@ -5,14 +5,22 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
-import { SWEATSHIRT_DESIGN_AREAS, STANDARD_SIZES } from '@/lib/constants'
+import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
+import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, STANDARD_SIZES } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
+import nextDynamic from 'next/dynamic'
+import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
+import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
+
+const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Preview3DStage'), {
+  ssr: false,
+  loading: () => <Preview3DLoading />,
+})
 
 const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
   back: { width: '36%', aspectRatio: '180 / 200', top: '33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
@@ -46,13 +54,14 @@ const colors = [
 ]
 
 const stepConfig = [
+  { title: 'בחר סוג', icon: Shirt },
   { title: 'בחר צבע', icon: Palette },
   { title: 'העלה עיצוב', icon: ImagePlus },
   { title: 'מידות וכמויות', icon: Package },
 ]
 
-const STEP_NAMES = ['צבע', 'עיצוב', 'מידות']
-const totalSteps = 3
+const STEP_NAMES = ['סוג', 'צבע', 'עיצוב', 'מידות']
+const totalSteps = 4
 const BASE_PRICE = 53
 const MIN_DISCOUNT_QTY = 15
 const DISCOUNT_PERCENT = 5
@@ -61,6 +70,7 @@ export default function SweatshirtDesignerPage() {
   const router = useRouter()
   const { addItem } = useCart()
   const [currentStep, setCurrentStep] = useState(1)
+  const [selectedType, setSelectedType] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState('')
   const [designs, setDesigns] = useState<DesignArea[]>([])
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
@@ -83,9 +93,10 @@ export default function SweatshirtDesignerPage() {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return !!selectedColor
-      case 2: return true
-      case 3: return totalQuantity > 0
+      case 1: return !!selectedType
+      case 2: return !!selectedColor
+      case 3: return true
+      case 4: return totalQuantity > 0
       default: return false
     }
   }
@@ -93,6 +104,7 @@ export default function SweatshirtDesignerPage() {
   const handleAddToCart = () => {
     addItem({
       productType: 'sweatshirt',
+      fabricType: selectedType,
       color: selectedColor,
       sizes: Object.entries(quantities)
         .filter(([, q]) => q > 0)
@@ -106,6 +118,7 @@ export default function SweatshirtDesignerPage() {
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
+    setSelectedType('')
     setSelectedColor('')
     setDesigns([])
     setSelectedAreaId(SWEATSHIRT_DESIGN_AREAS[0].id)
@@ -183,6 +196,38 @@ export default function SweatshirtDesignerPage() {
         return (
           <div>
             <p className="text-sm text-gray-500 mb-4">
+              {selectedType ? `נבחר: ${SWEATSHIRT_TYPES.find(t => t.id === selectedType)?.name}` : 'בחרו סוג סווטשירט'}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {SWEATSHIRT_TYPES.map(type => {
+                const isSelected = selectedType === type.id
+                return (
+                  <button
+                    key={type.id}
+                    onClick={() => setSelectedType(type.id)}
+                    className={`p-5 rounded-xl border-2 text-right transition-all ${
+                      isSelected
+                        ? 'border-[#fbbf24] bg-yellow-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-bold text-lg text-[#1e293b]">{type.name}</div>
+                      {isSelected && <Check className="w-5 h-5 text-[#f59e0b]" strokeWidth={3} />}
+                    </div>
+                    <div className="text-xs text-gray-500">{type.description}</div>
+                  </button>
+                )
+              })}
+            </div>
+            {!selectedType && <p className="text-sm text-red-500 mt-4">יש לבחור סוג כדי להמשיך.</p>}
+          </div>
+        )
+
+      case 2:
+        return (
+          <div>
+            <p className="text-sm text-gray-500 mb-4">
               {selectedColor ? `נבחר: ${colors.find(c => c.id === selectedColor)?.name}` : 'בחרו את צבע הסווטשרט'}
             </p>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
@@ -216,7 +261,7 @@ export default function SweatshirtDesignerPage() {
           </div>
         )
 
-      case 2:
+      case 3:
         return (
           <div>
             <p className="text-sm text-gray-500 mb-1">בחר אזור לעיצוב, ואז העלה את התמונה שלך.</p>
@@ -357,7 +402,7 @@ export default function SweatshirtDesignerPage() {
           </div>
         )
 
-      case 3:
+      case 4:
         return (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
@@ -466,7 +511,7 @@ export default function SweatshirtDesignerPage() {
     const currentView = isBackView ? 'back' : 'front'
     const sweatshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
     const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => sweatshirtAreaIds.includes(areaId) && overlay.view === currentView)
-    const showAreas = currentStep === 2
+    const showAreas = currentStep === 3
     return (
       <div className="relative w-full">
         <Image
@@ -513,6 +558,35 @@ export default function SweatshirtDesignerPage() {
       </div>
     )
   }
+
+  // 3D preview: replaces the 2D mockup once a sweatshirt type is chosen.
+  // Any 3D failure falls back to the 2D MockupImage.
+  const sweatColorHex = colors.find(c => c.id === selectedColor)?.hex ?? '#9CA3AF'
+  const sweatDesigns = designs.filter(d => d.imageUrl).map(d => ({ area: d.area, url: d.imageUrl }))
+  const sweatModel = ({
+    kangaroo: { variant: 'hoodie', url: '/models/hoodie-web.glb' },
+    putter: { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' },
+    zip: { variant: 'ziphoodie', url: '/models/ziphoodie-web.glb' },
+  } as Record<string, { variant: string; url: string }>)[selectedType] ?? { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' }
+  // A JSX element (NOT a component) so React keeps the same Preview3DStage
+  // instance across re-renders — otherwise the scene reloads on every change.
+  const previewElement = selectedType ? (
+    <ThreeErrorBoundary fallback={<MockupImage />}>
+      <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+        <Preview3DStage
+          colorHex={sweatColorHex}
+          designs={sweatDesigns}
+          showGuides={currentStep === 3}
+          activeArea={selectedAreaId}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          variant={sweatModel.variant as any}
+          modelUrl={sweatModel.url}
+        />
+      </div>
+    </ThreeErrorBoundary>
+  ) : (
+    <MockupImage />
+  )
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
@@ -604,7 +678,7 @@ export default function SweatshirtDesignerPage() {
           {/* Sticky mockup */}
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
-              <MockupImage />
+              {previewElement}
               {designs.length > 0 && (
                 <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   ✓ {designs.length} אזורים
@@ -665,7 +739,7 @@ export default function SweatshirtDesignerPage() {
               </div>
               <div className="p-6 pt-0">
                 <div className="relative mx-auto max-w-md">
-                  <MockupImage />
+                  {previewElement}
                 </div>
                 <p className="text-xs text-center text-gray-400 mt-3">* סקיצה להמחשה בלבד</p>
               </div>
