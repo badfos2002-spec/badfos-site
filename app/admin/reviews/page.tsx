@@ -59,10 +59,12 @@ export default function AdminReviewsPage() {
     if (!form.name.trim() || !form.text.trim()) { alert('נא למלא שם וטקסט'); return }
     setAdding(true)
     try {
+      // NOTE: Firestore rejects `undefined` field values — omit `product`
+      // entirely when empty instead of sending undefined.
       const id = await createDocument<Review>('reviews', {
         name: form.name,
         rating: form.rating,
-        product: form.product || undefined,
+        ...(form.product.trim() ? { product: form.product.trim() } : {}),
         text: form.text,
         status: 'approved',
         featured: form.featured,

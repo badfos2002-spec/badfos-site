@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Gift, Check, Loader2, Minus, Plus, ShoppingCart } from 'lucide-react'
+import { Gift, Check, Loader2, ShoppingCart } from 'lucide-react'
 import { getAllDocuments } from '@/lib/db'
 import { useCart } from '@/hooks/useCart'
 import type { Package } from '@/lib/types'
@@ -122,16 +122,6 @@ export default function PackagesPage() {
     setQuantities(initial)
   }, [packages])
 
-  const updateQuantity = (pkgId: string, delta: number) => {
-    setQuantities(prev => {
-      const pkg = packages.find(p => p.id === pkgId)
-      if (!pkg) return prev
-      const current = prev[pkgId] ?? pkg.minQuantity
-      const next = Math.max(pkg.minQuantity, Math.min(pkg.maxQuantity, current + delta))
-      return { ...prev, [pkgId]: next }
-    })
-  }
-
   const handleAddToCart = (pkg: DisplayPackage) => {
     const quantity = quantities[pkg.id] ?? pkg.minQuantity
     addPackage({
@@ -171,8 +161,6 @@ export default function PackagesPage() {
           /* Cards Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {packages.map((pkg) => {
-              const qty = quantities[pkg.id] ?? pkg.minQuantity
-              const total = qty * pkg.pricePerUnit + pkg.graphicDesignerCost
               const isAdded = addedId === pkg.id
 
               return (
@@ -212,34 +200,6 @@ export default function PackagesPage() {
                         </li>
                       ))}
                     </ul>
-
-                    {/* Quantity Selector */}
-                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">כמות חולצות</span>
-                        <span className="text-xs text-gray-500">{pkg.minQuantity}–{pkg.maxQuantity}</span>
-                      </div>
-                      <div className="flex items-center justify-center gap-4">
-                        <button
-                          onClick={() => updateQuantity(pkg.id, -1)}
-                          disabled={qty <= pkg.minQuantity}
-                          className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="text-2xl font-bold min-w-[3ch] text-center">{qty}</span>
-                        <button
-                          onClick={() => updateQuantity(pkg.id, 1)}
-                          disabled={qty >= pkg.maxQuantity}
-                          className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="text-center mt-2 text-sm font-semibold text-gray-900">
-                        סה&quot;כ: ₪{total}
-                      </div>
-                    </div>
 
                     <div className="pt-2 mt-auto">
                       <button

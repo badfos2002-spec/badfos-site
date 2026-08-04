@@ -137,10 +137,16 @@ export default function ContactPage() {
       <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
         {/* Header */}
         <div className="text-center mb-16" dir="rtl">
-          <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm mb-6">
+          <a
+            href={`https://wa.me/${CONTACT_INFO.whatsapp}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackWhatsAppClick('contact_page')}
+            className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm mb-6 hover:shadow-md hover:scale-105 transition-all cursor-pointer"
+          >
             <MessageCircle className="w-4 h-4 text-teal-600" />
             <span className="text-sm font-medium text-teal-600">בואו נשוחח</span>
-          </div>
+          </a>
 
           <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             יצירת קשר
