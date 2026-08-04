@@ -582,6 +582,31 @@ export function getProductLabel(id: string): string {
   return (PRODUCT_CATEGORIES as readonly { id: string; name: string }[]).find(p => p.id === id)?.name ?? id
 }
 
+export function getColorHex(id: string): string {
+  const all: readonly { id: string; hex: string }[] = [
+    ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
+    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS,
+  ]
+  return all.find(c => c.id === id)?.hex ?? '#000000'
+}
+
+// The 3D model for a product+type (null → no 3D model, use the 2D mockup).
+// Shared by the designers and the shared-design view so they stay in sync.
+export function getModel3D(productType: string, fabricType?: string): { variant: string; url: string } | null {
+  if (productType === 'tshirt') {
+    if (fabricType === 'polo') return { variant: 'polo', url: '/models/polo-web.glb' }
+    if (fabricType === 'oversized') return { variant: 'oversized', url: '/models/oversized-web.glb' }
+    return { variant: 'tshirt', url: '/models/tshirt-web.glb' }
+  }
+  if (productType === 'sweatshirt') {
+    if (fabricType === 'kangaroo') return { variant: 'hoodie', url: '/models/hoodie-web.glb' }
+    if (fabricType === 'zip') return { variant: 'ziphoodie', url: '/models/ziphoodie-web.glb' }
+    return { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' }
+  }
+  if (productType === 'cap' && fabricType !== 'mesh') return { variant: 'cap', url: '/models/cap-web.glb' }
+  return null
+}
+
 export function getDesignAreasByProductType(productType: ProductType) {
   const areas = (() => {
     switch (productType) {

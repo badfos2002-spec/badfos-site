@@ -7,6 +7,11 @@ import { getSharedDesign, SharedDesignData } from '@/lib/db'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
+import { getColorHex, getModel3D } from '@/lib/constants'
+
+const Preview3DStage = dynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
 
 function MockupView({ view, color, designs }: {
   view: 'front' | 'back'
@@ -90,6 +95,7 @@ export default function SharePage() {
   const hasFront = design.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'front')
   const hasBack = design.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'back')
   const hasBoth = hasFront && hasBack
+  const m3d = getModel3D(design.productType, design.fabricType)
 
   return (
     <div className="min-h-screen bg-[#fffdf5] relative overflow-hidden" dir="rtl">
@@ -100,8 +106,22 @@ export default function SharePage() {
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 gap-6">
 
-        {/* Mockups — large on desktop */}
-        {hasBoth ? (
+        {/* Preview — 3D for products with a model, else the 2D mockup */}
+        {m3d ? (
+          <div className="w-full max-w-[340px] sm:max-w-sm md:max-w-md lg:max-w-lg">
+            <ThreeErrorBoundary fallback={<MockupView view="front" color={design.color} designs={design.designs} />}>
+              <div className="relative w-full rounded-2xl overflow-hidden shadow-lg" style={{ aspectRatio: '3/4' }}>
+                <Preview3DStage
+                  colorHex={getColorHex(design.color)}
+                  designs={design.designs.map(d => ({ area: d.area, url: d.imageBase64 }))}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  variant={m3d.variant as any}
+                  modelUrl={m3d.url}
+                />
+              </div>
+            </ThreeErrorBoundary>
+          </div>
+        ) : hasBoth ? (
           <div className="grid grid-cols-2 gap-4 w-full max-w-xs sm:max-w-sm md:max-w-2xl lg:max-w-4xl">
             <MockupView view="front" color={design.color} designs={design.designs} />
             <MockupView view="back" color={design.color} designs={design.designs} />
