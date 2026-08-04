@@ -103,7 +103,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
   }, [showGuides]);
   // The bucket hat's wide brim fills the frame — give it more margin so it
   // reads a touch smaller than the shirts.
-  const fitMargin = variant === 'cap' ? 1.4 : 1.0;
+  const fitMargin = variant === 'cap' ? 1.2 : 1.0;
   return (
     <div
       style={{
