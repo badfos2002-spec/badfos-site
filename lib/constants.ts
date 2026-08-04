@@ -344,13 +344,13 @@ export const TOTE_DESIGN_AREAS = [
     id: 'front_full' as DesignAreaType,
     name: 'צד קדמי',
     description: 'הדפסה על חזית התיק',
-    price: 10,
+    price: 5,
   },
   {
     id: 'back' as DesignAreaType,
     name: 'צד אחורי',
     description: 'הדפסה על גב התיק',
-    price: 10,
+    price: 5,
   },
 ] as const
 
