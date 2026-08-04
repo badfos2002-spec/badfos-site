@@ -281,7 +281,11 @@ export default function Tshirt3DModel({
 
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
-    if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.09, 0.093, 0.1);
+    const mx = Math.max(c.r, c.g, c.b);
+    if (mx < 0.12) c.setRGB(0.09, 0.093, 0.1);
+    // Pure white blows out flat — pull it to a slight off-white so lit areas
+    // stay bright while folds get real shading (depth).
+    else if (c.r > 0.92 && c.g > 0.92 && c.b > 0.92) c.setRGB(0.95, 0.95, 0.96);
     // The cap's matte normal+roughness fabric mutes colours — lift saturation
     // and a touch of lightness so they read vivid.
     if (variant === 'cap') {
@@ -292,10 +296,7 @@ export default function Tshirt3DModel({
     return c;
   }, [color, variant]);
 
-  const emissiveIntensity = useMemo(() => {
-    const c = new THREE.Color(color);
-    return c.r > 0.82 && c.g > 0.82 && c.b > 0.82 ? 0.12 : 0;
-  }, [color]);
+  const emissiveIntensity = 0;
 
   const meshes = useMemo(() => {
     const cloned = scene.clone(true);
