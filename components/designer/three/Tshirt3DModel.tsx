@@ -200,8 +200,15 @@ function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
     let cancelled = false;
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
+    // Firebase Storage serves design images WITHOUT CORS headers, so a WebGL
+    // texture (loaded crossOrigin="anonymous") can't read them and the decal
+    // never appears. Route those through our same-origin proxy; data:/blob:/
+    // same-origin urls load directly.
+    const src = /^https:\/\/firebasestorage\.googleapis\.com\//.test(url)
+      ? `/api/design-proxy?url=${encodeURIComponent(url)}`
+      : url;
     loader.load(
-      url,
+      src,
       (tex) => {
         if (cancelled) { tex.dispose(); return; }
         tex.anisotropy = 8;
