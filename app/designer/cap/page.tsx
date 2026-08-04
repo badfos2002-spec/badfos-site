@@ -453,7 +453,7 @@ export default function CapDesignerPage() {
 
   // 3D preview per cap type — bucket hat (כובע טמבל) and trucker/mesh cap
   // (כובע רשת) each have their own model. Any 3D failure falls back to 2D.
-  const capColorHex = CAP_COLORS.find(c => c.id === selectedColor)?.hex ?? '#FFFFFF'
+  const capColorHex = CAP_COLORS.find(c => c.id === selectedColor)?.hex ?? '#000000'
   const capDesigns = designPreviewUrl ? [{ area: selectedArea, url: designPreviewUrl }] : []
   const capModel = getModel3D('cap', selectedType) ?? { variant: 'cap', url: '/models/cap-web.glb' }
   // A JSX element (NOT a component) so React keeps the same Preview3DStage
