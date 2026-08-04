@@ -189,7 +189,7 @@ function GuideDecal({ placement, box, active }: { placement: Placement; box: Gui
   );
 }
 
-function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
+function ShirtDecal({ url, placement, box }: { url: string; placement: Placement; box?: GuideBox }) {
   // Manual (non-suspending) texture load. `useLoader` throws on a failed image
   // (CORS, an undecodable format, a network hiccup), and that throw bubbles up
   // to ThreeErrorBoundary — collapsing the ENTIRE 3D scene back to the flat 2D
@@ -225,11 +225,22 @@ function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
   const scale = useMemo<[number, number, number]>(() => {
     const img = texture?.image as { width?: number; height?: number } | undefined;
     const aspect = img?.width && img?.height ? img.width / img.height : 1;
+    if (box) {
+      // Contain-fit the artwork INSIDE the printable area rectangle (box.w × box.h),
+      // preserving aspect ratio — the decal fills the area as large as possible but
+      // never spills past it. (The old square fit by `placement.size` could exceed
+      // the guide box on non-square areas like front_full.)
+      let dw = box.w;
+      let dh = box.w / aspect;
+      if (dh > box.h) { dh = box.h; dw = box.h * aspect; }
+      return [dw, dh, placement.depth];
+    }
+    // Fallback (area with no guide box): fit within a square of placement.size.
     const s = placement.size;
     const sx = aspect >= 1 ? s : s * aspect;
     const sy = aspect >= 1 ? s / aspect : s;
     return [sx, sy, placement.depth];
-  }, [texture, placement]);
+  }, [texture, placement, box]);
 
   if (!texture) return null;
   return (
@@ -435,7 +446,7 @@ export default function Tshirt3DModel({
             {designs.map((d) => {
               const placement = cfg.areas[d.area];
               if (!placement || !d.url || targetFor(d.area) !== mesh) return null;
-              return <ShirtDecal key={d.area} url={d.url} placement={placement} />;
+              return <ShirtDecal key={d.area} url={d.url} placement={placement} box={cfg.guides[d.area]} />;
             })}
             {showGuides
               ? guideAreas
