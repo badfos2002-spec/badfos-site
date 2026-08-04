@@ -182,6 +182,7 @@ const VARIANTS = {
     // like a real trucker cap. The AO map bakes the mesh weave into the map.
     baseMapUrl: '/models/tex/meshcap-base.png',
     aoMapUrl: '/models/tex/meshcap-ao.png',
+    heightMapUrl: '/models/tex/meshcap-weave.png', // 2048 pre-baked weave shading
     singleArea: true,
   },
 } as const;
@@ -383,6 +384,7 @@ function TwoToneCapMaterial({
   aoMapUrl,
   normalMapUrl,
   roughMapUrl,
+  heightMapUrl,
   strength = 1.3,
 }: {
   color: THREE.Color;
@@ -390,10 +392,11 @@ function TwoToneCapMaterial({
   aoMapUrl: string;
   normalMapUrl: string;
   roughMapUrl: string;
+  heightMapUrl?: string;
   strength?: number;
 }) {
-  const [baseMap, aoMap, normalMap, roughMap] = useLoader(THREE.TextureLoader, [
-    baseMapUrl, aoMapUrl, normalMapUrl, roughMapUrl,
+  const [baseMap, aoMap, normalMap, roughMap, heightMap] = useLoader(THREE.TextureLoader, [
+    baseMapUrl, aoMapUrl, normalMapUrl, roughMapUrl, heightMapUrl ?? baseMapUrl,
   ]);
   useMemo(() => {
     [normalMap, roughMap].forEach((t) => {
@@ -408,27 +411,46 @@ function TwoToneCapMaterial({
     if (typeof document === 'undefined') return null;
     const img = baseMap.image as HTMLImageElement | undefined;
     const ao = aoMap.image as HTMLImageElement | undefined;
+    const hgt = heightMapUrl ? (heightMap.image as HTMLImageElement | undefined) : undefined;
     if (!img?.width) return null;
     const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
+    // Compose at the HIGHEST source resolution — the mesh-weave cells in the
+    // height map survive only at 2048; a 1024 canvas would average them away.
+    const W = Math.max(img.width, hgt?.width ?? 0);
+    const H = Math.max(img.height, hgt?.height ?? 0);
+    canvas.width = W;
+    canvas.height = H;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     // Brighten the base so the front panels read as crisp WHITE (the source
     // texture is a slightly gray off-white); black regions stay black.
     ctx.filter = 'brightness(1.3)';
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, W, H);
     ctx.filter = 'none';
     ctx.globalCompositeOperation = 'lighten';
     ctx.fillStyle = `#${color.getHexString()}`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, W, H);
     if (ao?.width) {
       // Brighten the AO before multiplying so its broad shading no longer
-      // grays the white front — only the deep crevices (mesh weave, stitches)
-      // keep darkening.
+      // grays the white front — only seams and panel joins keep darkening.
       ctx.globalCompositeOperation = 'multiply';
       ctx.filter = 'brightness(1.4)';
-      ctx.drawImage(ao, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(ao, 0, 0, W, H);
+      ctx.filter = 'none';
+    }
+    if (hgt?.width) {
+      // Pre-baked weave-shading map (high-pass of the 16-bit height map,
+      // offline): white everywhere except the mesh weave holes and seams.
+      // A straight multiply paints the weave onto the coloured panels without
+      // touching the visor or straps (they're white in the map).
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(hgt, 0, 0, W, H);
+      // Restore the front panels to pure white (weave/AO multiplies grayed
+      // them slightly): lighten with the brightened base — white wins on the
+      // front, black is a no-op on the coloured rest.
+      ctx.globalCompositeOperation = 'lighten';
+      ctx.filter = 'brightness(1.3)';
+      ctx.drawImage(img, 0, 0, W, H);
       ctx.filter = 'none';
     }
     const tex = new THREE.CanvasTexture(canvas);
@@ -437,7 +459,7 @@ function TwoToneCapMaterial({
     tex.anisotropy = 4;
     tex.needsUpdate = true;
     return tex;
-  }, [baseMap, aoMap, color]);
+  }, [baseMap, aoMap, heightMap, heightMapUrl, color]);
   useEffect(() => {
     return () => { map?.dispose(); };
   }, [map]);
@@ -490,6 +512,7 @@ export default function Tshirt3DModel({
   const normalStrength = (cfg as { normalScale?: number }).normalScale;
   const baseMapUrl = (cfg as { baseMapUrl?: string }).baseMapUrl;
   const aoMapUrl = (cfg as { aoMapUrl?: string }).aoMapUrl;
+  const heightMapUrl = (cfg as { heightMapUrl?: string }).heightMapUrl;
   const singleArea = (cfg as { singleArea?: boolean }).singleArea;
 
   const shirtColor = useMemo(() => {
@@ -604,6 +627,7 @@ export default function Tshirt3DModel({
                 aoMapUrl={aoMapUrl}
                 normalMapUrl={normalMapUrl}
                 roughMapUrl={roughMapUrl}
+                heightMapUrl={heightMapUrl}
                 strength={normalStrength}
               />
             ) : normalMapUrl && roughMapUrl ? (
