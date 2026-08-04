@@ -41,6 +41,7 @@ const fabricLabels: Record<string, string> = {
   putter: 'פוטר',
   zip: 'קפוצ׳ון עם רוכסן',
   classic: 'קלאסי',
+  volume: 'קנבס',
 }
 
 const colorLabels: Record<string, string> = {

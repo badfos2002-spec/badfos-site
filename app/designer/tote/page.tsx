@@ -40,7 +40,8 @@ export default function ToteDesignerPage() {
   const [selectedType, setSelectedType] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState('')
   const [selectedArea, setSelectedArea] = useState<DesignAreaType>('front_full')
-  const [designFile, setDesignFile] = useState<File | null>(null)
+  // One design file per area (front / back) — both print together.
+  const [designFiles, setDesignFiles] = useState<Partial<Record<DesignAreaType, File>>>({})
   const [quantity, setQuantity] = useState(TOTE_MIN_QUANTITY)
   const sessionId = useState(() => `tote-${Date.now()}`)[0]
   const [addingToCart, setAddingToCart] = useState(false)
@@ -50,20 +51,30 @@ export default function ToteDesignerPage() {
 
   const basePrice = getBasePrice('tote')
   const toteDesignAreas = getDesignAreasByProductType('tote')
-  const designCost = (toteDesignAreas.find(a => a.id === selectedArea) ?? toteDesignAreas[0])?.price ?? 0
+  // Print cost = sum of every area that actually has a design.
+  const designCost = toteDesignAreas
+    .filter(a => !!designFiles[a.id])
+    .reduce((sum, a) => sum + (a.price ?? 0), 0)
 
-  const pricePerUnit = designFile ? basePrice + designCost : basePrice
+  const pricePerUnit = basePrice + designCost
   const total = quantity * pricePerUnit
 
-  const designPreviewUrl = useMemo(() => {
-    if (!designFile) return null
-    return URL.createObjectURL(designFile)
-  }, [designFile])
+  // One preview blob-url per uploaded area; revoked on change/unmount.
+  const designPreviews = useMemo(() => {
+    const map: Partial<Record<DesignAreaType, string>> = {}
+    for (const [area, file] of Object.entries(designFiles)) {
+      if (file) map[area as DesignAreaType] = URL.createObjectURL(file)
+    }
+    return map
+  }, [designFiles])
 
   useEffect(() => {
-    if (!designPreviewUrl) return
-    return () => URL.revokeObjectURL(designPreviewUrl)
-  }, [designPreviewUrl])
+    return () => { Object.values(designPreviews).forEach(u => { if (u) URL.revokeObjectURL(u) }) }
+  }, [designPreviews])
+
+  const uploadedCount = Object.keys(designFiles).length
+  const currentFile = designFiles[selectedArea] ?? null
+  const currentPreview = designPreviews[selectedArea] ?? null
 
   const availableColors = useMemo(() => {
     if (!selectedType) return TOTE_COLORS
@@ -78,18 +89,23 @@ export default function ToteDesignerPage() {
   }, [selectedType])
 
   const handleAddToCart = async () => {
-    if (!designFile || !selectedType || quantity < TOTE_MIN_QUANTITY || addingToCart) return
+    if (uploadedCount === 0 || !selectedType || quantity < TOTE_MIN_QUANTITY || addingToCart) return
     setAddingToCart(true)
     try {
-      const uniqueName = generateUniqueFileName(designFile.name)
-      const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
-      const areaConfig = TOTE_DESIGN_AREAS.find(a => a.id === selectedArea)
+      const designs = []
+      for (const [area, file] of Object.entries(designFiles)) {
+        if (!file) continue
+        const uniqueName = generateUniqueFileName(file.name)
+        const imageUrl = await uploadDesignFile(file, sessionId, uniqueName)
+        const areaConfig = TOTE_DESIGN_AREAS.find(a => a.id === area)
+        designs.push({ area: area as DesignAreaType, areaName: areaConfig?.name || 'צד קדמי', imageUrl, fileName: file.name })
+      }
       addItem({
         productType: 'tote',
         fabricType: selectedType,
         color: selectedColor,
         sizes: [{ size: 'ONE_SIZE', quantity }],
-        designs: [{ area: selectedArea, areaName: areaConfig?.name || 'הדפסה קדמית', imageUrl, fileName: designFile.name }],
+        designs,
       })
       router.push('/cart')
     } catch (err) {
@@ -104,7 +120,7 @@ export default function ToteDesignerPage() {
     switch (currentStep) {
       case 1: return !!selectedType
       case 2: return !!selectedColor
-      case 3: return !!designFile
+      case 3: return uploadedCount > 0
       case 4: return quantity >= TOTE_MIN_QUANTITY
       default: return false
     }
@@ -117,7 +133,7 @@ export default function ToteDesignerPage() {
     setSelectedType('')
     setSelectedColor('')
     setSelectedArea('front_full')
-    setDesignFile(null)
+    setDesignFiles({})
     setQuantity(TOTE_MIN_QUANTITY)
   }
 
@@ -206,57 +222,68 @@ export default function ToteDesignerPage() {
           </div>
         )
 
-      case 3:
+      case 3: {
+        const areaName = availableAreas.find(a => a.id === selectedArea)?.name || 'צד קדמי'
+        const setAreaFile = (f: File) =>
+          setDesignFiles(prev => ({ ...prev, [selectedArea]: f }))
+        const removeAreaFile = (area: DesignAreaType) =>
+          setDesignFiles(prev => { const u = { ...prev }; delete u[area]; return u })
         return (
           <div>
-            <p className="text-sm text-gray-500 mb-4">העלה את העיצוב שיודפס על חזית התיק.</p>
+            <p className="text-sm text-gray-500 mb-4">
+              בחר צד, ואז העלה את התמונה שלך. אפשר להעלות עיצוב לכל צד — קדמי ואחורי.
+            </p>
 
-            {availableAreas.length > 1 && (
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {availableAreas.map(area => {
-                  const isSelected = selectedArea === area.id
-                  return (
-                    <button
-                      key={area.id}
-                      onClick={() => setSelectedArea(area.id as DesignAreaType)}
-                      className={`relative text-xs h-16 px-2 py-2 rounded-md font-medium border-2 flex items-center justify-center transition-all ${
-                        isSelected
-                          ? 'gradient-yellow text-white border-transparent shadow'
-                          : 'bg-white text-gray-700 border-gray-200 hover:border-yellow-400'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center">
-                        <span>{area.name}</span>
-                        <span className="text-[10px] opacity-80">+₪{area.price}</span>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {availableAreas.map(area => {
+                const isSelected = selectedArea === area.id
+                const hasFile = !!designFiles[area.id]
+                return (
+                  <button
+                    key={area.id}
+                    onClick={() => setSelectedArea(area.id as DesignAreaType)}
+                    className={`relative text-xs h-16 px-2 py-2 rounded-md font-medium border-2 flex items-center justify-center transition-all ${
+                      isSelected
+                        ? 'gradient-yellow text-white border-transparent shadow'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-yellow-400'
+                    }`}
+                  >
+                    {hasFile && (
+                      <span className="absolute top-1 left-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                        <Check className="w-3 h-3" strokeWidth={3} />
+                      </span>
+                    )}
+                    <div className="flex flex-col items-center">
+                      <span>{area.name}</span>
+                      <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
 
             <div className="space-y-3">
-              {designFile ? (
+              {currentFile ? (
                 <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                      <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{designFile.name}</span>
+                      <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{currentFile.name}</span>
                     </div>
-                    <button onClick={() => setDesignFile(null)} className="text-red-400 hover:text-red-600 shrink-0 mr-1">
+                    <button onClick={() => removeAreaFile(selectedArea)} className="text-red-400 hover:text-red-600 shrink-0 mr-1" aria-label={`הסרת העיצוב מ${areaName}`}>
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="w-full aspect-video bg-white rounded-lg overflow-hidden border border-green-200 mb-3">
-                    {designPreviewUrl && (
+                    {currentPreview && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={designPreviewUrl} alt="עיצוב" className="w-full h-full object-contain" />
+                      <img src={currentPreview} alt={`עיצוב ${areaName}`} className="w-full h-full object-contain" />
                     )}
                   </div>
                   <label
                     role="button"
                     tabIndex={0}
-                    aria-label="החלפת עיצוב"
+                    aria-label={`החלפת עיצוב לאזור ${areaName}`}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
                     className="cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg"
                   >
@@ -267,7 +294,7 @@ export default function ToteDesignerPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
                       className="hidden"
-                      onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace('הדפסה קדמית'))) setDesignFile(f); e.target.value = '' }}
+                      onChange={e => { const f = e.target.files?.[0]; if (f && (!currentFile || confirmDesignReplace(areaName))) setAreaFile(f); e.target.value = '' }}
                     />
                   </label>
                 </div>
@@ -275,7 +302,7 @@ export default function ToteDesignerPage() {
                 <label
                   role="button"
                   tabIndex={0}
-                  aria-label="העלאת עיצוב"
+                  aria-label={`העלאת עיצוב לאזור ${areaName}`}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
                   className="cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg"
                 >
@@ -285,21 +312,22 @@ export default function ToteDesignerPage() {
                     </div>
                     <p className="text-sm font-medium text-gray-900 mb-1">לחץ להעלאת תמונה</p>
                     <p className="text-xs text-gray-600 mb-2">JPG, PNG, JPEG עד 10MB</p>
-                    <p className="text-xs text-blue-600 font-medium">יודפס על חזית התיק</p>
+                    <p className="text-xs text-blue-600 font-medium">יועלה לאזור: {areaName}</p>
                   </div>
                   <input
                     type="file"
                     accept="image/png, image/jpeg, image/jpg"
                     className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace('הדפסה קדמית'))) setDesignFile(f); e.target.value = '' }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setAreaFile(f); e.target.value = '' }}
                   />
                 </label>
               )}
             </div>
 
-            {!designFile && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
+            {uploadedCount === 0 && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
           </div>
         )
+      }
 
       case 4:
         return (
@@ -365,9 +393,9 @@ export default function ToteDesignerPage() {
             <span>מחיר בסיס</span>
             <span className="font-medium">{basePrice}₪</span>
           </div>
-          {designFile && (
+          {designCost > 0 && (
             <div className="flex justify-between text-gray-600">
-              <span>הדפסה</span>
+              <span>הדפסה ({uploadedCount} {uploadedCount === 1 ? 'צד' : 'צדדים'})</span>
               <span className="font-medium">+{designCost}₪</span>
             </div>
           )}
@@ -400,9 +428,9 @@ export default function ToteDesignerPage() {
       className="relative w-full flex items-center justify-center rounded-2xl border border-gray-200 bg-[#f3efe6] p-6"
       style={{ aspectRatio: '3/4' }}
     >
-      {designPreviewUrl ? (
+      {currentPreview || Object.values(designPreviews)[0] ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={designPreviewUrl} alt="עיצוב התיק" className="max-w-[70%] max-h-[70%] object-contain" />
+        <img src={currentPreview || Object.values(designPreviews)[0]} alt="עיצוב התיק" className="max-w-[70%] max-h-[70%] object-contain" />
       ) : (
         <span className="text-sm text-gray-400">תצוגת התיק</span>
       )}
@@ -410,7 +438,9 @@ export default function ToteDesignerPage() {
   )
 
   const toteColorHex = TOTE_COLORS.find(c => c.id === selectedColor)?.hex ?? '#E4D9C3'
-  const toteDesigns = designPreviewUrl ? [{ area: selectedArea, url: designPreviewUrl }] : []
+  const toteDesigns = (Object.entries(designPreviews) as [string, string][])
+    .filter(([, url]) => !!url)
+    .map(([area, url]) => ({ area, url }))
   const toteModel = getModel3D('tote', selectedType) ?? { variant: 'tote', url: '/models/tote-web.glb' }
   // A JSX element (NOT a component) so React keeps the same Preview3DStage
   // instance across re-renders (no scene reload / drag-hint flicker on change).
@@ -517,7 +547,7 @@ export default function ToteDesignerPage() {
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
               {previewElement}
-              {designFile && (
+              {uploadedCount > 0 && (
                 <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   ✓ עיצוב הועלה
                 </span>
@@ -562,7 +592,7 @@ export default function ToteDesignerPage() {
                     <Eye className="w-5 h-5 text-yellow-500" />
                     <span>תצוגה מקדימה</span>
                   </div>
-                  {designFile && (
+                  {uploadedCount > 0 && (
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
                       ✓ עיצוב הועלה
                     </span>
