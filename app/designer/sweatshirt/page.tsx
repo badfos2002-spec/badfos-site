@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
-import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES } from '@/lib/constants'
+import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
@@ -54,13 +54,15 @@ const stepConfig = [
 
 const STEP_NAMES = ['סוג', 'צבע', 'עיצוב', 'מידות']
 const totalSteps = 4
-const BASE_PRICE = 53
 const MIN_DISCOUNT_QTY = 15
 const DISCOUNT_PERCENT = 5
 
 export default function SweatshirtDesignerPage() {
   const router = useRouter()
   const { addItem } = useCart()
+  // Re-render when admin price overrides load, so the panel reflects live prices.
+  useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
+  const BASE_PRICE = getBasePrice('sweatshirt')
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedType, setSelectedType] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState('')
@@ -82,8 +84,9 @@ export default function SweatshirtDesignerPage() {
   )
 
   const totalQuantity = Object.values(quantities).reduce((sum, q) => sum + q, 0)
+  const liveDesignAreas = getDesignAreasByProductType('sweatshirt')
   const designCost = designs.reduce((sum, d) => {
-    const area = SWEATSHIRT_DESIGN_AREAS.find(a => a.id === d.area)
+    const area = liveDesignAreas.find(a => a.id === d.area)
     return sum + (area?.price || 0)
   }, 0)
   const pricePerUnit = BASE_PRICE + designCost
@@ -102,7 +105,14 @@ export default function SweatshirtDesignerPage() {
     }
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    // Safety net: never let a blob: preview URL reach the order — it would break
+    // admin download + upscale. handleFileSelect already stores only permanent
+    // Storage URLs, but guard here in case an upload is still in flight/failed.
+    if (designs.some(d => d.imageUrl.startsWith('blob:'))) {
+      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
+      return
+    }
     addItem({
       productType: 'sweatshirt',
       fabricType: selectedType,
@@ -142,31 +152,27 @@ export default function SweatshirtDesignerPage() {
     // session, require explicit confirmation. On cancel, keep the existing design.
     if (hasDesign(areaId) && !confirmDesignReplace(selectedArea.name, true)) return
 
-    // Show preview immediately with blob URL
-    const previewUrl = URL.createObjectURL(file)
-    const tempDesign: DesignArea = {
-      area: areaId,
-      areaName: selectedArea.name,
-      imageUrl: previewUrl,
-      fileName: file.name,
-    }
-    setDesigns(prev => {
-      const idx = prev.findIndex(d => d.area === areaId)
-      if (idx >= 0) { const u = [...prev]; u[idx] = tempDesign; return u }
-      return [...prev, tempDesign]
-    })
-
-    // Upload to Firebase Storage for permanent high-quality URL
+    // Upload to Firebase Storage FIRST and only ever store the permanent https
+    // URL in `designs` — never a blob: preview. A blob: url that reaches the
+    // order would break admin download + upscale (the design would be lost).
     setUploadingArea(selectedAreaId)
     try {
       const uniqueName = generateUniqueFileName(file.name)
       const permanentUrl = await uploadDesignFile(file, sessionId, uniqueName)
-      setDesigns(prev => prev.map(d =>
-        d.area === areaId ? { ...d, imageUrl: permanentUrl } : d
-      ))
+      const newDesign: DesignArea = {
+        area: areaId,
+        areaName: selectedArea.name,
+        imageUrl: permanentUrl,
+        fileName: file.name,
+      }
+      setDesigns(prev => {
+        const idx = prev.findIndex(d => d.area === areaId)
+        if (idx >= 0) { const u = [...prev]; u[idx] = newDesign; return u }
+        return [...prev, newDesign]
+      })
     } catch (err) {
-      console.error('Upload failed, keeping local preview:', err)
-      // Keep blob URL as fallback if Firebase not configured
+      console.error('Design upload failed:', err)
+      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
     } finally {
       setUploadingArea(null)
     }
@@ -216,7 +222,6 @@ export default function SweatshirtDesignerPage() {
                       <div className="font-bold text-lg text-[#1e293b]">{type.name}</div>
                       {isSelected && <Check className="w-5 h-5 text-[#f59e0b]" strokeWidth={3} />}
                     </div>
-                    <div className="text-xs text-gray-500">{type.description}</div>
                   </button>
                 )
               })}
@@ -510,7 +515,7 @@ export default function SweatshirtDesignerPage() {
 
   const MockupImage = () => {
     const currentView = isBackView ? 'back' : 'front'
-    const sweatshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
+    const sweatshirtAreaIds: string[] = availableAreas.map(a => a.id)
     const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => sweatshirtAreaIds.includes(areaId) && overlay.view === currentView)
     const showAreas = currentStep === 3
     return (

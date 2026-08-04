@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
@@ -10,7 +10,7 @@ import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY } from '@/lib/constants'
+import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
@@ -31,8 +31,10 @@ const stepConfig = [
 
 const STEP_NAMES = ['סוג', 'צבע', 'עיצוב', 'כמות']
 const totalSteps = 4
-const BASE_PRICE = 30
-const DESIGN_COST = 5
+
+// Light-fill colors need a dark check icon for contrast (a white check on a
+// light fill is nearly invisible).
+const LIGHT_COLOR_IDS = ['white', 'yellow', 'pink', 'beige']
 
 export default function CapDesignerPage() {
   const router = useRouter()
@@ -46,13 +48,25 @@ export default function CapDesignerPage() {
   const sessionId = useState(() => `cap-${Date.now()}`)[0]
   const [addingToCart, setAddingToCart] = useState(false)
 
-  const pricePerUnit = designFile ? BASE_PRICE + DESIGN_COST : BASE_PRICE
+  // Re-render when admin pricing overrides load so the numbers below stay live.
+  useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
+
+  const basePrice = getBasePrice('cap')
+  const capDesignAreas = getDesignAreasByProductType('cap')
+  const designCost = (capDesignAreas.find(a => a.id === selectedArea) ?? capDesignAreas[0])?.price ?? 0
+
+  const pricePerUnit = designFile ? basePrice + designCost : basePrice
   const total = quantity * pricePerUnit
 
   const designPreviewUrl = useMemo(() => {
     if (!designFile) return null
     return URL.createObjectURL(designFile)
   }, [designFile])
+
+  useEffect(() => {
+    if (!designPreviewUrl) return
+    return () => URL.revokeObjectURL(designPreviewUrl)
+  }, [designPreviewUrl])
 
   const availableColors = useMemo(() => {
     if (!selectedType) return CAP_COLORS
@@ -186,7 +200,7 @@ export default function CapDesignerPage() {
                       } ${hasBorder ? 'border border-gray-300' : ''}`}
                       style={{ backgroundColor: color.hex }}
                     >
-                      {isSelected && <Check className={`w-5 h-5 ${color.id === 'white' ? 'text-gray-800' : 'text-white'}`} strokeWidth={3} />}
+                      {isSelected && <Check className={`w-5 h-5 ${LIGHT_COLOR_IDS.includes(color.id) ? 'text-gray-800' : 'text-white'}`} strokeWidth={3} />}
                     </div>
                     <span className={`text-xs text-center leading-none ${isSelected ? 'font-bold text-[#f59e0b]' : 'text-gray-500'}`}>
                       {color.name}
@@ -362,12 +376,12 @@ export default function CapDesignerPage() {
         <div className="space-y-1.5 pb-3 border-b border-gray-100 text-sm">
           <div className="flex justify-between text-gray-600">
             <span>מחיר בסיס</span>
-            <span className="font-medium">{BASE_PRICE}₪</span>
+            <span className="font-medium">{basePrice}₪</span>
           </div>
           {designFile && (
             <div className="flex justify-between text-gray-600">
               <span>הדפסה</span>
-              <span className="font-medium">+{DESIGN_COST}₪</span>
+              <span className="font-medium">+{designCost}₪</span>
             </div>
           )}
         </div>

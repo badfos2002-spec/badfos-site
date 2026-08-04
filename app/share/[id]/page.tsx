@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { getSharedDesign, SharedDesignData } from '@/lib/db'
-import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { tshirtMockups, tshirtMockupsBack, capMockups, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
@@ -13,20 +13,58 @@ import { getColorHex, getModel3D } from '@/lib/constants'
 
 const Preview3DStage = dynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
 
-function MockupView({ view, color, designs }: {
+function MockupView({ view, color, designs, productType, fabricType }: {
   view: 'front' | 'back'
   color: string
   designs: { area: string; areaName: string; imageBase64: string }[]
+  productType?: string
+  fabricType?: string
 }) {
   const resolvedColor = colorFallback[color] || color
-  const mockupSrc = view === 'front'
-    ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
-    : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
+
+  // Product-aware 2D mockup photo. Caps have a dedicated photo set; buff/apron/
+  // baby have none → we render the raw uploaded design(s) on a neutral card
+  // instead of showing a t-shirt photo. tshirt/sweatshirt keep the t-shirt set.
+  let mockupSrc: string | undefined
+  if (productType === 'cap') {
+    const set = fabricType ? capMockups[fabricType] : undefined
+    mockupSrc = set?.[color] || set?.['black']
+  } else if (productType === 'buff' || productType === 'apron' || productType === 'baby') {
+    mockupSrc = undefined
+  } else {
+    mockupSrc = view === 'front'
+      ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
+      : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
+  }
 
   const viewDesigns = designs.filter(d => {
     const overlay = DESIGN_AREA_OVERLAYS[d.area]
     return overlay && overlay.view === view
   })
+
+  // No product photo (buff / apron / baby) → neutral card with the raw design(s).
+  if (!mockupSrc) {
+    return (
+      <div
+        className="relative w-full flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-6"
+        style={{ aspectRatio: '3/4' }}
+      >
+        {viewDesigns.length > 0 ? (
+          viewDesigns.map((design) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={design.area}
+              src={design.imageBase64}
+              alt={design.areaName}
+              className="max-w-[70%] max-h-[70%] object-contain"
+            />
+          ))
+        ) : (
+          <span className="text-sm text-gray-400">אין עיצוב להצגה</span>
+        )}
+      </div>
+    )
+  }
 
   return (
     // Same approach as the designer: w-full, height determined by image (h-auto).
@@ -123,8 +161,8 @@ export default function SharePage() {
           </div>
         ) : hasBoth ? (
           <div className="grid grid-cols-2 gap-4 w-full max-w-xs sm:max-w-sm md:max-w-2xl lg:max-w-4xl">
-            <MockupView view="front" color={design.color} designs={design.designs} />
-            <MockupView view="back" color={design.color} designs={design.designs} />
+            <MockupView view="front" color={design.color} designs={design.designs} productType={design.productType} fabricType={design.fabricType} />
+            <MockupView view="back" color={design.color} designs={design.designs} productType={design.productType} fabricType={design.fabricType} />
           </div>
         ) : (
           <div className="w-full max-w-[260px] sm:max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl">
@@ -132,6 +170,8 @@ export default function SharePage() {
               view={hasFront ? 'front' : 'back'}
               color={design.color}
               designs={design.designs}
+              productType={design.productType}
+              fabricType={design.fabricType}
             />
           </div>
         )}

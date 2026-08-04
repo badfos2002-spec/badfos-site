@@ -6,19 +6,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getSharedCart, SharedDesignData, createShareCoupon } from '@/lib/db'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { TSHIRT_COLORS, SWEATSHIRT_COLORS, BUFF_COLORS, APRON_COLORS, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
+import { getColorLabel, getColorHex, getModel3D, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Loader2, X, Copy, Check, ChevronDown } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 
-const ALL_COLORS = [...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...BUFF_COLORS, ...APRON_COLORS]
-
-function getColorLabel(colorId: string) {
-  return ALL_COLORS.find(c => c.id === colorId)?.name || colorId
-}
-
-function getColorHex(colorId: string) {
-  return ALL_COLORS.find(c => c.id === colorId)?.hex || '#000'
-}
+const Preview3DStage = dynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
 
 function getProductLabel(productType: string) {
   return PRODUCT_CATEGORIES.find(c => c.id === productType)?.name || productType
@@ -133,19 +127,34 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
   const colorHex = getColorHex(item.color)
   const productLabel = getProductLabel(item.productType)
   const productIcon = getProductIcon(item.productType)
+  const m3d = getModel3D(item.productType, item.fabricType)
 
   return (
     <div className="rounded-2xl border border-gray-200/80 overflow-hidden bg-white/50 backdrop-blur-sm">
-      {/* Mockups - always 2 columns for consistent size */}
+      {/* Preview — 3D for products with a model, else the 2D mockup(s) */}
       <div className="p-5 sm:p-6">
-        <div className="grid grid-cols-2 gap-3">
-          <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
-          {hasBack ? (
-            <MockupView view="back" color={item.color} designs={item.designs} onClick={() => onClickMockup('back', item.color, item.designs)} />
-          ) : (
-            <div className="w-full" />
-          )}
-        </div>
+        {m3d ? (
+          <ThreeErrorBoundary fallback={<MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />}>
+            <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
+              <Preview3DStage
+                colorHex={getColorHex(item.color)}
+                designs={item.designs.map(d => ({ area: d.area, url: d.imageBase64 }))}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                variant={m3d.variant as any}
+                modelUrl={m3d.url}
+              />
+            </div>
+          </ThreeErrorBoundary>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
+            {hasBack ? (
+              <MockupView view="back" color={item.color} designs={item.designs} onClick={() => onClickMockup('back', item.color, item.designs)} />
+            ) : (
+              <div className="w-full" />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Info - thin strip */}

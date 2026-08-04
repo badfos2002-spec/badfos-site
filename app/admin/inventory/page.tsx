@@ -5,6 +5,7 @@ import { Search, AlertTriangle, Loader2, Archive, Plus, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getAllDocuments, updateDocument, createDocument } from '@/lib/db'
+import { getTypeLabel } from '@/lib/constants'
 import type { InventoryItem } from '@/lib/types'
 import { Timestamp } from 'firebase/firestore'
 
@@ -14,6 +15,7 @@ const productTypeLabels: Record<string, string> = {
   buff: 'באף',
   cap: 'כובע',
   apron: 'סינר',
+  baby: 'בגד גוף תינוק',
 }
 
 export default function AdminInventoryPage() {
@@ -108,6 +110,8 @@ export default function AdminInventoryPage() {
                 <option value="sweatshirt">סווטשרט</option>
                 <option value="buff">באף</option>
                 <option value="apron">סינר</option>
+                <option value="cap">כובע</option>
+                <option value="baby">בגד גוף תינוק</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -176,7 +180,7 @@ export default function AdminInventoryPage() {
                       {productTypeLabels[item.productType] ?? item.productType} · {item.color} · {item.size}
                     </div>
                     {item.fabricType && (
-                      <div className="text-xs text-gray-500 mt-0.5">בד: {item.fabricType}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">בד: {getTypeLabel(item.fabricType)}</div>
                     )}
                   </div>
                   {isLow ? (
@@ -245,7 +249,7 @@ export default function AdminInventoryPage() {
                 return (
                   <tr key={item.id} className="hover:bg-yellow-50/40 transition-colors cursor-pointer" onClick={() => { if (editingId !== item.id) { setEditingId(item.id); setEditQty(String(item.quantity)) } }}>
                     <td className="px-6 py-4 font-medium">{productTypeLabels[item.productType] ?? item.productType}</td>
-                    <td className="px-6 py-4 text-gray-600">{item.fabricType ?? '-'}</td>
+                    <td className="px-6 py-4 text-gray-600">{item.fabricType ? getTypeLabel(item.fabricType) : '-'}</td>
                     <td className="px-6 py-4 text-gray-600">{item.color}</td>
                     <td className="px-6 py-4 text-gray-600">{item.size}</td>
                     <td className="px-6 py-4">

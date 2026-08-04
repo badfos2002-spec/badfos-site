@@ -1,6 +1,7 @@
 import type { CustomerInfo, DesignArea } from '../types'
 import { escapeHtml } from '../utils'
 import { getColorLabel, getTypeLabel, getProductLabel } from '../constants'
+import { capMockups } from '../mockup-data'
 
 interface DesignMockupEmailProps {
   customer: CustomerInfo
@@ -183,12 +184,29 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
 
     <div class="content">
       ${items.map((item, index) => {
-        const resolvedColor = COLOR_FALLBACK[item.color] || item.color
-        const mockup = MOCKUP_IMAGES[resolvedColor] || MOCKUP_IMAGES['black']
-        const frontDesigns = item.designs.filter(d => d.area !== 'back')
         const backDesigns = item.designs.filter(d => d.area === 'back')
-        const hasFront = frontDesigns.length > 0
         const hasBack = backDesigns.length > 0
+
+        // Product-aware standalone mockup photos:
+        // - tshirt/sweatshirt: the color-based t-shirt photos (behavior unchanged)
+        // - cap: the dedicated cap photo for its type+color (front only)
+        // - buff/apron/baby (no photo set): skip standalone photos — the uploaded
+        //   design thumbnails below serve as the preview
+        let frontImg: string | undefined
+        let backImg: string | undefined
+        if (item.productType === 'cap') {
+          const set = item.fabricType ? capMockups[item.fabricType] : undefined
+          frontImg = set?.[item.color] || set?.['black']
+          backImg = undefined
+        } else if (item.productType === 'buff' || item.productType === 'apron' || item.productType === 'baby') {
+          frontImg = undefined
+          backImg = undefined
+        } else {
+          const resolvedColor = COLOR_FALLBACK[item.color] || item.color
+          const mockup = MOCKUP_IMAGES[resolvedColor] || MOCKUP_IMAGES['black']
+          frontImg = mockup.front
+          backImg = mockup.back
+        }
 
         return `
       <div class="item-block">
@@ -197,22 +215,24 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
           <p>צבע: ${escapeHtml(getColorLabel(item.color))} ${item.fabricType ? `• ${escapeHtml(getTypeLabel(item.fabricType))}` : ''} • ${item.totalQuantity} יחידות</p>
         </div>
 
+        ${frontImg ? `
         <div class="mockup-row">
           <table class="mockup-table">
             <tr>
               <td class="mockup-cell">
                 <div class="mockup-label">קדימה</div>
-                <img src="${siteUrl}${mockup.front}" alt="קדימה" class="mockup-img" />
+                <img src="${siteUrl}${frontImg}" alt="קדימה" class="mockup-img" />
               </td>
-              ${hasBack || true ? `
+              ${hasBack && backImg ? `
               <td class="mockup-cell">
                 <div class="mockup-label">אחורה</div>
-                <img src="${siteUrl}${mockup.back}" alt="אחורה" class="mockup-img" />
+                <img src="${siteUrl}${backImg}" alt="אחורה" class="mockup-img" />
               </td>
               ` : ''}
             </tr>
           </table>
         </div>
+        ` : ''}
 
         ${item.designs.length > 0 ? `
         <div class="designs-section">

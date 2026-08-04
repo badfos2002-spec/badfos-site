@@ -6,30 +6,58 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Trash2, Pencil, Share2, Loader2, Check } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
-import type { CartItem as CartItemType, DesignArea } from '@/lib/types'
+import type { CartItem as CartItemType, DesignArea, ProductType } from '@/lib/types'
 import { formatPrice } from '@/lib/pricing'
 import { getColorLabel, getTypeLabel } from '@/lib/constants'
-import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { tshirtMockups, tshirtMockupsBack, capMockups, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { createSharedDesign } from '@/lib/db'
 
 interface CartItemProps {
   item: CartItemType
 }
 
-function MockupView({ view, color, designs }: {
+function MockupView({ view, color, designs, productType, fabricType }: {
   view: 'front' | 'back'
   color: string
   designs: DesignArea[]
+  productType: ProductType
+  fabricType?: string
 }) {
-  const resolvedColor = colorFallback[color] || color
-  const mockupSrc = view === 'front'
-    ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
-    : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
-
   const viewDesigns = designs.filter(d => {
     const overlay = DESIGN_AREA_OVERLAYS[d.area]
     return overlay && overlay.view === view
   })
+
+  // Resolve the product photo for products that have a dedicated 2D mockup map.
+  // tshirt → tshirt image maps; cap → capMockups keyed by [fabricType][color].
+  let mockupSrc: string | undefined
+  if (productType === 'tshirt') {
+    const resolvedColor = colorFallback[color] || color
+    mockupSrc = view === 'front'
+      ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
+      : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
+  } else if (productType === 'cap' && fabricType) {
+    mockupSrc = capMockups[fabricType]?.[color] || capMockups[fabricType]?.['black']
+  }
+
+  // Products without a dedicated mockup map (sweatshirt/buff/apron/baby):
+  // render the raw uploaded design centered on a neutral card instead of a
+  // t-shirt photo.
+  if (!mockupSrc) {
+    const fallbackDesign = viewDesigns[0]
+    return (
+      <div className="relative w-24 h-24 bg-gray-50 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 flex items-center justify-center p-2">
+        {fallbackDesign && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={fallbackDesign.imageUrl}
+            alt={fallbackDesign.areaName}
+            className="max-w-full max-h-full object-contain"
+          />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="relative w-24 h-24 bg-gray-50 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
@@ -113,7 +141,7 @@ export default function CartItem({ item }: CartItemProps) {
       const shareId = await createSharedDesign({
         productType: item.productType,
         color: item.color,
-        fabricType: item.fabricType,
+        ...(item.fabricType ? { fabricType: item.fabricType } : {}),
         designs,
       })
 
@@ -180,17 +208,17 @@ export default function CartItem({ item }: CartItemProps) {
             ) : item.designs.length > 0 ? (
               <>
                 {hasFrontDesigns && (
-                  <MockupView view="front" color={item.color} designs={item.designs} />
+                  <MockupView view="front" color={item.color} designs={item.designs} productType={item.productType} fabricType={item.fabricType} />
                 )}
                 {hasBackDesigns && (
-                  <MockupView view="back" color={item.color} designs={item.designs} />
+                  <MockupView view="back" color={item.color} designs={item.designs} productType={item.productType} fabricType={item.fabricType} />
                 )}
                 {!hasFrontDesigns && !hasBackDesigns && (
-                  <MockupView view="front" color={item.color} designs={[]} />
+                  <MockupView view="front" color={item.color} designs={[]} productType={item.productType} fabricType={item.fabricType} />
                 )}
               </>
             ) : (
-              <MockupView view="front" color={item.color} designs={[]} />
+              <MockupView view="front" color={item.color} designs={[]} productType={item.productType} fabricType={item.fabricType} />
             )}
           </div>
 
