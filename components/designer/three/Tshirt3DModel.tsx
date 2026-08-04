@@ -165,6 +165,7 @@ const VARIANTS = {
     panels: false,
     normalMapUrl: '/models/tex/meshcap-normal.png',
     roughMapUrl: '/models/tex/meshcap-rough.png',
+    normalScale: 2.6, // trucker fabric + mesh weave reads clearly even on light colours
     singleArea: true,
   },
 } as const;
@@ -320,11 +321,13 @@ function TexturedMaterial({
   emissiveIntensity,
   normalMapUrl,
   roughMapUrl,
+  strength = 1.3,
 }: {
   color: THREE.Color;
   emissiveIntensity: number;
   normalMapUrl: string;
   roughMapUrl: string;
+  strength?: number;
 }) {
   const [normalMap, roughMap] = useLoader(THREE.TextureLoader, [normalMapUrl, roughMapUrl]);
   useMemo(() => {
@@ -336,7 +339,7 @@ function TexturedMaterial({
       t.needsUpdate = true;
     });
   }, [normalMap, roughMap]);
-  const normalScale = useMemo(() => new THREE.Vector2(1.3, 1.3), []);
+  const normalScale = useMemo(() => new THREE.Vector2(strength, strength), [strength]);
   return (
     <meshStandardMaterial
       color={color}
@@ -378,6 +381,7 @@ export default function Tshirt3DModel({
   const cfg = VARIANTS[variant] ?? VARIANTS.tshirt;
   const normalMapUrl = (cfg as { normalMapUrl?: string }).normalMapUrl;
   const roughMapUrl = (cfg as { roughMapUrl?: string }).roughMapUrl;
+  const normalStrength = (cfg as { normalScale?: number }).normalScale;
   const singleArea = (cfg as { singleArea?: boolean }).singleArea;
 
   const shirtColor = useMemo(() => {
@@ -491,6 +495,7 @@ export default function Tshirt3DModel({
                 emissiveIntensity={emissiveIntensity}
                 normalMapUrl={normalMapUrl}
                 roughMapUrl={roughMapUrl}
+                strength={normalStrength}
               />
             ) : (
               <ShirtMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} />
