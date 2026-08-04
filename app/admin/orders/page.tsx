@@ -36,6 +36,9 @@ const fabricLabels: Record<string, string> = {
   oversized: 'אוברסייז',
   mesh: 'רשת',
   tembel: 'טמבל',
+  kangaroo: 'קפוצ׳ון קנגרו',
+  putter: 'פוטר',
+  zip: 'קפוצ׳ון עם רוכסן',
 }
 
 const colorLabels: Record<string, string> = {
@@ -43,6 +46,8 @@ const colorLabels: Record<string, string> = {
   navy: 'נייבי', beige: 'בז׳', burgundy: 'בורדו', olive: 'זית',
   blue: 'כחול', green: 'ירוק', purple: 'סגול', orange: 'כתום',
   turquoise: 'טורקיז', lightblue: 'תכלת', pink: 'ורוד',
+  melange: 'אפור מלאנג', babypink: 'ורוד בייבי', bottlegreen: 'ירוק בקבוק',
+  brown: 'חום', khaki: 'חאקי', royalblue: 'כחול רויל', yellow: 'צהוב',
 }
 
 // Human-readable Hebrew label for a NON-done upscale entry, so the admin can see

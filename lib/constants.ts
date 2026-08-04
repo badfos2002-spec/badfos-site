@@ -554,6 +554,28 @@ export function getColorsByProductType(productType: ProductType) {
   }
 }
 
+// Hebrew label helpers — resolve any color / type / product id to its Hebrew
+// name across ALL product categories, so the admin, emails and cart always
+// show Hebrew (never a raw english id). Falls back to the id if unknown.
+export function getColorLabel(id: string): string {
+  const all: readonly { id: string; name: string }[] = [
+    ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
+    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS,
+  ]
+  return all.find(c => c.id === id)?.name ?? id
+}
+
+export function getTypeLabel(id: string): string {
+  const all: readonly { id: string; name: string }[] = [
+    ...FABRIC_TYPES, ...CAP_TYPES, ...SWEATSHIRT_TYPES,
+  ]
+  return all.find(t => t.id === id)?.name ?? id
+}
+
+export function getProductLabel(id: string): string {
+  return (PRODUCT_CATEGORIES as readonly { id: string; name: string }[]).find(p => p.id === id)?.name ?? id
+}
+
 export function getDesignAreasByProductType(productType: ProductType) {
   const areas = (() => {
     switch (productType) {

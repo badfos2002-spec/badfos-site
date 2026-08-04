@@ -1,5 +1,6 @@
 import { Order } from '../types'
 import { escapeHtml } from '../utils'
+import { getColorLabel, getTypeLabel, getProductLabel } from '../constants'
 
 interface OrderConfirmationEmailProps {
   order: Order
@@ -151,8 +152,8 @@ export function OrderConfirmationEmail({
           .map(
             (item) => `
           <div class="item">
-            <strong>${item.productType} - ${item.fabricType}</strong><br>
-            צבע: ${item.color}<br>
+            <strong>${escapeHtml(getProductLabel(item.productType))}${item.fabricType ? ' - ' + escapeHtml(getTypeLabel(item.fabricType)) : ''}</strong><br>
+            צבע: ${escapeHtml(getColorLabel(item.color))}<br>
             כמות: ${item.totalQuantity} יחידות<br>
             מחיר: ₪${item.totalPrice}
           </div>

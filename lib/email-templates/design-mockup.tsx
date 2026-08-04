@@ -1,5 +1,6 @@
 import type { CustomerInfo, DesignArea } from '../types'
 import { escapeHtml } from '../utils'
+import { getColorLabel, getTypeLabel, getProductLabel } from '../constants'
 
 interface DesignMockupEmailProps {
   customer: CustomerInfo
@@ -192,8 +193,8 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
         return `
       <div class="item-block">
         <div class="item-header">
-          <h2>פריט ${items.length > 1 ? `#${index + 1} - ` : ''}${item.productType === 'tshirt' ? 'חולצה' : escapeHtml(item.productType)}</h2>
-          <p>צבע: ${escapeHtml(item.color)} ${item.fabricType ? `• ${escapeHtml(item.fabricType)}` : ''} • ${item.totalQuantity} יחידות</p>
+          <h2>פריט ${items.length > 1 ? `#${index + 1} - ` : ''}${escapeHtml(getProductLabel(item.productType))}</h2>
+          <p>צבע: ${escapeHtml(getColorLabel(item.color))} ${item.fabricType ? `• ${escapeHtml(getTypeLabel(item.fabricType))}` : ''} • ${item.totalQuantity} יחידות</p>
         </div>
 
         <div class="mockup-row">

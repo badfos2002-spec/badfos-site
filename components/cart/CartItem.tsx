@@ -8,6 +8,7 @@ import { Trash2, Pencil, Share2, Loader2, Check } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import type { CartItem as CartItemType, DesignArea } from '@/lib/types'
 import { formatPrice } from '@/lib/pricing'
+import { getColorLabel, getTypeLabel } from '@/lib/constants'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { createSharedDesign } from '@/lib/db'
 
@@ -208,7 +209,7 @@ export default function CartItem({ item }: CartItemProps) {
                   }[item.productType] || item.productType}
                 </h3>
                 <p className="text-sm text-text-gray">
-                  {item.fabricType} • {item.color}
+                  {item.fabricType ? `${getTypeLabel(item.fabricType)} • ` : ''}{getColorLabel(item.color)}
                 </p>
               </div>
               <div className="flex gap-1">
