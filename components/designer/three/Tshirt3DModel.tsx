@@ -241,7 +241,7 @@ function TexturedMaterial({
       color={color}
       emissive="#ffffff"
       emissiveIntensity={emissiveIntensity}
-      roughness={1}
+      roughness={0.72}
       metalness={0.04}
       normalMap={normalMap}
       normalScale={normalScale}
@@ -282,8 +282,15 @@ export default function Tshirt3DModel({
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
     if (Math.max(c.r, c.g, c.b) < 0.12) c.setRGB(0.09, 0.093, 0.1);
+    // The cap's matte normal+roughness fabric mutes colours — lift saturation
+    // and a touch of lightness so they read vivid.
+    if (variant === 'cap') {
+      const hsl = { h: 0, s: 0, l: 0 };
+      c.getHSL(hsl);
+      c.setHSL(hsl.h, Math.min(1, hsl.s * 1.4), Math.min(1, hsl.l * 1.06));
+    }
     return c;
-  }, [color]);
+  }, [color, variant]);
 
   const emissiveIntensity = useMemo(() => {
     const c = new THREE.Color(color);
