@@ -434,14 +434,18 @@ function TwoToneCapMaterial({
   const normalScale = useMemo(() => new THREE.Vector2(strength, strength), [strength]);
   if (!map) return <ShirtMaterial color={color} emissiveIntensity={0} />;
   return (
+    // Fully matte: NO roughnessMap (the trucker's rough map has glossy patches
+    // that put a strong sheen on the coloured mesh/visor and wash the colour
+    // out) + reduced environment reflection. The colour stays true; the weave
+    // still reads via the normal map.
     <meshStandardMaterial
       map={map}
       color="#ffffff"
-      roughness={0.97}
+      roughness={1}
       metalness={0}
+      envMapIntensity={0.45}
       normalMap={normalMap}
       normalScale={normalScale}
-      roughnessMap={roughMap}
       side={THREE.DoubleSide}
     />
   );
