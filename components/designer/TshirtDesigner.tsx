@@ -392,7 +392,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
             .filter((d) => d.imageUrl)
             .map((d) => ({ area: d.area, url: d.imageUrl }))}
           showGuides={currentStep === 3}
-          activeArea={activeDesignArea}
+          activeArea={currentStep === 3 ? activeDesignArea : undefined}
           variant={model3d.variant}
           modelUrl={model3d.url}
         />

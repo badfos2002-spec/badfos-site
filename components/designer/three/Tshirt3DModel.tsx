@@ -91,8 +91,8 @@ const CAP_GUIDES: Record<string, GuideBox> = {
 const HOODIE_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.56, depth: 0.55 },
   back: { position: [0, 0.08, -0.33], rotation: [0, Math.PI, 0], size: 0.64, depth: 0.55 },
-  chest_logo: { position: [-0.3, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
-  chest_logo_right: { position: [0.3, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  chest_logo: { position: [-0.22, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  chest_logo_right: { position: [0.22, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   center: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.56, depth: 0.55 },
   center_wide: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.68, depth: 0.55 },
 };
@@ -103,11 +103,24 @@ const HOODIE_GUIDES: Record<string, GuideBox> = {
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל ימין' },
 };
 
+// Zip hoodie: no full-front print (the zipper runs down the centre) — back +
+// chest logos only.
+const ZIP_AREAS: Record<string, Placement> = {
+  back: HOODIE_AREAS.back,
+  chest_logo: HOODIE_AREAS.chest_logo,
+  chest_logo_right: HOODIE_AREAS.chest_logo_right,
+};
+const ZIP_GUIDES: Record<string, GuideBox> = {
+  back: HOODIE_GUIDES.back,
+  chest_logo: HOODIE_GUIDES.chest_logo,
+  chest_logo_right: HOODIE_GUIDES.chest_logo_right,
+};
+
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   sweatshirt: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   hoodie: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
-  ziphoodie: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
+  ziphoodie: { areas: ZIP_AREAS, guides: ZIP_GUIDES, panels: false },
   polo: { areas: POLO_AREAS, guides: POLO_GUIDES, panels: true },
   oversized: { areas: OVERSIZED_AREAS, guides: OVERSIZED_GUIDES, panels: false },
   cap: {

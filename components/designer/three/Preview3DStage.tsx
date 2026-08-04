@@ -40,7 +40,8 @@ function Turntable({
   // Clicking a design area spins the shirt to face it (back = 180°, everything
   // else = front). Rotate the SHORT way around from wherever it currently is.
   useEffect(() => {
-    if (!focusArea) return;
+    // 'back' faces the rear; every other area (and no area / non-design steps)
+    // faces the front. Rotate the SHORT way from wherever it is.
     const angle = focusArea === 'back' ? Math.PI : 0;
     const twoPi = Math.PI * 2;
     const cur = target.current;
@@ -96,6 +97,10 @@ function Turntable({
  */
 export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
+  // Re-arm the drag hint every time the user reaches the design step.
+  useEffect(() => {
+    if (showGuides) setInteracted(false);
+  }, [showGuides]);
   // The bucket hat's wide brim fills the frame — give it more margin so it
   // reads a touch smaller than the shirts.
   const fitMargin = variant === 'cap' ? 1.4 : 1.0;

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
-import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, STANDARD_SIZES } from '@/lib/constants'
+import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
@@ -65,10 +65,13 @@ export default function SweatshirtDesignerPage() {
   const [selectedType, setSelectedType] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState('')
   const availableColors = SWEATSHIRT_COLORS.filter(c => (SWEATSHIRT_COLOR_FILTER[selectedType] || []).includes(c.id))
+  const availableAreas = SWEATSHIRT_DESIGN_AREAS.filter(a => !SWEATSHIRT_AREA_FILTER[selectedType] || SWEATSHIRT_AREA_FILTER[selectedType].includes(a.id))
   const handleTypeSelect = (typeId: string) => {
     setSelectedType(typeId)
     const allowed = SWEATSHIRT_COLOR_FILTER[typeId] || []
     if (selectedColor && !allowed.includes(selectedColor)) setSelectedColor('')
+    const allowedAreas = SWEATSHIRT_AREA_FILTER[typeId]
+    if (allowedAreas && !allowedAreas.includes(selectedAreaId)) setSelectedAreaId(allowedAreas[0])
   }
   const [designs, setDesigns] = useState<DesignArea[]>([])
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
@@ -267,7 +270,7 @@ export default function SweatshirtDesignerPage() {
 
             {/* Area selector tabs */}
             <div className="grid gap-2 mb-4 grid-cols-2">
-              {SWEATSHIRT_DESIGN_AREAS.map((area) => {
+              {availableAreas.map((area) => {
                 const isActive = selectedAreaId === area.id
                 const uploaded = hasDesign(area.id)
                 return (
@@ -575,7 +578,7 @@ export default function SweatshirtDesignerPage() {
           colorHex={sweatColorHex}
           designs={sweatDesigns}
           showGuides={currentStep === 3}
-          activeArea={selectedAreaId}
+          activeArea={currentStep === 3 ? selectedAreaId : undefined}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           variant={sweatModel.variant as any}
           modelUrl={sweatModel.url}

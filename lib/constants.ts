@@ -130,6 +130,12 @@ export const SWEATSHIRT_COLOR_FILTER: Record<string, string[]> = {
   kangaroo: ['black', 'white', 'navy', 'beige', 'lightblue', 'burgundy', 'babypink', 'brown', 'olive', 'gray'],
 }
 
+// Print areas per sweatshirt type (undefined = all areas). The zip has no
+// full-front print — the zipper runs down the centre.
+export const SWEATSHIRT_AREA_FILTER: Record<string, string[]> = {
+  zip: ['back', 'chest_logo', 'chest_logo_right'],
+}
+
 export const BUFF_COLORS = [
   { id: 'red', name: 'אדום', hex: '#EF4444' },
   { id: 'navy', name: 'נייבי', hex: '#1E3A8A' },
