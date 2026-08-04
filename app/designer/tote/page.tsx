@@ -8,7 +8,7 @@ import { ArrowRight, ArrowLeft, RefreshCw, ShoppingBag, Palette, ImagePlus, Pack
 import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
-import { TOTE_TYPES, TOTE_COLORS, TOTE_COLOR_FILTER, TOTE_DESIGN_AREAS, TOTE_AREA_FILTER, TOTE_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
+import { TOTE_TYPES, TOTE_COLORS, TOTE_COLOR_FILTER, TOTE_DESIGN_AREAS, TOTE_AREA_FILTER, TOTE_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
@@ -411,6 +411,7 @@ export default function ToteDesignerPage() {
 
   const toteColorHex = TOTE_COLORS.find(c => c.id === selectedColor)?.hex ?? '#E4D9C3'
   const toteDesigns = designPreviewUrl ? [{ area: selectedArea, url: designPreviewUrl }] : []
+  const toteModel = getModel3D('tote', selectedType) ?? { variant: 'tote', url: '/models/tote-web.glb' }
   // A JSX element (NOT a component) so React keeps the same Preview3DStage
   // instance across re-renders (no scene reload / drag-hint flicker on change).
   const previewElement = (
@@ -421,8 +422,9 @@ export default function ToteDesignerPage() {
           designs={toteDesigns}
           showGuides={currentStep === 3}
           activeArea={currentStep === 3 ? selectedArea : undefined}
-          variant="tote"
-          modelUrl="/models/tote-web.glb"
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          variant={toteModel.variant as any}
+          modelUrl={toteModel.url}
         />
       </div>
     </ThreeErrorBoundary>

@@ -125,6 +125,14 @@ const TOTE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.6, h: 0.78, label: 'קדמי' },
 };
 
+// Volume tote — fuller body, front panel sits further out on +Z than the flat tote.
+const TOTEVOL_AREAS: Record<string, Placement> = {
+  front_full: { position: [0, -0.1, 0.34], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
+};
+const TOTEVOL_GUIDES: Record<string, GuideBox> = {
+  front_full: { w: 0.6, h: 0.72, label: 'קדמי' },
+};
+
 // Trucker / mesh cap — front panel faces +Z; the print sits centred on the
 // front panel (upper-middle of the cap).
 const MESHCAP_AREAS: Record<string, Placement> = {
@@ -137,6 +145,7 @@ const MESHCAP_GUIDES: Record<string, GuideBox> = {
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   tote: { areas: TOTE_AREAS, guides: TOTE_GUIDES, panels: false },
+  totevolume: { areas: TOTEVOL_AREAS, guides: TOTEVOL_GUIDES, panels: false },
   sweatshirt: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   hoodie: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   ziphoodie: { areas: ZIP_AREAS, guides: ZIP_GUIDES, panels: false },
@@ -519,4 +528,5 @@ useGLTF.preload('/models/sweatshirt-web.glb');
 useGLTF.preload('/models/hoodie-web.glb');
 useGLTF.preload('/models/ziphoodie-web.glb');
 useGLTF.preload('/models/tote-web.glb');
+useGLTF.preload('/models/tote-volume-web.glb');
 useGLTF.preload('/models/meshcap-web.glb');

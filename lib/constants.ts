@@ -57,8 +57,8 @@ export const PRODUCT_CATEGORIES = [
     id: 'tote' as ProductType,
     name: 'תיקים',
     icon: '👜',
-    color: 'bg-amber-100 border-amber-500',
-    textColor: 'text-amber-900',
+    color: 'bg-sky-100 border-sky-500',
+    textColor: 'text-sky-900',
     popular: false,
   },
 ] as const
@@ -326,7 +326,8 @@ export const BABY_SIZES = [
 // ============================================================================
 
 export const TOTE_TYPES = [
-  { id: 'classic', name: 'תיק קלאסי', description: 'תיק בד (טוט) קלאסי עם ידיות ארוכות', surcharge: 0 },
+  { id: 'classic', name: 'תיק קלאסי', description: 'תיק בד (טוט) קלאסי שטוח עם ידיות ארוכות', surcharge: 0 },
+  { id: 'volume', name: 'תיק נפחי', description: 'תיק בד עם נפח ותחתית מתרחבת', surcharge: 0 },
 ] as const
 
 export const TOTE_COLORS = [
@@ -337,6 +338,7 @@ export const TOTE_COLORS = [
 
 export const TOTE_COLOR_FILTER: Record<string, string[]> = {
   classic: ['beige', 'white', 'black'],
+  volume: ['beige', 'white', 'black'],
 }
 
 export const TOTE_DESIGN_AREAS = [
@@ -350,6 +352,7 @@ export const TOTE_DESIGN_AREAS = [
 
 export const TOTE_AREA_FILTER: Record<string, string[]> = {
   classic: ['front_full'],
+  volume: ['front_full'],
 }
 
 export const TOTE_MIN_QUANTITY = 1
@@ -649,7 +652,10 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
     if (fabricType === 'mesh') return { variant: 'meshcap', url: '/models/meshcap-web.glb' }
     return { variant: 'cap', url: '/models/cap-web.glb' }
   }
-  if (productType === 'tote') return { variant: 'tote', url: '/models/tote-web.glb' }
+  if (productType === 'tote') {
+    if (fabricType === 'volume') return { variant: 'totevolume', url: '/models/tote-volume-web.glb' }
+    return { variant: 'tote', url: '/models/tote-web.glb' }
+  }
   return null
 }
 
