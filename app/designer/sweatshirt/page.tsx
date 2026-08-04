@@ -6,7 +6,7 @@ import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
-import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, STANDARD_SIZES } from '@/lib/constants'
+import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, STANDARD_SIZES } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
@@ -44,14 +44,6 @@ const sweatshirtMockupsBack: Record<string, string> = {
   burgundy: '/assets/סווטשירט גב בורדו.webp',
 }
 
-const colors = [
-  { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },
-  { id: 'black', name: 'שחור', hex: '#000000' },
-  { id: 'gray', name: 'אפור', hex: '#9CA3AF' },
-  { id: 'navy', name: 'נייבי', hex: '#1E3A8A' },
-  { id: 'burgundy', name: 'בורדו', hex: '#7C2D12' },
-  { id: 'red', name: 'אדום', hex: '#EF4444' },
-]
 
 const stepConfig = [
   { title: 'בחר סוג', icon: Shirt },
@@ -72,6 +64,12 @@ export default function SweatshirtDesignerPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedType, setSelectedType] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState('')
+  const availableColors = SWEATSHIRT_COLORS.filter(c => (SWEATSHIRT_COLOR_FILTER[selectedType] || []).includes(c.id))
+  const handleTypeSelect = (typeId: string) => {
+    setSelectedType(typeId)
+    const allowed = SWEATSHIRT_COLOR_FILTER[typeId] || []
+    if (selectedColor && !allowed.includes(selectedColor)) setSelectedColor('')
+  }
   const [designs, setDesigns] = useState<DesignArea[]>([])
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
   const [uploadingArea, setUploadingArea] = useState<string | null>(null)
@@ -204,7 +202,7 @@ export default function SweatshirtDesignerPage() {
                 return (
                   <button
                     key={type.id}
-                    onClick={() => setSelectedType(type.id)}
+                    onClick={() => handleTypeSelect(type.id)}
                     className={`p-5 rounded-xl border-2 text-right transition-all ${
                       isSelected
                         ? 'border-[#fbbf24] bg-yellow-50'
@@ -228,10 +226,10 @@ export default function SweatshirtDesignerPage() {
         return (
           <div>
             <p className="text-sm text-gray-500 mb-4">
-              {selectedColor ? `נבחר: ${colors.find(c => c.id === selectedColor)?.name}` : 'בחרו את צבע הסווטשרט'}
+              {selectedColor ? `נבחר: ${SWEATSHIRT_COLORS.find(c => c.id === selectedColor)?.name}` : 'בחרו את צבע הסווטשרט'}
             </p>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
-              {colors.map(color => {
+              {availableColors.map(color => {
                 const isSelected = selectedColor === color.id
                 return (
                   <button
@@ -561,7 +559,7 @@ export default function SweatshirtDesignerPage() {
 
   // 3D preview: replaces the 2D mockup once a sweatshirt type is chosen.
   // Any 3D failure falls back to the 2D MockupImage.
-  const sweatColorHex = colors.find(c => c.id === selectedColor)?.hex ?? '#9CA3AF'
+  const sweatColorHex = SWEATSHIRT_COLORS.find(c => c.id === selectedColor)?.hex ?? '#9CA3AF'
   const sweatDesigns = designs.filter(d => d.imageUrl).map(d => ({ area: d.area, url: d.imageUrl }))
   const sweatModel = ({
     kangaroo: { variant: 'hoodie', url: '/models/hoodie-web.glb' },

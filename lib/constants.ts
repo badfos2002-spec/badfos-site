@@ -108,12 +108,27 @@ export const FABRIC_COLOR_FILTER: Record<string, string[]> = {
 }
 
 export const SWEATSHIRT_COLORS = [
+  { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },
   { id: 'black', name: 'שחור', hex: '#000000' },
+  { id: 'navy', name: 'נייבי', hex: '#1F3A63' },
+  { id: 'melange', name: 'אפור מלאנג', hex: '#A6ABB2' },
   { id: 'gray', name: 'אפור', hex: '#9CA3AF' },
-  { id: 'blue', name: 'כחול', hex: '#3B82F6' },
-  { id: 'red', name: 'אדום', hex: '#EF4444' },
-  { id: 'green', name: 'ירוק', hex: '#10B981' },
+  { id: 'lightblue', name: 'תכלת', hex: '#9AD4EC' },
+  { id: 'red', name: 'אדום', hex: '#C0202B' },
+  { id: 'babypink', name: 'ורוד בייבי', hex: '#F7C6D9' },
+  { id: 'bottlegreen', name: 'ירוק בקבוק', hex: '#1B4D3E' },
+  { id: 'beige', name: 'בז׳', hex: '#E8DFCD' },
+  { id: 'burgundy', name: 'בורדו', hex: '#6E2A48' },
+  { id: 'brown', name: 'חום', hex: '#6B4226' },
+  { id: 'olive', name: 'זית', hex: '#6B7245' },
 ] as const
+
+// Colors available per sweatshirt type.
+export const SWEATSHIRT_COLOR_FILTER: Record<string, string[]> = {
+  zip: ['navy', 'black', 'white', 'melange'],
+  putter: ['black', 'white', 'navy', 'melange', 'lightblue', 'red', 'babypink', 'bottlegreen'],
+  kangaroo: ['black', 'white', 'navy', 'beige', 'lightblue', 'burgundy', 'babypink', 'brown', 'olive', 'gray'],
+}
 
 export const BUFF_COLORS = [
   { id: 'red', name: 'אדום', hex: '#EF4444' },
@@ -147,9 +162,9 @@ export const CAP_TYPES = [
 ] as const
 
 export const SWEATSHIRT_TYPES = [
-  { id: 'kangaroo', name: 'קנגרו', description: 'סווטשירט עם ברדס, בלי רוכסן', surcharge: 0 },
+  { id: 'kangaroo', name: 'קפוצ׳ון קנגרו', description: 'קפוצ׳ון עם ברדס, בלי רוכסן', surcharge: 0 },
   { id: 'putter', name: 'פוטר', description: 'סווטשירט קלאסי, בלי ברדס ובלי רוכסן', surcharge: 0 },
-  { id: 'zip', name: 'סווטשירט עם רוכסן', description: 'סווטשירט עם ברדס ורוכסן', surcharge: 0 },
+  { id: 'zip', name: 'קפוצ׳ון עם רוכסן', description: 'קפוצ׳ון עם ברדס ורוכסן', surcharge: 0 },
 ] as const
 
 export const CAP_COLORS = [
