@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useGLTF, Decal } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
@@ -190,20 +190,41 @@ function GuideDecal({ placement, box, active }: { placement: Placement; box: Gui
 }
 
 function ShirtDecal({ url, placement }: { url: string; placement: Placement }) {
-  const texture = useLoader(THREE.TextureLoader, url);
-  useMemo(() => {
-    texture.anisotropy = 8;
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.needsUpdate = true;
-  }, [texture]);
+  // Manual (non-suspending) texture load. `useLoader` throws on a failed image
+  // (CORS, an undecodable format, a network hiccup), and that throw bubbles up
+  // to ThreeErrorBoundary — collapsing the ENTIRE 3D scene back to the flat 2D
+  // fallback, permanently. Loading by hand instead means a single bad artwork
+  // just skips its own decal; the 3D garment (and every other decal) survives.
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
+    loader.load(
+      url,
+      (tex) => {
+        if (cancelled) { tex.dispose(); return; }
+        tex.anisotropy = 8;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.needsUpdate = true;
+        setTexture(tex);
+      },
+      undefined,
+      () => { /* image failed to load — skip this decal, keep the 3D scene alive */ },
+    );
+    return () => { cancelled = true; };
+  }, [url]);
+
   const scale = useMemo<[number, number, number]>(() => {
-    const img = texture.image as { width?: number; height?: number } | undefined;
+    const img = texture?.image as { width?: number; height?: number } | undefined;
     const aspect = img?.width && img?.height ? img.width / img.height : 1;
     const s = placement.size;
     const sx = aspect >= 1 ? s : s * aspect;
     const sy = aspect >= 1 ? s / aspect : s;
     return [sx, sy, placement.depth];
   }, [texture, placement]);
+
+  if (!texture) return null;
   return (
     <Decal position={placement.position} rotation={placement.rotation} scale={scale} depthTest>
       <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
