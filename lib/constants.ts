@@ -53,6 +53,14 @@ export const PRODUCT_CATEGORIES = [
     textColor: 'text-pink-900',
     popular: false,
   },
+  {
+    id: 'tote' as ProductType,
+    name: 'תיקים',
+    icon: '👜',
+    color: 'bg-amber-100 border-amber-500',
+    textColor: 'text-amber-900',
+    popular: false,
+  },
 ] as const
 
 // ============================================================================
@@ -314,6 +322,39 @@ export const BABY_SIZES = [
 ] as const
 
 // ============================================================================
+// Tote bags (תיקים) — no sizes; type-based (more types added over time)
+// ============================================================================
+
+export const TOTE_TYPES = [
+  { id: 'classic', name: 'תיק קלאסי', description: 'תיק בד (טוט) קלאסי עם ידיות ארוכות', surcharge: 0 },
+] as const
+
+export const TOTE_COLORS = [
+  { id: 'beige', name: 'בז׳', hex: '#E4D9C3' },
+  { id: 'white', name: 'לבן', hex: '#FFFFFF', border: true },
+  { id: 'black', name: 'שחור', hex: '#000000' },
+] as const
+
+export const TOTE_COLOR_FILTER: Record<string, string[]> = {
+  classic: ['beige', 'white', 'black'],
+}
+
+export const TOTE_DESIGN_AREAS = [
+  {
+    id: 'front_full' as DesignAreaType,
+    name: 'הדפסה קדמית',
+    description: 'הדפסה על חזית התיק',
+    price: 10,
+  },
+] as const
+
+export const TOTE_AREA_FILTER: Record<string, string[]> = {
+  classic: ['front_full'],
+}
+
+export const TOTE_MIN_QUANTITY = 1
+
+// ============================================================================
 // Sizes and Surcharges
 // ============================================================================
 
@@ -339,6 +380,7 @@ export const BASE_PRICES = {
   cap: 30,
   apron: 29,
   baby: 35,
+  tote: 35,
 } as const
 
 export const CAP_MIN_QUANTITY = 10
@@ -566,14 +608,14 @@ export function getColorsByProductType(productType: ProductType) {
 export function getColorLabel(id: string): string {
   const all: readonly { id: string; name: string }[] = [
     ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
-    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS,
+    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS,
   ]
   return all.find(c => c.id === id)?.name ?? id
 }
 
 export function getTypeLabel(id: string): string {
   const all: readonly { id: string; name: string }[] = [
-    ...FABRIC_TYPES, ...CAP_TYPES, ...SWEATSHIRT_TYPES,
+    ...FABRIC_TYPES, ...CAP_TYPES, ...SWEATSHIRT_TYPES, ...TOTE_TYPES,
   ]
   return all.find(t => t.id === id)?.name ?? id
 }
@@ -585,7 +627,7 @@ export function getProductLabel(id: string): string {
 export function getColorHex(id: string): string {
   const all: readonly { id: string; hex: string }[] = [
     ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
-    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS,
+    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS,
   ]
   return all.find(c => c.id === id)?.hex ?? '#000000'
 }
@@ -604,6 +646,7 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
     return { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' }
   }
   if (productType === 'cap' && fabricType !== 'mesh') return { variant: 'cap', url: '/models/cap-web.glb' }
+  if (productType === 'tote') return { variant: 'tote', url: '/models/tote-web.glb' }
   return null
 }
 
@@ -616,6 +659,7 @@ export function getDesignAreasByProductType(productType: ProductType) {
       case 'apron': return APRON_DESIGN_AREAS
       case 'baby': return BABY_DESIGN_AREAS
       case 'cap': return CAP_DESIGN_AREAS
+      case 'tote': return TOTE_DESIGN_AREAS
       default: return TSHIRT_DESIGN_AREAS
     }
   })()

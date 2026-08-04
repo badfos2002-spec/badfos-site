@@ -27,6 +27,7 @@ const productLabels: Record<string, string> = {
   cap: 'כובע',
   apron: 'סינר',
   baby: 'בגד גוף תינוק',
+  tote: 'תיק',
 }
 
 const fabricLabels: Record<string, string> = {
@@ -39,6 +40,7 @@ const fabricLabels: Record<string, string> = {
   kangaroo: 'קפוצ׳ון קנגרו',
   putter: 'פוטר',
   zip: 'קפוצ׳ון עם רוכסן',
+  classic: 'קלאסי',
 }
 
 const colorLabels: Record<string, string> = {

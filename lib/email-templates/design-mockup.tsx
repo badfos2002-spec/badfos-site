@@ -198,7 +198,7 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
           const set = item.fabricType ? capMockups[item.fabricType] : undefined
           frontImg = set?.[item.color] || set?.['black']
           backImg = undefined
-        } else if (item.productType === 'buff' || item.productType === 'apron' || item.productType === 'baby') {
+        } else if (item.productType === 'buff' || item.productType === 'apron' || item.productType === 'baby' || item.productType === 'tote') {
           frontImg = undefined
           backImg = undefined
         } else {

@@ -11,6 +11,7 @@ const MODEL_BY_CATEGORY: Record<string, string> = {
   tshirt: '/models/tshirt-web.glb',
   cap: '/models/cap-web.glb',
   sweatshirt: '/models/hoodie-web.glb',
+  tote: '/models/tote-web.glb',
 }
 const warmed = new Set<string>()
 function warmModel(id: string) {
@@ -40,6 +41,11 @@ const categoryDetails: Record<string, { title: string; description: string; imag
     title: 'באפים',
     description: 'באפים ייחודיים עם העיצוב שלך',
     image: '/assets/רקע קטגוריית באפים.webp',
+  },
+  tote: {
+    title: 'תיקים',
+    description: 'תיקי בד קנבס איכותיים עם הדפסה בעיצוב אישי',
+    image: '/assets/tote-category.jpg',
   },
   apron: {
     title: 'סינרים',

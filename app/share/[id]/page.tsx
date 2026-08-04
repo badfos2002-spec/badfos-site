@@ -29,7 +29,7 @@ function MockupView({ view, color, designs, productType, fabricType }: {
   if (productType === 'cap') {
     const set = fabricType ? capMockups[fabricType] : undefined
     mockupSrc = set?.[color] || set?.['black']
-  } else if (productType === 'buff' || productType === 'apron' || productType === 'baby') {
+  } else if (productType === 'buff' || productType === 'apron' || productType === 'baby' || productType === 'tote') {
     mockupSrc = undefined
   } else {
     mockupSrc = view === 'front'

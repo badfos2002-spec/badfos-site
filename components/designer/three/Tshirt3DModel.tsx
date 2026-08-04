@@ -116,8 +116,18 @@ const ZIP_GUIDES: Record<string, GuideBox> = {
   chest_logo_right: HOODIE_GUIDES.chest_logo_right,
 };
 
+// Tote bag — front faces +Z; thin, tall body with handles at the top. The print
+// sits on the front panel, centred, in the lower-middle of the body.
+const TOTE_AREAS: Record<string, Placement> = {
+  front_full: { position: [0, -0.22, 0.2], rotation: [0, 0, 0], size: 0.72, depth: 0.4 },
+};
+const TOTE_GUIDES: Record<string, GuideBox> = {
+  front_full: { w: 0.6, h: 0.78, label: 'קדמי' },
+};
+
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
+  tote: { areas: TOTE_AREAS, guides: TOTE_GUIDES, panels: false },
   sweatshirt: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   hoodie: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   ziphoodie: { areas: ZIP_AREAS, guides: ZIP_GUIDES, panels: false },
@@ -491,3 +501,4 @@ useGLTF.preload('/models/cap-web.glb');
 useGLTF.preload('/models/sweatshirt-web.glb');
 useGLTF.preload('/models/hoodie-web.glb');
 useGLTF.preload('/models/ziphoodie-web.glb');
+useGLTF.preload('/models/tote-web.glb');

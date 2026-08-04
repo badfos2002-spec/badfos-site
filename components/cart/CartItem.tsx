@@ -234,6 +234,7 @@ export default function CartItem({ item }: CartItemProps) {
                     cap: 'כובע בעיצוב אישי',
                     apron: 'סינר בעיצוב אישי',
                     baby: 'בגד גוף תינוק בעיצוב אישי',
+                    tote: 'תיק בעיצוב אישי',
                   }[item.productType] || item.productType}
                 </h3>
                 <p className="text-sm text-text-gray">
