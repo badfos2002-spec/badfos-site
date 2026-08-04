@@ -404,13 +404,22 @@ function TwoToneCapMaterial({
     canvas.height = img.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
+    // Brighten the base so the front panels read as crisp WHITE (the source
+    // texture is a slightly gray off-white); black regions stay black.
+    ctx.filter = 'brightness(1.3)';
     ctx.drawImage(img, 0, 0);
+    ctx.filter = 'none';
     ctx.globalCompositeOperation = 'lighten';
     ctx.fillStyle = `#${color.getHexString()}`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (ao?.width) {
+      // Brighten the AO before multiplying so its broad shading no longer
+      // grays the white front — only the deep crevices (mesh weave, stitches)
+      // keep darkening.
       ctx.globalCompositeOperation = 'multiply';
+      ctx.filter = 'brightness(1.4)';
       ctx.drawImage(ao, 0, 0, canvas.width, canvas.height);
+      ctx.filter = 'none';
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.flipY = false; // match glTF UV origin (top-left)

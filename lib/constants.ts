@@ -191,7 +191,7 @@ export const CAP_COLORS = [
   { id: 'royalblue', name: 'כחול רויל', hex: '#1E40AF' },
   { id: 'orange', name: 'כתום', hex: '#F97316' },
   { id: 'yellow', name: 'צהוב', hex: '#FBBF24' },
-  { id: 'beige', name: 'בז׳', hex: '#D4A574' },
+  { id: 'beige', name: 'בז׳', hex: '#FFEABE' },
   { id: 'pink', name: 'ורוד', hex: '#FBCFE8' },
   { id: 'green', name: 'ירוק', hex: '#10B981' },
 ] as const
