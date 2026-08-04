@@ -57,8 +57,8 @@ export const PRODUCT_CATEGORIES = [
     id: 'tote' as ProductType,
     name: 'תיקים',
     icon: '👜',
-    color: 'bg-sky-100 border-sky-500',
-    textColor: 'text-sky-900',
+    color: 'bg-blue-100 border-blue-800',
+    textColor: 'text-blue-900',
     popular: false,
   },
 ] as const
