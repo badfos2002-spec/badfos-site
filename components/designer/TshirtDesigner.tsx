@@ -387,6 +387,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     <ThreeErrorBoundary fallback={static2D}>
       <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
+          warmAll
           colorHex={shirtHex}
           designs={(config.designs || [])
             .filter((d) => d.imageUrl)

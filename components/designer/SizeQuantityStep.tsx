@@ -1,6 +1,7 @@
 'use client'
 
-import { STANDARD_SIZES, BUFF_QUANTITIES } from '@/lib/constants'
+import { useEffect } from 'react'
+import { STANDARD_SIZES, KIDS_SIZES, BUFF_QUANTITIES } from '@/lib/constants'
 import type { ProductConfig, SizeQuantity } from '@/lib/types'
 import { Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,23 @@ interface SizeQuantityStepProps {
 
 export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuantityStepProps) {
   const isBuff = config.productType === 'buff'
+
+  // Kid sizes (2–18): ONLY cotton t-shirts in white or black.
+  const hasKidSizes =
+    config.productType === 'tshirt' &&
+    config.fabricType === 'cotton' &&
+    (config.color === 'white' || config.color === 'black')
+
+  // If the user picked kid sizes and then switched to a fabric/colour that
+  // doesn't offer them, silently drop those rows so they can't be ordered.
+  useEffect(() => {
+    if (isBuff || hasKidSizes) return
+    const kidIds = new Set<string>(KIDS_SIZES.map(k => k.id))
+    if (sizes.some(s => kidIds.has(s.size))) {
+      onUpdate(sizes.filter(s => !kidIds.has(s.size)))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasKidSizes, isBuff])
 
   // ── Buff: quantity-only mode ──────────────────────────────────────────────
   if (isBuff) {
@@ -77,59 +95,73 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
     setQuantity(sizeId, getQuantity(sizeId) + delta)
   }
 
+  const renderSizeCard = (size: { id: string; name: string; surcharge: number }) => {
+    const quantity = getQuantity(size.id)
+    return (
+      <div
+        key={size.id}
+        className="p-2 sm:p-4 border rounded-lg flex flex-col items-center justify-center space-y-2 sm:space-y-3"
+      >
+        <div className="text-center">
+          <span className="font-semibold text-lg">{size.name}</span>
+          {size.surcharge > 0 && (
+            <div className="text-xs text-orange-600 font-medium">+₪{size.surcharge}</div>
+          )}
+        </div>
+        <input
+          type="number"
+          min="0"
+          placeholder="0"
+          aria-label={`כמות למידה ${size.name}`}
+          value={quantity || ''}
+          onChange={(e) => setQuantity(size.id, parseInt(e.target.value) || 0)}
+          className="w-16 sm:w-20 text-center font-bold h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            type="button"
+            disabled={quantity === 0}
+            onClick={() => updateQuantity(size.id, -1)}
+            aria-label={`הפחתת כמות למידה ${size.name}`}
+            className="h-8 w-8"
+          >
+            <Minus className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            type="button"
+            onClick={() => updateQuantity(size.id, 1)}
+            aria-label={`הוספת כמות למידה ${size.name}`}
+            className="h-8 w-8"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <AnnouncementBar placement="designer" />
+      {hasKidSizes && (
+        <p className="text-sm font-bold text-gray-700 mb-3">מידות מבוגרים</p>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-        {availableSizes.map((size) => {
-          const quantity = getQuantity(size.id)
-          return (
-            <div
-              key={size.id}
-              className="p-2 sm:p-4 border rounded-lg flex flex-col items-center justify-center space-y-2 sm:space-y-3"
-            >
-              <div className="text-center">
-                <span className="font-semibold text-lg">{size.name}</span>
-                {size.surcharge > 0 && (
-                  <div className="text-xs text-orange-600 font-medium">+₪{size.surcharge}</div>
-                )}
-              </div>
-              <input
-                type="number"
-                min="0"
-                placeholder="0"
-                aria-label={`כמות למידה ${size.name}`}
-                value={quantity || ''}
-                onChange={(e) => setQuantity(size.id, parseInt(e.target.value) || 0)}
-                className="w-16 sm:w-20 text-center font-bold h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <div className="flex items-center gap-1 sm:gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  type="button"
-                  disabled={quantity === 0}
-                  onClick={() => updateQuantity(size.id, -1)}
-                  aria-label={`הפחתת כמות למידה ${size.name}`}
-                  className="h-8 w-8"
-                >
-                  <Minus className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  type="button"
-                  onClick={() => updateQuantity(size.id, 1)}
-                  aria-label={`הוספת כמות למידה ${size.name}`}
-                  className="h-8 w-8"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )
-        })}
+        {availableSizes.map(renderSizeCard)}
       </div>
+
+      {hasKidSizes && (
+        <>
+          <p className="text-sm font-bold text-gray-700 mt-6 mb-3">מידות ילדים (2–18)</p>
+          <div className="grid grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4">
+            {KIDS_SIZES.map(renderSizeCard)}
+          </div>
+        </>
+      )}
 
       {totalQuantity === 0 && (
         <p role="alert" className="text-sm text-red-500 mt-4">יש לבחור לפחות פריט אחד כדי להמשיך.</p>

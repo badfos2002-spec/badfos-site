@@ -175,6 +175,7 @@ export default function AdminSketchesPage() {
     }>
       <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
+          warmAll
           colorHex={colorHex}
           designs={previewDesigns}
           showGuides

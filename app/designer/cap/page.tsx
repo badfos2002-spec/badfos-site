@@ -463,6 +463,7 @@ export default function CapDesignerPage() {
     <ThreeErrorBoundary fallback={<MockupImage />}>
       <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
+          warmAll
           colorHex={capColorHex}
           designs={capDesigns}
           showGuides={currentStep === 3}

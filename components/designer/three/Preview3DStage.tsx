@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ContactShadows, Bounds, Environment, Lightformer } from '@react-three/drei';
-import Tshirt3DModel, { ShirtDesign, ShirtVariant } from './Tshirt3DModel';
+import Tshirt3DModel, { ShirtDesign, ShirtVariant, preloadAllModels } from './Tshirt3DModel';
 
 // Camera position sets the viewing angle; Bounds auto-fits the distance.
 const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
@@ -16,6 +16,9 @@ interface Preview3DStageProps {
   activeArea?: string;
   variant?: ShirtVariant;
   modelUrl?: string;
+  /** Warm ALL models into cache (designer pages, where types switch).
+   *  Leave off on public share pages — they need only their one model. */
+  warmAll?: boolean;
 }
 
 /**
@@ -95,8 +98,11 @@ function Turntable({
  * Reusable 3D shirt stage: transparent Canvas + procedural studio lighting,
  * turntable rotation, and the shirt model, over the branded background.
  */
-export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl }: Preview3DStageProps) {
+export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
+  useEffect(() => {
+    if (warmAll) preloadAllModels();
+  }, [warmAll]);
   // Re-arm the drag hint every time the user reaches the design step.
   useEffect(() => {
     if (showGuides) setInteracted(false);

@@ -364,6 +364,19 @@ export const TOTE_MIN_QUANTITY = 1
 // Sizes and Surcharges
 // ============================================================================
 
+// Kid sizes (2–18) — available ONLY for cotton t-shirts in white or black.
+export const KIDS_SIZES = [
+  { id: '2', name: '2', surcharge: 0 },
+  { id: '4', name: '4', surcharge: 0 },
+  { id: '6', name: '6', surcharge: 0 },
+  { id: '8', name: '8', surcharge: 0 },
+  { id: '10', name: '10', surcharge: 0 },
+  { id: '12', name: '12', surcharge: 0 },
+  { id: '14', name: '14', surcharge: 0 },
+  { id: '16', name: '16', surcharge: 0 },
+  { id: '18', name: '18', surcharge: 0 },
+] as const
+
 export const STANDARD_SIZES = [
   { id: 'XS', name: 'XS', surcharge: 0 },
   { id: 'S', name: 'S', surcharge: 0 },

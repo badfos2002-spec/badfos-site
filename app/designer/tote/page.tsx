@@ -448,6 +448,7 @@ export default function ToteDesignerPage() {
     <ThreeErrorBoundary fallback={<MockupImage />}>
       <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
+          warmAll
           colorHex={toteColorHex}
           designs={toteDesigns}
           showGuides={currentStep === 3}

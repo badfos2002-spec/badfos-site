@@ -666,12 +666,21 @@ export default function Tshirt3DModel({
   );
 }
 
-useGLTF.preload('/models/tshirt-web.glb');
-useGLTF.preload('/models/polo-web.glb');
-useGLTF.preload('/models/oversized-web.glb');
-useGLTF.preload('/models/cap-web.glb');
-useGLTF.preload('/models/sweatshirt-web.glb');
-useGLTF.preload('/models/hoodie-web.glb');
-useGLTF.preload('/models/ziphoodie-web.glb');
-useGLTF.preload('/models/tote-volume-web.glb');
-useGLTF.preload('/models/meshcap-web.glb');
+/**
+ * Warm every 3D model into the loader cache. Called by the DESIGNER pages
+ * (where the user may switch between types) — NOT at module scope, because
+ * the public share page also imports this module and must download ONLY the
+ * one model it shows (the ~35MB preload storm starved the design-texture
+ * request and the sketch appeared without its artwork).
+ */
+export function preloadAllModels(): void {
+  useGLTF.preload('/models/tshirt-web.glb');
+  useGLTF.preload('/models/polo-web.glb');
+  useGLTF.preload('/models/oversized-web.glb');
+  useGLTF.preload('/models/cap-web.glb');
+  useGLTF.preload('/models/sweatshirt-web.glb');
+  useGLTF.preload('/models/hoodie-web.glb');
+  useGLTF.preload('/models/ziphoodie-web.glb');
+  useGLTF.preload('/models/tote-volume-web.glb');
+  useGLTF.preload('/models/meshcap-web.glb');
+}

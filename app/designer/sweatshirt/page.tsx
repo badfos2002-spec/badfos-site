@@ -580,6 +580,7 @@ export default function SweatshirtDesignerPage() {
     <ThreeErrorBoundary fallback={<MockupImage />}>
       <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
+          warmAll
           colorHex={sweatColorHex}
           designs={sweatDesigns}
           showGuides={currentStep === 3}

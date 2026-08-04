@@ -176,20 +176,6 @@ export default function SharePage() {
           </div>
         )}
 
-        {/* CTA */}
-        <div className="text-center space-y-4">
-          <p className="text-2xl md:text-3xl font-black text-gray-900">רוצים גם אתם?</p>
-          <Link href="/designer">
-            <Button
-              size="lg"
-              className="rounded-full px-10 py-3 text-base md:text-lg font-bold shadow-lg hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: 'rgb(255, 195, 46)' }}
-            >
-              <span className="text-white drop-shadow">התחל לעצב</span>
-            </Button>
-          </Link>
-        </div>
-
       </div>
     </div>
   )
