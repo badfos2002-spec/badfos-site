@@ -142,9 +142,10 @@ const TOTEVOL_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.6, h: 0.68, label: 'צד אחורי' },
 };
 
-// Baby onesie — flat blank, front (envelope neck + snaps) toward +Z.
+// Baby onesie — flat scan wrapped onto an elliptical body ("worn" look).
+// Chest peaks at z≈0.40, so the projector sits ahead with generous depth.
 const BABY_AREAS: Record<string, Placement> = {
-  front_full: { position: [0, 0.18, 0.1], rotation: [0, 0, 0], size: 0.55, depth: 0.35 },
+  front_full: { position: [0, 0.18, 0.3], rotation: [0, 0, 0], size: 0.55, depth: 0.8 },
 };
 const BABY_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.52, h: 0.55, label: 'קידמי' },
