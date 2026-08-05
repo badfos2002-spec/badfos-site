@@ -594,9 +594,17 @@ export const COUPON_CONFIG = {
 // ============================================================================
 
 type PricingOverrides = {
+  /** LEGACY (pre-v2): flat base per product + GLOBAL per-area-id print prices
+   *  (leaked across products). Still honored when `products` is absent. */
   basePrices?: Record<string, number>
   fabricSurcharges?: Record<string, number>
   designAreas?: Record<string, number>
+  /** v2: per-product pricing — full base price per sub-type + print prices
+   *  scoped to THAT product only (no cross-product bleed). */
+  products?: Record<string, {
+    base?: Record<string, number>   // keyed by sub-type id, or 'default'
+    areas?: Record<string, number>  // keyed by area id, scoped to this product
+  }>
   sizeSurcharges?: Record<string, number>
   shipping?: { delivery?: number; pickup?: number }
   quantityDiscount?: { minQuantity?: number; discountPercent?: number }
@@ -638,6 +646,11 @@ export function getProductCategory(productType: ProductType) {
 export function getFabricType(fabricId: FabricType) {
   const fabric = FABRIC_TYPES.find((f) => f.id === fabricId)
   if (!fabric) return undefined
+  // v2: surcharge shown on the fabric card = full price diff vs cotton.
+  const v2 = _pricingOverrides.products?.tshirt?.base
+  if (v2 && v2[fabricId] !== undefined && v2.cotton !== undefined) {
+    return { ...fabric, surcharge: Math.max(0, v2[fabricId] - v2.cotton) }
+  }
   const overrideSurcharge = _pricingOverrides.fabricSurcharges?.[fabricId]
   if (overrideSurcharge !== undefined) return { ...fabric, surcharge: overrideSurcharge }
   return fabric
@@ -729,6 +742,13 @@ export function getDesignAreasByProductType(productType: ProductType) {
       default: return TSHIRT_DESIGN_AREAS
     }
   })()
+  // v2: print prices scoped to THIS product only — a v2 doc fully replaces the
+  // legacy GLOBAL per-area-id overrides (which leaked across products).
+  const v2 = _pricingOverrides.products?.[productType]?.areas
+  if (v2) {
+    return areas.map(a => ({ ...a, price: v2[a.id] ?? a.price }))
+  }
+  if (_pricingOverrides.products) return areas // v2 doc, product not configured → code defaults
   if (!_pricingOverrides.designAreas) return areas
   return areas.map(a => ({
     ...a,
@@ -736,8 +756,26 @@ export function getDesignAreasByProductType(productType: ProductType) {
   }))
 }
 
-export function getBasePrice(productType: ProductType): number {
-  return _pricingOverrides.basePrices?.[productType] ?? BASE_PRICES[productType] ?? 0
+/**
+ * FULL base price for a product (+ optional sub-type: fabric / sweatshirt /
+ * cap / tote type). v2 overrides hold complete per-type prices; the legacy
+ * path falls back to flat base + t-shirt fabric surcharge.
+ */
+export function getBasePrice(productType: ProductType, subType?: string): number {
+  const v2 = _pricingOverrides.products?.[productType]?.base
+  if (v2) {
+    if (subType && v2[subType] !== undefined) return v2[subType]
+    if (v2.default !== undefined) return v2.default
+    const first = Object.values(v2)[0]
+    if (first !== undefined) return first
+  }
+  let base = _pricingOverrides.basePrices?.[productType] ?? BASE_PRICES[productType] ?? 0
+  if (productType === 'tshirt' && subType) {
+    base += _pricingOverrides.fabricSurcharges?.[subType]
+      ?? FABRIC_TYPES.find(f => f.id === subType)?.surcharge
+      ?? 0
+  }
+  return base
 }
 
 export function getSizeSurcharge(sizeId: string): number {

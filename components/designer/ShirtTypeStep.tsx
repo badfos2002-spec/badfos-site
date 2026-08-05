@@ -1,4 +1,5 @@
-import { FABRIC_TYPES } from '@/lib/constants'
+import { useSyncExternalStore } from 'react'
+import { FABRIC_TYPES, getFabricType, subscribePricing, getPricingVersion } from '@/lib/constants'
 
 interface ShirtTypeStepProps {
   selectedType?: string
@@ -6,6 +7,7 @@ interface ShirtTypeStepProps {
 }
 
 export default function ShirtTypeStep({ selectedType, onSelect }: ShirtTypeStepProps) {
+  useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
   return (
     <div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:grid-cols-1 lg:gap-4">
@@ -23,8 +25,8 @@ export default function ShirtTypeStep({ selectedType, onSelect }: ShirtTypeStepP
               }`}
             >
               <span>{fabric.name}</span>
-              {fabric.surcharge > 0 && (
-                <span className="text-xs mt-1 opacity-80">+₪{fabric.surcharge}</span>
+              {(getFabricType(fabric.id)?.surcharge ?? fabric.surcharge) > 0 && (
+                <span className="text-xs mt-1 opacity-80">+₪{getFabricType(fabric.id)?.surcharge ?? fabric.surcharge}</span>
               )}
             </button>
           )

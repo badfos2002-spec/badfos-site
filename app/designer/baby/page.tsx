@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Minus, Plus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
-import { BABY_COLORS, BABY_SIZES } from '@/lib/constants'
+import { BABY_COLORS, BABY_SIZES, getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
@@ -26,8 +26,7 @@ const stepConfig = [
 
 const STEP_NAMES = ['צבע', 'עיצוב', 'מידה']
 const totalSteps = 3
-const BASE_PRICE = 35
-const DESIGN_COST = 5
+
 
 export default function BabyDesignerPage() {
   const router = useRouter()
@@ -40,6 +39,10 @@ export default function BabyDesignerPage() {
   const [addingToCart, setAddingToCart] = useState(false)
 
   const totalQuantity = Object.values(sizeQuantities).reduce((sum, q) => sum + q, 0)
+  // Live admin pricing (re-renders when overrides load)
+  useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
+  const BASE_PRICE = getBasePrice('baby')
+  const DESIGN_COST = getDesignAreasByProductType('baby').find(a => a.id === 'front_full')?.price ?? 5
   const pricePerUnit = designFile ? BASE_PRICE + DESIGN_COST : BASE_PRICE
   const total = totalQuantity * pricePerUnit
 

@@ -51,7 +51,7 @@ export default function CapDesignerPage() {
   // Re-render when admin pricing overrides load so the numbers below stay live.
   useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
 
-  const basePrice = getBasePrice('cap')
+  const basePrice = getBasePrice('cap', selectedType || undefined)
   const capDesignAreas = getDesignAreasByProductType('cap')
   const designCost = (capDesignAreas.find(a => a.id === selectedArea) ?? capDesignAreas[0])?.price ?? 0
 
@@ -233,7 +233,7 @@ export default function CapDesignerPage() {
                   >
                     <div className="flex flex-col items-center">
                       <span>{area.name}</span>
-                      <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                      <span className="text-[10px] opacity-80">+₪{capDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
                     </div>
                   </button>
                 )

@@ -179,7 +179,19 @@ const VARIANTS = {
   // NOTE: no normal map — the source texture's reflective-stripe regions
   // produce ugly speckles at web resolution; the quilted geometry carries
   // plenty of detail on its own.
-  vest: { areas: VEST_AREAS, guides: VEST_GUIDES, panels: false },
+  vest: {
+    areas: VEST_AREAS,
+    guides: VEST_GUIDES,
+    panels: false,
+    // Real hi-vis look: body in the chosen neon colour, reflective stripes in
+    // silver, binding + zipper tape in black — matched by source material name.
+    parts: [
+      { match: 'FABRIC_2_Copy', kind: 'body' },
+      { match: 'FABRIC_2_FRONT', kind: 'silver' },
+      { match: 'FABRIC_1', kind: 'black' },
+      { match: 'FABRIC_4', kind: 'black' },
+    ],
+  },
   buff: {
     areas: BUFF_AREAS,
     guides: BUFF_GUIDES,
@@ -553,6 +565,7 @@ export default function Tshirt3DModel({
   const roughMapUrl = (cfg as { roughMapUrl?: string }).roughMapUrl;
   const normalStrength = (cfg as { normalScale?: number }).normalScale;
   const baseMapUrl = (cfg as { baseMapUrl?: string }).baseMapUrl;
+  const partRules = (cfg as { parts?: { match: string; kind: 'body' | 'silver' | 'black' }[] }).parts;
   const aoMapUrl = (cfg as { aoMapUrl?: string }).aoMapUrl;
   const heightMapUrl = (cfg as { heightMapUrl?: string }).heightMapUrl;
   const singleArea = (cfg as { singleArea?: boolean }).singleArea;
@@ -662,7 +675,20 @@ export default function Tshirt3DModel({
             castShadow
             receiveShadow
           >
-            {baseMapUrl && aoMapUrl && normalMapUrl && roughMapUrl ? (
+            {(() => {
+              if (partRules) {
+                const matName = ((mesh.material as THREE.Material | undefined)?.name) || mesh.name || '';
+                const kind = partRules.find(r => matName.includes(r.match))?.kind ?? 'body';
+                if (kind === 'silver') {
+                  return <meshStandardMaterial color="#d4d4d4" roughness={0.35} metalness={0.55} side={THREE.DoubleSide} />;
+                }
+                if (kind === 'black') {
+                  return <meshStandardMaterial color="#181818" roughness={0.9} metalness={0.05} side={THREE.DoubleSide} />;
+                }
+                return <ShirtMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} />;
+              }
+              return null;
+            })() || (baseMapUrl && aoMapUrl && normalMapUrl && roughMapUrl ? (
               <TwoToneCapMaterial
                 color={shirtColor}
                 baseMapUrl={baseMapUrl}
@@ -682,7 +708,7 @@ export default function Tshirt3DModel({
               />
             ) : (
               <ShirtMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} />
-            )}
+            ))}
             {designs.map((d) => {
               const placement = cfg.areas[d.area];
               if (!placement || !d.url || targetFor(d.area) !== mesh) return null;

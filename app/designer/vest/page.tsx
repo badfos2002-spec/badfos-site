@@ -191,7 +191,7 @@ export default function VestDesignerPage() {
                     )}
                     <div className="flex flex-col items-center">
                       <span>{area.name}</span>
-                      <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                      <span className="text-[10px] opacity-80">+₪{vestDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
                     </div>
                   </button>
                 )

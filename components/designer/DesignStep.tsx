@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { TSHIRT_DESIGN_AREAS } from '@/lib/constants'
+import { useState, useRef, useSyncExternalStore } from 'react'
+import { TSHIRT_DESIGN_AREAS, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { confirmDesignReplace } from '@/lib/utils'
 import { ImagePlus, CheckCircle, X } from 'lucide-react'
@@ -86,6 +86,10 @@ function compressImage(file: File): Promise<string> {
 }
 
 export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignStepProps) {
+  // Live admin pricing for the +₪ labels
+  useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
+  const liveAreas = getDesignAreasByProductType('tshirt')
+  const livePrice = (id: string) => liveAreas.find(a => a.id === id)?.price ?? TSHIRT_DESIGN_AREAS.find(a => a.id === id)?.price ?? 0
   const [selectedAreaId, setSelectedAreaId] = useState<string>(TSHIRT_DESIGN_AREAS[0].id)
   const [processingAreaId, setProcessingAreaId] = useState<string | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -203,7 +207,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                       <ImagePlus className="w-5 h-5 text-white" />
                     </div>
                     <p className="text-xs font-medium text-gray-900">{area.name}</p>
-                    <p className="text-[10px] text-gray-500">+₪{area.price}</p>
+                    <p className="text-[10px] text-gray-500">+₪{livePrice(area.id)}</p>
                     <p className="text-[10px] text-yellow-600 mt-1">לחץ להעלאה</p>
                   </>
                 )}
@@ -254,7 +258,7 @@ export default function DesignStep({ designs, onUpdate, onAreaFocus }: DesignSte
                 )}
                 <div className="flex flex-col items-center">
                   <span>{area.name}</span>
-                  <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                  <span className="text-[10px] opacity-80">+₪{livePrice(area.id)}</span>
                 </div>
               </button>
             )

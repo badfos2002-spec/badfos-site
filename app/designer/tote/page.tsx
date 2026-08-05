@@ -49,7 +49,7 @@ export default function ToteDesignerPage() {
   // Re-render when admin pricing overrides load so the numbers below stay live.
   useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
 
-  const basePrice = getBasePrice('tote')
+  const basePrice = getBasePrice('tote', selectedType || undefined)
   const toteDesignAreas = getDesignAreasByProductType('tote')
   // Print cost = sum of every area that actually has a design.
   const designCost = toteDesignAreas
@@ -255,7 +255,7 @@ export default function ToteDesignerPage() {
                     )}
                     <div className="flex flex-col items-center">
                       <span>{area.name}</span>
-                      <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                      <span className="text-[10px] opacity-80">+₪{toteDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
                     </div>
                   </button>
                 )

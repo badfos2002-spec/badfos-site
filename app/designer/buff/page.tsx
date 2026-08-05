@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
@@ -10,6 +10,7 @@ import { useCart } from '@/hooks/useCart'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
@@ -46,9 +47,7 @@ const stepConfig = [
 
 const STEP_NAMES = ['צבע', 'עיצוב', 'כמות']
 const totalSteps = 3
-const BASE_PRICE = 8
-const DESIGN_COST = 8
-const PRICE_PER_UNIT = BASE_PRICE + DESIGN_COST
+
 
 export default function BuffDesignerPage() {
   const router = useRouter()
@@ -59,6 +58,12 @@ export default function BuffDesignerPage() {
   const [quantity, setQuantity] = useState<50 | 100>(50)
   const sessionId = useState(() => `buff-${Date.now()}`)[0]
   const [addingToCart, setAddingToCart] = useState(false)
+
+  // Live admin pricing (re-renders when overrides load)
+  useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
+  const BASE_PRICE = getBasePrice('buff')
+  const DESIGN_COST = getDesignAreasByProductType('buff').find(a => a.id === 'center')?.price ?? 8
+  const PRICE_PER_UNIT = BASE_PRICE + DESIGN_COST
 
   const total = quantity * PRICE_PER_UNIT
 

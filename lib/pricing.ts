@@ -1,7 +1,6 @@
 import type { ProductConfig, CartItem, SizeQuantity } from './types'
 import {
   getBasePrice,
-  getFabricType,
   getDesignAreasByProductType,
   getSizeSurcharge,
   getLiveShippingCost,
@@ -31,15 +30,12 @@ export function calculateItemPrice(config: ProductConfig): number {
 
   const { productType, fabricType, designs, sizes } = config
 
-  // 1. Base price
-  const basePrice = getBasePrice(productType)
-
-  // 2. Fabric surcharge (for t-shirts)
-  let fabricSurcharge = 0
-  if (fabricType && productType === 'tshirt') {
-    const fabric = getFabricType(fabricType as any)
-    fabricSurcharge = fabric?.surcharge || 0
-  }
+  // 1+2. FULL base price for the product + sub-type. With v2 pricing this is
+  // the complete per-type price (e.g. polo ₪55); on the legacy path
+  // getBasePrice internally adds the t-shirt fabric surcharge, so nothing is
+  // added twice here.
+  const basePrice = getBasePrice(productType, fabricType)
+  const fabricSurcharge = 0
 
   // 3. Design area prices
   const designAreaPrices = designs.reduce((total, design) => {
@@ -245,13 +241,9 @@ export function getPriceBreakdown(config: ProductConfig): {
 
   const { productType, fabricType, designs, sizes } = config
 
-  const basePrice = getBasePrice(productType)
-
-  let fabricSurcharge = 0
-  if (fabricType && productType === 'tshirt') {
-    const fabric = getFabricType(fabricType as any)
-    fabricSurcharge = fabric?.surcharge || 0
-  }
+  // v2: full per-type base; surcharge folded in (see calculateItemPrice).
+  const basePrice = getBasePrice(productType, fabricType)
+  const fabricSurcharge = 0
 
   const designAreaPrices = designs.reduce((total, design) => {
     const areas = getDesignAreasByProductType(productType)

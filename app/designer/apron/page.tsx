@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
@@ -10,6 +10,7 @@ import { useCart } from '@/hooks/useCart'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 
 const apronMockups: Record<string, string> = {
@@ -34,8 +35,7 @@ const stepConfig = [
 
 const STEP_NAMES = ['צבע', 'עיצוב', 'כמות']
 const totalSteps = 3
-const BASE_PRICE = 29
-const DESIGN_COST = 10
+
 export default function ApronDesignerPage() {
   const router = useRouter()
   const { addItem } = useCart()
@@ -46,6 +46,10 @@ export default function ApronDesignerPage() {
   const sessionId = useState(() => `apron-${Date.now()}`)[0]
   const [addingToCart, setAddingToCart] = useState(false)
 
+  // Live admin pricing (re-renders when overrides load)
+  useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
+  const BASE_PRICE = getBasePrice('apron')
+  const DESIGN_COST = getDesignAreasByProductType('apron').find(a => a.id === 'center')?.price ?? 10
   const pricePerUnit = designFile ? BASE_PRICE + DESIGN_COST : BASE_PRICE
   const total = quantity * pricePerUnit
 
@@ -90,7 +94,7 @@ export default function ApronDesignerPage() {
     setCurrentStep(1)
     setSelectedColor('')
     setDesignFile(null)
-    setQuantity(30)
+    setQuantity(1)
   }
 
   const mockupSrc = apronMockups[selectedColor] || '/assets/סינר שחור.webp'

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
-import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
+import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
@@ -54,17 +54,16 @@ const stepConfig = [
 
 const STEP_NAMES = ['סוג', 'צבע', 'עיצוב', 'מידות']
 const totalSteps = 4
-const MIN_DISCOUNT_QTY = 15
-const DISCOUNT_PERCENT = 5
+
 
 export default function SweatshirtDesignerPage() {
   const router = useRouter()
   const { addItem } = useCart()
   // Re-render when admin price overrides load, so the panel reflects live prices.
   useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
-  const BASE_PRICE = getBasePrice('sweatshirt')
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedType, setSelectedType] = useState<string>('')
+  const BASE_PRICE = getBasePrice('sweatshirt', selectedType || undefined)
   const [selectedColor, setSelectedColor] = useState('')
   const availableColors = SWEATSHIRT_COLORS.filter(c => (SWEATSHIRT_COLOR_FILTER[selectedType] || []).includes(c.id))
   const availableAreas = SWEATSHIRT_DESIGN_AREAS.filter(a => !SWEATSHIRT_AREA_FILTER[selectedType] || SWEATSHIRT_AREA_FILTER[selectedType].includes(a.id))
@@ -91,6 +90,7 @@ export default function SweatshirtDesignerPage() {
   }, 0)
   const pricePerUnit = BASE_PRICE + designCost
   const subtotal = totalQuantity * pricePerUnit
+  const { minQuantity: MIN_DISCOUNT_QTY, discountPercent: DISCOUNT_PERCENT } = getLiveQuantityDiscount()
   const hasDiscount = totalQuantity >= MIN_DISCOUNT_QTY
   const discount = hasDiscount ? subtotal * (DISCOUNT_PERCENT / 100) : 0
   const total = subtotal - discount
@@ -297,7 +297,7 @@ export default function SweatshirtDesignerPage() {
                       <span>{area.name}</span>
                       {uploadingArea === area.id
                         ? <span className="text-[10px] opacity-80">מעלה...</span>
-                        : <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                        : <span className="text-[10px] opacity-80">+₪{liveDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
                       }
                     </div>
                   </button>
