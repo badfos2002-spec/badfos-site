@@ -185,11 +185,13 @@ const VARIANTS = {
     panels: false,
     // Real hi-vis look: body in the chosen neon colour, reflective stripes in
     // silver, binding + zipper tape in black — matched by source material name.
+    // Binding + zipper tape follow the vest colour (owner preference);
+    // only the reflective stripes stay silver.
     parts: [
       { match: 'FABRIC_2_Copy', kind: 'body' },
       { match: 'FABRIC_2_FRONT', kind: 'silver' },
-      { match: 'FABRIC_1', kind: 'black' },
-      { match: 'FABRIC_4', kind: 'black' },
+      { match: 'FABRIC_1', kind: 'body' },
+      { match: 'FABRIC_4', kind: 'body' },
     ],
   },
   buff: {
