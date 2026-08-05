@@ -154,12 +154,12 @@ const BUFF_GUIDES: Record<string, GuideBox> = {
 // Hi-vis vest — front faces +Z; open V-neck front with a centre seam. Big
 // print on the back, small logos on the left/right chest panels.
 const VEST_AREAS: Record<string, Placement> = {
-  back: { position: [0, 0.02, -0.35], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.3 },
+  back: { position: [0, 0.42, -0.35], rotation: [0, Math.PI, 0], size: 0.55, depth: 0.3 },
   chest_logo: { position: [-0.3, 0.35, 0.28], rotation: [0, 0, 0], size: 0.2, depth: 0.5 },
   chest_logo_right: { position: [0.3, 0.35, 0.28], rotation: [0, 0, 0], size: 0.2, depth: 0.5 },
 };
 const VEST_GUIDES: Record<string, GuideBox> = {
-  back: { w: 0.58, h: 0.62, label: 'גב' },
+  back: { w: 0.55, h: 0.48, label: 'גב' },
   chest_logo: { w: 0.22, h: 0.22, label: 'חזה שמאל' },
   chest_logo_right: { w: 0.22, h: 0.22, label: 'חזה ימין' },
 };
