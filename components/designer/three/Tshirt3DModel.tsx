@@ -27,7 +27,7 @@ type GuideBox = { w: number; h: number; label: string };
 
 // TSHIRT — a single body mesh (front +z / back −z live on the same mesh).
 const TSHIRT_AREAS: Record<string, Placement> = {
-  front_full: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
+  front_full: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.68, depth: 0.55 },
   back: { position: [0, 0.14, -0.3], rotation: [0, Math.PI, 0], size: 0.92, depth: 0.55 },
   chest_logo: { position: [-0.27, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.27, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
@@ -35,7 +35,7 @@ const TSHIRT_AREAS: Record<string, Placement> = {
   center_wide: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
 };
 const TSHIRT_GUIDES: Record<string, GuideBox> = {
-  front_full: { w: 0.5, h: 0.62, label: 'קדמי מלא' },
+  front_full: { w: 0.56, h: 0.68, label: 'קדמי מלא' },
   back: { w: 0.66, h: 0.92, label: 'גב' },
   chest_logo: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
   chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל ימין' },
