@@ -103,7 +103,11 @@ function Turntable({
 export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
   useEffect(() => {
-    if (warmAll) preloadAllModels();
+    if (!warmAll) return;
+    // Delay warming the OTHER models so this page's own model wins the
+    // bandwidth and appears immediately (even before a colour is chosen).
+    const t = setTimeout(() => preloadAllModels(), 4000);
+    return () => clearTimeout(t);
   }, [warmAll]);
   // Re-arm the drag hint every time the user reaches the design step.
   useEffect(() => {
