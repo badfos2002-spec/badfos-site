@@ -96,7 +96,7 @@ const CATALOG: {
   {
     id: 'baby', label: 'בגדי גוף לתינוק',
     types: [{ id: 'default', label: 'בגד גוף' }],
-    areas: [{ id: 'front_full', label: 'קידמי' }],
+    areas: [{ id: 'front_full', label: 'קידמי' }, { id: 'back', label: 'גב' }],
   },
 ]
 
@@ -116,7 +116,7 @@ function codeDefaults(): Record<string, ProductPricing> {
     vest: { base: { default: 30 }, areas: { back: 10, chest_logo: 5, chest_logo_right: 5 } },
     buff: { base: { default: 8 }, areas: { center: 8 } },
     apron: { base: { default: 29 }, areas: { center: 10 } },
-    baby: { base: { default: 35 }, areas: { front_full: 5 } },
+    baby: { base: { default: 35 }, areas: { front_full: 5, back: 5 } },
   }
 }
 

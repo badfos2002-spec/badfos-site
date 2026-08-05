@@ -153,12 +153,15 @@ const DSBAG_GUIDES: Record<string, GuideBox> = {
 };
 
 // Baby onesie — purchased worn model, front toward +Z. Chest surface sits at
-// z 0.40–0.47, so the projector window stays on the front, clear of the back.
+// z 0.40–0.47 and the back at z −0.39..−0.30; each projector window stays on
+// its own side of the garment.
 const BABY_AREAS: Record<string, Placement> = {
-  front_full: { position: [0, 0.2, 0.42], rotation: [0, 0, 0], size: 0.55, depth: 0.5 },
+  front_full: { position: [0, 0.1, 0.42], rotation: [0, 0, 0], size: 0.62, depth: 0.5 },
+  back: { position: [0, 0.1, -0.34], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.5 },
 };
 const BABY_GUIDES: Record<string, GuideBox> = {
-  front_full: { w: 0.55, h: 0.55, label: 'קידמי' },
+  front_full: { w: 0.62, h: 0.75, label: 'קידמי' },
+  back: { w: 0.62, h: 0.75, label: 'גב' },
 };
 
 // Cooking apron — single sheet, bib + body toward +Z, ties behind. The print

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useSyncExternalStore } from 'react'
+import { useState, useMemo, useEffect, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Minus, Plus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { BABY_COLORS, BABY_SIZES, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
+import type { DesignAreaType } from '@/lib/types'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
@@ -41,7 +42,9 @@ export default function BabyDesignerPage() {
   const { addItem } = useCart()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedColor, setSelectedColor] = useState('')
-  const [designFile, setDesignFile] = useState<File | null>(null)
+  const [selectedArea, setSelectedArea] = useState<DesignAreaType>('front_full')
+  // One design file per area (front / back) — both print together.
+  const [designFiles, setDesignFiles] = useState<Partial<Record<DesignAreaType, File>>>({})
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({})
   const sessionId = useState(() => `baby-${Date.now()}`)[0]
   const [addingToCart, setAddingToCart] = useState(false)
@@ -50,14 +53,30 @@ export default function BabyDesignerPage() {
   // Live admin pricing (re-renders when overrides load)
   useSyncExternalStore(subscribePricing, getPricingVersion, getPricingVersion)
   const BASE_PRICE = getBasePrice('baby')
-  const DESIGN_COST = getDesignAreasByProductType('baby').find(a => a.id === 'front_full')?.price ?? 5
-  const pricePerUnit = designFile ? BASE_PRICE + DESIGN_COST : BASE_PRICE
+  const babyAreas = getDesignAreasByProductType('baby')
+  // Print cost = sum of every area that actually has a design.
+  const designCost = babyAreas
+    .filter(a => !!designFiles[a.id])
+    .reduce((sum, a) => sum + (a.price ?? 0), 0)
+  const pricePerUnit = BASE_PRICE + designCost
   const total = totalQuantity * pricePerUnit
 
-  const designPreviewUrl = useMemo(() => {
-    if (!designFile) return null
-    return URL.createObjectURL(designFile)
-  }, [designFile])
+  // One preview blob-url per uploaded area; revoked on change/unmount.
+  const designPreviews = useMemo(() => {
+    const map: Partial<Record<DesignAreaType, string>> = {}
+    for (const [area, file] of Object.entries(designFiles)) {
+      if (file) map[area as DesignAreaType] = URL.createObjectURL(file)
+    }
+    return map
+  }, [designFiles])
+
+  useEffect(() => {
+    return () => { Object.values(designPreviews).forEach(u => { if (u) URL.revokeObjectURL(u) }) }
+  }, [designPreviews])
+
+  const uploadedCount = Object.keys(designFiles).length
+  const currentFile = designFiles[selectedArea] ?? null
+  const currentPreview = designPreviews[selectedArea] ?? null
 
   const setQty = (sizeId: string, value: number) => {
     const v = Math.max(0, value)
@@ -70,17 +89,23 @@ export default function BabyDesignerPage() {
   }
 
   const handleAddToCart = async () => {
-    if (!designFile || totalQuantity === 0 || addingToCart) return
+    if (uploadedCount === 0 || totalQuantity === 0 || addingToCart) return
     setAddingToCart(true)
     try {
-      const uniqueName = generateUniqueFileName(designFile.name)
-      const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
+      const designs = []
+      for (const [area, file] of Object.entries(designFiles)) {
+        if (!file) continue
+        const uniqueName = generateUniqueFileName(file.name)
+        const imageUrl = await uploadDesignFile(file, sessionId, uniqueName)
+        const areaConfig = babyAreas.find(a => a.id === area)
+        designs.push({ area: area as DesignAreaType, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: file.name })
+      }
       const sizes = Object.entries(sizeQuantities).map(([size, quantity]) => ({ size, quantity }))
       addItem({
         productType: 'baby',
         color: selectedColor,
         sizes,
-        designs: [{ area: 'front_full', areaName: 'קידמי', imageUrl, fileName: designFile.name }],
+        designs,
       })
       router.push('/cart')
     } catch (err) {
@@ -94,7 +119,7 @@ export default function BabyDesignerPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1: return !!selectedColor
-      case 2: return !!designFile
+      case 2: return uploadedCount > 0
       case 3: return totalQuantity > 0
       default: return false
     }
@@ -105,7 +130,8 @@ export default function BabyDesignerPage() {
   const resetDesign = () => {
     setCurrentStep(1)
     setSelectedColor('')
-    setDesignFile(null)
+    setSelectedArea('front_full')
+    setDesignFiles({})
     setSizeQuantities({})
   }
 
@@ -150,41 +176,68 @@ export default function BabyDesignerPage() {
           </div>
         )
 
-      case 2:
+      case 2: {
+        const areaName = babyAreas.find(a => a.id === selectedArea)?.name || 'קידמי'
+        const setAreaFile = (f: File) =>
+          setDesignFiles(prev => ({ ...prev, [selectedArea]: f }))
+        const removeAreaFile = (area: DesignAreaType) =>
+          setDesignFiles(prev => { const u = { ...prev }; delete u[area]; return u })
         return (
           <div>
-            <p className="text-sm text-gray-500 mb-4">העלה את העיצוב להדפסה על קדמת בגד הגוף.</p>
-            <div className="grid gap-2 mb-4 grid-cols-3">
-              <button className="relative text-xs h-16 px-2 py-2 rounded-md font-medium gradient-yellow text-white border-transparent shadow flex items-center justify-center">
-                <div className="flex flex-col items-center">
-                  <span>קידמי</span>
-                  <span className="text-[10px] opacity-80">+₪{DESIGN_COST}</span>
-                </div>
-              </button>
+            <p className="text-sm text-gray-500 mb-4">
+              בחר אזור, ואז העלה את התמונה שלך. אפשר להעלות עיצוב גם לקידמי וגם לגב.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {babyAreas.map(area => {
+                const isSelected = selectedArea === area.id
+                const hasFile = !!designFiles[area.id]
+                return (
+                  <button
+                    key={area.id}
+                    onClick={() => setSelectedArea(area.id as DesignAreaType)}
+                    className={`relative text-xs h-16 px-2 py-2 rounded-md font-medium border-2 flex items-center justify-center transition-all ${
+                      isSelected
+                        ? 'gradient-yellow text-white border-transparent shadow'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-yellow-400'
+                    }`}
+                  >
+                    {hasFile && (
+                      <span className="absolute top-1 left-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                        <Check className="w-3 h-3" strokeWidth={3} />
+                      </span>
+                    )}
+                    <div className="flex flex-col items-center">
+                      <span>{area.name}</span>
+                      <span className="text-[10px] opacity-80">+₪{area.price}</span>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
             <div className="space-y-3">
-              {designFile ? (
+              {currentFile ? (
                 <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                      <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{designFile.name}</span>
+                      <span className="text-sm font-medium text-green-700 truncate max-w-[180px]">{currentFile.name}</span>
                     </div>
-                    <button onClick={() => setDesignFile(null)} className="text-red-400 hover:text-red-600 shrink-0 mr-1">
+                    <button onClick={() => removeAreaFile(selectedArea)} className="text-red-400 hover:text-red-600 shrink-0 mr-1" aria-label={`הסרת העיצוב מ${areaName}`}>
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="w-full aspect-video bg-white rounded-lg overflow-hidden border border-green-200 mb-3">
-                    {designPreviewUrl && (
+                    {currentPreview && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={designPreviewUrl} alt="עיצוב" className="w-full h-full object-contain" />
+                      <img src={currentPreview} alt={`עיצוב ${areaName}`} className="w-full h-full object-contain" />
                     )}
                   </div>
                   <label
                     role="button"
                     tabIndex={0}
-                    aria-label="החלפת עיצוב לאזור קידמי"
+                    aria-label={`החלפת עיצוב לאזור ${areaName}`}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
                     className="cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg"
                   >
@@ -195,7 +248,7 @@ export default function BabyDesignerPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
                       className="hidden"
-                      onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace('קידמי'))) setDesignFile(f); e.target.value = '' }}
+                      onChange={e => { const f = e.target.files?.[0]; if (f && (!currentFile || confirmDesignReplace(areaName))) setAreaFile(f); e.target.value = '' }}
                     />
                   </label>
                 </div>
@@ -203,7 +256,7 @@ export default function BabyDesignerPage() {
                 <label
                   role="button"
                   tabIndex={0}
-                  aria-label="העלאת עיצוב לאזור קידמי"
+                  aria-label={`העלאת עיצוב לאזור ${areaName}`}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
                   className="cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-lg"
                 >
@@ -213,21 +266,22 @@ export default function BabyDesignerPage() {
                     </div>
                     <p className="text-sm font-medium text-gray-900 mb-1">לחץ להעלאת תמונה</p>
                     <p className="text-xs text-gray-600 mb-2">JPG, PNG, JPEG עד 10MB</p>
-                    <p className="text-xs text-blue-600 font-medium">יועלה לאזור: קידמי</p>
+                    <p className="text-xs text-blue-600 font-medium">יועלה לאזור: {areaName}</p>
                   </div>
                   <input
                     type="file"
                     accept="image/png, image/jpeg, image/jpg"
                     className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f && (!designFile || confirmDesignReplace('קידמי'))) setDesignFile(f); e.target.value = '' }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setAreaFile(f); e.target.value = '' }}
                   />
                 </label>
               )}
             </div>
 
-            {!designFile && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
+            {uploadedCount === 0 && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
           </div>
         )
+      }
 
       case 3:
         return (
@@ -297,12 +351,12 @@ export default function BabyDesignerPage() {
             <span>מחיר בסיס</span>
             <span className="font-medium">{BASE_PRICE}₪</span>
           </div>
-          {designFile && (
-            <div className="flex justify-between text-gray-600">
-              <span>הדפסה קדמית</span>
-              <span className="font-medium">+{DESIGN_COST}₪</span>
+          {babyAreas.filter(a => !!designFiles[a.id]).map(a => (
+            <div key={a.id} className="flex justify-between text-gray-600">
+              <span>הדפסה — {a.name}</span>
+              <span className="font-medium">+{a.price}₪</span>
             </div>
-          )}
+          ))}
         </div>
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">מחיר ליחידה</span>
@@ -335,14 +389,14 @@ export default function BabyDesignerPage() {
         sizes="(max-width: 640px) 100vw, 400px"
         className="!relative w-full h-auto block"
       />
-      {designPreviewUrl ? (
+      {designPreviews.front_full ? (
         <div
           className="absolute overflow-hidden"
           style={{ top: '32%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '24%' }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={designPreviewUrl}
+            src={designPreviews.front_full}
             alt="עיצוב קידמי"
             className="w-full h-full object-contain"
           />
@@ -364,7 +418,9 @@ export default function BabyDesignerPage() {
 
   // 3D onesie preview; any failure falls back to the 2D mockup.
   const babyColorHex = BABY_COLORS.find(c => c.id === selectedColor)?.hex ?? '#FFFFFF'
-  const babyDesigns = designPreviewUrl ? [{ area: 'front_full', url: designPreviewUrl }] : []
+  const babyDesigns = (Object.entries(designPreviews) as [string, string][])
+    .filter(([, url]) => !!url)
+    .map(([area, url]) => ({ area, url }))
   const babyModel = getModel3D('baby') ?? { variant: 'baby', url: '/models/baby-web.glb' }
   const previewElement = (
     <ThreeErrorBoundary fallback={<MockupImage />}>
@@ -374,7 +430,7 @@ export default function BabyDesignerPage() {
           colorHex={babyColorHex}
           designs={babyDesigns}
           showGuides={currentStep === 2}
-          activeArea={currentStep === 2 ? 'front_full' : undefined}
+          activeArea={currentStep === 2 ? selectedArea : undefined}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           variant={babyModel.variant as any}
           modelUrl={babyModel.url}
@@ -471,7 +527,7 @@ export default function BabyDesignerPage() {
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
               {previewElement}
-              {designFile && (
+              {uploadedCount > 0 && (
                 <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   ✓ עיצוב הועלה
                 </span>
@@ -517,7 +573,7 @@ export default function BabyDesignerPage() {
                     <Eye className="w-5 h-5 text-yellow-500" />
                     <span>תצוגה מקדימה</span>
                   </div>
-                  {designFile && (
+                  {uploadedCount > 0 && (
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
                       ✓ עיצוב הועלה
                     </span>

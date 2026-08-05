@@ -318,6 +318,12 @@ export const BABY_DESIGN_AREAS = [
     description: 'הדפסה על קדמת בגד הגוף',
     price: 5,
   },
+  {
+    id: 'back' as DesignAreaType,
+    name: 'גב',
+    description: 'הדפסה על גב בגד הגוף',
+    price: 5,
+  },
 ] as const
 
 export const BABY_SIZES = [
@@ -346,7 +352,7 @@ export const TOTE_COLORS = [
 
 export const TOTE_COLOR_FILTER: Record<string, string[]> = {
   volume: ['beige', 'white', 'black'],
-  drawstring: ['white', 'black'],
+  drawstring: ['beige', 'white', 'black'],
 }
 
 export const TOTE_DESIGN_AREAS = [
