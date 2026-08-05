@@ -90,7 +90,7 @@ const CAP_GUIDES: Record<string, GuideBox> = {
 // A hood sits high on the back; artwork stays on the chest/back panel.
 const HOODIE_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.56, depth: 0.55 },
-  back: { position: [0, 0.08, -0.33], rotation: [0, Math.PI, 0], size: 0.64, depth: 0.55 },
+  back: { position: [0, 0.01, -0.33], rotation: [0, Math.PI, 0], size: 0.64, depth: 0.55 },
   chest_logo: { position: [-0.22, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.22, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   center: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.56, depth: 0.55 },
@@ -101,6 +101,13 @@ const HOODIE_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.55, h: 0.66, label: 'גב' },
   chest_logo: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל ימין' },
+};
+
+// Crewneck (פוטר) — same body as the hoodie but no hood, so the back print
+// sits a bit HIGHER than on the hooded types.
+const SWEAT_AREAS: Record<string, Placement> = {
+  ...HOODIE_AREAS,
+  back: { position: [0, 0.16, -0.33], rotation: [0, Math.PI, 0], size: 0.64, depth: 0.55 },
 };
 
 // Zip hoodie: no full-front print (the zipper runs down the centre) — back +
@@ -156,7 +163,7 @@ const VARIANTS = {
     roughMapUrl: '/models/tex/flat-white.png',
     normalScale: 1.8,
   },
-  sweatshirt: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
+  sweatshirt: { areas: SWEAT_AREAS, guides: HOODIE_GUIDES, panels: false },
   hoodie: { areas: HOODIE_AREAS, guides: HOODIE_GUIDES, panels: false },
   ziphoodie: { areas: ZIP_AREAS, guides: ZIP_GUIDES, panels: false },
   polo: { areas: POLO_AREAS, guides: POLO_GUIDES, panels: true },

@@ -19,6 +19,8 @@ interface Preview3DStageProps {
   /** Warm ALL models into cache (designer pages, where types switch).
    *  Leave off on public share pages — they need only their one model. */
   warmAll?: boolean;
+  /** Suppress the one-time "drag to rotate" hint overlay (admin sketch tool). */
+  noHint?: boolean;
 }
 
 /**
@@ -98,7 +100,7 @@ function Turntable({
  * Reusable 3D shirt stage: transparent Canvas + procedural studio lighting,
  * turntable rotation, and the shirt model, over the branded background.
  */
-export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll }: Preview3DStageProps) {
+export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
   useEffect(() => {
     if (warmAll) preloadAllModels();
@@ -189,7 +191,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           pointerEvents: 'none',
           zIndex: 3,
           // Only on the design/upload step (showGuides), and until the first drag.
-          opacity: showGuides && !interacted ? 1 : 0,
+          opacity: showGuides && !interacted && !noHint ? 1 : 0,
           transition: 'opacity 0.6s ease',
           background: 'rgba(12,12,16,0.42)',
           backdropFilter: 'blur(2px)',
