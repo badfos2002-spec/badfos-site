@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useGLTF, Decal } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
+import { DecalGeometry } from 'three-stdlib';
 
 /* ------------------------------------------------------------------ *
  * TUNABLE CONSTANTS — adjust after seeing each model on the page.
@@ -150,6 +151,15 @@ const BABY_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.52, h: 0.55, label: 'קידמי' },
 };
 
+// Cooking apron — single sheet, bib + body toward +Z, ties behind. The print
+// sits on the chest, above the pocket seams.
+const APRON_AREAS: Record<string, Placement> = {
+  center: { position: [0, 0.32, 0.28], rotation: [0, 0, 0], size: 0.5, depth: 0.4 },
+};
+const APRON_GUIDES: Record<string, GuideBox> = {
+  center: { w: 0.46, h: 0.46, label: 'מרכזי' },
+};
+
 // Buff (neck gaiter, worn) — face side toward +Z. The print sits centred on
 // the front of the tube.
 const BUFF_AREAS: Record<string, Placement> = {
@@ -204,6 +214,16 @@ const VARIANTS = {
     ],
   },
   baby: { areas: BABY_AREAS, guides: BABY_GUIDES, panels: false },
+  apron: {
+    areas: APRON_AREAS,
+    guides: APRON_GUIDES,
+    panels: false,
+    // Twill fabric weave via the source normal map; uniform matte roughness.
+    normalMapUrl: '/models/tex/apron-normal.png',
+    roughMapUrl: '/models/tex/flat-white.png',
+    normalScale: 1.5,
+    singleSheet: true, // one fabric layer → decals must not show through the back
+  },
   buff: {
     areas: BUFF_AREAS,
     guides: BUFF_GUIDES,
@@ -322,12 +342,12 @@ function GuideDecal({ placement, box, active, dark }: { placement: Placement; bo
   );
 }
 
-function ShirtDecal({ url, placement, box }: { url: string; placement: Placement; box?: GuideBox }) {
-  // Manual (non-suspending) texture load. `useLoader` throws on a failed image
-  // (CORS, an undecodable format, a network hiccup), and that throw bubbles up
-  // to ThreeErrorBoundary — collapsing the ENTIRE 3D scene back to the flat 2D
-  // fallback, permanently. Loading by hand instead means a single bad artwork
-  // just skips its own decal; the 3D garment (and every other decal) survives.
+// Manual (non-suspending) texture load. `useLoader` throws on a failed image
+// (CORS, an undecodable format, a network hiccup), and that throw bubbles up
+// to ThreeErrorBoundary — collapsing the ENTIRE 3D scene back to the flat 2D
+// fallback, permanently. Loading by hand instead means a single bad artwork
+// just skips its own decal; the 3D garment (and every other decal) survives.
+function useArtworkTexture(url: string): THREE.Texture | null {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -354,32 +374,110 @@ function ShirtDecal({ url, placement, box }: { url: string; placement: Placement
     );
     return () => { cancelled = true; };
   }, [url]);
+  return texture;
+}
 
-  const scale = useMemo<[number, number, number]>(() => {
-    const img = texture?.image as { width?: number; height?: number } | undefined;
-    const aspect = img?.width && img?.height ? img.width / img.height : 1;
-    if (box) {
-      // Contain-fit the artwork INSIDE the printable area rectangle (box.w × box.h),
-      // preserving aspect ratio — the decal fills the area as large as possible but
-      // never spills past it. (The old square fit by `placement.size` could exceed
-      // the guide box on non-square areas like front_full.)
-      let dw = box.w;
-      let dh = box.w / aspect;
-      if (dh > box.h) { dh = box.h; dw = box.h * aspect; }
-      return [dw, dh, placement.depth];
-    }
-    // Fallback (area with no guide box): fit within a square of placement.size.
-    const s = placement.size;
-    const sx = aspect >= 1 ? s : s * aspect;
-    const sy = aspect >= 1 ? s / aspect : s;
-    return [sx, sy, placement.depth];
-  }, [texture, placement, box]);
+// Contain-fit the artwork INSIDE the printable area rectangle (box.w × box.h),
+// preserving aspect ratio — the decal fills the area as large as possible but
+// never spills past it. (The old square fit by `placement.size` could exceed
+// the guide box on non-square areas like front_full.)
+function artworkScale(texture: THREE.Texture | null, placement: Placement, box?: GuideBox): [number, number, number] {
+  const img = texture?.image as { width?: number; height?: number } | undefined;
+  const aspect = img?.width && img?.height ? img.width / img.height : 1;
+  if (box) {
+    let dw = box.w;
+    let dh = box.w / aspect;
+    if (dh > box.h) { dh = box.h; dw = box.h * aspect; }
+    return [dw, dh, placement.depth];
+  }
+  // Fallback (area with no guide box): fit within a square of placement.size.
+  const s = placement.size;
+  const sx = aspect >= 1 ? s : s * aspect;
+  const sy = aspect >= 1 ? s / aspect : s;
+  return [sx, sy, placement.depth];
+}
 
+function ShirtDecal({ url, placement, box }: { url: string; placement: Placement; box?: GuideBox }) {
+  const texture = useArtworkTexture(url);
+  const scale = useMemo<[number, number, number]>(
+    () => artworkScale(texture, placement, box),
+    [texture, placement, box],
+  );
   if (!texture) return null;
   return (
     <Decal position={placement.position} rotation={placement.rotation} scale={scale} depthTest>
       <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
     </Decal>
+  );
+}
+
+/** Single-sheet garments (apron): a plain projected decal also wraps the
+ *  sheet's INNER faces, so the print shows through when viewed from behind.
+ *  Build the projection manually and drop every triangle that faces away
+ *  from the projector. */
+function useSheetDecalGeometry(
+  target: THREE.Mesh,
+  placement: Placement,
+  w: number,
+  h: number,
+): THREE.BufferGeometry | null {
+  return useMemo(() => {
+    if (!target?.geometry) return null;
+    target.updateMatrixWorld(true);
+    const euler = new THREE.Euler(...placement.rotation);
+    const geo = new DecalGeometry(
+      target,
+      new THREE.Vector3(...placement.position),
+      euler,
+      new THREE.Vector3(w, h, placement.depth),
+    );
+    const dir = new THREE.Vector3(0, 0, 1).applyEuler(euler);
+    const p = geo.attributes.position as THREE.BufferAttribute;
+    const n = geo.attributes.normal as THREE.BufferAttribute;
+    const uv = geo.attributes.uv as THREE.BufferAttribute;
+    const kp: number[] = [], kn: number[] = [], kuv: number[] = [];
+    for (let i = 0; i < p.count; i += 3) {
+      const nx = n.getX(i) + n.getX(i + 1) + n.getX(i + 2);
+      const ny = n.getY(i) + n.getY(i + 1) + n.getY(i + 2);
+      const nz = n.getZ(i) + n.getZ(i + 1) + n.getZ(i + 2);
+      if (nx * dir.x + ny * dir.y + nz * dir.z <= 0) continue;
+      for (let v = i; v < i + 3; v++) {
+        kp.push(p.getX(v), p.getY(v), p.getZ(v));
+        kn.push(n.getX(v), n.getY(v), n.getZ(v));
+        kuv.push(uv.getX(v), uv.getY(v));
+      }
+    }
+    geo.dispose();
+    if (!kp.length) return null;
+    const out = new THREE.BufferGeometry();
+    out.setAttribute('position', new THREE.Float32BufferAttribute(kp, 3));
+    out.setAttribute('normal', new THREE.Float32BufferAttribute(kn, 3));
+    out.setAttribute('uv', new THREE.Float32BufferAttribute(kuv, 2));
+    return out;
+  }, [target, placement, w, h]);
+}
+
+function SheetShirtDecal({ target, url, placement, box }: { target: THREE.Mesh; url: string; placement: Placement; box?: GuideBox }) {
+  const texture = useArtworkTexture(url);
+  const [dw, dh] = artworkScale(texture, placement, box);
+  const geo = useSheetDecalGeometry(target, placement, dw, dh);
+  if (!texture || !geo) return null;
+  return (
+    <mesh geometry={geo}>
+      <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
+    </mesh>
+  );
+}
+
+function SheetGuideDecal({ target, placement, box, active, dark }: { target: THREE.Mesh; placement: Placement; box: GuideBox; active: boolean; dark: boolean }) {
+  const color = active ? '#22c55e' : dark ? '#ffffff' : '#8b95a3';
+  const texture = useMemo(() => makeGuideTexture(box.label, color, box.w / box.h), [box, color]);
+  const geo = useSheetDecalGeometry(target, placement, box.w, box.h);
+  if (!texture || !geo) return null;
+  return (
+    <mesh geometry={geo}>
+      <meshStandardMaterial map={texture} transparent depthWrite={false} polygonOffset polygonOffsetFactor={-8} roughness={0.9} />
+    </mesh>
   );
 }
 
@@ -581,6 +679,7 @@ export default function Tshirt3DModel({
   const aoMapUrl = (cfg as { aoMapUrl?: string }).aoMapUrl;
   const heightMapUrl = (cfg as { heightMapUrl?: string }).heightMapUrl;
   const singleArea = (cfg as { singleArea?: boolean }).singleArea;
+  const singleSheet = (cfg as { singleSheet?: boolean }).singleSheet;
 
   const shirtColor = useMemo(() => {
     const c = new THREE.Color(color);
@@ -724,7 +823,9 @@ export default function Tshirt3DModel({
             {designs.map((d) => {
               const placement = cfg.areas[d.area];
               if (!placement || !d.url || targetFor(d.area) !== mesh) return null;
-              return <ShirtDecal key={d.area} url={d.url} placement={placement} box={cfg.guides[d.area]} />;
+              return singleSheet
+                ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} placement={placement} box={cfg.guides[d.area]} />
+                : <ShirtDecal key={d.area} url={d.url} placement={placement} box={cfg.guides[d.area]} />;
             })}
             {showGuides
               ? guideAreas
@@ -735,9 +836,13 @@ export default function Tshirt3DModel({
                       targetFor(a) === mesh &&
                       (!singleArea || a === activeArea)
                   )
-                  .map((a) => (
-                    <GuideDecal key={`guide-${a}`} placement={cfg.areas[a]} box={cfg.guides[a]} active={a === activeArea} dark={guideDark} />
-                  ))
+                  .map((a) =>
+                    singleSheet ? (
+                      <SheetGuideDecal key={`guide-${a}`} target={mesh} placement={cfg.areas[a]} box={cfg.guides[a]} active={a === activeArea} dark={guideDark} />
+                    ) : (
+                      <GuideDecal key={`guide-${a}`} placement={cfg.areas[a]} box={cfg.guides[a]} active={a === activeArea} dark={guideDark} />
+                    )
+                  )
               : null}
           </mesh>
         ))}
@@ -766,4 +871,5 @@ export function preloadAllModels(): void {
   useGLTF.preload('/models/buff-web.glb');
   useGLTF.preload('/models/vest-web.glb');
   useGLTF.preload('/models/baby-web.glb');
+  useGLTF.preload('/models/apron-web.glb');
 }

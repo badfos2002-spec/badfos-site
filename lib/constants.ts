@@ -726,6 +726,7 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
   if (productType === 'buff') return { variant: 'buff', url: '/models/buff-web.glb' }
   if (productType === 'vest') return { variant: 'vest', url: '/models/vest-web.glb' }
   if (productType === 'baby') return { variant: 'baby', url: '/models/baby-web.glb' }
+  if (productType === 'apron') return { variant: 'apron', url: '/models/apron-web.glb' }
   return null
 }
 
