@@ -28,6 +28,7 @@ const productLabels: Record<string, string> = {
   apron: 'סינר',
   baby: 'בגד גוף תינוק',
   tote: 'תיק',
+  vest: 'וסט זוהר',
 }
 
 const fabricLabels: Record<string, string> = {
@@ -50,6 +51,7 @@ const colorLabels: Record<string, string> = {
   blue: 'כחול', green: 'ירוק', purple: 'סגול', orange: 'כתום',
   turquoise: 'טורקיז', lightblue: 'תכלת', pink: 'ורוד',
   melange: 'אפור מלאנג', babypink: 'ורוד בייבי', bottlegreen: 'ירוק בקבוק',
+  neonyellow: 'צהוב זוהר', neonorange: 'כתום זוהר',
   brown: 'חום', khaki: 'חאקי', royalblue: 'כחול רויל', yellow: 'צהוב',
 }
 

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { getDocument, setDocument } from '@/lib/db'
 
 const DEFAULTS = {
-  basePrices: { tshirt: 37, sweatshirt: 53, buff: 8, apron: 29, cap: 30, baby: 35, tote: 35 },
+  basePrices: { tshirt: 37, sweatshirt: 53, buff: 8, apron: 29, cap: 30, baby: 35, tote: 35, vest: 30 },
   fabricSurcharges: { cotton: 0, 'dri-fit': 0, polo: 10, oversized: 10 },
   designAreas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, center: 10 },
   sizeSurcharges: { '3XL': 12, '4XL': 12 },
@@ -18,7 +18,7 @@ const DEFAULTS = {
 type Pricing = typeof DEFAULTS
 
 const PRODUCT_LABELS: Record<string, string> = {
-  tshirt: 'חולצה', sweatshirt: 'סווטשרט', buff: 'באף', apron: 'סינר', cap: 'כובע', baby: 'בגד גוף תינוק', tote: 'תיק',
+  tshirt: 'חולצה', sweatshirt: 'סווטשרט', buff: 'באף', apron: 'סינר', cap: 'כובע', baby: 'בגד גוף תינוק', tote: 'תיק', vest: 'וסט זוהר',
 }
 const FABRIC_LABELS: Record<string, string> = {
   cotton: 'כותנה', 'dri-fit': 'דרייפיט', polo: 'פולו', oversized: 'אוברסייז',

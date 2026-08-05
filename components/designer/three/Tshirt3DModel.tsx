@@ -145,10 +145,23 @@ const TOTEVOL_GUIDES: Record<string, GuideBox> = {
 // Buff (neck gaiter, worn) — face side toward +Z. The print sits centred on
 // the front of the tube.
 const BUFF_AREAS: Record<string, Placement> = {
-  center: { position: [0, 0.0, 0.5], rotation: [0, 0, 0], size: 0.6, depth: 0.9 },
+  center: { position: [0, 0.28, 0.5], rotation: [0, 0, 0], size: 0.6, depth: 0.9 },
 };
 const BUFF_GUIDES: Record<string, GuideBox> = {
   center: { w: 0.6, h: 0.6, label: 'מרכזי' },
+};
+
+// Hi-vis vest — front faces +Z; open V-neck front with a centre seam. Big
+// print on the back, small logos on the left/right chest panels.
+const VEST_AREAS: Record<string, Placement> = {
+  back: { position: [0, 0.02, -0.35], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.3 },
+  chest_logo: { position: [-0.3, 0.35, 0.28], rotation: [0, 0, 0], size: 0.2, depth: 0.5 },
+  chest_logo_right: { position: [0.3, 0.35, 0.28], rotation: [0, 0, 0], size: 0.2, depth: 0.5 },
+};
+const VEST_GUIDES: Record<string, GuideBox> = {
+  back: { w: 0.58, h: 0.62, label: 'גב' },
+  chest_logo: { w: 0.22, h: 0.22, label: 'חזה שמאל' },
+  chest_logo_right: { w: 0.22, h: 0.22, label: 'חזה ימין' },
 };
 
 // Trucker / mesh cap — front panel faces +Z; the print sits centred on the
@@ -163,6 +176,10 @@ const MESHCAP_GUIDES: Record<string, GuideBox> = {
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   tote: { areas: TOTE_AREAS, guides: TOTE_GUIDES, panels: false },
+  // NOTE: no normal map — the source texture's reflective-stripe regions
+  // produce ugly speckles at web resolution; the quilted geometry carries
+  // plenty of detail on its own.
+  vest: { areas: VEST_AREAS, guides: VEST_GUIDES, panels: false },
   buff: {
     areas: BUFF_AREAS,
     guides: BUFF_GUIDES,
@@ -709,4 +726,5 @@ export function preloadAllModels(): void {
   useGLTF.preload('/models/tote-volume-web.glb');
   useGLTF.preload('/models/meshcap-web.glb');
   useGLTF.preload('/models/buff-web.glb');
+  useGLTF.preload('/models/vest-web.glb');
 }

@@ -61,6 +61,14 @@ export const PRODUCT_CATEGORIES = [
     textColor: 'text-blue-900',
     popular: false,
   },
+  {
+    id: 'vest' as ProductType,
+    name: 'וסטים זוהרים',
+    icon: '🦺',
+    color: 'bg-lime-100 border-lime-500',
+    textColor: 'text-lime-900',
+    popular: false,
+  },
 ] as const
 
 // ============================================================================
@@ -361,6 +369,38 @@ export const TOTE_AREA_FILTER: Record<string, string[]> = {
 export const TOTE_MIN_QUANTITY = 1
 
 // ============================================================================
+// Hi-vis vests (וסטים זוהרים) — one size; kangaroo-free zipper-less model
+// ============================================================================
+
+export const VEST_COLORS = [
+  { id: 'neonyellow', name: 'צהוב זוהר', hex: '#CCFF00' },
+  { id: 'neonorange', name: 'כתום זוהר', hex: '#FF6D00' },
+] as const
+
+export const VEST_DESIGN_AREAS = [
+  {
+    id: 'back' as DesignAreaType,
+    name: 'גב',
+    description: 'הדפסה גדולה על הגב',
+    price: 10,
+  },
+  {
+    id: 'chest_logo' as DesignAreaType,
+    name: 'חזה שמאל',
+    description: 'סמל על החזה צד שמאל',
+    price: 5,
+  },
+  {
+    id: 'chest_logo_right' as DesignAreaType,
+    name: 'חזה ימין',
+    description: 'סמל על החזה צד ימין',
+    price: 5,
+  },
+] as const
+
+export const VEST_MIN_QUANTITY = 1
+
+// ============================================================================
 // Sizes and Surcharges
 // ============================================================================
 
@@ -400,6 +440,7 @@ export const BASE_PRICES = {
   apron: 29,
   baby: 35,
   tote: 35,
+  vest: 30,
 } as const
 
 export const CAP_MIN_QUANTITY = 10
@@ -627,7 +668,7 @@ export function getColorsByProductType(productType: ProductType) {
 export function getColorLabel(id: string): string {
   const all: readonly { id: string; name: string }[] = [
     ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
-    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS,
+    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS, ...VEST_COLORS,
   ]
   return all.find(c => c.id === id)?.name ?? id
 }
@@ -646,7 +687,7 @@ export function getProductLabel(id: string): string {
 export function getColorHex(id: string): string {
   const all: readonly { id: string; hex: string }[] = [
     ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
-    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS,
+    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS, ...VEST_COLORS,
   ]
   return all.find(c => c.id === id)?.hex ?? '#000000'
 }
@@ -670,6 +711,7 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
   }
   if (productType === 'tote') return { variant: 'totevolume', url: '/models/tote-volume-web.glb' }
   if (productType === 'buff') return { variant: 'buff', url: '/models/buff-web.glb' }
+  if (productType === 'vest') return { variant: 'vest', url: '/models/vest-web.glb' }
   return null
 }
 
@@ -683,6 +725,7 @@ export function getDesignAreasByProductType(productType: ProductType) {
       case 'baby': return BABY_DESIGN_AREAS
       case 'cap': return CAP_DESIGN_AREAS
       case 'tote': return TOTE_DESIGN_AREAS
+      case 'vest': return VEST_DESIGN_AREAS
       default: return TSHIRT_DESIGN_AREAS
     }
   })()

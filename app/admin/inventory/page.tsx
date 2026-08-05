@@ -17,6 +17,7 @@ const productTypeLabels: Record<string, string> = {
   apron: 'סינר',
   baby: 'בגד גוף תינוק',
   tote: 'תיק',
+  vest: 'וסט זוהר',
 }
 
 export default function AdminInventoryPage() {
@@ -114,6 +115,7 @@ export default function AdminInventoryPage() {
                 <option value="cap">כובע</option>
                 <option value="baby">בגד גוף תינוק</option>
                 <option value="tote">תיק</option>
+                <option value="vest">וסט זוהר</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">

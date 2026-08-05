@@ -4,7 +4,7 @@ import { Timestamp } from 'firebase/firestore'
 // Product Types
 // ============================================================================
 
-export type ProductType = 'tshirt' | 'sweatshirt' | 'buff' | 'cap' | 'apron' | 'baby' | 'tote'
+export type ProductType = 'tshirt' | 'sweatshirt' | 'buff' | 'cap' | 'apron' | 'baby' | 'tote' | 'vest'
 
 export type FabricType = 'cotton' | 'dri-fit' | 'polo' | 'oversized'
 

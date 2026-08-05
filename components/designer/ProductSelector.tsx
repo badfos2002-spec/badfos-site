@@ -13,6 +13,7 @@ const MODEL_BY_CATEGORY: Record<string, string> = {
   sweatshirt: '/models/hoodie-web.glb',
   tote: '/models/tote-volume-web.glb',
   buff: '/models/buff-web.glb',
+  vest: '/models/vest-web.glb',
 }
 const warmed = new Set<string>()
 function warmModel(id: string) {
@@ -47,6 +48,11 @@ const categoryDetails: Record<string, { title: string; description: string; imag
     title: 'תיקים',
     description: 'תיקי בד קנבס איכותיים עם הדפסה בעיצוב אישי',
     image: '/assets/tote-category.jpg',
+  },
+  vest: {
+    title: 'וסטים זוהרים',
+    description: 'וסטים זוהרים לעבודה ולאירועים עם הדפסה בעיצוב אישי',
+    image: '/assets/vest-category.jpg',
   },
   apron: {
     title: 'סינרים',
