@@ -335,6 +335,7 @@ export const BABY_SIZES = [
 
 export const TOTE_TYPES = [
   { id: 'volume', name: 'תיק קנבס', description: 'תיק בד קנבס עם נפח ותחתית מתרחבת', surcharge: 0 },
+  { id: 'drawstring', name: 'תיק שרוכים', description: 'תיק גב ספורטיבי עם שרוכי משיכה', surcharge: 0 },
 ] as const
 
 export const TOTE_COLORS = [
@@ -345,6 +346,7 @@ export const TOTE_COLORS = [
 
 export const TOTE_COLOR_FILTER: Record<string, string[]> = {
   volume: ['beige', 'white', 'black'],
+  drawstring: ['white', 'black'],
 }
 
 export const TOTE_DESIGN_AREAS = [
@@ -364,6 +366,8 @@ export const TOTE_DESIGN_AREAS = [
 
 export const TOTE_AREA_FILTER: Record<string, string[]> = {
   volume: ['front_full', 'back'],
+  // The drawstring cords run down the back — print on the front panel only.
+  drawstring: ['front_full'],
 }
 
 export const TOTE_MIN_QUANTITY = 1
@@ -722,7 +726,10 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
     if (fabricType === 'mesh') return { variant: 'meshcap', url: '/models/meshcap-web.glb' }
     return { variant: 'cap', url: '/models/cap-web.glb' }
   }
-  if (productType === 'tote') return { variant: 'totevolume', url: '/models/tote-volume-web.glb' }
+  if (productType === 'tote') {
+    if (fabricType === 'drawstring') return { variant: 'dsbag', url: '/models/dsbag-web.glb' }
+    return { variant: 'totevolume', url: '/models/tote-volume-web.glb' }
+  }
   if (productType === 'buff') return { variant: 'buff', url: '/models/buff-web.glb' }
   if (productType === 'vest') return { variant: 'vest', url: '/models/vest-web.glb' }
   if (productType === 'baby') return { variant: 'baby', url: '/models/baby-web.glb' }

@@ -68,7 +68,7 @@ const CATALOG: {
   },
   {
     id: 'tote', label: 'תיקים',
-    types: [{ id: 'volume', label: 'תיק קנבס' }],
+    types: [{ id: 'volume', label: 'תיק קנבס' }, { id: 'drawstring', label: 'תיק שרוכים' }],
     areas: [
       { id: 'front_full', label: 'צד קדמי' },
       { id: 'back', label: 'צד אחורי' },
@@ -112,7 +112,7 @@ function codeDefaults(): Record<string, ProductPricing> {
     tshirt: { base: { cotton: 37, 'dri-fit': 37, polo: 47, oversized: 47 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5 } },
     sweatshirt: { base: { kangaroo: 53, putter: 53, zip: 53 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5 } },
     cap: { base: { tembel: 30, mesh: 30 }, areas: { center: 5, center_wide: 5 } },
-    tote: { base: { volume: 35 }, areas: { front_full: 5, back: 5 } },
+    tote: { base: { volume: 35, drawstring: 35 }, areas: { front_full: 5, back: 5 } },
     vest: { base: { default: 30 }, areas: { back: 10, chest_logo: 5, chest_logo_right: 5 } },
     buff: { base: { default: 8 }, areas: { center: 8 } },
     apron: { base: { default: 29 }, areas: { center: 10 } },
@@ -163,7 +163,7 @@ function migrateLegacy(legacy: LegacyDoc): Record<string, ProductPricing> {
   d.sweatshirt.areas = { ...shirtAreas }
   const capBase = bp.cap ?? 30
   d.cap.base = { tembel: capBase, mesh: capBase }
-  d.tote.base = { volume: bp.tote ?? 35 }
+  d.tote.base = { volume: bp.tote ?? 35, drawstring: bp.tote ?? 35 }
   d.vest.base = { default: bp.vest ?? 30 }
   d.buff.base = { default: bp.buff ?? 8 }
   d.apron.base = { default: bp.apron ?? 29 }

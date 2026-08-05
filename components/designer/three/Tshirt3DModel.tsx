@@ -143,6 +143,15 @@ const TOTEVOL_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.6, h: 0.68, label: 'צד אחורי' },
 };
 
+// Drawstring backpack — smooth print panel toward +Z, cords behind.
+// Front surface sits at z 0.30–0.50 in the central window.
+const DSBAG_AREAS: Record<string, Placement> = {
+  front_full: { position: [0, -0.05, 0.4], rotation: [0, 0, 0], size: 0.75, depth: 0.5 },
+};
+const DSBAG_GUIDES: Record<string, GuideBox> = {
+  front_full: { w: 0.75, h: 0.75, label: 'צד קדמי' },
+};
+
 // Baby onesie — purchased worn model, front toward +Z. Chest surface sits at
 // z 0.40–0.47, so the projector window stays on the front, clear of the back.
 const BABY_AREAS: Record<string, Placement> = {
@@ -237,6 +246,7 @@ const VARIANTS = {
     roughMapUrl: '/models/tex/flat-white.png',
     normalScale: 1.6,
   },
+  dsbag: { areas: DSBAG_AREAS, guides: DSBAG_GUIDES, panels: false },
   totevolume: {
     areas: TOTEVOL_AREAS,
     guides: TOTEVOL_GUIDES,
@@ -876,4 +886,5 @@ export function preloadAllModels(): void {
   useGLTF.preload('/models/vest-web.glb');
   useGLTF.preload('/models/baby-web.glb');
   useGLTF.preload('/models/apron-web.glb');
+  useGLTF.preload('/models/dsbag-web.glb');
 }
