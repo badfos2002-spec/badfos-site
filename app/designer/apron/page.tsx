@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload, CheckCircle, X, Loader2 } from 'lucide-react'
+import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload, CheckCircle, X, Loader2, Plus, Minus } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { confirmDesignReplace } from '@/lib/utils'
@@ -42,7 +42,7 @@ export default function ApronDesignerPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedColor, setSelectedColor] = useState('')
   const [designFile, setDesignFile] = useState<File | null>(null)
-  const [quantity, setQuantity] = useState(30)
+  const [quantity, setQuantity] = useState(1)
   const sessionId = useState(() => `apron-${Date.now()}`)[0]
   const [addingToCart, setAddingToCart] = useState(false)
 
@@ -219,30 +219,48 @@ export default function ApronDesignerPage() {
       case 3:
         return (
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {([30, 50, 100] as const).map(qty => (
-                <button
-                  key={qty}
-                  onClick={() => setQuantity(qty)}
-                  className={`p-6 rounded-xl border-2 text-center transition-all ${
-                    quantity === qty
-                      ? 'border-[#fbbf24] bg-yellow-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+            <p className="text-sm text-gray-500 mb-4">בחרו כמות סינרים — מיחידה אחת ומעלה.</p>
+
+            <div className="bg-yellow-50 border-2 border-[#fbbf24]/30 rounded-xl p-6">
+              <label className="block text-sm font-bold text-[#1e293b] mb-3 text-center">
+                כמות סינרים
+              </label>
+              <div className="flex items-center justify-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                  className="h-12 w-12 rounded-full p-0"
+                  aria-label="הקטן כמות"
                 >
-                  <div className="text-4xl font-bold text-[#1e293b] mb-2">{qty}</div>
-                  <div className="text-sm font-bold text-[#f59e0b] mb-1">{pricePerUnit}₪ ליחידה</div>
-                  <div className="text-xs text-gray-500">
-                    {qty === 30 ? 'מתאים לצוות קטן' : qty === 50 ? 'מתאים לעסק בינוני' : 'מתאים לעסק גדול'}
-                  </div>
-                  {quantity === qty && (
-                    <div className="mt-3 flex items-center justify-center gap-1 text-[#f59e0b]">
-                      <Check className="w-4 h-4" />
-                      <span className="text-xs font-bold">נבחר</span>
-                    </div>
-                  )}
-                </button>
-              ))}
+                  <Minus className="w-5 h-5" />
+                </Button>
+                <input
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={e => {
+                    const v = parseInt(e.target.value, 10)
+                    if (Number.isFinite(v)) setQuantity(Math.max(1, v))
+                    else setQuantity(1)
+                  }}
+                  className="w-24 h-12 text-center text-2xl font-bold border-2 border-[#fbbf24] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#fbbf24]"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setQuantity(q => q + 1)}
+                  className="h-12 w-12 rounded-full p-0"
+                  aria-label="הגדל כמות"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="text-center mt-4">
+                <div className="text-sm font-bold text-[#f59e0b]">{pricePerUnit}₪ ליחידה</div>
+                <div className="text-xs text-gray-500 mt-1">סה&quot;כ {total}₪ עבור {quantity} {quantity === 1 ? 'סינר' : 'סינרים'}</div>
+              </div>
             </div>
           </div>
         )
