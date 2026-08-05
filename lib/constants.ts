@@ -65,8 +65,8 @@ export const PRODUCT_CATEGORIES = [
     id: 'vest' as ProductType,
     name: 'וסטים זוהרים',
     icon: '🦺',
-    color: 'bg-lime-100 border-lime-500',
-    textColor: 'text-lime-900',
+    color: 'bg-orange-100 border-orange-500',
+    textColor: 'text-orange-900',
     popular: false,
   },
 ] as const
