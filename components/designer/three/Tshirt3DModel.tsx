@@ -188,8 +188,9 @@ const VARIANTS = {
     // Binding + zipper tape follow the vest colour (owner preference);
     // only the reflective stripes stay silver.
     parts: [
+      { match: 'FABRIC_2V', kind: 'body' },     // vertical shoulder stripes → vest colour
       { match: 'FABRIC_2_Copy', kind: 'body' },
-      { match: 'FABRIC_2_FRONT', kind: 'silver' },
+      { match: 'FABRIC_2_FRONT', kind: 'silver' }, // horizontal reflective bands
       { match: 'FABRIC_1', kind: 'body' },
       { match: 'FABRIC_4', kind: 'body' },
     ],
