@@ -11,6 +11,14 @@ import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
+import nextDynamic from 'next/dynamic'
+import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
+import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
+
+const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Preview3DStage'), {
+  ssr: false,
+  loading: () => <Preview3DLoading />,
+})
 
 const buffMockups: Record<string, string> = {
   red: '/assets/באף אדום.webp',
@@ -335,6 +343,25 @@ export default function BuffDesignerPage() {
     </div>
   )
 
+  // 3D buff preview; any failure falls back to the 2D mockup.
+  const buffColorHex = colors.find(c => c.id === selectedColor)?.hex ?? '#1E3A8A'
+  const buffDesigns = designPreviewUrl ? [{ area: 'center', url: designPreviewUrl }] : []
+  const previewElement = (
+    <ThreeErrorBoundary fallback={<MockupImage />}>
+      <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+        <Preview3DStage
+          warmAll
+          colorHex={buffColorHex}
+          designs={buffDesigns}
+          showGuides={currentStep === 2}
+          activeArea={currentStep === 2 ? 'center' : undefined}
+          variant="buff"
+          modelUrl="/models/buff-web.glb"
+        />
+      </div>
+    </ThreeErrorBoundary>
+  )
+
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
       <Button
@@ -425,7 +452,7 @@ export default function BuffDesignerPage() {
           {/* Sticky mockup */}
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
-              <MockupImage />
+              {previewElement}
               {designFile && (
                 <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   ✓ עיצוב הועלה
@@ -486,7 +513,7 @@ export default function BuffDesignerPage() {
               </div>
               <div className="p-6 pt-0">
                 <div className="relative mx-auto max-w-md">
-                  <MockupImage />
+                  {previewElement}
                 </div>
               </div>
             </div>

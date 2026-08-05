@@ -142,6 +142,15 @@ const TOTEVOL_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.6, h: 0.68, label: 'צד אחורי' },
 };
 
+// Buff (neck gaiter, worn) — face side toward +Z. The print sits centred on
+// the front of the tube.
+const BUFF_AREAS: Record<string, Placement> = {
+  center: { position: [0, 0.0, 0.5], rotation: [0, 0, 0], size: 0.6, depth: 0.9 },
+};
+const BUFF_GUIDES: Record<string, GuideBox> = {
+  center: { w: 0.6, h: 0.6, label: 'מרכזי' },
+};
+
 // Trucker / mesh cap — front panel faces +Z; the print sits centred on the
 // front panel (upper-middle of the cap).
 const MESHCAP_AREAS: Record<string, Placement> = {
@@ -154,6 +163,15 @@ const MESHCAP_GUIDES: Record<string, GuideBox> = {
 const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
   tote: { areas: TOTE_AREAS, guides: TOTE_GUIDES, panels: false },
+  buff: {
+    areas: BUFF_AREAS,
+    guides: BUFF_GUIDES,
+    panels: false,
+    // Fabric weave via the source normal map; uniform matte roughness.
+    normalMapUrl: '/models/tex/buff-normal.png',
+    roughMapUrl: '/models/tex/flat-white.png',
+    normalScale: 1.6,
+  },
   totevolume: {
     areas: TOTEVOL_AREAS,
     guides: TOTEVOL_GUIDES,
@@ -690,4 +708,5 @@ export function preloadAllModels(): void {
   useGLTF.preload('/models/ziphoodie-web.glb');
   useGLTF.preload('/models/tote-volume-web.glb');
   useGLTF.preload('/models/meshcap-web.glb');
+  useGLTF.preload('/models/buff-web.glb');
 }

@@ -669,6 +669,7 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
     return { variant: 'cap', url: '/models/cap-web.glb' }
   }
   if (productType === 'tote') return { variant: 'totevolume', url: '/models/tote-volume-web.glb' }
+  if (productType === 'buff') return { variant: 'buff', url: '/models/buff-web.glb' }
   return null
 }
 
