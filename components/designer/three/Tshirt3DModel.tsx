@@ -142,6 +142,14 @@ const TOTEVOL_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.6, h: 0.68, label: 'צד אחורי' },
 };
 
+// Baby onesie — flat blank, front (envelope neck + snaps) toward +Z.
+const BABY_AREAS: Record<string, Placement> = {
+  front_full: { position: [0, 0.18, 0.1], rotation: [0, 0, 0], size: 0.55, depth: 0.35 },
+};
+const BABY_GUIDES: Record<string, GuideBox> = {
+  front_full: { w: 0.52, h: 0.55, label: 'קידמי' },
+};
+
 // Buff (neck gaiter, worn) — face side toward +Z. The print sits centred on
 // the front of the tube.
 const BUFF_AREAS: Record<string, Placement> = {
@@ -160,8 +168,8 @@ const VEST_AREAS: Record<string, Placement> = {
 };
 const VEST_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.55, h: 0.48, label: 'גב' },
-  chest_logo: { w: 0.22, h: 0.22, label: 'חזה שמאל' },
-  chest_logo_right: { w: 0.22, h: 0.22, label: 'חזה ימין' },
+  chest_logo: { w: 0.22, h: 0.22, label: 'סמל כיס ימין' },
+  chest_logo_right: { w: 0.22, h: 0.22, label: 'סמל כיס שמאל' },
 };
 
 // Trucker / mesh cap — front panel faces +Z; the print sits centred on the
@@ -195,6 +203,7 @@ const VARIANTS = {
       { match: 'FABRIC_4', kind: 'body' },
     ],
   },
+  baby: { areas: BABY_AREAS, guides: BABY_GUIDES, panels: false },
   buff: {
     areas: BUFF_AREAS,
     guides: BUFF_GUIDES,
@@ -756,4 +765,5 @@ export function preloadAllModels(): void {
   useGLTF.preload('/models/meshcap-web.glb');
   useGLTF.preload('/models/buff-web.glb');
   useGLTF.preload('/models/vest-web.glb');
+  useGLTF.preload('/models/baby-web.glb');
 }

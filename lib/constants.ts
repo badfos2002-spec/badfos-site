@@ -386,14 +386,14 @@ export const VEST_DESIGN_AREAS = [
   },
   {
     id: 'chest_logo' as DesignAreaType,
-    name: 'חזה שמאל',
-    description: 'סמל על החזה צד שמאל',
+    name: 'סמל כיס ימין',
+    description: 'סמל על החזה צד ימין',
     price: 5,
   },
   {
     id: 'chest_logo_right' as DesignAreaType,
-    name: 'חזה ימין',
-    description: 'סמל על החזה צד ימין',
+    name: 'סמל כיס שמאל',
+    description: 'סמל על החזה צד שמאל',
     price: 5,
   },
 ] as const
@@ -725,6 +725,7 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
   if (productType === 'tote') return { variant: 'totevolume', url: '/models/tote-volume-web.glb' }
   if (productType === 'buff') return { variant: 'buff', url: '/models/buff-web.glb' }
   if (productType === 'vest') return { variant: 'vest', url: '/models/vest-web.glb' }
+  if (productType === 'baby') return { variant: 'baby', url: '/models/baby-web.glb' }
   return null
 }
 

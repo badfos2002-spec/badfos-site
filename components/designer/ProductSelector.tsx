@@ -14,6 +14,7 @@ const MODEL_BY_CATEGORY: Record<string, string> = {
   tote: '/models/tote-volume-web.glb',
   buff: '/models/buff-web.glb',
   vest: '/models/vest-web.glb',
+  baby: '/models/baby-web.glb',
 }
 const warmed = new Set<string>()
 function warmModel(id: string) {

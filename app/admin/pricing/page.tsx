@@ -79,8 +79,8 @@ const CATALOG: {
     types: [{ id: 'default', label: 'וסט זוהר' }],
     areas: [
       { id: 'back', label: 'גב' },
-      { id: 'chest_logo', label: 'חזה שמאל' },
-      { id: 'chest_logo_right', label: 'חזה ימין' },
+      { id: 'chest_logo', label: 'סמל כיס ימין' },
+      { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
     ],
   },
   {

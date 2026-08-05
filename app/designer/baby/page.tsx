@@ -7,10 +7,18 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Minus, Plus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
-import { BABY_COLORS, BABY_SIZES, getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
+import { BABY_COLORS, BABY_SIZES, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
+import nextDynamic from 'next/dynamic'
+import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
+import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
+
+const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Preview3DStage'), {
+  ssr: false,
+  loading: () => <Preview3DLoading />,
+})
 
 const babyMockups: Record<string, string> = {
   white: '/assets/baby-white.webp',
@@ -354,6 +362,27 @@ export default function BabyDesignerPage() {
     </div>
   )
 
+  // 3D onesie preview; any failure falls back to the 2D mockup.
+  const babyColorHex = BABY_COLORS.find(c => c.id === selectedColor)?.hex ?? '#FFFFFF'
+  const babyDesigns = designPreviewUrl ? [{ area: 'front_full', url: designPreviewUrl }] : []
+  const babyModel = getModel3D('baby') ?? { variant: 'baby', url: '/models/baby-web.glb' }
+  const previewElement = (
+    <ThreeErrorBoundary fallback={<MockupImage />}>
+      <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
+        <Preview3DStage
+          warmAll
+          colorHex={babyColorHex}
+          designs={babyDesigns}
+          showGuides={currentStep === 2}
+          activeArea={currentStep === 2 ? 'front_full' : undefined}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          variant={babyModel.variant as any}
+          modelUrl={babyModel.url}
+        />
+      </div>
+    </ThreeErrorBoundary>
+  )
+
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
       <Button
@@ -441,7 +470,7 @@ export default function BabyDesignerPage() {
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
-              <MockupImage />
+              {previewElement}
               {designFile && (
                 <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   ✓ עיצוב הועלה
@@ -497,7 +526,7 @@ export default function BabyDesignerPage() {
               </div>
               <div className="p-6 pt-0">
                 <div className="relative mx-auto max-w-md">
-                  <MockupImage />
+                  {previewElement}
                 </div>
               </div>
             </div>
