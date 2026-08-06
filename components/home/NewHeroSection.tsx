@@ -6,9 +6,23 @@ import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { Button } from '@/components/ui/button'
 import { Sparkles, ShieldCheck, Truck, Star } from 'lucide-react'
-import HeroCarousel from './HeroCarousel'
+import nextDynamic from 'next/dynamic'
 import RevealText from '@/components/common/RevealText'
 import { useTilt } from '@/components/common/useTilt'
+
+// The 3D product carousel can't be server-rendered (WebGL canvas) — load it
+// client-side with a card-shaped placeholder so the hero layout never shifts.
+const Hero3DCarousel = nextDynamic(() => import('./Hero3DCarousel'), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem]"
+      style={{ boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.08)' }}
+    >
+      <div className="w-full md:w-[550px] aspect-square mx-auto rounded-[2rem] bg-gradient-to-b from-[#fffdf5] to-[#fef3c7] animate-pulse" />
+    </div>
+  ),
+})
 
 const D = {
   hero_badge: 'עיצובים אישיים ייחודיים',
@@ -160,7 +174,7 @@ export default function NewHeroSection() {
 
             <div ref={carouselRef} className="relative w-full will-change-transform">
               <div ref={tiltRef} className="w-full will-change-transform">
-                <HeroCarousel />
+                <Hero3DCarousel />
               </div>
             </div>
 
