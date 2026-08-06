@@ -4,14 +4,17 @@ import { useState, useEffect, useRef } from 'react'
 import { Gift, Plus, Trash2, Loader2, Pencil, X, Save, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getAllDocuments, deleteDocument, updateDocument, createDocument } from '@/lib/db'
+import { getAllDocuments, deleteDocument, updateDocument, createDocument, getDocument, setDocument } from '@/lib/db'
 import { packageDisplayName } from '@/lib/constants'
 import type { Package } from '@/lib/types'
 
+// Owner-defined package spec (rev 2, 2026-08-06): quantities, per-unit prices,
+// and which package includes the graphic designer.
+const PACKAGES_SPEC_REV = 2
 const DEFAULT_PACKAGES: Omit<Package, 'id'>[] = [
-  { name: 'עד 10 חולצות', tag: 'חדש', minQuantity: 1, maxQuantity: 10, pricePerUnit: 42, graphicDesignerCost: 250, isActive: true, sortOrder: 0, image: '/images/packages/package-10.png' },
-  { name: '11-20 חולצות', tag: 'חסכוני', minQuantity: 11, maxQuantity: 20, pricePerUnit: 40, graphicDesignerCost: 250, isActive: true, sortOrder: 1, image: '/images/packages/package-11-20.png' },
-  { name: '21-50 חולצות', tag: 'הכי משתלם', minQuantity: 21, maxQuantity: 50, pricePerUnit: 38, graphicDesignerCost: 0, isActive: true, sortOrder: 2, image: '/images/packages/package-21-50.png' },
+  { name: 'עד 10 חולצות', tag: 'חדש', minQuantity: 1, maxQuantity: 10, pricePerUnit: 45, graphicDesignerCost: 250, isActive: true, sortOrder: 0, image: '/images/packages/package-10.png' },
+  { name: '11-20 חולצות', tag: 'חסכוני', minQuantity: 11, maxQuantity: 20, pricePerUnit: 42, graphicDesignerCost: 250, isActive: true, sortOrder: 1, image: '/images/packages/package-11-20.png' },
+  { name: '20-50 חולצות', tag: 'הכי משתלם', minQuantity: 20, maxQuantity: 50, pricePerUnit: 40, graphicDesignerCost: 0, isActive: true, sortOrder: 2, image: '/images/packages/package-21-50.png' },
 ]
 
 const EMPTY_FORM: Omit<Package, 'id'> = {
@@ -46,14 +49,19 @@ export default function AdminPackagesPage() {
   const loadPackages = async () => {
     try {
       let pkgs = await getAllDocuments<Package>('packages')
-      // The public site falls back to 3 built-in packages when the collection
-      // is empty — which left the admin managing nothing while the site showed
-      // packages. Seed those defaults once so the admin edits what's displayed.
-      if (pkgs.length === 0 && !seededRef.current) {
+      // One-time sync to the owner-defined spec (quantities/prices above).
+      // Runs in the admin's authenticated session; afterwards the packages tab
+      // is the single place of control and every edit applies live.
+      const spec = await getDocument<{ rev?: number }>('settings', 'packagesSpec').catch(() => null)
+      if (((spec?.rev ?? 0) < PACKAGES_SPEC_REV || pkgs.length === 0) && !seededRef.current) {
         seededRef.current = true
+        for (const pkg of pkgs) {
+          await deleteDocument('packages', pkg.id)
+        }
         for (const pkg of DEFAULT_PACKAGES) {
           await createDocument<Package>('packages', pkg)
         }
+        await setDocument('settings', 'packagesSpec', { rev: PACKAGES_SPEC_REV })
         pkgs = await getAllDocuments<Package>('packages')
       }
       // Heal legacy data: the display name is derived from the range, so a
