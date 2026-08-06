@@ -9,7 +9,7 @@ import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Che
 import { useCart } from '@/hooks/useCart'
 import { BABY_COLORS, BABY_SIZES, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
-import { confirmDesignReplace } from '@/lib/utils'
+import { confirmDesignReplace, confirmProceedWithoutDesign } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
@@ -89,7 +89,7 @@ export default function BabyDesignerPage() {
   }
 
   const handleAddToCart = async () => {
-    if (uploadedCount === 0 || totalQuantity === 0 || addingToCart) return
+    if (totalQuantity === 0 || addingToCart) return
     setAddingToCart(true)
     try {
       const designs = []
@@ -119,13 +119,17 @@ export default function BabyDesignerPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1: return !!selectedColor
-      case 2: return uploadedCount > 0
+      case 2: return true // design is optional (plain-garment orders allowed)
       case 3: return totalQuantity > 0
       default: return false
     }
   }
 
-  const goToNextStep = () => { if (currentStep < totalSteps) setCurrentStep(s => s + 1) }
+  const goToNextStep = () => {
+    if (currentStep >= totalSteps) return
+    if (currentStep === 2 && uploadedCount === 0 && !confirmProceedWithoutDesign()) return
+    setCurrentStep(s => s + 1)
+  }
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
@@ -278,7 +282,7 @@ export default function BabyDesignerPage() {
               )}
             </div>
 
-            {uploadedCount === 0 && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
+            {uploadedCount === 0 && <p className="text-sm text-gray-400 mt-4 text-center">ניתן להמשיך גם ללא העלאת עיצוב</p>}
           </div>
         )
       }

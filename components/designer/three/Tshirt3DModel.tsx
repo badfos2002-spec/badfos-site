@@ -156,8 +156,8 @@ const DSBAG_GUIDES: Record<string, GuideBox> = {
 // z 0.40–0.47 and the back at z −0.39..−0.30; each projector window stays on
 // its own side of the garment.
 const BABY_AREAS: Record<string, Placement> = {
-  front_full: { position: [0, 0.1, 0.42], rotation: [0, 0, 0], size: 0.62, depth: 0.5 },
-  back: { position: [0, 0.1, -0.34], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.5 },
+  front_full: { position: [0, 0.18, 0.42], rotation: [0, 0, 0], size: 0.62, depth: 0.5 },
+  back: { position: [0, 0.18, -0.34], rotation: [0, Math.PI, 0], size: 0.62, depth: 0.5 },
 };
 const BABY_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.62, h: 0.75, label: 'קידמי' },
@@ -167,7 +167,7 @@ const BABY_GUIDES: Record<string, GuideBox> = {
 // Cooking apron — single sheet, bib + body toward +Z, ties behind. The print
 // sits on the chest, above the pocket seams.
 const APRON_AREAS: Record<string, Placement> = {
-  center: { position: [0, 0.32, 0.28], rotation: [0, 0, 0], size: 0.5, depth: 0.4 },
+  center: { position: [0, 0.38, 0.28], rotation: [0, 0, 0], size: 0.5, depth: 0.4 },
 };
 const APRON_GUIDES: Record<string, GuideBox> = {
   center: { w: 0.46, h: 0.46, label: 'מרכזי' },
@@ -234,9 +234,11 @@ const VARIANTS = {
     areas: APRON_AREAS,
     guides: APRON_GUIDES,
     panels: false,
-    // Twill fabric weave via the source normal map; uniform matte roughness.
+    // Full source texture set: whitened diffuse (seams/stitching, tinted by the
+    // selected colour), twill normal map, and roughness from the gloss map.
     normalMapUrl: '/models/tex/apron-normal.png',
-    roughMapUrl: '/models/tex/flat-white.png',
+    roughMapUrl: '/models/tex/apron-rough.png',
+    baseMapUrl: '/models/tex/apron-base.png',
     normalScale: 1.5,
     singleSheet: true, // one fabric layer → decals must not show through the back
   },
@@ -519,24 +521,30 @@ function TexturedMaterial({
   emissiveIntensity,
   normalMapUrl,
   roughMapUrl,
+  mapUrl,
   strength = 1.3,
 }: {
   color: THREE.Color;
   emissiveIntensity: number;
   normalMapUrl: string;
   roughMapUrl: string;
+  /** Optional whitened detail/albedo map — multiplied by the selected colour,
+   *  so seams and stitching stay visible on any fabric colour. */
+  mapUrl?: string;
   strength?: number;
 }) {
-  const [normalMap, roughMap] = useLoader(THREE.TextureLoader, [normalMapUrl, roughMapUrl]);
+  const urls = useMemo(() => (mapUrl ? [normalMapUrl, roughMapUrl, mapUrl] : [normalMapUrl, roughMapUrl]), [normalMapUrl, roughMapUrl, mapUrl]);
+  const textures = useLoader(THREE.TextureLoader, urls);
+  const [normalMap, roughMap, baseMap] = textures;
   useMemo(() => {
-    [normalMap, roughMap].forEach((t) => {
+    textures.forEach((t, i) => {
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.flipY = false; // match glTF UV origin (top-left)
-      t.colorSpace = THREE.NoColorSpace;
+      t.colorSpace = i === 2 ? THREE.SRGBColorSpace : THREE.NoColorSpace;
       t.anisotropy = 4;
       t.needsUpdate = true;
     });
-  }, [normalMap, roughMap]);
+  }, [textures]);
   const normalScale = useMemo(() => new THREE.Vector2(strength, strength), [strength]);
   return (
     <meshStandardMaterial
@@ -545,6 +553,7 @@ function TexturedMaterial({
       emissiveIntensity={emissiveIntensity}
       roughness={0.97}
       metalness={0}
+      map={baseMap ?? null}
       normalMap={normalMap}
       normalScale={normalScale}
       roughnessMap={roughMap}
@@ -832,6 +841,7 @@ export default function Tshirt3DModel({
                 emissiveIntensity={emissiveIntensity}
                 normalMapUrl={normalMapUrl}
                 roughMapUrl={roughMapUrl}
+                mapUrl={baseMapUrl}
                 strength={normalStrength}
               />
             ) : (

@@ -7,7 +7,7 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
-import { confirmDesignReplace } from '@/lib/utils'
+import { confirmDesignReplace, confirmProceedWithoutDesign } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
@@ -81,18 +81,22 @@ export default function CapDesignerPage() {
   }, [selectedType])
 
   const handleAddToCart = async () => {
-    if (!designFile || !selectedType || quantity < CAP_MIN_QUANTITY || addingToCart) return
+    if (!selectedType || quantity < CAP_MIN_QUANTITY || addingToCart) return
     setAddingToCart(true)
     try {
-      const uniqueName = generateUniqueFileName(designFile.name)
-      const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
-      const areaConfig = CAP_DESIGN_AREAS.find(a => a.id === selectedArea)
+      const designs = []
+      if (designFile) {
+        const uniqueName = generateUniqueFileName(designFile.name)
+        const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
+        const areaConfig = CAP_DESIGN_AREAS.find(a => a.id === selectedArea)
+        designs.push({ area: selectedArea, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: designFile.name })
+      }
       addItem({
         productType: 'cap',
         fabricType: selectedType,
         color: selectedColor,
         sizes: [{ size: 'ONE_SIZE', quantity }],
-        designs: [{ area: selectedArea, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: designFile.name }],
+        designs,
       })
       router.push('/cart')
     } catch (err) {
@@ -107,13 +111,17 @@ export default function CapDesignerPage() {
     switch (currentStep) {
       case 1: return !!selectedType
       case 2: return !!selectedColor
-      case 3: return !!designFile
+      case 3: return true // design is optional (plain-cap orders allowed)
       case 4: return quantity >= CAP_MIN_QUANTITY
       default: return false
     }
   }
 
-  const goToNextStep = () => { if (currentStep < totalSteps) setCurrentStep(s => s + 1) }
+  const goToNextStep = () => {
+    if (currentStep >= totalSteps) return
+    if (currentStep === 3 && !designFile && !confirmProceedWithoutDesign()) return
+    setCurrentStep(s => s + 1)
+  }
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
@@ -302,7 +310,7 @@ export default function CapDesignerPage() {
               )}
             </div>
 
-            {!designFile && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
+            {!designFile && <p className="text-sm text-gray-400 mt-4 text-center">ניתן להמשיך גם ללא העלאת עיצוב</p>}
           </div>
         )
 

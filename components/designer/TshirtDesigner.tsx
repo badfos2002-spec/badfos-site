@@ -13,6 +13,7 @@ import ColorStep from './ColorStep'
 import DesignStep from './DesignStep'
 import SizeQuantityStep from './SizeQuantityStep'
 import PriceSummary from './PriceSummary'
+import { confirmProceedWithoutDesign } from '@/lib/utils'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
@@ -199,6 +200,9 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
 
   const goToNextStep = () => {
     if (currentStep < totalSteps) {
+      // Design is optional — but leaving the design step empty must be a
+      // conscious choice, not an accidental skip.
+      if (currentStep === 3 && !(config.designs && config.designs.length > 0) && !confirmProceedWithoutDesign()) return
       setCurrentStep(currentStep + 1)
       scrollToTopMobile()
     }
@@ -251,7 +255,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     switch (currentStep) {
       case 1: return !!config.fabricType
       case 2: return !!config.color
-      case 3: return !!(config.designs && config.designs.length > 0)
+      case 3: return true // design is optional (plain-garment orders allowed)
       case 4: return !!(config.sizes && config.sizes.length > 0 && config.sizes.some(s => s.quantity > 0))
       default: return false
     }

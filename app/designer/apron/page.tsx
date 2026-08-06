@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, Upload, CheckCircle, X, Loader2, Plus, Minus } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { confirmDesignReplace } from '@/lib/utils'
+import { confirmDesignReplace, confirmProceedWithoutDesign } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
@@ -66,16 +66,20 @@ export default function ApronDesignerPage() {
   }, [designFile])
 
   const handleAddToCart = async () => {
-    if (!designFile || addingToCart) return
+    if (addingToCart) return
     setAddingToCart(true)
     try {
-      const uniqueName = generateUniqueFileName(designFile.name)
-      const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
+      const designs = []
+      if (designFile) {
+        const uniqueName = generateUniqueFileName(designFile.name)
+        const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
+        designs.push({ area: 'center' as const, areaName: 'מרכזי', imageUrl, fileName: designFile.name })
+      }
       addItem({
         productType: 'apron',
         color: selectedColor,
         sizes: [{ size: 'ONE_SIZE', quantity }],
-        designs: [{ area: 'center', areaName: 'מרכזי', imageUrl, fileName: designFile.name }],
+        designs,
       })
       router.push('/cart')
     } catch (err) {
@@ -89,13 +93,17 @@ export default function ApronDesignerPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1: return !!selectedColor
-      case 2: return !!designFile
+      case 2: return true // design is optional (plain orders allowed)
       case 3: return true
       default: return false
     }
   }
 
-  const goToNextStep = () => { if (currentStep < totalSteps) setCurrentStep(s => s + 1) }
+  const goToNextStep = () => {
+    if (currentStep >= totalSteps) return
+    if (currentStep === 2 && !designFile && !confirmProceedWithoutDesign()) return
+    setCurrentStep(s => s + 1)
+  }
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
@@ -223,7 +231,7 @@ export default function ApronDesignerPage() {
               )}
             </div>
 
-            {!designFile && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
+            {!designFile && <p className="text-sm text-gray-400 mt-4 text-center">ניתן להמשיך גם ללא העלאת עיצוב</p>}
           </div>
         )
 

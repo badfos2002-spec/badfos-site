@@ -6,7 +6,7 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, ShoppingBag, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
-import { confirmDesignReplace } from '@/lib/utils'
+import { confirmDesignReplace, confirmProceedWithoutDesign } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { TOTE_TYPES, TOTE_COLORS, TOTE_COLOR_FILTER, TOTE_DESIGN_AREAS, TOTE_AREA_FILTER, TOTE_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
@@ -89,7 +89,7 @@ export default function ToteDesignerPage() {
   }, [selectedType])
 
   const handleAddToCart = async () => {
-    if (uploadedCount === 0 || !selectedType || quantity < TOTE_MIN_QUANTITY || addingToCart) return
+    if (!selectedType || quantity < TOTE_MIN_QUANTITY || addingToCart) return
     setAddingToCart(true)
     try {
       const designs = []
@@ -120,13 +120,17 @@ export default function ToteDesignerPage() {
     switch (currentStep) {
       case 1: return !!selectedType
       case 2: return !!selectedColor
-      case 3: return uploadedCount > 0
+      case 3: return true // design is optional (plain-bag orders allowed)
       case 4: return quantity >= TOTE_MIN_QUANTITY
       default: return false
     }
   }
 
-  const goToNextStep = () => { if (currentStep < totalSteps) setCurrentStep(s => s + 1) }
+  const goToNextStep = () => {
+    if (currentStep >= totalSteps) return
+    if (currentStep === 3 && uploadedCount === 0 && !confirmProceedWithoutDesign()) return
+    setCurrentStep(s => s + 1)
+  }
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
@@ -324,7 +328,7 @@ export default function ToteDesignerPage() {
               )}
             </div>
 
-            {uploadedCount === 0 && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
+            {uploadedCount === 0 && <p className="text-sm text-gray-400 mt-4 text-center">ניתן להמשיך גם ללא העלאת עיצוב</p>}
           </div>
         )
       }

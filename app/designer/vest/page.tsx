@@ -6,7 +6,7 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
-import { confirmDesignReplace } from '@/lib/utils'
+import { confirmDesignReplace, confirmProceedWithoutDesign } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { VEST_COLORS, VEST_DESIGN_AREAS, VEST_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
@@ -73,7 +73,7 @@ export default function VestDesignerPage() {
   const currentPreview = designPreviews[selectedArea] ?? null
 
   const handleAddToCart = async () => {
-    if (uploadedCount === 0 || quantity < VEST_MIN_QUANTITY || addingToCart) return
+    if (quantity < VEST_MIN_QUANTITY || addingToCart) return
     setAddingToCart(true)
     try {
       const designs = []
@@ -102,13 +102,17 @@ export default function VestDesignerPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1: return !!selectedColor
-      case 2: return uploadedCount > 0
+      case 2: return true // design is optional (plain-vest orders allowed)
       case 3: return quantity >= VEST_MIN_QUANTITY
       default: return false
     }
   }
 
-  const goToNextStep = () => { if (currentStep < totalSteps) setCurrentStep(s => s + 1) }
+  const goToNextStep = () => {
+    if (currentStep >= totalSteps) return
+    if (currentStep === 2 && uploadedCount === 0 && !confirmProceedWithoutDesign()) return
+    setCurrentStep(s => s + 1)
+  }
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
@@ -260,7 +264,7 @@ export default function VestDesignerPage() {
               )}
             </div>
 
-            {uploadedCount === 0 && <p className="text-sm text-red-500 mt-4">יש להעלות עיצוב כדי להמשיך.</p>}
+            {uploadedCount === 0 && <p className="text-sm text-gray-400 mt-4 text-center">ניתן להמשיך גם ללא העלאת עיצוב</p>}
           </div>
         )
       }

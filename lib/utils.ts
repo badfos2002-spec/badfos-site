@@ -165,6 +165,19 @@ export function confirmDesignReplace(areaName: string, multiArea = false): boole
 }
 
 /**
+ * Design upload is optional in every designer — some customers just want the
+ * plain garment. Before leaving the design step with nothing uploaded, make
+ * sure that's intentional. Returns true only if the user confirms.
+ */
+export function confirmProceedWithoutDesign(): boolean {
+  return window.confirm(
+    'שים לב: לא העלית שום עיצוב 🎨\n' +
+    'אפשר להזמין את המוצר גם חלק, ללא הדפסה.\n\n' +
+    'להמשיך לשלב הבא בלי עיצוב?'
+  )
+}
+
+/**
  * Escape HTML special characters to prevent HTML injection
  */
 export function escapeHtml(str: string): string {
