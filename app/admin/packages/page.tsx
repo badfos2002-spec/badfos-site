@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Gift, Plus, Trash2, Loader2, Pencil, X, Save, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,15 +35,32 @@ export default function AdminPackagesPage() {
   const [form, setForm] = useState<Omit<Package, 'id'>>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
 
+  const seededRef = useRef(false)
+
   useEffect(() => {
     loadPackages()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const loadPackages = () => {
-    getAllDocuments<Package>('packages')
-      .then(pkgs => setPackages(pkgs.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))))
-      .catch(console.error)
-      .finally(() => setLoading(false))
+  const loadPackages = async () => {
+    try {
+      let pkgs = await getAllDocuments<Package>('packages')
+      // The public site falls back to 3 built-in packages when the collection
+      // is empty — which left the admin managing nothing while the site showed
+      // packages. Seed those defaults once so the admin edits what's displayed.
+      if (pkgs.length === 0 && !seededRef.current) {
+        seededRef.current = true
+        for (const pkg of DEFAULT_PACKAGES) {
+          await createDocument<Package>('packages', pkg)
+        }
+        pkgs = await getAllDocuments<Package>('packages')
+      }
+      setPackages(pkgs.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)))
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const openCreate = () => {
