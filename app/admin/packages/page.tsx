@@ -8,13 +8,13 @@ import { getAllDocuments, deleteDocument, updateDocument, createDocument, getDoc
 import { packageDisplayName } from '@/lib/constants'
 import type { Package } from '@/lib/types'
 
-// Owner-defined package spec (rev 2, 2026-08-06): quantities, per-unit prices,
+// Owner-defined package spec (rev 3, 2026-08-06): quantities, per-unit prices,
 // and which package includes the graphic designer.
-const PACKAGES_SPEC_REV = 2
+const PACKAGES_SPEC_REV = 3
 const DEFAULT_PACKAGES: Omit<Package, 'id'>[] = [
   { name: 'עד 10 חולצות', tag: 'חדש', minQuantity: 1, maxQuantity: 10, pricePerUnit: 45, graphicDesignerCost: 250, isActive: true, sortOrder: 0, image: '/images/packages/package-10.png' },
   { name: '11-20 חולצות', tag: 'חסכוני', minQuantity: 11, maxQuantity: 20, pricePerUnit: 42, graphicDesignerCost: 250, isActive: true, sortOrder: 1, image: '/images/packages/package-11-20.png' },
-  { name: '20-50 חולצות', tag: 'הכי משתלם', minQuantity: 20, maxQuantity: 50, pricePerUnit: 40, graphicDesignerCost: 0, isActive: true, sortOrder: 2, image: '/images/packages/package-21-50.png' },
+  { name: '21-100 חולצות', tag: 'הכי משתלם', minQuantity: 21, maxQuantity: 100, pricePerUnit: 40, graphicDesignerCost: 0, isActive: true, sortOrder: 2, image: '/images/packages/package-21-50.png' },
 ]
 
 const EMPTY_FORM: Omit<Package, 'id'> = {
