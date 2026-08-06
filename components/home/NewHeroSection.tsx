@@ -8,20 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Sparkles, ShieldCheck, Truck, Star } from 'lucide-react'
 import nextDynamic from 'next/dynamic'
 import RevealText from '@/components/common/RevealText'
-import { useTilt } from '@/components/common/useTilt'
 
 // The 3D product carousel can't be server-rendered (WebGL canvas) — load it
-// client-side with a card-shaped placeholder so the hero layout never shifts.
+// client-side with a same-size transparent placeholder so the layout never shifts.
 const Hero3DCarousel = nextDynamic(() => import('./Hero3DCarousel'), {
   ssr: false,
-  loading: () => (
-    <div
-      className="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem]"
-      style={{ boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.08)' }}
-    >
-      <div className="w-full md:w-[550px] aspect-square mx-auto rounded-[2rem] bg-gradient-to-b from-[#fffdf5] to-[#fef3c7] animate-pulse" />
-    </div>
-  ),
+  loading: () => <div className="w-full mx-auto max-w-[640px] aspect-square" />,
 })
 
 const D = {
@@ -40,9 +32,6 @@ export default function NewHeroSection() {
   const subtitleRef = useRef<HTMLHeadingElement>(null)
   const descRef = useRef<HTMLParagraphElement>(null)
   const carouselRef = useRef<HTMLDivElement>(null)
-
-  // 3D tilt on the carousel card (desktop + non-reduced-motion only; no-op otherwise).
-  const tiltRef = useTilt<HTMLDivElement>({ maxTilt: 7, scale: 1.02, perspective: 900 })
 
   // Bold mount entrance. CRITICAL: only badge/subtitle/paragraph + carousel are touched here.
   // The CTA button and rating row are NEVER animated and never start hidden.
@@ -172,10 +161,9 @@ export default function NewHeroSection() {
             {/* Richer halo behind the carousel card */}
             <div className="absolute inset-0 -z-0 mx-auto my-auto w-[88%] h-[88%] bg-gradient-radial from-[#ffc32e]/35 via-[#fef08a]/20 to-transparent rounded-[2.5rem] blur-2xl pointer-events-none will-change-transform"></div>
 
+            {/* Free-floating 3D ring — no card, no tilt (the ring IS the motion) */}
             <div ref={carouselRef} className="relative w-full will-change-transform">
-              <div ref={tiltRef} className="w-full will-change-transform">
-                <Hero3DCarousel />
-              </div>
+              <Hero3DCarousel />
             </div>
 
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 w-40 md:hidden">
