@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Gift, Check, Loader2, ShoppingCart } from 'lucide-react'
+import { Gift, Check, Loader2, ShoppingCart, Plus, Minus } from 'lucide-react'
 import { getAllDocuments } from '@/lib/db'
 import { useCart } from '@/hooks/useCart'
 import type { Package } from '@/lib/types'
@@ -122,8 +122,14 @@ export default function PackagesPage() {
     setQuantities(initial)
   }, [packages])
 
+  // Quantity is bounded by the package's own range (the range in its name).
+  const clampQty = (pkg: DisplayPackage, v: number) =>
+    Math.max(pkg.minQuantity, Math.min(pkg.maxQuantity, v))
+  const setQty = (pkg: DisplayPackage, v: number, clamp = true) =>
+    setQuantities(prev => ({ ...prev, [pkg.id]: clamp ? clampQty(pkg, v) : v }))
+
   const handleAddToCart = (pkg: DisplayPackage) => {
-    const quantity = quantities[pkg.id] ?? pkg.minQuantity
+    const quantity = clampQty(pkg, quantities[pkg.id] ?? pkg.minQuantity)
     addPackage({
       packageId: pkg.id,
       packageName: pkg.name,
@@ -162,6 +168,9 @@ export default function PackagesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {packages.map((pkg) => {
               const isAdded = addedId === pkg.id
+              const qty = quantities[pkg.id] ?? pkg.minQuantity
+              const shownQty = clampQty(pkg, qty)
+              const subtotal = shownQty * pkg.pricePerUnit
 
               return (
                 <Card key={pkg.id} className="group overflow-hidden hover-lift border-yellow-100 h-full flex flex-col">
@@ -201,7 +210,44 @@ export default function PackagesPage() {
                       ))}
                     </ul>
 
-                    <div className="pt-2 mt-auto">
+                    <div className="mt-auto space-y-2">
+                      <div className="flex items-center justify-between bg-yellow-50 border border-yellow-100 rounded-lg px-3 py-2">
+                        <span className="text-sm font-medium text-gray-700">כמות:</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setQty(pkg, shownQty - 1)}
+                            disabled={shownQty <= pkg.minQuantity}
+                            aria-label="הפחתת כמות"
+                            className="w-8 h-8 rounded-md border border-gray-300 bg-white flex items-center justify-center disabled:opacity-40 hover:border-yellow-400 transition-colors"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <input
+                            type="number"
+                            min={pkg.minQuantity}
+                            max={pkg.maxQuantity}
+                            value={qty || ''}
+                            aria-label="כמות יחידות"
+                            onChange={(e) => setQty(pkg, parseInt(e.target.value) || 0, false)}
+                            onBlur={() => setQty(pkg, qty)}
+                            className="w-14 h-8 text-center font-bold rounded-md border border-gray-300 bg-white text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setQty(pkg, shownQty + 1)}
+                            disabled={shownQty >= pkg.maxQuantity}
+                            aria-label="הוספת כמות"
+                            className="w-8 h-8 rounded-md border border-gray-300 bg-white flex items-center justify-center disabled:opacity-40 hover:border-yellow-400 transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm px-1">
+                        <span className="text-gray-500">בין {pkg.minQuantity} ל-{pkg.maxQuantity} יח׳ בחבילה זו</span>
+                        <span className="font-bold text-gray-900">סה&quot;כ: ₪{subtotal.toLocaleString()}</span>
+                      </div>
                       <button
                         onClick={() => handleAddToCart(pkg)}
                         className={`w-full h-12 flex items-center justify-center text-lg font-semibold rounded-md shadow transition-all ${
