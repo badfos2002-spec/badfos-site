@@ -2,7 +2,7 @@
 
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"}
+  script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"}
     https://*.google.com
     https://*.google.co.il
     https://*.gstatic.com

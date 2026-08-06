@@ -58,9 +58,9 @@ const FALLBACK: DisplayPackage[] = [
   },
   {
     id: '3',
-    name: '21-100 חולצות',
+    name: '21-50 חולצות',
     tag: 'הכי משתלם',
-    range: '21–100 חולצות',
+    range: '21–50 חולצות',
     subtitle: 'כולל גרפיקאי',
     pricePerUnit: 40,
     graphicDesignerCost: 0,
@@ -69,7 +69,7 @@ const FALLBACK: DisplayPackage[] = [
     description: 'מחיר ליחידה: 40 ₪. ליווי גרפיקאי צמוד חינם.',
     image: '/images/packages/package-21-50.png',
     minQuantity: 21,
-    maxQuantity: 100,
+    maxQuantity: 50,
   },
 ]
 
