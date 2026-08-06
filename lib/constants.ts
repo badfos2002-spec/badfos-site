@@ -579,8 +579,8 @@ export const CONTACT_INFO = {
   phone: '055-988-5954',
   whatsapp: '972559885954',
   email: 'badfos2002@gmail.com',
-  instagram: 'https://instagram.com/badfos',
-  facebook: 'https://facebook.com/badfos',
+  instagram: 'https://www.instagram.com/badfos.co.il',
+  facebook: 'https://www.facebook.com/profile.php?id=61575195215091',
   tiktok: 'https://www.tiktok.com/@badfos',
   address: 'דובנוב 10, ראשון לציון',
 } as const

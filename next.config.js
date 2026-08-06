@@ -124,6 +124,15 @@ const nextConfig = {
         source: '/(.*)',
         headers: securityHeaders,
       },
+      {
+        // 3D models + their textures are content-stable: when a model is
+        // replaced, its FILE NAME must change (e.g. -v2), otherwise browsers
+        // keep the old one for a year. Long cache = instant repeat loads.
+        source: '/models/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
     ]
   },
 }

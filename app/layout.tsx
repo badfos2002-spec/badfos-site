@@ -180,7 +180,8 @@ export default function RootLayout({
                 { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '00:00', closes: '00:00' },
               ],
               sameAs: [
-                'https://www.instagram.com/badfos_il/',
+                'https://www.instagram.com/badfos.co.il',
+                'https://www.facebook.com/profile.php?id=61575195215091',
               ],
               aggregateRating: {
                 '@type': 'AggregateRating',
