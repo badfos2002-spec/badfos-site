@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Gift, Check, Loader2, ShoppingCart, Plus, Minus } from 'lucide-react'
 import { getAllDocuments } from '@/lib/db'
 import { useCart } from '@/hooks/useCart'
+import { packageDisplayName } from '@/lib/constants'
 import type { Package } from '@/lib/types'
 
 type DisplayPackage = {
@@ -82,7 +83,9 @@ function toDisplay(pkg: Package): DisplayPackage {
   const free = pkg.graphicDesignerCost === 0
   return {
     id: pkg.id,
-    name: pkg.name,
+    // Name is DERIVED from the range — never trust a stored name that may
+    // contradict the quantities the customer can actually pick.
+    name: packageDisplayName(pkg.minQuantity, pkg.maxQuantity),
     tag: pkg.tag,
     range: `${pkg.minQuantity}–${pkg.maxQuantity} חולצות`,
     subtitle: free ? 'כולל גרפיקאי' : 'ליווי גרפיקאי בתוספת',

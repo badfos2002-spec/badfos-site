@@ -5,6 +5,7 @@ import { Gift, Plus, Trash2, Loader2, Pencil, X, Save, Database } from 'lucide-r
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getAllDocuments, deleteDocument, updateDocument, createDocument } from '@/lib/db'
+import { packageDisplayName } from '@/lib/constants'
 import type { Package } from '@/lib/types'
 
 const DEFAULT_PACKAGES: Omit<Package, 'id'>[] = [
@@ -55,6 +56,15 @@ export default function AdminPackagesPage() {
         }
         pkgs = await getAllDocuments<Package>('packages')
       }
+      // Heal legacy data: the display name is derived from the range, so a
+      // stored name that contradicts it ("עד 10" with max 20) gets rewritten.
+      for (const pkg of pkgs) {
+        const derived = packageDisplayName(pkg.minQuantity, pkg.maxQuantity)
+        if (pkg.name !== derived) {
+          await updateDocument<Package>('packages', pkg.id, { name: derived } as any)
+          pkg.name = derived
+        }
+      }
       setPackages(pkgs.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)))
     } catch (e) {
       console.error(e)
@@ -86,15 +96,20 @@ export default function AdminPackagesPage() {
   }
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert('יש להזין שם חבילה'); return }
+    if (form.minQuantity < 1) { alert('כמות מינימלית חייבת להיות 1 לפחות'); return }
+    if (form.maxQuantity <= form.minQuantity) { alert('כמות מקסימלית חייבת להיות גדולה מהמינימלית'); return }
+    if (form.pricePerUnit <= 0) { alert('יש להזין מחיר ליחידה'); return }
+    // The name is always derived from the range — the card, the customer's
+    // quantity picker, and the cart all stay in sync automatically.
+    const toSave = { ...form, name: packageDisplayName(form.minQuantity, form.maxQuantity) }
     setSaving(true)
     try {
       if (editingPkg) {
-        await updateDocument<Package>('packages', editingPkg.id, form as any)
-        setPackages(prev => prev.map(p => p.id === editingPkg.id ? { ...p, ...form } : p))
+        await updateDocument<Package>('packages', editingPkg.id, toSave as any)
+        setPackages(prev => prev.map(p => p.id === editingPkg.id ? { ...p, ...toSave } : p))
       } else {
-        const newId = await createDocument<Package>('packages', form)
-        setPackages(prev => [...prev, { id: newId, ...form }].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)))
+        const newId = await createDocument<Package>('packages', toSave)
+        setPackages(prev => [...prev, { id: newId, ...toSave }].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)))
       }
       setModalOpen(false)
     } catch (e) {
@@ -243,9 +258,9 @@ export default function AdminPackagesPage() {
             </div>
 
             <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">שם החבילה *</label>
-                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder='לדוגמה: "חבילה בסיסית"' />
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                <p className="text-xs text-gray-600 mb-1">שם החבילה (נקבע אוטומטית לפי הטווח)</p>
+                <p className="font-bold text-lg text-gray-900">{packageDisplayName(form.minQuantity, form.maxQuantity)}</p>
               </div>
 
               <div>

@@ -717,6 +717,14 @@ export function getColorHex(id: string): string {
 
 // The 3D model for a product+type (null → no 3D model, use the 2D mockup).
 // Shared by the designers and the shared-design view so they stay in sync.
+/**
+ * Single source of truth for a package's display name: derived from its
+ * quantity range, so the name can never contradict what the customer can pick.
+ */
+export function packageDisplayName(minQuantity: number, maxQuantity: number): string {
+  return minQuantity <= 1 ? `עד ${maxQuantity} חולצות` : `${minQuantity}-${maxQuantity} חולצות`
+}
+
 export function getModel3D(productType: string, fabricType?: string): { variant: string; url: string } | null {
   if (productType === 'tshirt') {
     if (fabricType === 'polo') return { variant: 'polo', url: '/models/polo-web.glb' }
