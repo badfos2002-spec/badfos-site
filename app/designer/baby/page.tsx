@@ -9,7 +9,8 @@ import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Che
 import { useCart } from '@/hooks/useCart'
 import { BABY_COLORS, BABY_SIZES, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
-import { confirmDesignReplace, confirmProceedWithoutDesign } from '@/lib/utils'
+import { confirmDesignReplace } from '@/lib/utils'
+import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
@@ -125,11 +126,13 @@ export default function BabyDesignerPage() {
     }
   }
 
+  const [showNoDesignModal, setShowNoDesignModal] = useState(false)
   const goToNextStep = () => {
     if (currentStep >= totalSteps) return
-    if (currentStep === 2 && uploadedCount === 0 && !confirmProceedWithoutDesign()) return
+    if (currentStep === 2 && uploadedCount === 0) { setShowNoDesignModal(true); return }
     setCurrentStep(s => s + 1)
   }
+  const confirmNoDesign = () => { setShowNoDesignModal(false); setCurrentStep(s => s + 1) }
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
@@ -477,6 +480,7 @@ export default function BabyDesignerPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen" dir="rtl">
+      <NoDesignConfirmModal open={showNoDesignModal} onConfirm={confirmNoDesign} onCancel={() => setShowNoDesignModal(false)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Breadcrumbs items={[
           { label: 'בית', href: '/home' },

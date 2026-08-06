@@ -13,7 +13,7 @@ import ColorStep from './ColorStep'
 import DesignStep from './DesignStep'
 import SizeQuantityStep from './SizeQuantityStep'
 import PriceSummary from './PriceSummary'
-import { confirmProceedWithoutDesign } from '@/lib/utils'
+import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
@@ -198,14 +198,23 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     }
   }
 
+  // Design is optional — but leaving the design step empty must be a
+  // conscious choice, not an accidental skip.
+  const [showNoDesignModal, setShowNoDesignModal] = useState(false)
   const goToNextStep = () => {
     if (currentStep < totalSteps) {
-      // Design is optional — but leaving the design step empty must be a
-      // conscious choice, not an accidental skip.
-      if (currentStep === 3 && !(config.designs && config.designs.length > 0) && !confirmProceedWithoutDesign()) return
+      if (currentStep === 3 && !(config.designs && config.designs.length > 0)) {
+        setShowNoDesignModal(true)
+        return
+      }
       setCurrentStep(currentStep + 1)
       scrollToTopMobile()
     }
+  }
+  const confirmNoDesign = () => {
+    setShowNoDesignModal(false)
+    setCurrentStep(currentStep + 1)
+    scrollToTopMobile()
   }
 
   const goToPreviousStep = () => {
@@ -439,6 +448,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
 
   return (
     <div className="bg-gray-50 min-h-screen" dir="rtl">
+      <NoDesignConfirmModal open={showNoDesignModal} onConfirm={confirmNoDesign} onCancel={() => setShowNoDesignModal(false)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {breadcrumbs}
 

@@ -6,7 +6,8 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, ShoppingBag, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus, Loader2 } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
-import { confirmDesignReplace, confirmProceedWithoutDesign } from '@/lib/utils'
+import { confirmDesignReplace } from '@/lib/utils'
+import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { TOTE_TYPES, TOTE_COLORS, TOTE_COLOR_FILTER, TOTE_DESIGN_AREAS, TOTE_AREA_FILTER, TOTE_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
@@ -126,11 +127,13 @@ export default function ToteDesignerPage() {
     }
   }
 
+  const [showNoDesignModal, setShowNoDesignModal] = useState(false)
   const goToNextStep = () => {
     if (currentStep >= totalSteps) return
-    if (currentStep === 3 && uploadedCount === 0 && !confirmProceedWithoutDesign()) return
+    if (currentStep === 3 && uploadedCount === 0) { setShowNoDesignModal(true); return }
     setCurrentStep(s => s + 1)
   }
+  const confirmNoDesign = () => { setShowNoDesignModal(false); setCurrentStep(s => s + 1) }
   const goToPreviousStep = () => { if (currentStep > 1) setCurrentStep(s => s - 1) }
   const resetDesign = () => {
     setCurrentStep(1)
@@ -499,6 +502,7 @@ export default function ToteDesignerPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen" dir="rtl">
+      <NoDesignConfirmModal open={showNoDesignModal} onConfirm={confirmNoDesign} onCancel={() => setShowNoDesignModal(false)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Breadcrumbs items={[
           { label: 'בית', href: '/home' },
