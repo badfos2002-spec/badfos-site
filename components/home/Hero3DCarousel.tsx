@@ -30,15 +30,17 @@ const HERO_PRODUCTS: {
   colorHex: string
   designSets: Design[][]
 }[] = [
-  { key: 'tshirt',  label: 'חולצה',            variant: 'tshirt',     modelUrl: '/models/tshirt-web.glb',       colorHex: '#DC2626', designSets: one('tshirt', 'front_full') },
-  { key: 'meshcap', label: 'כובע רשת',          variant: 'meshcap',    modelUrl: '/models/meshcap-web.glb',      colorHex: '#1D4ED8', designSets: one('meshcap', 'center') },
-  { key: 'baby',    label: 'בגד גוף לתינוק',    variant: 'baby',       modelUrl: '/models/baby-web.glb',         colorHex: '#F472B6', designSets: one('baby', 'front_full') },
-  { key: 'apron',   label: 'סינר',             variant: 'apron',      modelUrl: '/models/apron-web.glb',        colorHex: '#0F766E', designSets: one('apron', 'center') },
-  { key: 'tote',    label: 'תיק קנבס',          variant: 'totevolume', modelUrl: '/models/tote-volume-web.glb',  colorHex: '#E4D9C3', designSets: one('tote', 'front_full') },
-  { key: 'dsbag',   label: 'תיק שרוכים',        variant: 'dsbag',      modelUrl: '/models/dsbag-web.glb',        colorHex: '#111111', designSets: one('dsbag', 'front_full') },
-  { key: 'buff',    label: 'באף',              variant: 'buff',       modelUrl: '/models/buff-web.glb',         colorHex: '#F59E0B', designSets: one('buff', 'center') },
-  { key: 'vest',    label: 'וסט זוהר',          variant: 'vest',       modelUrl: '/models/vest-web.glb',         colorHex: '#CCFF00', designSets: one('vest', 'back') },
-  { key: 'hoodie',  label: 'קפוצ׳ון',           variant: 'hoodie',     modelUrl: '/models/hoodie-web.glb',       colorHex: '#4F46E5', designSets: one('hoodie', 'front_full') },
+  // colorHex values are REAL catalog colours (from *_COLORS in lib/constants),
+  // one distinct swatch per product so the ring reads varied but authentic.
+  { key: 'tshirt',  label: 'חולצה',            variant: 'tshirt',     modelUrl: '/models/tshirt-web.glb',       colorHex: '#A81C22', designSets: one('tshirt', 'front_full') },   // אדום
+  { key: 'meshcap', label: 'כובע רשת',          variant: 'meshcap',    modelUrl: '/models/meshcap-web.glb',      colorHex: '#1E40AF', designSets: one('meshcap', 'center') },       // כחול רויל
+  { key: 'baby',    label: 'בגד גוף לתינוק',    variant: 'baby',       modelUrl: '/models/baby-web.glb',         colorHex: '#FBCFE8', designSets: one('baby', 'front_full') },      // ורוד
+  { key: 'apron',   label: 'סינר',             variant: 'apron',      modelUrl: '/models/apron-web.glb',        colorHex: '#1E3A8A', designSets: one('apron', 'center') },         // נייבי
+  { key: 'tote',    label: 'תיק קנבס',          variant: 'totevolume', modelUrl: '/models/tote-volume-web.glb',  colorHex: '#E4D9C3', designSets: one('tote', 'front_full') },      // בז׳
+  { key: 'dsbag',   label: 'תיק שרוכים',        variant: 'dsbag',      modelUrl: '/models/dsbag-web.glb',        colorHex: '#000000', designSets: one('dsbag', 'front_full') },     // שחור
+  { key: 'buff',    label: 'באף',              variant: 'buff',       modelUrl: '/models/buff-web.glb',         colorHex: '#06B6D4', designSets: one('buff', 'center') },          // טורקיז
+  { key: 'vest',    label: 'וסט זוהר',          variant: 'vest',       modelUrl: '/models/vest-web.glb',         colorHex: '#CCFF00', designSets: one('vest', 'back') },            // צהוב זוהר
+  { key: 'hoodie',  label: 'קפוצ׳ון',           variant: 'hoodie',     modelUrl: '/models/hoodie-web.glb',       colorHex: '#6E2A48', designSets: one('hoodie', 'front_full') },    // בורדו
 ]
 
 const N = HERO_PRODUCTS.length
