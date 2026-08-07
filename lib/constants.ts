@@ -234,14 +234,14 @@ export const TSHIRT_DESIGN_AREAS = [
   },
   {
     id: 'chest_logo' as DesignAreaType,
-    name: 'סמל כיס שמאל',
-    description: 'סמל קטן בגובה הכיס צד שמאל',
+    name: 'סמל כיס ימין',
+    description: 'סמל קטן בגובה הכיס צד ימין',
     price: 5,
   },
   {
     id: 'chest_logo_right' as DesignAreaType,
-    name: 'סמל כיס ימין',
-    description: 'סמל קטן בגובה הכיס צד ימין',
+    name: 'סמל כיס שמאל',
+    description: 'סמל קטן בגובה הכיס צד שמאל',
     price: 5,
   },
 ] as const
@@ -261,14 +261,14 @@ export const SWEATSHIRT_DESIGN_AREAS = [
   },
   {
     id: 'chest_logo' as DesignAreaType,
-    name: 'סמל כיס שמאל',
-    description: 'סמל קטן בגובה הכיס צד שמאל',
+    name: 'סמל כיס ימין',
+    description: 'סמל קטן בגובה הכיס צד ימין',
     price: 5,
   },
   {
     id: 'chest_logo_right' as DesignAreaType,
-    name: 'סמל כיס ימין',
-    description: 'סמל קטן בגובה הכיס צד ימין',
+    name: 'סמל כיס שמאל',
+    description: 'סמל קטן בגובה הכיס צד שמאל',
     price: 5,
   },
 ] as const

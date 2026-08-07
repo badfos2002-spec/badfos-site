@@ -37,8 +37,8 @@ const CATALOG: {
     areas: [
       { id: 'front_full', label: 'קדמי מלא' },
       { id: 'back', label: 'גב' },
-      { id: 'chest_logo', label: 'סמל כיס שמאל' },
-      { id: 'chest_logo_right', label: 'סמל כיס ימין' },
+      { id: 'chest_logo', label: 'סמל כיס ימין' },
+      { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
     ],
   },
   {
@@ -51,8 +51,8 @@ const CATALOG: {
     areas: [
       { id: 'front_full', label: 'קדמי מלא' },
       { id: 'back', label: 'גב' },
-      { id: 'chest_logo', label: 'סמל כיס שמאל' },
-      { id: 'chest_logo_right', label: 'סמל כיס ימין' },
+      { id: 'chest_logo', label: 'סמל כיס ימין' },
+      { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
     ],
   },
   {

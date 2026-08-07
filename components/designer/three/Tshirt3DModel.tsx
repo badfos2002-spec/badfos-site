@@ -38,8 +38,8 @@ const TSHIRT_AREAS: Record<string, Placement> = {
 const TSHIRT_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.62, h: 0.68, label: 'קדמי מלא' },
   back: { w: 0.72, h: 0.92, label: 'גב' },
-  chest_logo: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
-  chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל ימין' },
+  chest_logo: { w: 0.17, h: 0.17, label: 'סמל ימין' },
+  chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
 };
 
 // POLO — separate front panel (local z ∈ [-0.15,0.46]) and back panel
@@ -54,8 +54,8 @@ const POLO_AREAS: Record<string, Placement> = {
 const POLO_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.4, h: 0.5, label: 'קדמי מלא' },
   back: { w: 0.575, h: 0.71, label: 'גב' },
-  chest_logo: { w: 0.2, h: 0.2, label: 'סמל שמאל' },
-  chest_logo_right: { w: 0.2, h: 0.2, label: 'סמל ימין' },
+  chest_logo: { w: 0.2, h: 0.2, label: 'סמל ימין' },
+  chest_logo_right: { w: 0.2, h: 0.2, label: 'סמל שמאל' },
 };
 
 // OVERSIZED — one wide body mesh (local x ∈ [-1,1], front +z). Like the tshirt
@@ -71,8 +71,8 @@ const OVERSIZED_AREAS: Record<string, Placement> = {
 const OVERSIZED_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.54, h: 0.64, label: 'קדמי מלא' },
   back: { w: 0.6, h: 0.74, label: 'גב' },
-  chest_logo: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
-  chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל ימין' },
+  chest_logo: { w: 0.18, h: 0.18, label: 'סמל ימין' },
+  chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
 };
 
 // CAP (bucket hat) — one low-poly mesh. Y is up, the round brim is in the XZ
@@ -100,8 +100,8 @@ const HOODIE_AREAS: Record<string, Placement> = {
 const HOODIE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.48, h: 0.58, label: 'קדמי מלא' },
   back: { w: 0.55, h: 0.66, label: 'גב' },
-  chest_logo: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
-  chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל ימין' },
+  chest_logo: { w: 0.18, h: 0.18, label: 'סמל ימין' },
+  chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
 };
 
 // Crewneck (פוטר) — same body as the hoodie but no hood, so the back print
