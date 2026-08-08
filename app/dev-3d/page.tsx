@@ -66,6 +66,10 @@ const VARIANTS = PRODUCTS.flatMap(p =>
 /** Same step as the real panel's arrow taps. */
 const NUDGE = 0.01
 
+/** Mirrors the real panel: snap arrow taps to their own precision so an
+ *  up/down round trip lands exactly on 0 instead of `-3.47e-18`. */
+const round3 = (v: number) => Math.round(v * 1000) / 1000
+
 const SWATCHES = [
   { id: 'white', hex: '#FFFFFF' },
   { id: 'black', hex: '#111111' },
@@ -134,7 +138,7 @@ function Dev3DHarness() {
   const nudge = (ddx: number, ddy: number) => {
     if (!editArea) return
     const cur = transforms[editArea] ?? DEFAULT_TRANSFORM
-    commitTransform(editArea, clampTransform({ dx: cur.dx + ddx, dy: cur.dy + ddy, scale: cur.scale }))
+    commitTransform(editArea, clampTransform({ dx: round3(cur.dx + ddx), dy: round3(cur.dy + ddy), scale: cur.scale }))
   }
   const commitSize = (v: number) => {
     if (!editArea) return

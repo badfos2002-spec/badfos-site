@@ -33,6 +33,9 @@ import type {
   OrderItem,
   Quote,
 } from './types'
+// Type-only: `decalTransform` imports three, and lib/db.ts is pulled into pages
+// that have no 3D at all (/contact, /reviews). `import type` is erased at build.
+import type { DesignTransform } from '@/components/designer/three/decalTransform'
 
 // ============================================================================
 // Firebase Safety Check
@@ -740,7 +743,9 @@ export interface SharedDesignData {
   productType: string
   color: string
   fabricType?: string
-  designs: { area: string; areaName: string; imageBase64: string }[]
+  // `transform` is optional and written only when non-default — documents
+  // created before this field exist without it and render exactly as before.
+  designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[]
 }
 
 /**

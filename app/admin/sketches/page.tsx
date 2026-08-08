@@ -16,7 +16,7 @@ import {
   getModel3D,
 } from '@/lib/constants'
 import nextDynamic from 'next/dynamic'
-import { DEFAULT_TRANSFORM, clampTransform, type DesignTransform } from '@/components/designer/three/decalTransform'
+import { DEFAULT_TRANSFORM, clampTransform, isDefaultTransform, type DesignTransform } from '@/components/designer/three/decalTransform'
 import type { DecalPreviewFn } from '@/components/designer/three/DecalDragController'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
@@ -139,6 +139,13 @@ async function removeBackgroundFile(file: File): Promise<File> {
 
 /** One arrow tap. Local model units — see decalTransform.MAX_OFFSET (0.35). */
 const NUDGE = 0.01
+
+/** Binary floats do not sum back to zero: ten "up" taps then ten "down" taps
+ *  land on `dy = -3.47e-18`, so `isDefaultTransform` reads false and a design
+ *  the admin visually returned to centre gets a `transform` written to
+ *  Firestore. Snapping to the arrow step's own precision makes the round trip
+ *  land exactly on 0. */
+const round3 = (v: number) => Math.round(v * 1000) / 1000
 
 /** 05X-XXXXXXX / 972... → wa.me digits (972…) */
 function waPhone(raw: string): string {
@@ -270,7 +277,7 @@ export default function AdminSketchesPage() {
   const nudge = (ddx: number, ddy: number) => {
     if (!editArea) return
     const cur = transforms[editArea] ?? DEFAULT_TRANSFORM
-    commitTransform(editArea, clampTransform({ dx: cur.dx + ddx, dy: cur.dy + ddy, scale: cur.scale }))
+    commitTransform(editArea, clampTransform({ dx: round3(cur.dx + ddx), dy: round3(cur.dy + ddy), scale: cur.scale }))
   }
 
   /** Called on pointerup/keyup only — never from `onChange`. */
@@ -295,7 +302,7 @@ export default function AdminSketchesPage() {
     setCreating(true)
     try {
       const sessionId = `sketch-${Date.now()}`
-      const designs: { area: string; areaName: string; imageBase64: string }[] = []
+      const designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[] = []
       for (const [area, file] of Object.entries(files)) {
         const url = await uploadDesignFile(file, sessionId, generateUniqueFileName(file.name))
         const areaName = product.areas.find(a => a.id === area)?.name || area
@@ -303,7 +310,11 @@ export default function AdminSketchesPage() {
         // URL works everywhere (share page <img> + 3D via the design proxy)
         // and keeps the Firestore doc tiny (phone photos would burst the 1MB
         // doc limit as base64).
-        designs.push({ area, areaName, imageBase64: url })
+        // The key must be ABSENT, not `undefined`: lib/firebase.ts uses plain
+        // `getFirestore` with no `ignoreUndefinedProperties`, so an explicit
+        // `transform: undefined` inside the array makes `addDoc` throw.
+        const t = transforms[area]
+        designs.push({ area, areaName, imageBase64: url, ...(isDefaultTransform(t) ? {} : { transform: t }) })
       }
       const id = await createSharedDesign({
         productType: productId,
