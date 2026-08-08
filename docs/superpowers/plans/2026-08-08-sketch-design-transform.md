@@ -21,9 +21,10 @@ Verification for every task is therefore:
 | Gate | Command |
 |---|---|
 | Types | `npx tsc --noEmit` |
-| Lint | `npm run lint` |
 | Build | `npm run build` |
 | Behaviour | Drive a real browser via `playwright-core` (v1.62.1, already installed; Chromium cached in `~/Library/Caches/ms-playwright`) against `npm run dev` |
+
+> **`npm run lint` is not a usable gate in this repo.** There is no `.eslintrc*` on disk or in `git ls-files`, so `next lint` drops into an interactive scaffold prompt and hangs forever. Verified. Do **not** add an ESLint config to fix this — it is pre-existing, out of scope, and would surface ~200 pre-existing errors. To lint a single new file, create a temporary `.eslintrc.json` with `{"extends": ["next/core-web-vitals", "next/typescript"]}`, run `npx next lint --dir <path>`, then **delete it**. (`next/typescript` is required, or every `@typescript-eslint/*` disable-comment in the repo errors as "rule not found".)
 
 **One exception — pure functions get real tests.** `decalTransform.ts` (Task 1) contains the offset and clamp math with no three.js scene dependency. It is verified with a standalone `npx tsx` assertion script in the scratchpad. This is the only place where test-first is both possible and worth it, and it is where the highest-risk bugs live.
 
@@ -49,7 +50,7 @@ Three compounding facts, each confirmed against the source:
 | File | Responsibility | Status |
 |---|---|---|
 | `components/designer/three/decalTransform.ts` | Pure math: `DesignTransform`, `withTransform`, `clampTransform`, `DEFAULT_TRANSFORM`. No scene, no React. | **Create** |
-| `components/designer/three/DecalDragController.tsx` | Rendered inside the target mesh. Owns the anchor `<object3D>`, pointer handlers, px→units conversion, live imperative preview, commit-on-release. | **Create** |
+| `components/designer/three/DecalDragController.tsx` | Rendered once inside the target mesh. **Receives** the anchor and decal-mesh refs; owns the pointer handlers, px→units conversion, live imperative preview and commit-on-release. | **Create** |
 | `components/designer/three/Tshirt3DModel.tsx` | Applies `transform` to decals; hosts the controller and the decal-mesh ref; `useSheetDecalGeometry` correctness fix. | Modify |
 | `components/designer/three/Preview3DStage.tsx` | `Turntable` lock + snap; plumbs `editArea` / `onCommit`. | Modify |
 | `app/admin/sketches/page.tsx` | Transform state, control panel, cleanup, persistence. | Modify |
@@ -60,9 +61,29 @@ Three compounding facts, each confirmed against the source:
 
 ---
 
-## Task 0: Verification harness
+## ⚠️ Harness facts every later task depends on
+
+Discovered while building Task 0. Ignore any of these and the corresponding gate becomes a **silent false pass**.
+
+| Fact | Consequence |
+|---|---|
+| **`SimpleLeadPopup` covers the whole viewport.** [`ConditionalFooter.tsx:96`](../../../components/layout/ConditionalFooter.tsx#L96) renders `fixed inset-0 z-[9999] bg-black/40` **4 s after load** — and the 3D model takes longer than that to appear. | Every canvas drag lands on the popup backdrop. Pointer events fire, nothing moves, the gate reports "no rotation". The driver must `addInitScript` `lead_popup_closed` / `lead_popup_shown` / `cookie_consent` **before any page script runs**, and assert the stage is the topmost element at its centre. |
+| **Headless Chromium clamps `requestAnimationFrame` to exactly 30 fps**, whatever a frame actually costs. | Task 5's fps gate is otherwise both unpassable and unfalsifiable. Launch with `--disable-gpu-vsync --disable-frame-rate-limit` so rAF deltas equal real per-frame cost. |
+| **Hydration race.** `setInputFiles` / `selectOption` before React hydrates mutate the DOM and are silently dropped. | Wait for `[data-testid="stage"] canvas` — the `ssr:false` dynamic import mounting is the hydration proof. |
+| **`page.evaluate(fn)` breaks under `tsx`.** esbuild's `keepNames` emits a `__name(...)` helper that does not exist in the page → `ReferenceError`. | Inject evaluated code as a **string**. |
+| **Port 3000 may already be serving a stale prebuilt `.next`** that returns 500 on `/dev-3d`. | The driver probes 3000-3005 and picks whichever actually serves the route. Do not `npm run build` while that server is running — it overwrites `.next` underneath it. |
+| **Measured baseline (unmodified code, t-shirt + design):** rotation drag median **454 fps**, worst frame 5.2 ms; idle 500 fps. | This is the number Task 5 compares against — not the literal "≥50 fps" written there, which is a vsync-capped artefact. |
+| **WebGL uses the real M1 Max GPU** via ANGLE/Metal, not SwiftShader. | Performance numbers are real, not software-rasterised. |
+
+---
+
+## Task 0: Verification harness ✅ DONE
 
 Every behavioural gate in Tasks 2-6 and 8 depends on this. It must land first — Task 2 Step 6 already needs a working browser.
+
+**Status:** complete and proven. `app/dev-3d/page.tsx` created and committed; driver at `<scratchpad>/drive.ts` exports `drag`, `recordFrameTimes`, `canvasPixels`, `pixelStats`, `meanAbsDiff`, `waitForModel`, `openHarness`, `stageBox`, `topElementAtStageCentre`. Proof run against unmodified code: model renders (opaqueRatio 0.398, 65 distinct colours), stage unobstructed, idle static (meanAbsDiff 0.000), horizontal drag rotates (meanAbsDiff 12.143). Tshirt, polo and apron paths all visually confirmed.
+
+**One line to add when Task 4 lands:** `/dev-3d` currently passes only today's props; it needs `editArea` and `onCommit` forwarded once `Preview3DStage` accepts them.
 
 **Files:**
 - Create (temporary): `app/dev-3d/page.tsx` — **deleted in Task 8 Step 6, before the final commit**
@@ -99,14 +120,12 @@ git commit -m "זמני: עמוד בדיקה לתלת-ממד ללא כניסה �
 
 - [ ] **Step 1: Write the failing test**
 
-Create `<scratchpad>/t1-transform.test.ts`:
+Write it to the **repo root** as `t1-transform.test.ts`, not the scratchpad. Node resolves imports from the *file's* directory, so a scratchpad copy fails on `Cannot find package 'three'` before it ever reaches `decalTransform`. Delete the file after Step 4.
 
 ```ts
-// ABSOLUTE path — the script lives in the scratchpad, so a relative import
-// resolves under /private/tmp and will NOT be found. If you leave it relative,
-// Step 4 reproduces Step 2's expected error and reads as "the implementation
-// didn't take".
-import { withTransform, clampTransform, DEFAULT_TRANSFORM } from '/Users/mac/Desktop/badfos_site/components/designer/three/decalTransform'
+// This file lives at the REPO ROOT (see Step 1) so that both `three` and the
+// module under test resolve. Run it from the repo root; delete it afterwards.
+import { withTransform, clampTransform, DEFAULT_TRANSFORM } from './components/designer/three/decalTransform'
 
 let failures = 0
 const eq = (name: string, a: number, b: number, tol = 1e-9) => {
@@ -166,8 +185,7 @@ eq('default dx', DEFAULT_TRANSFORM.dx, 0)
 //    number]` at Tshirt3DModel.tsx:17 and :22). Filter those out or this
 //    assertion fails against the untouched source and halts the task on a
 //    false alarm.
-const SRC = '/Users/mac/Desktop/badfos_site/components/designer/three/Tshirt3DModel.tsx'
-const src = require('fs').readFileSync(SRC, 'utf8')
+const src = require('fs').readFileSync('components/designer/three/Tshirt3DModel.tsx', 'utf8')
 const rots = [...src.matchAll(/rotation:\s*\[([^\]]+)\]/g)]
   .map(m => m[1].replace(/\s/g, ''))
   .filter(r => !r.includes('number'))          // ← drop type annotations
@@ -182,13 +200,13 @@ process.exit(failures ? 1 : 0)
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run from the **repo root** (assertion #9 and `tsx` resolution both depend on cwd; `npx` will fetch `tsx` on first use — it is not a dependency):
+Run from the **repo root** (`npx` fetches `tsx` on first use — it is not a dependency):
 
 ```bash
-cd /Users/mac/Desktop/badfos_site && npx tsx <scratchpad>/t1-transform.test.ts
+cd /Users/mac/Desktop/badfos_site && npx tsx t1-transform.test.ts
 ```
 
-Expected: FAIL — `Cannot find module '.../decalTransform'`
+Expected: FAIL — cannot resolve `./components/designer/three/decalTransform`.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -261,6 +279,7 @@ Expected: `ALL PASS`, exit 0. In particular `ok   rotation invariant (N placemen
 
 ```bash
 npx tsc --noEmit
+rm t1-transform.test.ts          # scratch assertion script — never committed
 git add components/designer/three/decalTransform.ts
 git commit -m "סקיצות: מודול מתמטיקה להזזה ושינוי גודל של אזור הדפסה"
 ```
@@ -331,11 +350,17 @@ In `useSheetDecalGeometry` (`Tshirt3DModel.tsx:437-478`), replace the dependency
   ]);
 ```
 
-Then in both consumers (`SheetShirtDecal`, `SheetGuideDecal`) dispose the geometry when it is replaced:
+Dispose **inside the hook**, not in the consumers — it has two callers today (`SheetShirtDecal`, `SheetGuideDecal`) and a third added later would silently leak again, which is the exact bug this step exists to fix:
 
 ```ts
+function useSheetDecalGeometry(...) {
+  const geo = useMemo(..., [/* the numbers above */]);
   useEffect(() => () => { geo?.dispose(); }, [geo]);
+  return geo;
+}
 ```
+
+> `next.config.js` sets `reactStrictMode: true`, so in **dev** React runs mount → cleanup → mount and disposes the live geometry once on mount. three re-registers it in `WebGLGeometries` and re-uploads on the next draw, so it self-heals. **Do not chase this, and do not "fix" it with a guard** — a guard would break the real cleanup.
 
 - [ ] **Step 4: Thread the transform through the decal components**
 
@@ -369,7 +394,7 @@ In the `designs.map` block (`Tshirt3DModel.tsx:850-856`), forward `transform={d.
 - [ ] **Step 6: Verify statically, then visually**
 
 ```bash
-npx tsc --noEmit && npm run lint && npm run build
+npx tsc --noEmit && npm run build
 ```
 
 Then temporarily hardcode `transform={{ dx: 0.2, dy: -0.1, scale: 1.5 }}` in the `designs.map` call, run `npm run dev`, upload a file on `/admin/sketches`, and confirm the artwork moves right-and-down and grows. **Revert the hardcode before committing.**
@@ -396,19 +421,17 @@ Add `editArea?: string` to `Tshirt3DModelProps`. **Do not reuse `activeArea`** �
 
 When `editArea` is set and its placement exists, render inside `targetFor(editArea)`:
 
+Declare the ref in `Tshirt3DModel`: `const anchorRef = useRef<THREE.Object3D>(null)`.
+
 ```tsx
 {editArea && cfg.areas[editArea] && targetFor(editArea) === mesh && (
-  <object3D
-    ref={anchorRef}
-    position={withTransform(
-      cfg.areas[editArea],
-      designs.find(d => d.area === editArea)?.transform,   // the BAKED placement
-    ).position}
-  />
+  <object3D ref={anchorRef} position={cfg.areas[editArea].position} />
 )}
 ```
 
-The committed transform is read straight off the `designs` array — `Tshirt3DModel` has no lookup helper today and does not need one. The anchor is used only for distance-to-camera and world scale, so using the untransformed placement instead would shift `unitsPerPx` by ≤6% at maximum offset; the baked placement is simply the correct one and costs nothing.
+**Use the BASE placement — no transform.** The anchor feeds only `getWorldPosition()` → distance-to-camera and `getWorldScale()`. World scale is independent of local position, and `Bounds` puts the camera ~5.21 world units away, so a full ±0.35 lateral offset changes the euclidean distance by `√(5.21² + 0.35²) − 5.21 = 0.012` — **0.2%**. The base placement is simpler, needs no lookup helper, and keeps drag gain constant across a session instead of drifting as offsets accumulate.
+
+The anchor lives in `Tshirt3DModel`, not the controller — only this component can resolve `targetFor(editArea)`. The controller *receives* the ref.
 
 This anchor is the **only** correct source of world position and scale. Do not call `getWorldScale()` on the `meshes` clones: they are never added to the R3F scene and the component flattens the glTF hierarchy, so the clone reports **38.075** on the polo where the rendered value is 1.0.
 
@@ -416,12 +439,18 @@ This anchor is the **only** correct source of world position and scale. Do not c
 
 The guide filter is `!uploaded.has(a)` (`Tshirt3DModel.tsx:861`), so today the area you are editing is the one area with no frame. Extend the filter so `a === editArea` is always drawn, **untransformed**, as the printable-area reference.
 
-The `a === editArea` escape must sit **outside** the `(!singleArea || a === activeArea)` clause — inside it, the cap case still hides the guide, because the sketch page never passes `activeArea`.
+**Both clauses need relaxing, not just the first.** The full chain is:
+
+```ts
+!uploaded.has(a) && cfg.areas[a] && targetFor(a) === mesh && (!singleArea || a === activeArea)
+```
+
+Relaxing only `!uploaded.has(a)` leaves `(!singleArea || a === activeArea)` — and the sketch page deliberately never passes `activeArea`, so on **cap and meshcap** the edited area still gets no guide. It must become `(!singleArea || a === activeArea || a === editArea)`.
 
 - [ ] **Step 4: Verify**
 
 ```bash
-npx tsc --noEmit && npm run lint && npm run build
+npx tsc --noEmit && npm run build
 ```
 
 Log `anchorRef.current.getWorldScale(new THREE.Vector3()).y` once after mount for tshirt **and polo**. Expected ≈ **1.0** for both (`normScale × mesh.scale ≈ 1` — spec §5.3). A polo reading near 38 means the wrong object was measured. Remove the log before committing.
@@ -452,13 +481,17 @@ useEffect(() => { lockedRef.current = !!locked; }, [locked]);
 // inside move():  if (lockedRef.current) return;
 ```
 
-- [ ] **Step 2: Switch `touch-action` from a separate effect**
+- [ ] **Step 2: Move `touch-action` into its own effect — and REMOVE the old assignment**
 
 ```ts
 useEffect(() => {
   gl.domElement.style.touchAction = locked ? 'none' : 'pan-y';
 }, [gl, locked]);
 ```
+
+**Delete `el.style.touchAction = 'pan-y'` from the existing pointer effect** ([`Preview3DStage.tsx:59`](../../../components/designer/three/Preview3DStage.tsx#L59)). Leaving it in place means two effects write the same property; on mount they run in declaration order and whichever is second wins — a coin flip, not a fix.
+
+Also gate `down` with `lockedRef.current`, not just `move`, or the cursor still flips to `grabbing` in edit mode.
 
 - [ ] **Step 3: Snap on entering edit mode — set BOTH values**
 
@@ -513,6 +546,8 @@ Both components return `null` while the texture loads (and `SheetShirtDecal` als
 
 - [ ] **Step 3: Reset the preview on commit — inside `ShirtDecal`**
 
+⚠️ This `useLayoutEffect` must sit **above** `if (!texture) return null` ([`Tshirt3DModel.tsx:425`](../../../components/designer/three/Tshirt3DModel.tsx#L425)). Below the early return it is a conditional hook and React throws the instant a texture resolves.
+
 ```ts
 // The committed offset is now baked into the geometry; leaving the preview
 // transform on the mesh would double-apply it. `<Decal>` is this component's
@@ -551,9 +586,15 @@ const unitsPerPx = () => {
 };                                                              // matching clientX/Y
 ```
 
-On `pointerdown`: snapshot `committed`, read `unitsPerPx()` once (the anchor's `matrixWorld` is only valid after a rendered frame — do not read it in the effect that creates the anchor).
+**`unitsPerPx` must not close over stale state.** Registered in a `[gl]`-dep effect, `camera` and `size` are captured at render 1, and `size` changes on resize. Use `const get = useThree((s) => s.get)` and call `get()` inside the handler for live values.
 
-On `pointermove`: accumulate, **clamp the live values as they accumulate**, then drive the preview. Clamping only at commit makes the artwork follow the pointer past the limit and snap back on release.
+On `pointerdown`: snapshot `committed`, snapshot the start pointer position, and read `unitsPerPx()` **once** (the anchor sits at the base placement so it does not move mid-drag; once also keeps the gain constant). The anchor's `matrixWorld` is only valid after a rendered frame — do not read it in the effect that creates the anchor. **If it returns 0, abort the drag** rather than running one that silently does nothing.
+
+On `pointermove`: **`mx`/`my` are the TOTAL delta since `pointerdown`, not the per-move increment.**
+
+> `Turntable` in the same file uses the *incremental* pattern (`const dx = e.clientX - lastX; lastX = e.clientX;`, lines 71-72). Copying it here breaks everything: `c.dx + mx * upp` only holds when `c` is the pointerdown snapshot and `mx` is cumulative. Total deltas are also what makes the clamp behave — clamp a total and dragging back off the rail responds instantly; accumulate clamped increments and the design stays stuck until you have undone all the over-travel.
+
+**Clamp the live values as they accumulate**, before computing `D`. Clamping only at commit makes the artwork follow the pointer past the limit and snap back on release.
 
 ```ts
 live = clampTransform({ dx: c.dx + mx * upp, dy: c.dy - my * upp, scale: c.scale });
@@ -581,7 +622,15 @@ Three traps, each of which passes a first casual test:
 
 On `pointerup`: `onCommit(area, live)` → React state → `<Decal>` reprojects once.
 
-**Listener placement:** `pointerdown` on `gl.domElement`, but `pointermove` and `pointerup` on **`window`**, removed in the effect's cleanup — otherwise a drag that leaves the canvas or a page navigation mid-drag strands the handlers. [`Turntable`](../../../components/designer/three/Preview3DStage.tsx#L79-L88) already models this pattern; follow it.
+**Listener placement:** `pointerdown` on `gl.domElement`; `pointermove`, `pointerup` **and `pointercancel`** on **`window`**, removed in the effect's cleanup. [`Turntable`](../../../components/designer/three/Preview3DStage.tsx#L79-L88) already models this. It matters more here than for rotation: ±0.35 ≈ ±70 px, so the pointer routinely outruns the design and leaves the canvas.
+
+Do **not** call `setPointerCapture` on `gl.domElement` — R3F installs its own pointer handling there.
+
+**`pointercancel` is mandatory, not defensive.** If a drag is interrupted — a system gesture on touch, tab focus loss, a browser-cancelled pointer — no `pointerup` fires, so no commit happens and the imperative transform **stays on the mesh indefinitely**. The preview then shows one thing while React state (and Firestore) hold another. On cancel, either commit `live` or reset the mesh to identity. `Turntable` handles this at [`Preview3DStage.tsx:82`](../../../components/designer/three/Preview3DStage.tsx#L82).
+
+**Mount the controller exactly once.** Placed inside `meshes.map` without a `targetFor(editArea) === mesh` guard, the polo instantiates **40** controllers, each registering its own window handlers.
+
+**One source of truth for `P`.** `ShirtDecal` computes `eff`; the controller needs the same `position` and `rotation`. Have `Tshirt3DModel` compute `eff` once for `editArea` and hand the same object to both — otherwise a commit landing between the two computations gives the preview a wrong origin.
 
 - [ ] **Step 5: Verify — performance is a blocking gate**
 
@@ -622,6 +671,8 @@ git commit -m "סקיצות: גרירת העיצוב על הבגד עם תצוג
 const [transforms, setTransforms] = useState<Record<string, DesignTransform>>({})
 const [editArea, setEditArea] = useState<string | null>(null)
 ```
+
+**Hand `transforms[area]` down directly — never an inline `transforms[area] ?? { dx:0, dy:0, scale:1 }`.** A fresh object literal each render busts the `eff` memo in `ShirtDecal` and destroys the identity-preservation property Task 1 asserts. Use the module-level `DEFAULT_TRANSFORM`, or leave it `undefined`.
 
 - [ ] **Step 1b: Wire the state into the renderer — the step that is easy to skip**
 
@@ -678,7 +729,7 @@ Area chips for uploaded areas only (`Object.keys(files)`). Selecting one sets `e
 
 - [ ] **Step 6: Verify**
 
-`npx tsc --noEmit && npm run lint && npm run build`, then drive the browser: upload → select area → drag → arrows step → slider resizes without stretching → reset restores → "סקיצה חדשה" clears the transform.
+`npx tsc --noEmit && npm run build`, then drive the browser: upload → select area → drag → arrows step → slider resizes without stretching → reset restores → "סקיצה חדשה" clears the transform.
 
 - [ ] **Step 7: Commit**
 
@@ -778,7 +829,7 @@ Task 0's harness has served its purpose. It must not ship.
 - [ ] **Step 7: Final gates**
 
 ```bash
-npx tsc --noEmit && npm run lint && npm run build
+npx tsc --noEmit && npm run build
 ```
 
 - [ ] **Step 8: Commit**
