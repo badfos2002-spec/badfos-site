@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useGLTF, Decal } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
@@ -706,6 +706,9 @@ interface Tshirt3DModelProps {
   designs: ShirtDesign[];
   showGuides?: boolean;
   activeArea?: string;
+  /** The area being adjusted in the sketch tool. SEPARATE from `activeArea`,
+   *  which drives guide highlighting and the `singleArea` filter (the caps). */
+  editArea?: string;
   variant?: ShirtVariant;
   modelUrl?: string;
 }
@@ -715,6 +718,7 @@ export default function Tshirt3DModel({
   designs,
   showGuides,
   activeArea,
+  editArea,
   variant = 'tshirt',
   modelUrl = '/models/tshirt-web.glb',
 }: Tshirt3DModelProps) {
@@ -802,6 +806,13 @@ export default function Tshirt3DModel({
   const uploaded = useMemo(() => new Set(designs.filter((d) => d.url).map((d) => d.area)), [designs]);
   const guideAreas = Object.keys(cfg.guides);
 
+  // Measurement anchor for the drag controller: an empty object at the edited
+  // area's BASE placement, inside its target mesh. It is the ONLY correct source
+  // of world position/scale — the `meshes` clones are never added to the R3F
+  // scene, so their matrixWorld reflects the glTF hierarchy (38.075 on the polo)
+  // instead of the flattened one rendered here.
+  const anchorRef = useRef<THREE.Object3D>(null);
+
   // Normalize every model to a consistent size + centre it, using PROPS (not an
   // effect like <Center>), so <Bounds> measures the real framed object on its
   // first render. The tshirt is ~0.7 units, the polo ~76 — this evens them out.
@@ -877,14 +888,24 @@ export default function Tshirt3DModel({
                 ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} placement={placement} box={cfg.guides[d.area]} transform={d.transform} />
                 : <ShirtDecal key={d.area} url={d.url} placement={placement} box={cfg.guides[d.area]} transform={d.transform} />;
             })}
+            {/* No transform on the anchor: it feeds only distance-to-camera and
+                world scale, and a full ±0.35 offset moves the camera distance
+                by 0.2%. The base placement keeps the drag gain constant. */}
+            {editArea && cfg.areas[editArea] && targetFor(editArea) === mesh && (
+              <object3D ref={anchorRef} position={cfg.areas[editArea].position} />
+            )}
             {showGuides
               ? guideAreas
                   .filter(
                     (a) =>
-                      !uploaded.has(a) &&
+                      // The edited area keeps its (untransformed) guide as the
+                      // printable-area reference, even once artwork is uploaded
+                      // and even on the singleArea caps, which never receive an
+                      // `activeArea` from the sketch page.
+                      (!uploaded.has(a) || a === editArea) &&
                       cfg.areas[a] &&
                       targetFor(a) === mesh &&
-                      (!singleArea || a === activeArea)
+                      (!singleArea || a === activeArea || a === editArea)
                   )
                   .map((a) =>
                     singleSheet ? (
