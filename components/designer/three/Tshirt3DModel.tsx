@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { useGLTF, Decal } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
 import { DecalGeometry } from 'three-stdlib';
+import { DesignTransform, withTransform } from './decalTransform';
 
 /* ------------------------------------------------------------------ *
  * TUNABLE CONSTANTS — adjust after seeing each model on the page.
@@ -400,31 +401,39 @@ function useArtworkTexture(url: string): THREE.Texture | null {
 // preserving aspect ratio — the decal fills the area as large as possible but
 // never spills past it. (The old square fit by `placement.size` could exceed
 // the guide box on non-square areas like front_full.)
-function artworkScale(texture: THREE.Texture | null, placement: Placement, box?: GuideBox): [number, number, number] {
+function artworkScale(
+  texture: THREE.Texture | null,
+  placement: Placement,
+  box?: GuideBox,
+  scale = 1,
+): [number, number, number] {
   const img = texture?.image as { width?: number; height?: number } | undefined;
   const aspect = img?.width && img?.height ? img.width / img.height : 1;
   if (box) {
     let dw = box.w;
     let dh = box.w / aspect;
     if (dh > box.h) { dh = box.h; dw = box.h * aspect; }
-    return [dw, dh, placement.depth];
+    // `depth` is the projector's z-extent across the curved surface, NOT an
+    // artwork dimension — scaling it would drag in far-side geometry.
+    return [dw * scale, dh * scale, placement.depth];
   }
   // Fallback (area with no guide box): fit within a square of placement.size.
-  const s = placement.size;
+  const s = placement.size * scale;
   const sx = aspect >= 1 ? s : s * aspect;
   const sy = aspect >= 1 ? s / aspect : s;
   return [sx, sy, placement.depth];
 }
 
-function ShirtDecal({ url, placement, box }: { url: string; placement: Placement; box?: GuideBox }) {
+function ShirtDecal({ url, placement, box, transform }: { url: string; placement: Placement; box?: GuideBox; transform?: DesignTransform }) {
   const texture = useArtworkTexture(url);
+  const eff = useMemo(() => withTransform(placement, transform), [placement, transform]);
   const scale = useMemo<[number, number, number]>(
-    () => artworkScale(texture, placement, box),
-    [texture, placement, box],
+    () => artworkScale(texture, eff, box, transform?.scale ?? 1),
+    [texture, eff, box, transform?.scale],
   );
   if (!texture) return null;
   return (
-    <Decal position={placement.position} rotation={placement.rotation} scale={scale} depthTest>
+    <Decal position={eff.position} rotation={eff.rotation} scale={scale} depthTest>
       <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
     </Decal>
   );
@@ -440,7 +449,10 @@ function useSheetDecalGeometry(
   w: number,
   h: number,
 ): THREE.BufferGeometry | null {
-  return useMemo(() => {
+  // Memoized on the NUMBERS, not on the `placement` object: `withTransform`
+  // returns a fresh object whenever an offset is applied, so an identity-based
+  // memo would rebuild a 13k-triangle DecalGeometry on every unrelated render.
+  const geo = useMemo(() => {
     if (!target?.geometry) return null;
     target.updateMatrixWorld(true);
     const euler = new THREE.Euler(...placement.rotation);
@@ -473,13 +485,23 @@ function useSheetDecalGeometry(
     out.setAttribute('normal', new THREE.Float32BufferAttribute(kn, 3));
     out.setAttribute('uv', new THREE.Float32BufferAttribute(kuv, 2));
     return out;
-  }, [target, placement, w, h]);
+  }, [
+    target,
+    placement.position[0], placement.position[1], placement.position[2],
+    placement.rotation[0], placement.rotation[1], placement.rotation[2],
+    placement.depth, w, h,
+  ]);
+  // Unlike drei's <Decal>, nothing else frees the superseded geometry — dispose
+  // here so a third caller cannot silently reintroduce the leak.
+  useEffect(() => () => { geo?.dispose(); }, [geo]);
+  return geo;
 }
 
-function SheetShirtDecal({ target, url, placement, box }: { target: THREE.Mesh; url: string; placement: Placement; box?: GuideBox }) {
+function SheetShirtDecal({ target, url, placement, box, transform }: { target: THREE.Mesh; url: string; placement: Placement; box?: GuideBox; transform?: DesignTransform }) {
   const texture = useArtworkTexture(url);
-  const [dw, dh] = artworkScale(texture, placement, box);
-  const geo = useSheetDecalGeometry(target, placement, dw, dh);
+  const eff = useMemo(() => withTransform(placement, transform), [placement, transform]);
+  const [dw, dh] = artworkScale(texture, eff, box, transform?.scale ?? 1);
+  const geo = useSheetDecalGeometry(target, eff, dw, dh);
   if (!texture || !geo) return null;
   return (
     <mesh geometry={geo}>
@@ -676,6 +698,7 @@ function TwoToneCapMaterial({
 export interface ShirtDesign {
   area: string;
   url: string;
+  transform?: DesignTransform;
 }
 
 interface Tshirt3DModelProps {
@@ -851,8 +874,8 @@ export default function Tshirt3DModel({
               const placement = cfg.areas[d.area];
               if (!placement || !d.url || targetFor(d.area) !== mesh) return null;
               return singleSheet
-                ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} placement={placement} box={cfg.guides[d.area]} />
-                : <ShirtDecal key={d.area} url={d.url} placement={placement} box={cfg.guides[d.area]} />;
+                ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} placement={placement} box={cfg.guides[d.area]} transform={d.transform} />
+                : <ShirtDecal key={d.area} url={d.url} placement={placement} box={cfg.guides[d.area]} transform={d.transform} />;
             })}
             {showGuides
               ? guideAreas
