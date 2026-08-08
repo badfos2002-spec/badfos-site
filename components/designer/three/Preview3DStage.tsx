@@ -6,6 +6,7 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ContactShadows, Bounds, Environment, Lightformer } from '@react-three/drei';
 import Tshirt3DModel, { ShirtDesign, ShirtVariant, preloadAllModels } from './Tshirt3DModel';
 import { DesignTransform } from './decalTransform';
+import type { DecalPreviewFn } from './DecalDragController';
 
 // Camera position sets the viewing angle; Bounds auto-fits the distance.
 const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
@@ -26,6 +27,9 @@ interface Preview3DStageProps {
    *  turntable, and turns drags into design moves instead of rotation. */
   editArea?: string;
   onCommit?: (area: string, t: DesignTransform) => void;
+  /** Filled with the edited area's live-preview driver, so controls outside the
+   *  canvas (the size slider) can preview without a 248 ms reprojection per step. */
+  previewRef?: React.MutableRefObject<DecalPreviewFn | null>;
 }
 
 /** Face `focusArea` the SHORT way around from `cur`. Shared by the focus effect
@@ -143,7 +147,7 @@ function Turntable({
  * Reusable 3D shirt stage: transparent Canvas + procedural studio lighting,
  * turntable rotation, and the shirt model, over the branded background.
  */
-export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint, editArea, onCommit }: Preview3DStageProps) {
+export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint, editArea, onCommit, previewRef }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
   useEffect(() => {
     if (!warmAll) return;
@@ -200,6 +204,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
                 activeArea={activeArea}
                 editArea={editArea}
                 onCommit={onCommit}
+                previewRef={previewRef}
                 variant={variant}
                 modelUrl={modelUrl}
               />

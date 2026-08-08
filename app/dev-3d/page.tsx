@@ -11,7 +11,7 @@
  * the 3D behaviour. It renders nothing in production.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FABRIC_TYPES, TSHIRT_DESIGN_AREAS,
   SWEATSHIRT_TYPES, SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_AREA_FILTER,
@@ -21,7 +21,8 @@ import {
   getModel3D,
 } from '@/lib/constants'
 import nextDynamic from 'next/dynamic'
-import type { DesignTransform } from '@/components/designer/three/decalTransform'
+import { DEFAULT_TRANSFORM, type DesignTransform } from '@/components/designer/three/decalTransform'
+import type { DecalPreviewFn } from '@/components/designer/three/DecalDragController'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
 
@@ -81,6 +82,10 @@ function Dev3DHarness() {
   const [areaId, setAreaId] = useState('front_full')
   const [editMode, setEditMode] = useState(false)
   const [transforms, setTransforms] = useState<Record<string, DesignTransform>>({})
+  // Mirrors the real panel's slider contract (plan Task 6 Step 3): `input`
+  // previews imperatively, `pointerup` commits the one real reprojection.
+  const previewRef = useRef<DecalPreviewFn | null>(null)
+  const [scaleUi, setScaleUi] = useState(1)
 
   const [productId, typeId] = selected.split('|')
   const product = PRODUCTS.find(p => p.id === productId)!
@@ -181,8 +186,30 @@ function Dev3DHarness() {
         </label>
       </div>
 
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }} dir="ltr">
+        <span style={{ fontFamily: 'monospace', fontSize: 12 }}>scale</span>
+        <input
+          data-testid="scale-slider"
+          type="range"
+          min={0.3}
+          max={2}
+          step={0.05}
+          value={scaleUi}
+          onChange={e => {
+            const v = Number(e.target.value)
+            setScaleUi(v)
+            previewRef.current?.({ ...(transforms[activeArea] ?? DEFAULT_TRANSFORM), scale: v })
+          }}
+          onPointerUp={() => setTransforms(prev => ({
+            ...prev,
+            [activeArea]: { ...(prev[activeArea] ?? DEFAULT_TRANSFORM), scale: scaleUi },
+          }))}
+        />
+        <span data-testid="scale-value" style={{ fontFamily: 'monospace', fontSize: 12 }}>{scaleUi.toFixed(2)}</span>
+      </div>
+
       <div data-testid="state" style={{ marginBottom: 8, fontFamily: 'monospace', fontSize: 12 }} dir="ltr">
-        variant={m3d?.variant ?? 'none'} model={m3d?.url ?? 'none'} areas=[{designs.map(d => d.area).join(',')}] color={colorHex}
+        variant={m3d?.variant ?? 'none'} model={m3d?.url ?? 'none'} areas=[{designs.map(d => d.area).join(',')}] color={colorHex} edit={editMode ? activeArea : 'off'} t={JSON.stringify(transforms[activeArea] ?? null)}
       </div>
 
       {m3d ? (
@@ -199,7 +226,8 @@ function Dev3DHarness() {
               designs={designs}
               showGuides
               editArea={editMode ? activeArea : undefined}
-              onCommit={(area, t) => setTransforms(prev => ({ ...prev, [area]: t }))}
+              onCommit={(area, t) => { setTransforms(prev => ({ ...prev, [area]: t })); setScaleUi(t.scale) }}
+              previewRef={previewRef}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               variant={m3d.variant as any}
               modelUrl={m3d.url}
