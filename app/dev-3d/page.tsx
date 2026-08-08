@@ -21,7 +21,7 @@ import {
   getModel3D,
 } from '@/lib/constants'
 import nextDynamic from 'next/dynamic'
-import { DEFAULT_TRANSFORM, type DesignTransform } from '@/components/designer/three/decalTransform'
+import { DEFAULT_TRANSFORM, clampTransform, type DesignTransform } from '@/components/designer/three/decalTransform'
 import type { DecalPreviewFn } from '@/components/designer/three/DecalDragController'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
@@ -63,6 +63,9 @@ const VARIANTS = PRODUCTS.flatMap(p =>
     : [{ value: `${p.id}|`, label: p.name }]
 )
 
+/** Same step as the real panel's arrow taps. */
+const NUDGE = 0.01
+
 const SWATCHES = [
   { id: 'white', hex: '#FFFFFF' },
   { id: 'black', hex: '#111111' },
@@ -80,7 +83,7 @@ function Dev3DHarness() {
   const [colorHex, setColorHex] = useState('#d1d5db')
   const [files, setFiles] = useState<Record<string, File>>({})
   const [areaId, setAreaId] = useState('front_full')
-  const [editMode, setEditMode] = useState(false)
+  const [editArea, setEditArea] = useState<string | null>(null)
   const [transforms, setTransforms] = useState<Record<string, DesignTransform>>({})
   // Mirrors the real panel's slider contract (plan Task 6 Step 3): `input`
   // previews imperatively, `pointerup` commits the one real reprojection.
@@ -112,6 +115,37 @@ function Dev3DHarness() {
   const selectVariant = (value: string) => {
     setSelected(value)
     setFiles({})
+    setTransforms({})
+    setEditArea(null)
+  }
+
+  // ── Mirrors app/admin/sketches/page.tsx's panel handlers exactly ──
+  const commitTransform = (area: string, t: DesignTransform) => {
+    setTransforms(prev => ({ ...prev, [area]: t }))
+    setScaleUi(t.scale)
+  }
+  const toggleEditArea = (id: string) => {
+    if (editArea === id) { setEditArea(null); return }
+    setAreaId(id)
+    setEditArea(id)
+    setScaleUi(transforms[id]?.scale ?? 1)
+  }
+  /** `ddx`/`ddy` are SCREEN directions: +x right, +y up. */
+  const nudge = (ddx: number, ddy: number) => {
+    if (!editArea) return
+    const cur = transforms[editArea] ?? DEFAULT_TRANSFORM
+    commitTransform(editArea, clampTransform({ dx: cur.dx + ddx, dy: cur.dy + ddy, scale: cur.scale }))
+  }
+  const commitSize = (v: number) => {
+    if (!editArea) return
+    const cur = transforms[editArea] ?? DEFAULT_TRANSFORM
+    if (cur.scale === v) return
+    commitTransform(editArea, clampTransform({ ...cur, scale: v }))
+  }
+  const resetArea = () => {
+    if (!editArea) return
+    setTransforms(prev => { const u = { ...prev }; delete u[editArea]; return u })
+    setScaleUi(1)
   }
 
   const m3d = getModel3D(productId, typeId || undefined)
@@ -179,14 +213,46 @@ function Dev3DHarness() {
           <input
             data-testid="edit-toggle"
             type="checkbox"
-            checked={editMode}
-            onChange={e => setEditMode(e.target.checked)}
+            checked={editArea === activeArea}
+            onChange={e => (e.target.checked ? toggleEditArea(activeArea) : setEditArea(null))}
           />
           מצב עריכה
         </label>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }} dir="ltr">
+      {/* Area chips — the real panel's only edit-mode selector: tap selects,
+          tap again deselects. Uploaded areas only. */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+        {allowedAreas.filter(a => files[a.id]).map(a => (
+          <button
+            key={a.id}
+            data-testid={`chip-${a.id}`}
+            onClick={() => toggleEditArea(a.id)}
+            aria-pressed={editArea === a.id}
+            style={{
+              border: editArea === a.id ? '2px solid #f59e0b' : '2px solid #ddd',
+              background: editArea === a.id ? '#fef3c7' : '#fff',
+              borderRadius: 999, padding: '2px 10px', fontSize: 12,
+            }}
+          >
+            {a.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Arrow pad + size + reset — identical handlers to the admin panel. */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }} dir="ltr">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 28px)', gap: 2 }}>
+          <span />
+          <button data-testid="nudge-up" onClick={() => nudge(0, NUDGE)} aria-label="up">↑</button>
+          <span />
+          <button data-testid="nudge-left" onClick={() => nudge(-NUDGE, 0)} aria-label="left">←</button>
+          <span />
+          <button data-testid="nudge-right" onClick={() => nudge(NUDGE, 0)} aria-label="right">→</button>
+          <span />
+          <button data-testid="nudge-down" onClick={() => nudge(0, -NUDGE)} aria-label="down">↓</button>
+          <span />
+        </div>
         <span style={{ fontFamily: 'monospace', fontSize: 12 }}>scale</span>
         <input
           data-testid="scale-slider"
@@ -195,21 +261,22 @@ function Dev3DHarness() {
           max={2}
           step={0.05}
           value={scaleUi}
+          // Live preview only — committing here would reproject on every step.
           onChange={e => {
             const v = Number(e.target.value)
             setScaleUi(v)
-            previewRef.current?.({ ...(transforms[activeArea] ?? DEFAULT_TRANSFORM), scale: v })
+            previewRef.current?.({ ...(transforms[editArea ?? activeArea] ?? DEFAULT_TRANSFORM), scale: v })
           }}
-          onPointerUp={() => setTransforms(prev => ({
-            ...prev,
-            [activeArea]: { ...(prev[activeArea] ?? DEFAULT_TRANSFORM), scale: scaleUi },
-          }))}
+          onPointerUp={e => commitSize(Number((e.target as HTMLInputElement).value))}
+          onKeyUp={e => commitSize(Number((e.target as HTMLInputElement).value))}
+          style={{ width: 300 }}
         />
         <span data-testid="scale-value" style={{ fontFamily: 'monospace', fontSize: 12 }}>{scaleUi.toFixed(2)}</span>
+        <button data-testid="reset-area" onClick={resetArea}>אפס</button>
       </div>
 
       <div data-testid="state" style={{ marginBottom: 8, fontFamily: 'monospace', fontSize: 12 }} dir="ltr">
-        variant={m3d?.variant ?? 'none'} model={m3d?.url ?? 'none'} areas=[{designs.map(d => d.area).join(',')}] color={colorHex} edit={editMode ? activeArea : 'off'} t={JSON.stringify(transforms[activeArea] ?? null)}
+        variant={m3d?.variant ?? 'none'} model={m3d?.url ?? 'none'} areas=[{designs.map(d => d.area).join(',')}] color={colorHex} edit={editArea ?? 'off'} t={JSON.stringify(transforms[activeArea] ?? null)}
       </div>
 
       {m3d ? (
@@ -225,8 +292,8 @@ function Dev3DHarness() {
               colorHex={colorHex}
               designs={designs}
               showGuides
-              editArea={editMode ? activeArea : undefined}
-              onCommit={(area, t) => { setTransforms(prev => ({ ...prev, [area]: t })); setScaleUi(t.scale) }}
+              editArea={editArea ?? undefined}
+              onCommit={commitTransform}
               previewRef={previewRef}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               variant={m3d.variant as any}
