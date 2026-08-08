@@ -709,6 +709,8 @@ interface Tshirt3DModelProps {
   /** The area being adjusted in the sketch tool. SEPARATE from `activeArea`,
    *  which drives guide highlighting and the `singleArea` filter (the caps). */
   editArea?: string;
+  /** Consumed by the drag controller this component hosts (Task 5). */
+  onCommit?: (area: string, t: DesignTransform) => void;
   variant?: ShirtVariant;
   modelUrl?: string;
 }

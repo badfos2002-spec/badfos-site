@@ -21,6 +21,7 @@ import {
   getModel3D,
 } from '@/lib/constants'
 import nextDynamic from 'next/dynamic'
+import type { DesignTransform } from '@/components/designer/three/decalTransform'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
 
@@ -78,6 +79,8 @@ function Dev3DHarness() {
   const [colorHex, setColorHex] = useState('#d1d5db')
   const [files, setFiles] = useState<Record<string, File>>({})
   const [areaId, setAreaId] = useState('front_full')
+  const [editMode, setEditMode] = useState(false)
+  const [transforms, setTransforms] = useState<Record<string, DesignTransform>>({})
 
   const [productId, typeId] = selected.split('|')
   const product = PRODUCTS.find(p => p.id === productId)!
@@ -107,7 +110,7 @@ function Dev3DHarness() {
   }
 
   const m3d = getModel3D(productId, typeId || undefined)
-  const designs = Object.entries(previews).map(([area, url]) => ({ area, url }))
+  const designs = Object.entries(previews).map(([area, url]) => ({ area, url, transform: transforms[area] }))
 
   return (
     <div dir="rtl" style={{ padding: 16, maxWidth: 520, margin: '0 auto', fontSize: 14 }}>
@@ -167,6 +170,15 @@ function Dev3DHarness() {
         >
           נקה
         </button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <input
+            data-testid="edit-toggle"
+            type="checkbox"
+            checked={editMode}
+            onChange={e => setEditMode(e.target.checked)}
+          />
+          מצב עריכה
+        </label>
       </div>
 
       <div data-testid="state" style={{ marginBottom: 8, fontFamily: 'monospace', fontSize: 12 }} dir="ltr">
@@ -186,6 +198,8 @@ function Dev3DHarness() {
               colorHex={colorHex}
               designs={designs}
               showGuides
+              editArea={editMode ? activeArea : undefined}
+              onCommit={(area, t) => setTransforms(prev => ({ ...prev, [area]: t }))}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               variant={m3d.variant as any}
               modelUrl={m3d.url}

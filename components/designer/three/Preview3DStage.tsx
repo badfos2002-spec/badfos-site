@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ContactShadows, Bounds, Environment, Lightformer } from '@react-three/drei';
 import Tshirt3DModel, { ShirtDesign, ShirtVariant, preloadAllModels } from './Tshirt3DModel';
+import { DesignTransform } from './decalTransform';
 
 // Camera position sets the viewing angle; Bounds auto-fits the distance.
 const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
@@ -21,6 +22,17 @@ interface Preview3DStageProps {
   warmAll?: boolean;
   /** Suppress the one-time "drag to rotate" hint overlay (admin sketch tool). */
   noHint?: boolean;
+  /** The area being adjusted in the sketch tool: faces the camera, locks the
+   *  turntable, and turns drags into design moves instead of rotation. */
+  editArea?: string;
+  onCommit?: (area: string, t: DesignTransform) => void;
+}
+
+/** Face `focusArea` the SHORT way around from `cur`. Shared by the focus effect
+ *  and the edit-mode snap so the two can never drift apart. */
+function shortWayTo(angle: number, cur: number): number {
+  const twoPi = Math.PI * 2;
+  return cur + (((((angle - cur + Math.PI) % twoPi) + twoPi) % twoPi) - Math.PI);
 }
 
 /**
@@ -28,13 +40,18 @@ interface Preview3DStageProps {
  * only. The canvas keeps `touch-action: pan-y`, so a VERTICAL swipe scrolls the
  * page normally instead of getting trapped by the 3D view (the old OrbitControls
  * blocked page scroll on mobile). Camera stays fixed — only the shirt spins.
+ * While `locked` (sketch edit mode) it neither rotates nor releases the vertical
+ * swipe — the drag belongs to the design being adjusted.
  */
 function Turntable({
   focusArea,
+  locked,
   onFirstInteract,
   children,
 }: {
   focusArea?: string;
+  /** Edit mode: drags belong to the design, not to the turntable. */
+  locked?: boolean;
   onFirstInteract?: () => void;
   children: React.ReactNode;
 }) {
@@ -42,32 +59,58 @@ function Turntable({
   const target = useRef(0);
   const { gl } = useThree();
 
+  // The pointer effect depends on [gl] alone, so reading `locked` inside its
+  // handlers would capture the first render's value forever. A ref updated by
+  // its own effect is the only way the lock ever takes hold — and `locked` must
+  // NOT join the pointer effect's deps, or every toggle re-runs it.
+  const lockedRef = useRef(false);
+  useEffect(() => {
+    lockedRef.current = !!locked;
+  }, [locked]);
+
   // Clicking a design area spins the shirt to face it (back = 180°, everything
   // else = front). Rotate the SHORT way around from wherever it currently is.
   useEffect(() => {
     // 'back' faces the rear; every other area (and no area / non-design steps)
     // faces the front. Rotate the SHORT way from wherever it is.
     const angle = focusArea === 'back' ? Math.PI : 0;
-    const twoPi = Math.PI * 2;
-    const cur = target.current;
-    const diff = ((((angle - cur + Math.PI) % twoPi) + twoPi) % twoPi) - Math.PI;
-    target.current = cur + diff;
+    target.current = shortWayTo(angle, target.current);
   }, [focusArea]);
+
+  // Entering edit mode SNAPS to the area's angle instead of lerping there: the
+  // px→units mapping assumes the model faces exactly 0 or π. Driven by `locked`,
+  // not by `focusArea` — re-entering edit on the same area leaves `focusArea`
+  // unchanged while the user may have spun the model. Both values must be set:
+  // useFrame lerps `rotation.y` back toward `target.current` on the next frame.
+  useEffect(() => {
+    if (!locked) return;
+    const angle = focusArea === 'back' ? Math.PI : 0;
+    target.current = shortWayTo(angle, target.current);
+    const g = group.current;
+    if (g) g.rotation.y = target.current;
+  }, [locked, focusArea]);
+
+  // Own effect, so toggling the lock never re-runs the pointer effect.
+  useEffect(() => {
+    gl.domElement.style.touchAction = locked ? 'none' : 'pan-y';
+  }, [gl, locked]);
 
   useEffect(() => {
     const el = gl.domElement;
-    el.style.touchAction = 'pan-y';
     el.style.cursor = 'grab';
     let dragging = false;
     let lastX = 0;
     const down = (e: PointerEvent) => {
+      // Gate `down` too, not just `move`: otherwise the cursor still flips to
+      // `grabbing` in edit mode.
+      if (lockedRef.current) return;
       dragging = true;
       lastX = e.clientX;
       el.style.cursor = 'grabbing';
       onFirstInteract?.();
     };
     const move = (e: PointerEvent) => {
-      if (!dragging) return;
+      if (lockedRef.current || !dragging) return;
       const dx = e.clientX - lastX;
       lastX = e.clientX;
       target.current += dx * 0.01;
@@ -100,7 +143,7 @@ function Turntable({
  * Reusable 3D shirt stage: transparent Canvas + procedural studio lighting,
  * turntable rotation, and the shirt model, over the branded background.
  */
-export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint }: Preview3DStageProps) {
+export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint, editArea, onCommit }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
   useEffect(() => {
     if (!warmAll) return;
@@ -149,12 +192,14 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
               `observe`: it must NOT re-fit on container resize between steps —
               the camera distance stays constant across all steps. */}
           <Bounds key={modelUrl ?? 'tshirt'} fit clip margin={fitMargin}>
-            <Turntable focusArea={activeArea} onFirstInteract={() => setInteracted(true)}>
+            <Turntable focusArea={editArea ?? activeArea} locked={!!editArea} onFirstInteract={() => setInteracted(true)}>
               <Tshirt3DModel
                 color={colorHex}
                 designs={designs}
                 showGuides={showGuides}
                 activeArea={activeArea}
+                editArea={editArea}
+                onCommit={onCommit}
                 variant={variant}
                 modelUrl={modelUrl}
               />
