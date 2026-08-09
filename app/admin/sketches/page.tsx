@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw } from 'lucide-react'
+import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info } from 'lucide-react'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { createSharedDesign } from '@/lib/db'
 import {
@@ -232,6 +232,16 @@ export default function AdminSketchesPage() {
 
   const uploadedCount = Object.keys(files).length
   const canCreate = uploadedCount > 0 && !!colorId && !creating
+
+  // What still blocks the button, in the order the form asks for it. A grey
+  // button with no explanation is the whole problem — this drives BOTH the hint
+  // above it and the button's own label, so the two can never disagree.
+  const missing = useMemo(() => {
+    const m: string[] = []
+    if (!colorId) m.push('בחרו צבע')
+    if (uploadedCount === 0) m.push('העלו קובץ עיצוב')
+    return m
+  }, [colorId, uploadedCount])
 
   const handleRemoveBg = async (areaId: string) => {
     const file = files[areaId]
@@ -601,9 +611,19 @@ export default function AdminSketchesPage() {
             <h3 className="font-bold text-sm">שיתוף ללקוח</h3>
             <Input dir="ltr" inputMode="tel" placeholder="טלפון הלקוח (לא חובה) 050-1234567" value={phone} onChange={e => setPhone(e.target.value)} className="text-left" />
             {!shareUrl ? (
-              <Button onClick={handleCreate} disabled={!canCreate} className="w-full gradient-yellow text-white font-bold h-11 disabled:opacity-50">
-                {creating ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />מעלה קבצים ויוצר סקיצה...</span> : 'צור סקיצה 🎨'}
-              </Button>
+              <>
+                {missing.length > 0 && (
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <Info className="w-4 h-4 shrink-0 mt-px" />
+                    <span>כדי ליצור סקיצה: {missing.join(' ו')}</span>
+                  </div>
+                )}
+                <Button onClick={handleCreate} disabled={!canCreate} className="w-full gradient-yellow text-white font-bold h-11 disabled:opacity-50">
+                  {creating
+                    ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />מעלה קבצים ויוצר סקיצה...</span>
+                    : missing.length > 0 ? `${missing.join(' ו')} כדי להמשיך` : 'צור סקיצה 🎨'}
+                </Button>
+              </>
             ) : (
               <div className="space-y-2">
                 <div className="text-xs bg-gray-50 border border-gray-200 rounded-lg p-2 break-all text-gray-600" dir="ltr">{shareUrl}</div>
