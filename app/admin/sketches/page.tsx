@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser } from 'lucide-react'
+import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw } from 'lucide-react'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { createSharedDesign } from '@/lib/db'
 import {
@@ -16,6 +16,8 @@ import {
   getModel3D,
 } from '@/lib/constants'
 import nextDynamic from 'next/dynamic'
+import { DEFAULT_TRANSFORM, clampTransform, isDefaultTransform, type DesignTransform } from '@/components/designer/three/decalTransform'
+import type { DecalPreviewFn } from '@/components/designer/three/DecalDragController'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import Preview3DLoading from '@/components/designer/three/Preview3DLoading'
 
@@ -135,6 +137,16 @@ async function removeBackgroundFile(file: File): Promise<File> {
   return new File([blob], `${base}-nobg.png`, { type: 'image/png' })
 }
 
+/** One arrow tap. Local model units — see decalTransform.MAX_OFFSET (0.35). */
+const NUDGE = 0.01
+
+/** Binary floats do not sum back to zero: ten "up" taps then ten "down" taps
+ *  land on `dy = -3.47e-18`, so `isDefaultTransform` reads false and a design
+ *  the admin visually returned to centre gets a `transform` written to
+ *  Firestore. Snapping to the arrow step's own precision makes the round trip
+ *  land exactly on 0. */
+const round3 = (v: number) => Math.round(v * 1000) / 1000
+
 /** 05X-XXXXXXX / 972... → wa.me digits (972…) */
 function waPhone(raw: string): string {
   const d = raw.replace(/\D/g, '')
@@ -155,6 +167,17 @@ export default function AdminSketchesPage() {
   const [creating, setCreating] = useState(false)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Per-area adjustment. A missing entry IS the default — never substitute an
+  // inline `{dx:0,dy:0,scale:1}` literal when handing it down: a fresh object
+  // each render busts the `eff` memo in ShirtDecal and reprojects for nothing.
+  const [transforms, setTransforms] = useState<Record<string, DesignTransform>>({})
+  const [editArea, setEditArea] = useState<string | null>(null)
+  // Size slider: `input` fires on every step of a drag, and each committed step
+  // is a full DecalGeometry rebuild (248 ms on the t-shirt). The live value
+  // previews imperatively through this ref; only release commits. Filled by the
+  // drag controller while an area is being edited.
+  const previewRef = useRef<DecalPreviewFn | null>(null)
+  const [sizeUi, setSizeUi] = useState(1)
 
   const product = PRODUCTS.find(p => p.id === productId)!
 
@@ -187,6 +210,8 @@ export default function AdminSketchesPage() {
     setColorId('')
     setFiles({})
     setOriginals({})
+    setTransforms({})
+    setEditArea(null)
     setShareUrl(null)
   }
   const selectType = (id: string) => {
@@ -198,6 +223,9 @@ export default function AdminSketchesPage() {
     if (af) {
       setFiles(prev => Object.fromEntries(Object.entries(prev).filter(([a]) => af.includes(a))))
       setOriginals(prev => Object.fromEntries(Object.entries(prev).filter(([a]) => af.includes(a))))
+      // The transform of an area this fabric cannot print goes with its file.
+      setTransforms(prev => Object.fromEntries(Object.entries(prev).filter(([a]) => af.includes(a))))
+      if (editArea && !af.includes(editArea)) setEditArea(null)
     }
     setShareUrl(null)
   }
@@ -230,12 +258,51 @@ export default function AdminSketchesPage() {
     setShareUrl(null)
   }
 
+  // ── Design arrangement (per-area transform) ──
+  /** The single write path: state + slider readout + stale share link. */
+  const commitTransform = (area: string, t: DesignTransform) => {
+    setTransforms(prev => ({ ...prev, [area]: t }))
+    setSizeUi(t.scale)
+    setShareUrl(null)
+  }
+
+  const toggleEditArea = (id: string) => {
+    if (editArea === id) { setEditArea(null); return }
+    setEditArea(id)
+    setSizeUi(transforms[id]?.scale ?? 1)
+  }
+
+  /** Arrow taps. `ddx`/`ddy` are SCREEN directions: +x right, +y up — the drag
+   *  controller uses the same frame, so the page's RTL never enters into it. */
+  const nudge = (ddx: number, ddy: number) => {
+    if (!editArea) return
+    const cur = transforms[editArea] ?? DEFAULT_TRANSFORM
+    commitTransform(editArea, clampTransform({ dx: round3(cur.dx + ddx), dy: round3(cur.dy + ddy), scale: cur.scale }))
+  }
+
+  /** Called on pointerup/keyup only — never from `onChange`. */
+  const commitSize = (v: number) => {
+    if (!editArea) return
+    const cur = transforms[editArea] ?? DEFAULT_TRANSFORM
+    if (cur.scale === v) return // a click that moved nothing must not reproject
+    commitTransform(editArea, clampTransform({ ...cur, scale: v }))
+  }
+
+  const resetArea = () => {
+    if (!editArea) return
+    // Delete rather than store the default: an absent entry keeps `withTransform`
+    // returning the original placement object, exactly as an untouched area does.
+    setTransforms(prev => { const u = { ...prev }; delete u[editArea]; return u })
+    setSizeUi(1)
+    setShareUrl(null)
+  }
+
   const handleCreate = async () => {
     if (!canCreate) return
     setCreating(true)
     try {
       const sessionId = `sketch-${Date.now()}`
-      const designs: { area: string; areaName: string; imageBase64: string }[] = []
+      const designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[] = []
       for (const [area, file] of Object.entries(files)) {
         const url = await uploadDesignFile(file, sessionId, generateUniqueFileName(file.name))
         const areaName = product.areas.find(a => a.id === area)?.name || area
@@ -243,7 +310,11 @@ export default function AdminSketchesPage() {
         // URL works everywhere (share page <img> + 3D via the design proxy)
         // and keeps the Firestore doc tiny (phone photos would burst the 1MB
         // doc limit as base64).
-        designs.push({ area, areaName, imageBase64: url })
+        // The key must be ABSENT, not `undefined`: lib/firebase.ts uses plain
+        // `getFirestore` with no `ignoreUndefinedProperties`, so an explicit
+        // `transform: undefined` inside the array makes `addDoc` throw.
+        const t = transforms[area]
+        designs.push({ area, areaName, imageBase64: url, ...(isDefaultTransform(t) ? {} : { transform: t }) })
       }
       const id = await createSharedDesign({
         productType: productId,
@@ -278,12 +349,14 @@ export default function AdminSketchesPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const resetAll = () => { setFiles({}); setOriginals({}); setColorId(''); setShareUrl(null); setPhone('') }
+  // Transforms go too — otherwise the previous customer's adjustment silently
+  // lands on the next sketch that uses the same areaId.
+  const resetAll = () => { setFiles({}); setOriginals({}); setTransforms({}); setEditArea(null); setColorId(''); setShareUrl(null); setPhone('') }
 
   // ── Preview ──
   const colorHex = allowedColors.find(c => c.id === colorId)?.hex ?? '#d1d5db'
   const m3d = getModel3D(productId, typeId || undefined)
-  const previewDesigns = Object.entries(previews).map(([area, url]) => ({ area, url }))
+  const previewDesigns = Object.entries(previews).map(([area, url]) => ({ area, url, transform: transforms[area] }))
   const previewEl = m3d ? (
     <ThreeErrorBoundary fallback={
       <div className="relative w-full flex items-center justify-center rounded-2xl border bg-gray-50 p-6" style={{ aspectRatio: '3/4' }}>
@@ -300,6 +373,9 @@ export default function AdminSketchesPage() {
           colorHex={colorHex}
           designs={previewDesigns}
           showGuides
+          editArea={editArea ?? undefined}
+          onCommit={commitTransform}
+          previewRef={previewRef}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           variant={m3d.variant as any}
           modelUrl={m3d.url}
@@ -314,6 +390,79 @@ export default function AdminSketchesPage() {
       )) : <span className="text-sm text-gray-400">העלו עיצוב לתצוגה</span>}
     </div>
   )
+
+  // ── Arrangement panel (3D only — the 2D fallback ignores the transform) ──
+  const uploadedAreas = allowedAreas.filter(a => files[a.id])
+  const arrangeEl = m3d && uploadedAreas.length > 0 ? (
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <h4 className="font-bold text-sm">סידור העיצוב</h4>
+        {uploadedAreas.map(a => (
+          <button key={a.id} onClick={() => toggleEditArea(a.id)}
+            aria-pressed={editArea === a.id}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border-2 transition-all ${editArea === a.id ? 'gradient-yellow text-white border-transparent shadow' : 'bg-white text-gray-700 border-gray-200 hover:border-yellow-400'}`}>
+            {a.name}
+          </button>
+        ))}
+      </div>
+
+      {editArea ? (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+          <p className="flex items-center gap-1 text-[11px] text-gray-500 mb-3">
+            <Move className="w-3 h-3" />
+            גררו את העיצוב על הבגד, או כווננו כאן
+          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Arrow pad. dir=ltr so the RIGHT-pointing arrow sits on the right
+                of the screen inside this RTL page — the arrows are mapped to
+                screen direction, and their layout must agree. */}
+            <div dir="ltr" className="grid grid-cols-3 gap-1 shrink-0">
+              <span />
+              <button onClick={() => nudge(0, NUDGE)} aria-label="הזזה למעלה" className="w-9 h-9 rounded-lg border border-gray-300 bg-white text-gray-600 hover:border-yellow-400 hover:bg-yellow-50 flex items-center justify-center"><ArrowUp className="w-4 h-4" /></button>
+              <span />
+              <button onClick={() => nudge(-NUDGE, 0)} aria-label="הזזה שמאלה" className="w-9 h-9 rounded-lg border border-gray-300 bg-white text-gray-600 hover:border-yellow-400 hover:bg-yellow-50 flex items-center justify-center"><ArrowLeft className="w-4 h-4" /></button>
+              <span />
+              <button onClick={() => nudge(NUDGE, 0)} aria-label="הזזה ימינה" className="w-9 h-9 rounded-lg border border-gray-300 bg-white text-gray-600 hover:border-yellow-400 hover:bg-yellow-50 flex items-center justify-center"><ArrowRight className="w-4 h-4" /></button>
+              <span />
+              <button onClick={() => nudge(0, -NUDGE)} aria-label="הזזה למטה" className="w-9 h-9 rounded-lg border border-gray-300 bg-white text-gray-600 hover:border-yellow-400 hover:bg-yellow-50 flex items-center justify-center"><ArrowDown className="w-4 h-4" /></button>
+              <span />
+            </div>
+
+            <div className="flex-1 min-w-[170px]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold text-gray-600">גודל</span>
+                <span dir="ltr" className="text-[11px] font-mono text-gray-500">{sizeUi.toFixed(2)}×</span>
+              </div>
+              {/* onChange fires on EVERY step of the drag (React maps it to the
+                  native `input` event) and each committed step is a full decal
+                  reprojection — so it only drives the imperative live preview.
+                  Release commits: pointerup for the mouse/finger, keyup for the
+                  arrow keys, which move a focused range with no pointer event. */}
+              <input
+                type="range" min={0.3} max={2} step={0.05} value={sizeUi}
+                aria-label="גודל העיצוב"
+                onChange={e => {
+                  const v = Number(e.target.value)
+                  setSizeUi(v)
+                  previewRef.current?.({ ...(transforms[editArea] ?? DEFAULT_TRANSFORM), scale: v })
+                }}
+                onPointerUp={e => commitSize(Number((e.target as HTMLInputElement).value))}
+                onKeyUp={e => commitSize(Number((e.target as HTMLInputElement).value))}
+                className="w-full accent-yellow-500 cursor-pointer"
+              />
+              <button onClick={resetArea}
+                className="mt-2 w-full h-8 rounded-md border border-gray-300 bg-white text-[11px] font-medium text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-1">
+                <RotateCcw className="w-3 h-3" />
+                אפס
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-[11px] text-gray-400">בחרו אזור כדי להזיז ולשנות את גודל העיצוב</p>
+      )}
+    </div>
+  ) : null
 
   return (
     <div dir="rtl" className="max-w-6xl mx-auto">
@@ -381,6 +530,9 @@ export default function AdminSketchesPage() {
                         <button onClick={() => {
                           setFiles(prev => { const u = { ...prev }; delete u[area.id]; return u })
                           setOriginals(prev => { const u = { ...prev }; delete u[area.id]; return u })
+                          // The adjustment belongs to the file that just left.
+                          setTransforms(prev => { const u = { ...prev }; delete u[area.id]; return u })
+                          if (editArea === area.id) setEditArea(null)
                           setShareUrl(null)
                         }}
                           className="text-red-400 hover:text-red-600" aria-label={`הסרת קובץ מ${area.name}`}>
@@ -482,6 +634,7 @@ export default function AdminSketchesPage() {
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <h3 className="font-bold text-sm mb-3">תצוגה מקדימה — מה שהלקוח יראה</h3>
             {previewEl}
+            {arrangeEl}
           </div>
         </div>
       </div>

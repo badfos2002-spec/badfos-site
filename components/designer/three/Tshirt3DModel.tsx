@@ -1,10 +1,12 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import * as THREE from 'three';
 import { useGLTF, Decal } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
 import { DecalGeometry } from 'three-stdlib';
+import { DesignTransform, DEFAULT_TRANSFORM, withTransform } from './decalTransform';
+import DecalDragController, { DecalPreviewFn } from './DecalDragController';
 
 /* ------------------------------------------------------------------ *
  * TUNABLE CONSTANTS — adjust after seeing each model on the page.
@@ -400,31 +402,60 @@ function useArtworkTexture(url: string): THREE.Texture | null {
 // preserving aspect ratio — the decal fills the area as large as possible but
 // never spills past it. (The old square fit by `placement.size` could exceed
 // the guide box on non-square areas like front_full.)
-function artworkScale(texture: THREE.Texture | null, placement: Placement, box?: GuideBox): [number, number, number] {
+function artworkScale(
+  texture: THREE.Texture | null,
+  placement: Placement,
+  box?: GuideBox,
+  scale = 1,
+): [number, number, number] {
   const img = texture?.image as { width?: number; height?: number } | undefined;
   const aspect = img?.width && img?.height ? img.width / img.height : 1;
   if (box) {
     let dw = box.w;
     let dh = box.w / aspect;
     if (dh > box.h) { dh = box.h; dw = box.h * aspect; }
-    return [dw, dh, placement.depth];
+    // `depth` is the projector's z-extent across the curved surface, NOT an
+    // artwork dimension — scaling it would drag in far-side geometry.
+    return [dw * scale, dh * scale, placement.depth];
   }
   // Fallback (area with no guide box): fit within a square of placement.size.
-  const s = placement.size;
+  const s = placement.size * scale;
   const sx = aspect >= 1 ? s : s * aspect;
   const sy = aspect >= 1 ? s / aspect : s;
   return [sx, sy, placement.depth];
 }
 
-function ShirtDecal({ url, placement, box }: { url: string; placement: Placement; box?: GuideBox }) {
+function ShirtDecal({ url, eff, box, artScale = 1, dragRef }: {
+  url: string;
+  /** Base placement + the COMMITTED offset. Computed once by `Tshirt3DModel` so
+   *  the decal and the drag controller can never disagree about the origin. */
+  eff: Placement;
+  box?: GuideBox;
+  /** The committed size multiplier — baked into the geometry by `artworkScale`. */
+  artScale?: number;
+  /** Set for the area being edited: the drag controller moves this mesh
+   *  imperatively instead of reprojecting on every pointermove. */
+  dragRef?: React.MutableRefObject<THREE.Mesh | null>;
+}) {
   const texture = useArtworkTexture(url);
   const scale = useMemo<[number, number, number]>(
-    () => artworkScale(texture, placement, box),
-    [texture, placement, box],
+    () => artworkScale(texture, eff, box, artScale),
+    [texture, eff, box, artScale],
   );
+  // The committed offset is now baked into the geometry; leaving the drag
+  // preview's transform on the mesh would double-apply it. `<Decal>` is this
+  // component's CHILD, so React runs its rebuild layout-effect FIRST and the
+  // reset lands after. A sibling (the controller) gets no ordering guarantee.
+  // MUST stay above `if (!texture)` — below it this is a conditional hook.
+  useLayoutEffect(() => {
+    const m = dragRef?.current;
+    if (!m) return;
+    m.position.set(0, 0, 0);
+    m.scale.set(1, 1, 1);
+  }, [dragRef, eff.position[0], eff.position[1], eff.position[2], artScale]);
   if (!texture) return null;
   return (
-    <Decal position={placement.position} rotation={placement.rotation} scale={scale} depthTest>
+    <Decal ref={dragRef} position={eff.position} rotation={eff.rotation} scale={scale} depthTest>
       <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
     </Decal>
   );
@@ -440,7 +471,10 @@ function useSheetDecalGeometry(
   w: number,
   h: number,
 ): THREE.BufferGeometry | null {
-  return useMemo(() => {
+  // Memoized on the NUMBERS, not on the `placement` object: `withTransform`
+  // returns a fresh object whenever an offset is applied, so an identity-based
+  // memo would rebuild a 13k-triangle DecalGeometry on every unrelated render.
+  const geo = useMemo(() => {
     if (!target?.geometry) return null;
     target.updateMatrixWorld(true);
     const euler = new THREE.Euler(...placement.rotation);
@@ -473,16 +507,42 @@ function useSheetDecalGeometry(
     out.setAttribute('normal', new THREE.Float32BufferAttribute(kn, 3));
     out.setAttribute('uv', new THREE.Float32BufferAttribute(kuv, 2));
     return out;
-  }, [target, placement, w, h]);
+  }, [
+    target,
+    placement.position[0], placement.position[1], placement.position[2],
+    placement.rotation[0], placement.rotation[1], placement.rotation[2],
+    placement.depth, w, h,
+  ]);
+  // Unlike drei's <Decal>, nothing else frees the superseded geometry — dispose
+  // here so a third caller cannot silently reintroduce the leak.
+  useEffect(() => () => { geo?.dispose(); }, [geo]);
+  return geo;
 }
 
-function SheetShirtDecal({ target, url, placement, box }: { target: THREE.Mesh; url: string; placement: Placement; box?: GuideBox }) {
+function SheetShirtDecal({ target, url, eff, box, artScale = 1, dragRef }: {
+  target: THREE.Mesh;
+  url: string;
+  eff: Placement;
+  box?: GuideBox;
+  artScale?: number;
+  dragRef?: React.MutableRefObject<THREE.Mesh | null>;
+}) {
   const texture = useArtworkTexture(url);
-  const [dw, dh] = artworkScale(texture, placement, box);
-  const geo = useSheetDecalGeometry(target, placement, dw, dh);
+  const [dw, dh] = artworkScale(texture, eff, box, artScale);
+  const geo = useSheetDecalGeometry(target, eff, dw, dh);
+  // Same reset as `ShirtDecal`, for the same reason — without it the apron
+  // double-jumps on release. The ordering rationale differs: the geometry comes
+  // from a hook in THIS component, so keying on the committed numbers suffices.
+  // MUST stay above the early return.
+  useLayoutEffect(() => {
+    const m = dragRef?.current;
+    if (!m) return;
+    m.position.set(0, 0, 0);
+    m.scale.set(1, 1, 1);
+  }, [dragRef, eff.position[0], eff.position[1], eff.position[2], artScale]);
   if (!texture || !geo) return null;
   return (
-    <mesh geometry={geo}>
+    <mesh ref={dragRef} geometry={geo}>
       <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
     </mesh>
   );
@@ -676,6 +736,7 @@ function TwoToneCapMaterial({
 export interface ShirtDesign {
   area: string;
   url: string;
+  transform?: DesignTransform;
 }
 
 interface Tshirt3DModelProps {
@@ -683,6 +744,15 @@ interface Tshirt3DModelProps {
   designs: ShirtDesign[];
   showGuides?: boolean;
   activeArea?: string;
+  /** The area being adjusted in the sketch tool. SEPARATE from `activeArea`,
+   *  which drives guide highlighting and the `singleArea` filter (the caps). */
+  editArea?: string;
+  /** Consumed by the drag controller this component hosts. */
+  onCommit?: (area: string, t: DesignTransform) => void;
+  /** Filled with the edited area's live-preview driver, for controls that are
+   *  not the canvas drag (the size slider) — a slider step then costs no
+   *  reprojection. Null whenever no area is being edited. */
+  previewRef?: React.MutableRefObject<DecalPreviewFn | null>;
   variant?: ShirtVariant;
   modelUrl?: string;
 }
@@ -692,6 +762,9 @@ export default function Tshirt3DModel({
   designs,
   showGuides,
   activeArea,
+  editArea,
+  onCommit,
+  previewRef,
   variant = 'tshirt',
   modelUrl = '/models/tshirt-web.glb',
 }: Tshirt3DModelProps) {
@@ -779,6 +852,36 @@ export default function Tshirt3DModel({
   const uploaded = useMemo(() => new Set(designs.filter((d) => d.url).map((d) => d.area)), [designs]);
   const guideAreas = Object.keys(cfg.guides);
 
+  // Measurement anchor for the drag controller: an empty object at the edited
+  // area's BASE placement, inside its target mesh. It is the ONLY correct source
+  // of world position/scale — the `meshes` clones are never added to the R3F
+  // scene, so their matrixWorld reflects the glTF hierarchy (38.075 on the polo)
+  // instead of the flattened one rendered here.
+  const anchorRef = useRef<THREE.Object3D>(null);
+
+  // The edited area's decal mesh. A single ref handed only to that area, so on
+  // editArea A→B React detaches A and attaches B in the same commit.
+  const dragRef = useRef<THREE.Mesh | null>(null);
+
+  // ONE source of truth for the baked placement of every area: the decals and
+  // the drag controller read the same objects, so a commit landing between two
+  // computations can never give the preview a wrong origin.
+  // NOTE: `withTransform` early-returns the ORIGINAL object when dx===0 && dy===0,
+  // so `eff === placement` after a pure resize. Never infer "has an offset" from
+  // the identity — read `transform.dx`/`dy`.
+  const effByArea = useMemo(() => {
+    const out: Record<string, Placement> = {};
+    for (const d of designs) {
+      const p = cfg.areas[d.area];
+      if (p && d.url) out[d.area] = withTransform(p, d.transform);
+    }
+    return out;
+  }, [designs, cfg]);
+
+  const editTransform = editArea
+    ? designs.find((d) => d.area === editArea && d.url)?.transform ?? DEFAULT_TRANSFORM
+    : DEFAULT_TRANSFORM;
+
   // Normalize every model to a consistent size + centre it, using PROPS (not an
   // effect like <Center>), so <Bounds> measures the real framed object on its
   // first render. The tshirt is ~0.7 units, the polo ~76 — this evens them out.
@@ -848,20 +951,47 @@ export default function Tshirt3DModel({
               <ShirtMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} />
             ))}
             {designs.map((d) => {
-              const placement = cfg.areas[d.area];
-              if (!placement || !d.url || targetFor(d.area) !== mesh) return null;
+              const eff = effByArea[d.area];
+              if (!eff || !d.url || targetFor(d.area) !== mesh) return null;
+              const ref = d.area === editArea ? dragRef : undefined;
               return singleSheet
-                ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} placement={placement} box={cfg.guides[d.area]} />
-                : <ShirtDecal key={d.area} url={d.url} placement={placement} box={cfg.guides[d.area]} />;
+                ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} />
+                : <ShirtDecal key={d.area} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} />;
             })}
+            {/* `targetFor(...) === mesh` makes both mount EXACTLY once —
+                unguarded, the polo's 40 primitives would each get an anchor and
+                a controller registering its own window handlers. */}
+            {editArea && cfg.areas[editArea] && targetFor(editArea) === mesh && (
+              <>
+                {/* No transform on the anchor: it feeds only distance-to-camera
+                    and world scale, and a full ±0.35 offset moves the camera
+                    distance by 0.2%. The base placement keeps the gain constant. */}
+                <object3D ref={anchorRef} position={cfg.areas[editArea].position} />
+                {/* `baked` falls back to the untouched placement while the area
+                    still has no artwork. */}
+                <DecalDragController
+                  area={editArea}
+                  anchorRef={anchorRef}
+                  meshRef={dragRef}
+                  baked={effByArea[editArea] ?? cfg.areas[editArea]}
+                  transform={editTransform}
+                  onCommit={onCommit}
+                  previewRef={previewRef}
+                />
+              </>
+            )}
             {showGuides
               ? guideAreas
                   .filter(
                     (a) =>
-                      !uploaded.has(a) &&
+                      // The edited area keeps its (untransformed) guide as the
+                      // printable-area reference, even once artwork is uploaded
+                      // and even on the singleArea caps, which never receive an
+                      // `activeArea` from the sketch page.
+                      (!uploaded.has(a) || a === editArea) &&
                       cfg.areas[a] &&
                       targetFor(a) === mesh &&
-                      (!singleArea || a === activeArea)
+                      (!singleArea || a === activeArea || a === editArea)
                   )
                   .map((a) =>
                     singleSheet ? (

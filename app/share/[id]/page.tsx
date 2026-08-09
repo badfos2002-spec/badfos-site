@@ -151,7 +151,7 @@ export default function SharePage() {
               <div className="relative w-full rounded-2xl overflow-hidden shadow-lg" style={{ aspectRatio: '3/4' }}>
                 <Preview3DStage
                   colorHex={getColorHex(design.color)}
-                  designs={design.designs.map(d => ({ area: d.area, url: d.imageBase64 }))}
+                  designs={design.designs.map(d => ({ area: d.area, url: d.imageBase64, transform: d.transform }))}
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   variant={m3d.variant as any}
                   modelUrl={m3d.url}
