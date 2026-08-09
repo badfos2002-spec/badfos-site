@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
+import { useCoarsePointer } from '@/hooks/useCoarsePointer';
 import { DEFAULT_TRANSFORM, DesignTransform, clampTransform } from './decalTransform';
 
 /** The placement the CURRENT decal geometry was baked with: the area's base
@@ -56,6 +57,11 @@ export default function DecalDragController({
   previewRef,
 }: DecalDragControllerProps) {
   const gl = useThree((s) => s.gl);
+  // On a touch pointer the design is moved ONLY by the panel's arrows and size
+  // slider (owner's requirement), so the handlers are never ATTACHED — not
+  // gated inside, so no touch can start a drag at all. The slider's live
+  // preview below is untouched: it does not go through the pointer effect.
+  const coarse = useCoarsePointer();
   // `get()` returns LIVE state. Reading `camera`/`size` off `useThree()` and
   // closing over them inside a [gl]-dep effect captures render 1 — `size` then
   // goes stale on the first canvas resize and the drag gain is wrong.
@@ -148,6 +154,7 @@ export default function DecalDragController({
   }, [previewRef, preview]);
 
   useEffect(() => {
+    if (coarse) return;
     const el = gl.domElement;
 
     let active = false;
@@ -245,7 +252,7 @@ export default function DecalDragController({
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
     };
-  }, [gl, get, anchorRef, meshRef, preview, resetPreview, scratch]);
+  }, [gl, get, anchorRef, meshRef, preview, resetPreview, scratch, coarse]);
 
   return null;
 }

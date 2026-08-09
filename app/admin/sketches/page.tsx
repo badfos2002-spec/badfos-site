@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info } from 'lucide-react'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { useCoarsePointer } from '@/hooks/useCoarsePointer'
 import { createSharedDesign } from '@/lib/db'
 import {
   FABRIC_TYPES, TSHIRT_COLORS, FABRIC_COLOR_FILTER, TSHIRT_DESIGN_AREAS,
@@ -178,6 +179,7 @@ export default function AdminSketchesPage() {
   // drag controller while an area is being edited.
   const previewRef = useRef<DecalPreviewFn | null>(null)
   const [sizeUi, setSizeUi] = useState(1)
+  const coarse = useCoarsePointer()
 
   const product = PRODUCTS.find(p => p.id === productId)!
 
@@ -420,7 +422,9 @@ export default function AdminSketchesPage() {
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
           <p className="flex items-center gap-1 text-[11px] text-gray-500 mb-3">
             <Move className="w-3 h-3" />
-            גררו את העיצוב על הבגד, או כווננו כאן
+            {/* On touch the canvas drag is off (Preview3DStage), so promising it
+                would be a lie — the arrows and the slider are the whole story. */}
+            {coarse ? 'כווננו עם החצים ועם סרגל הגודל' : 'גררו את העיצוב על הבגד, או כווננו כאן'}
           </p>
           <div className="flex flex-wrap items-center gap-4">
             {/* Arrow pad. dir=ltr so the RIGHT-pointing arrow sits on the right

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ContactShadows, Bounds, Environment, Lightformer } from '@react-three/drei';
+import { useCoarsePointer } from '@/hooks/useCoarsePointer';
 import Tshirt3DModel, { ShirtDesign, ShirtVariant, preloadAllModels } from './Tshirt3DModel';
 import { DesignTransform } from './decalTransform';
 import type { DecalPreviewFn } from './DecalDragController';
@@ -23,8 +24,9 @@ interface Preview3DStageProps {
   warmAll?: boolean;
   /** Suppress the one-time "drag to rotate" hint overlay (admin sketch tool). */
   noHint?: boolean;
-  /** The area being adjusted in the sketch tool: faces the camera, locks the
-   *  turntable, and turns drags into design moves instead of rotation. */
+  /** The area being adjusted in the sketch tool: faces the camera and — on a
+   *  fine pointer only — locks the turntable and turns drags into design moves
+   *  instead of rotation. */
   editArea?: string;
   onCommit?: (area: string, t: DesignTransform) => void;
   /** Filled with the edited area's live-preview driver, so controls outside the
@@ -44,8 +46,8 @@ function shortWayTo(angle: number, cur: number): number {
  * only. The canvas keeps `touch-action: pan-y`, so a VERTICAL swipe scrolls the
  * page normally instead of getting trapped by the 3D view (the old OrbitControls
  * blocked page scroll on mobile). Camera stays fixed — only the shirt spins.
- * While `locked` (sketch edit mode) it neither rotates nor releases the vertical
- * swipe — the drag belongs to the design being adjusted.
+ * While `locked` (sketch edit mode ON A FINE POINTER) it neither rotates nor
+ * releases the vertical swipe — the drag belongs to the design being adjusted.
  */
 function Turntable({
   focusArea,
@@ -54,7 +56,10 @@ function Turntable({
   children,
 }: {
   focusArea?: string;
-  /** Edit mode: drags belong to the design, not to the turntable. */
+  /** Edit mode with the canvas drag actually enabled: drags belong to the
+   *  design, not to the turntable. NEVER just "an area is being edited" — on a
+   *  touch pointer nothing takes the drag over, so locking rotation and taking
+   *  `touch-action` would trap the finger for nothing. */
   locked?: boolean;
   onFirstInteract?: () => void;
   children: React.ReactNode;
@@ -149,6 +154,12 @@ function Turntable({
  */
 export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint, editArea, onCommit, previewRef }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
+  // Every edit-mode side effect exists to serve the canvas drag, and the drag is
+  // off on a touch pointer (`DecalDragController` never attaches). So they are
+  // all keyed off THIS, not off `editArea`: on a phone the turntable keeps
+  // spinning and the canvas keeps `touch-action: pan-y` for page scroll.
+  const coarse = useCoarsePointer();
+  const dragEnabled = !!editArea && !coarse;
   useEffect(() => {
     if (!warmAll) return;
     // Delay warming the OTHER models so this page's own model wins the
@@ -196,7 +207,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
               `observe`: it must NOT re-fit on container resize between steps —
               the camera distance stays constant across all steps. */}
           <Bounds key={modelUrl ?? 'tshirt'} fit clip margin={fitMargin}>
-            <Turntable focusArea={editArea ?? activeArea} locked={!!editArea} onFirstInteract={() => setInteracted(true)}>
+            <Turntable focusArea={editArea ?? activeArea} locked={dragEnabled} onFirstInteract={() => setInteracted(true)}>
               <Tshirt3DModel
                 color={colorHex}
                 designs={designs}
