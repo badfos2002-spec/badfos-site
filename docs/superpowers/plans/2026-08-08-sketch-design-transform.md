@@ -272,7 +272,7 @@ export function withTransform<T extends PlacementLike>(p: T, t?: DesignTransform
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `npx tsx <scratchpad>/t1-transform.test.ts`
+Run from the repo root: `npx tsx t1-transform.test.ts`
 Expected: `ALL PASS`, exit 0. In particular `ok   rotation invariant (N placements, all I or R_y(pi))` — if that one fails, **stop**: spec §4.1.1 no longer holds and §5.4's preview would shear.
 
 - [ ] **Step 5: Typecheck and commit**
@@ -397,7 +397,9 @@ In the `designs.map` block (`Tshirt3DModel.tsx:850-856`), forward `transform={d.
 npx tsc --noEmit && npm run build
 ```
 
-Then temporarily hardcode `transform={{ dx: 0.2, dy: -0.1, scale: 1.5 }}` in the `designs.map` call, run `npm run dev`, upload a file on `/admin/sketches`, and confirm the artwork moves right-and-down and grows. **Revert the hardcode before committing.**
+Then temporarily hardcode `transform={{ dx: 0.2, dy: -0.1, scale: 1.5 }}` in the `designs.map` call and verify on **`/dev-3d`** (Task 0's harness — `/admin/sketches` is unreachable locally, see "Testing Reality"). Confirm the artwork moves right-and-down and grows on the t-shirt, apron and polo paths, and that removing the hardcode returns a **pixel-identical** frame to the pre-change baseline. **Revert the hardcode before committing.**
+
+> `/dev-3d` defaults `areaId` to `front_full`, which the apron and caps do not have — route those to their real area (`center`) when driving.
 
 - [ ] **Step 7: Commit**
 
@@ -631,6 +633,8 @@ Do **not** call `setPointerCapture` on `gl.domElement` — R3F installs its own 
 **Mount the controller exactly once.** Placed inside `meshes.map` without a `targetFor(editArea) === mesh` guard, the polo instantiates **40** controllers, each registering its own window handlers.
 
 **One source of truth for `P`.** `ShirtDecal` computes `eff`; the controller needs the same `position` and `rotation`. Have `Tshirt3DModel` compute `eff` once for `editArea` and hand the same object to both — otherwise a commit landing between the two computations gives the preview a wrong origin.
+
+> Note: `withTransform` early-returns the **original object** when `dx === 0 && dy === 0`, so after a pure resize `eff === placement` by reference. **Never infer "has an offset" from `eff !== placement`** — read `transform.dx`/`dy` directly.
 
 - [ ] **Step 5: Verify — performance is a blocking gate**
 
