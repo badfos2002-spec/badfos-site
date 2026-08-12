@@ -16,6 +16,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import OrdersPauseToggle from '@/components/admin/OrdersPauseToggle'
 import { getAllDocuments } from '@/lib/db'
 import { isLeadStale } from '@/lib/utils'
 import type { Order, Lead } from '@/lib/types'
@@ -269,18 +270,20 @@ export default function AdminPage() {
     fetchStats()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
-      </div>
-    )
-  }
-
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">לוח בקרה</h2>
 
+      {/* Rendered above the stats gate on purpose — the owner must be able to
+          stop orders immediately, without waiting for the dashboard to load */}
+      <OrdersPauseToggle />
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+        </div>
+      ) : (
+      <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon
@@ -344,6 +347,8 @@ export default function AdminPage() {
           )
         })}
       </div>
+      </>
+      )}
     </div>
   )
 }

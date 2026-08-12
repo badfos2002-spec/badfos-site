@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import type { CartItem, Shipping, Discount, PackageCartItem } from '@/lib/types'
 import { formatPrice, calculateOrderTotal } from '@/lib/pricing'
 import { getActiveDiscounts } from '@/lib/db'
+import { CONTACT_INFO } from '@/lib/constants'
 import { CheckCircle, X, Loader2 } from 'lucide-react'
 
 interface OrderSummaryProps {
@@ -21,6 +22,9 @@ interface OrderSummaryProps {
   loading: boolean
   canCheckout: boolean
   paymentReady?: boolean
+  ordersPaused?: boolean
+  ordersPausedTitle?: string
+  ordersPausedText?: string
 }
 
 const DEFAULT_COUPON_ERROR = 'קוד קופון לא תקין או פג תוקף'
@@ -37,6 +41,9 @@ export default function OrderSummary({
   loading,
   canCheckout,
   paymentReady = false,
+  ordersPaused = false,
+  ordersPausedTitle = '',
+  ordersPausedText = '',
 }: OrderSummaryProps) {
   const [applying, setApplying] = useState(false)
   const [couponStatus, setCouponStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
@@ -257,6 +264,23 @@ export default function OrderSummary({
             <span className="text-black">{formatPrice(orderTotal.total)}</span>
           </div>
 
+          {ordersPaused ? (
+            /* Orders paused by the owner — no checkout action at all. The cart
+               itself is untouched, so everything is still here when we reopen. */
+            <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 text-center" role="alert">
+              <p className="font-bold text-amber-900 mb-1">{ordersPausedTitle}</p>
+              <p className="text-sm text-amber-800 mb-3">{ordersPausedText}</p>
+              <a
+                href={`https://wa.me/${CONTACT_INFO.whatsapp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block w-full rounded-lg bg-green-600 px-4 py-3 font-bold text-white hover:bg-green-700"
+              >
+                דברו איתנו בוואטסאפ
+              </a>
+            </div>
+          ) : (
+          <>
           {/* Terms acceptance */}
           <label className="flex items-start gap-3 cursor-pointer mb-4 select-none">
             <input
@@ -291,6 +315,8 @@ export default function OrderSummary({
             )}
             <span>תשלום מאובטח בכרטיס אשראי</span>
           </p>
+          </>
+          )}
         </div>
       </CardContent>
     </Card>

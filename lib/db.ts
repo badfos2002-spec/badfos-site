@@ -599,6 +599,33 @@ export async function getActiveDiscounts(): Promise<Discount[]> {
 }
 
 // ============================================================================
+// Orders Pause Switch (settings/orders)
+// ============================================================================
+
+/**
+ * Is the shop currently refusing new orders?
+ * Public read — firestore.rules already allows `settings/{settingId}` read.
+ * NOTE: this is the convenience/UX read. The authoritative block lives in
+ * /api/payment/create (admin SDK) and cannot be bypassed by the client.
+ */
+export async function getOrdersPaused(): Promise<boolean> {
+  ensureFirebase()
+  const snap = await getDoc(doc(db!, 'settings', 'orders'))
+  return snap.exists() && snap.data()?.paused === true
+}
+
+/**
+ * Flip the pause switch. Admin only — firestore.rules rejects anyone else.
+ */
+export async function setOrdersPaused(paused: boolean): Promise<void> {
+  ensureFirebase()
+  await setDoc(doc(db!, 'settings', 'orders'), {
+    paused,
+    updatedAt: Timestamp.now(),
+  })
+}
+
+// ============================================================================
 // Site Images
 // ============================================================================
 

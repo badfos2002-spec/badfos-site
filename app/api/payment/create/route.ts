@@ -1,5 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
+import { adminDb } from '@/lib/firebase-admin'
+
+// Hebrew copy shown to the customer if a charge is attempted while paused
+const ORDERS_PAUSED_MESSAGE = 'לא ניתן לבצע הזמנות כרגע — אנחנו חוזרים לפעילות בקרוב. העגלה שלכם נשמרת.'
+
+/**
+ * The owner's "pause orders" switch (settings/orders → { paused: true }).
+ *
+ * FAIL CLOSED — a flag we cannot read counts as PAUSED and the charge is
+ * refused. This is deliberate, do NOT "fix" it to fail open: while the shop is
+ * paused, a transient Firestore error that blocks one checkout is far cheaper
+ * than an unwanted charge the owner cannot service. The whole site is
+ * Firestore-backed anyway, so a Firestore outage already means nothing works.
+ */
+async function areOrdersPaused(): Promise<boolean> {
+  try {
+    const snap = await adminDb.collection('settings').doc('orders').get()
+    return snap.exists && snap.data()?.paused === true
+  } catch (error) {
+    console.error('Orders-pause flag unreadable — refusing payment (fail closed):', error)
+    return true
+  }
+}
 
 // Server-side price verification constants (mirrors lib/constants.ts)
 const BASE_PRICES: Record<string, number> = { tshirt: 37, sweatshirt: 53, buff: 8, cap: 0, apron: 29 }
@@ -64,6 +87,13 @@ function verifyAmount(items: any[], clientAmount: number, couponDiscount: number
 
 export async function POST(request: NextRequest) {
   try {
+    // Authoritative pause check — runs before anything else. The cart also
+    // hides the checkout button, but a stale client bundle or a crafted
+    // request must never be able to start a charge.
+    if (await areOrdersPaused()) {
+      return NextResponse.json({ error: ORDERS_PAUSED_MESSAGE, paused: true }, { status: 503 })
+    }
+
     const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL
     if (!MAKE_WEBHOOK_URL) {
       console.error('MAKE_WEBHOOK_URL is not configured')

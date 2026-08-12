@@ -10,10 +10,10 @@ import ContactForm from './ContactForm'
 import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
 import { ArrowRight, ShoppingBag, Check, Share2, Loader2, Package, Trash2 } from 'lucide-react'
-import { createSharedCart, createOrder } from '@/lib/db'
+import { createSharedCart, createOrder, getOrdersPaused } from '@/lib/db'
 import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
 import { calculateOrderTotal } from '@/lib/pricing'
-import { EXPRESS_PICKUP } from '@/lib/constants'
+import { EXPRESS_PICKUP, CONTACT_INFO } from '@/lib/constants'
 import type { CustomerInfo, Shipping } from '@/lib/types'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
 import { getGclid } from '@/lib/tracking'
@@ -55,6 +55,10 @@ function stripUndefined<T>(obj: T): T {
   return obj
 }
 
+/** Owner's "pause orders" switch — customer-facing copy (single source) */
+const ORDERS_PAUSED_TITLE = 'לא מקבלים הזמנות כרגע'
+const ORDERS_PAUSED_TEXT = 'אנחנו בהפסקה קצרה ולא מקבלים הזמנות חדשות ולא מבצעים חיובים. נחזור לפעילות בקרוב — העגלה שלכם נשמרת ותחכה לכם בדיוק כמו שהיא.'
+
 /** Flat express surcharge — pickup only, never discounted */
 function getExpressCost(shipping: Shipping | null): number {
   return shipping?.method === 'pickup' && shipping.express
@@ -74,10 +78,18 @@ export default function CartPage() {
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [sharingAll, setSharingAll] = useState(false)
   const [hydrated, setHydrated] = useState(false)
+  const [ordersPaused, setOrdersPaused] = useState(false)
   const checkoutInProgress = useRef(false)
 
   // Mark hydrated after first client-side render (Zustand persist loads synchronously)
   useEffect(() => { setHydrated(true) }, [])
+
+  // Owner's "pause orders" switch (settings/orders). This is UX only — it spares
+  // the customer from filling the whole form and hitting a wall. The authoritative
+  // block is /api/payment/create, so a read failure here is safe to ignore.
+  useEffect(() => {
+    getOrdersPaused().then(setOrdersPaused).catch(() => {})
+  }, [])
 
   // Reset loading state when user navigates back from payment page (bfcache/pageshow)
   useEffect(() => {
@@ -197,6 +209,7 @@ export default function CartPage() {
 
   // Pre-fetch payment link as soon as customer info + shipping are ready
   useEffect(() => {
+    if (ordersPaused) return
     if (!customerInfo || !shipping || (items.length === 0 && packageItems.length === 0)) return
     if (!/^05\d{8}$/.test(customerInfo.phone)) return
 
@@ -249,10 +262,16 @@ export default function CartPage() {
     }).catch(() => null)
 
     paymentCacheRef.current = { promise, amount: total, key: cacheKey }
-  }, [customerInfo, shipping, items, packageItems, couponDiscount, couponCode])
+  }, [customerInfo, shipping, items, packageItems, couponDiscount, couponCode, ordersPaused])
 
   const handleCheckout = async () => {
     if (checkoutInProgress.current) return
+    // Covers the flag flipping while this page is already open — the checkout
+    // button is gone on re-render, but never let this path create an order.
+    if (ordersPaused) {
+      alert(`${ORDERS_PAUSED_TITLE}\n${ORDERS_PAUSED_TEXT}`)
+      return
+    }
     if (!customerInfo || !shipping || (items.length === 0 && packageItems.length === 0)) {
       alert('נא למלא את כל הפרטים')
       return
@@ -720,6 +739,21 @@ export default function CartPage() {
       <h1 className="text-3xl md:text-4xl font-bold mb-2">עגלת קניות</h1>
       <p className="text-sm text-gray-400 mb-6">העגלה נשמרת אוטומטית גם אם תסגרו את הדף</p>
 
+      {ordersPaused && (
+        <div className="mb-6 rounded-xl border-2 border-amber-300 bg-amber-50 p-4" role="alert">
+          <h2 className="font-bold text-amber-900 mb-1">{ORDERS_PAUSED_TITLE}</h2>
+          <p className="text-sm text-amber-800 mb-3">{ORDERS_PAUSED_TEXT}</p>
+          <a
+            href={`https://wa.me/${CONTACT_INFO.whatsapp}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-sm font-bold text-amber-900 underline hover:text-amber-700"
+          >
+            יש שאלה? דברו איתנו בוואטסאפ
+          </a>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -822,6 +856,9 @@ export default function CartPage() {
               loading={loading}
               canCheckout={!!customerInfo && !!shipping && (items.length > 0 || packageItems.length > 0)}
               paymentReady={paymentReady}
+              ordersPaused={ordersPaused}
+              ordersPausedTitle={ORDERS_PAUSED_TITLE}
+              ordersPausedText={ORDERS_PAUSED_TEXT}
             />
           </div>
         </div>
