@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote, MessageCircle, Star } from 'lucide-react'
+import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote, MessageCircle, Star, Navigation } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
 import { Timestamp } from 'firebase/firestore'
 import { deleteFile } from '@/lib/storage'
+import { buildWazeLink } from '@/lib/url-validation'
 import { auth } from '@/lib/firebase'
 import type { Order, DesignUpscale } from '@/lib/types'
 
@@ -332,7 +333,7 @@ export default function AdminOrdersPage() {
 
   const handleExportCSV = () => {
     const rows = [
-      ['מספר הזמנה', 'שם לקוח', 'טלפון', 'אימייל', 'תאריך', 'פריטים', 'סכום', 'סטטוס', 'משלוח'],
+      ['מספר הזמנה', 'שם לקוח', 'טלפון', 'אימייל', 'תאריך', 'פריטים', 'סכום', 'סטטוס', 'משלוח', 'ניווט בוויז'],
       ...filtered.map(o => [
         `#${o.orderNumber}`,
         `${o.customer.firstName} ${o.customer.lastName}`,
@@ -343,6 +344,7 @@ export default function AdminOrdersPage() {
         `₪${o.total}`,
         statusLabels[o.status]?.label ?? o.status,
         o.shipping?.method === 'pickup' ? 'איסוף עצמי' : 'משלוח',
+        buildWazeLink(o.shipping)?.url ?? '',
       ])
     ]
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
@@ -460,6 +462,7 @@ export default function AdminOrdersPage() {
             const isExpanded = expandedOrderId === order.id
             const date = order.createdAt?.toDate?.()?.toLocaleDateString('he-IL') ?? ''
             const customerName = `${order.customer.firstName} ${order.customer.lastName}`
+            const waze = buildWazeLink(order.shipping)
 
             return (
               <div key={order.id} className={`rounded-xl border bg-white shadow overflow-hidden ${order.shipping?.express ? 'border-orange-400 bg-orange-50/70 ring-1 ring-orange-300' : isRecoveredCustomer(order) ? 'border-yellow-400 bg-yellow-50/60 ring-1 ring-yellow-300' : ''}`}>
@@ -488,6 +491,20 @@ export default function AdminOrdersPage() {
                       <p className="text-sm text-gray-600 mt-0.5 truncate">{customerName} &bull; {date}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      {waze && (
+                        <a
+                          href={waze.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`נווט לכתובת בוויז: ${waze.address}`}
+                          aria-label={`נווט לכתובת בוויז: ${waze.address}`}
+                          className="bg-[#33CCFF] hover:bg-[#1fb6e8] text-white rounded-lg h-11 w-11 sm:h-8 sm:w-auto sm:px-2.5 shadow-sm inline-flex items-center justify-center gap-1 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Navigation className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" />
+                          <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">נווט</span>
+                        </a>
+                      )}
                       {isRecoveryEligible(order) && !(order as any).recoverySentAt && (
                         <button
                           className="relative bg-green-600 hover:bg-green-700 text-white rounded-lg h-8 px-2.5 shadow-sm inline-flex items-center gap-1"
@@ -695,6 +712,19 @@ export default function AdminOrdersPage() {
                                     </div>
                                   )
                                 })()}
+                                {waze && (
+                                  <a
+                                    href={waze.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={`נווט לכתובת בוויז: ${waze.address}`}
+                                    aria-label={`נווט לכתובת בוויז: ${waze.address}`}
+                                    className="inline-flex items-center justify-center gap-2 bg-[#33CCFF] hover:bg-[#1fb6e8] text-white font-bold rounded-lg px-5 min-h-[44px] shadow-md transition-colors mt-2"
+                                  >
+                                    <Navigation className="w-5 h-5 shrink-0" />
+                                    נווט בוויז
+                                  </a>
+                                )}
                                 {order.shipping.additionalPhone && (
                                   <div className="grid grid-cols-[auto_1fr] gap-x-3 text-sm pt-1">
                                     <span className="font-semibold text-gray-700">טלפון נוסף:</span>
