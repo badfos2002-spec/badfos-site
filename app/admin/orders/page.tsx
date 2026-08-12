@@ -491,6 +491,8 @@ export default function AdminOrdersPage() {
                       <p className="text-sm text-gray-600 mt-0.5 truncate">{customerName} &bull; {date}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      {/* הכפתור נלחץ בטלפון ליד הרכב, לרוב בשמש ישירה — האייקון כהה (slate-900 על התכלת
+                          של וויז, ניגודיות ~9.5:1) בכוונה לקריאות. לא להחליף ללבן "בשביל המיתוג". */}
                       {waze && (
                         <a
                           href={waze.url}
@@ -498,7 +500,7 @@ export default function AdminOrdersPage() {
                           rel="noopener noreferrer"
                           title={`נווט לכתובת בוויז: ${waze.address}`}
                           aria-label={`נווט לכתובת בוויז: ${waze.address}`}
-                          className="bg-[#33CCFF] hover:bg-[#1fb6e8] text-white rounded-lg h-11 w-11 sm:h-8 sm:w-auto sm:px-2.5 shadow-sm inline-flex items-center justify-center gap-1 transition-colors"
+                          className="bg-[#33CCFF] hover:bg-[#1fb6e8] text-slate-900 rounded-lg h-11 w-11 sm:h-8 sm:w-auto sm:px-2.5 shadow-sm inline-flex items-center justify-center gap-1 transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Navigation className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" />
@@ -712,6 +714,7 @@ export default function AdminOrdersPage() {
                                     </div>
                                   )
                                 })()}
+                                {/* אייקון כהה בכוונה (ראו ההערה בכרטיס ההזמנה) — קריאות בשמש חשובה כאן מהמיתוג */}
                                 {waze && (
                                   <a
                                     href={waze.url}
@@ -719,7 +722,7 @@ export default function AdminOrdersPage() {
                                     rel="noopener noreferrer"
                                     title={`נווט לכתובת בוויז: ${waze.address}`}
                                     aria-label={`נווט לכתובת בוויז: ${waze.address}`}
-                                    className="inline-flex items-center justify-center gap-2 bg-[#33CCFF] hover:bg-[#1fb6e8] text-white font-bold rounded-lg px-5 min-h-[44px] shadow-md transition-colors mt-2"
+                                    className="inline-flex items-center justify-center gap-2 bg-[#33CCFF] hover:bg-[#1fb6e8] text-slate-900 font-bold rounded-lg px-5 min-h-[44px] shadow-md transition-colors mt-2"
                                   >
                                     <Navigation className="w-5 h-5 shrink-0" />
                                     נווט בוויז
