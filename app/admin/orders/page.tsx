@@ -500,10 +500,10 @@ export default function AdminOrdersPage() {
                           rel="noopener noreferrer"
                           title={`נווט לכתובת בוויז: ${waze.address}`}
                           aria-label={`נווט לכתובת בוויז: ${waze.address}`}
-                          className="bg-[#33CCFF] hover:bg-[#1fb6e8] text-slate-900 rounded-lg h-11 w-11 sm:h-8 sm:w-auto sm:px-2.5 shadow-sm inline-flex items-center justify-center gap-1 transition-colors"
+                          className="bg-[#33CCFF] hover:bg-[#1fb6e8] text-slate-900 rounded-lg h-8 px-2.5 shadow-sm inline-flex items-center gap-1 transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Navigation className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" />
+                          <Navigation className="w-4 h-4 shrink-0" />
                           <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">נווט</span>
                         </a>
                       )}
