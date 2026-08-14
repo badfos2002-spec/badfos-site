@@ -26,8 +26,15 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+# NOTE: `.env*.local` only matches names ENDING in `.local`, so a copy such as
+# `.env.local.backup-1786225529` (exactly what `vercel env pull` workflows
+# produce) was NOT ignored and a single `git add -A` would have committed live
+# production secrets. The `.env*` catch-all below closes that hole — keep it.
+.env*
 .env*.local
 .env
+# ...but the committed template must stay tracked.
+!.env.example
 
 # vercel
 .vercel
