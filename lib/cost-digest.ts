@@ -117,6 +117,19 @@ export interface Subscription {
   name: string
   monthlyIls: number
   active: boolean
+  /**
+   * שיוך לספק ב-PROVIDER_REGISTRY (lib/system-status.ts) — כך מסך הסטטוס יודע
+   * לאיזה כרטיס להצמיד את העלות. אופציונלי: שורה בלי שיוך מקבלת כרטיס משלה,
+   * כדי ששום הוצאה לא תיעלם מהמסך.
+   */
+  providerId?: string
+  /** שם המסלול כפי שהבעלים מכיר אותו ("Pro", "Hobby"). לתצוגה בלבד. */
+  plan?: string
+  /**
+   * מכסה חודשית שהבעלים מכיר (מיילים, פעולות, אנשי קשר...). זה המקור היחיד
+   * למכסה כשה-API של הספק לא מספק אותה — במכוון. ניחוש מכסה = מספר שמשקר.
+   */
+  quota?: number
 }
 
 export interface CostSettings {
@@ -340,7 +353,23 @@ export function parseCostSettings(raw: unknown): CostSettings {
     const name = typeof s.name === 'string' ? s.name.trim() : ''
     const monthlyIls = Number(s.monthlyIls)
     if (!name || !Number.isFinite(monthlyIls) || monthlyIls < 0) continue
-    subscriptions.push({ name, monthlyIls, active: s.active !== false })
+
+    const row: Subscription = { name, monthlyIls, active: s.active !== false }
+
+    // שלושת השדות הבאים נוספו אחרי הדוח השבועי ולכן חסרים בכל שורה ישנה.
+    // הם נקראים סלחנית ונשמטים כשהם פגומים — שורה ישנה נשארת תקפה לחלוטין.
+    if (typeof s.providerId === 'string' && s.providerId.trim()) {
+      row.providerId = s.providerId.trim()
+    }
+    if (typeof s.plan === 'string' && s.plan.trim()) {
+      row.plan = s.plan.trim()
+    }
+    const quota = Number(s.quota)
+    if (Number.isFinite(quota) && quota > 0) {
+      row.quota = quota
+    }
+
+    subscriptions.push(row)
   }
   return { subscriptions, recipients: digestRecipients(data) }
 }
