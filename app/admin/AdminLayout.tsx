@@ -16,6 +16,7 @@ import {
   Users,
   FileText,
   BarChart3,
+  Wallet,
   Paintbrush,
   Menu,
   X,
@@ -39,6 +40,7 @@ const menuItems = [
   { icon: Percent, label: 'הנחות ומבצעים', href: '/admin/discounts' },
   { icon: Gift, label: 'חבילות', href: '/admin/packages' },
   { icon: BarChart3, label: 'אנליטיקה', href: '/admin/analytics' },
+  { icon: Wallet, label: 'עלויות מערכות', href: '/admin/costs' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

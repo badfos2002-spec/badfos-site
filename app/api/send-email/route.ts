@@ -6,6 +6,7 @@ import { OrderInProductionEmail } from '@/lib/email-templates/order-in-productio
 import { OrderShippedEmail } from '@/lib/email-templates/order-shipped'
 import { NewLeadEmail } from '@/lib/email-templates/new-lead'
 import { DesignMockupEmail } from '@/lib/email-templates/design-mockup'
+import { recordUsage } from '@/lib/usage-tracking'
 
 // Lazy-init Resend to avoid build-time errors when API key is missing
 let _resend: Resend | null = null
@@ -171,6 +172,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: emailError.message }, { status: 500 })
     }
 
+    await recordUsage('resend_email')
     console.log('Email sent successfully:', emailResult?.id, 'to:', to)
     return NextResponse.json({ success: true, emailId: emailResult?.id }, { status: 200 })
   } catch (error) {

@@ -5,6 +5,7 @@ import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/utils'
 import { sendRecoveryWhatsApp, normalizeIlPhone } from '@/lib/manychat'
 import { wasCompletedBySibling } from '@/lib/order-fallback'
+import { recordUsage } from '@/lib/usage-tracking'
 
 const STALE_MINUTES = 10 // pending_payment older than this → cart_abandoned
 
@@ -238,5 +239,6 @@ async function sendAlertEmail(
     console.error('Abandoned-cart instant alert Resend error:', error)
     return false
   }
+  await recordUsage('resend_email')
   return true
 }

@@ -7,6 +7,7 @@ import {
   PAID_SIBLING_WINDOW_MS,
   type OrderCandidate,
 } from '@/lib/payment-matching'
+import { recordUsage } from '@/lib/usage-tracking'
 
 /**
  * Server-side fallback order lookup shared by /api/webhooks and
@@ -245,5 +246,7 @@ async function sendDuplicatePaymentAlert(info: {
 
   if (error) {
     console.error('Duplicate-payment alert Resend error:', error)
+  } else {
+    await recordUsage('resend_email')
   }
 }
