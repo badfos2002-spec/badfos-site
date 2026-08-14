@@ -27,6 +27,7 @@ export const BACKUP_COLLECTIONS = [
   'discounts',
   'inventory',
   'settings',
+  'adminSettings',
   'counters',
   'shared_designs',
   'shared_carts',

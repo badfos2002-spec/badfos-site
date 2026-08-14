@@ -89,6 +89,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Admin Settings ────────────────────────────────────────────────────────
+    // Private business configuration (system subscription costs + the owner's
+    // digest recipient addresses). Deliberately NOT under /settings, which is
+    // world-readable. Admin only, both directions.
+    match /adminSettings/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // ── Counters ──────────────────────────────────────────────────────────────
     // Admin only. Order numbering runs server-side via /api/order/next-number
     // (admin SDK, bypasses rules); admin quote numbering runs client-side and

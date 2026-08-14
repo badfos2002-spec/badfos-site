@@ -5,6 +5,7 @@ import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/utils'
 import { sendRecoveryWhatsApp, normalizeIlPhone } from '@/lib/manychat'
 import { wasCompletedBySibling } from '@/lib/order-fallback'
+import { recordUsage } from '@/lib/usage-tracking'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const STALE_MINUTES = 60 // pending_payment older than this → cart_abandoned
@@ -265,5 +266,6 @@ async function sendSummaryEmail(rows: AbandonedOrderRow[]): Promise<boolean> {
     console.error('Abandoned-cart alert Resend error:', error)
     return false
   }
+  await recordUsage('resend_email')
   return true
 }

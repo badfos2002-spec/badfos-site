@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/utils'
 import { round2, itemsSignature, sanitizeItems } from '@/lib/order-sanitize'
+import { recordUsage } from '@/lib/usage-tracking'
 
 /**
  * Runtime consistency guard: called (fire-and-forget) from /payment/success
@@ -180,6 +181,7 @@ async function sendMismatchAlert(
       html,
     })
     if (error) console.error('Order-sync alert Resend error:', error)
+    else await recordUsage('resend_email')
   } catch (e) {
     console.error('Order-sync alert email error:', e)
   }

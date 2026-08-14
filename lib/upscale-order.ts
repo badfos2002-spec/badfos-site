@@ -1,6 +1,7 @@
 import { adminDb, adminStorage } from '@/lib/firebase-admin'
 import { createUpscalePrediction, SKIP_UPSCALE_PIXELS, PIXEL_LIMIT_ERROR } from '@/lib/upscale'
 import { readImagePixels } from '@/lib/image-dims'
+import { recordUsage } from '@/lib/usage-tracking'
 import { randomUUID } from 'crypto'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'
@@ -326,6 +327,7 @@ export async function runUpscaleForOrder(
       `${SITE_URL}/api/upscale-callback?orderId=${encodeURIComponent(orderRef.id)}&key=${encodeURIComponent(key)}`
     try {
       const { id } = await createUpscalePrediction(sourceUrl, callbackUrl)
+      await recordUsage('replicate_upscale')
       await orderRef.update({ [`upscales.${key}.predictionId`]: id })
       created++
       console.log(`Upscale designs: prediction ${id} created for order ${orderRef.id} [${key}]`)
