@@ -770,6 +770,11 @@ export interface SharedDesignData {
   productType: string
   color: string
   fabricType?: string
+  /** Snapshot of the 3D stage, used as og:image on /share/<id> so the WhatsApp
+   *  link previews the customer's own sketch. Absent on documents created
+   *  before this existed, and whenever the capture failed — /share/<id> then
+   *  falls back to the company logo. */
+  previewUrl?: string
   // `transform` is optional and written only when non-default — documents
   // created before this field exist without it and render exactly as before.
   designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[]
