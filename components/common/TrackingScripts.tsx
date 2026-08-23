@@ -31,6 +31,12 @@ export default function TrackingScripts() {
   }, [])
 
   // Google Consent Mode v2 — must run BEFORE any gtag/GTM scripts
+  //
+  // ORDERING DEPENDENCY: this effect MUST stay declared above the script-loading
+  // effect below. React runs effects in declaration order, so gtag('consent',
+  // 'default', ...) is pushed to dataLayer before gtm.js/gtag.js are ever
+  // requested. Reordering these two effects would let Google write cookies
+  // before the default consent state is known.
   useEffect(() => {
     window.dataLayer = window.dataLayer || []
     function gtag(..._args: any[]) { window.dataLayer.push(arguments) }
@@ -63,14 +69,23 @@ export default function TrackingScripts() {
     return () => window.removeEventListener('cookieConsentAccepted', handleConsent)
   }, [])
 
-  // Load GTM, Google Ads (gtag.js), Meta Pixel, AdSense - Gated by Cookie Consent
+  // Script loading — split by vendor:
+  //  • Google (GTM + gtag.js) loads ALWAYS, so the tag stays detectable (Tag
+  //    Assistant, crawlers) and all traffic is measured. Consent Mode v2 above
+  //    keeps it cookieless until the user accepts.
+  //  • Meta Pixel + AdSense stay gated behind cookie consent — Consent Mode has
+  //    no authority over them.
+  //
+  // MUST stay declared BELOW the Consent Mode effect above (see note there).
   useEffect(() => {
-    let scriptLoaded = false
-    let timer: ReturnType<typeof setTimeout> | null = null
+    let googleLoaded = false
+    let marketingLoaded = false
+    let googleTimer: ReturnType<typeof setTimeout> | null = null
+    let marketingTimer: ReturnType<typeof setTimeout> | null = null
 
-    const loadScripts = () => {
-      if (scriptLoaded) return
-      scriptLoaded = true
+    const loadGoogleScripts = () => {
+      if (googleLoaded) return
+      googleLoaded = true
 
       // Google Tag Manager
       ;(function (w: any, d: Document, s: string, l: string, i: string) {
@@ -135,6 +150,11 @@ export default function TrackingScripts() {
         })
         return false
       }
+    }
+
+    const loadMarketingScripts = () => {
+      if (marketingLoaded) return
+      marketingLoaded = true
 
       // Meta Pixel Code
       ;(function (
@@ -180,7 +200,11 @@ export default function TrackingScripts() {
       document.head.appendChild(adsenseScript)
     }
 
-    // Check for consent
+    // Google: always load. The small delay is for performance only — it is NOT
+    // a consent gate. Consent Mode v2 governs whether cookies are written.
+    googleTimer = setTimeout(loadGoogleScripts, 500)
+
+    // Meta Pixel + AdSense: consent-gated (unchanged behaviour)
     const checkConsentAndLoad = () => {
       let storedConsent: string | null = null
       try { storedConsent = localStorage.getItem('cookie_consent') } catch {}
@@ -191,20 +215,21 @@ export default function TrackingScripts() {
           .find((row) => row.startsWith('cookie_consent=accepted'))
 
       if (hasConsent) {
-        timer = setTimeout(loadScripts, 500)
+        marketingTimer = setTimeout(loadMarketingScripts, 500)
       }
     }
 
     checkConsentAndLoad()
 
     const handleConsent = () => {
-      loadScripts()
+      loadMarketingScripts()
     }
 
     window.addEventListener('cookieConsentAccepted', handleConsent)
 
     return () => {
-      if (timer) clearTimeout(timer)
+      if (googleTimer) clearTimeout(googleTimer)
+      if (marketingTimer) clearTimeout(marketingTimer)
       window.removeEventListener('cookieConsentAccepted', handleConsent)
     }
   }, [])
