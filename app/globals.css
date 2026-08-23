@@ -244,3 +244,19 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-note-flash { animation: none; }
 }
+
+/* ── Shared sketch (/share/[id]) — on phones the 3D stage IS the screen ─────
+   The stage fills the dynamic viewport, so every 100vh min-height above it in
+   the tree has to stand down: on mobile 100vh is the LARGEST viewport (URL bar
+   hidden), so leaving body/main at 100vh keeps the document taller than what is
+   actually visible and the page scrolls by exactly the URL bar's height.
+   Scoped with :has() so no other page is touched. The plain 100vh line is the
+   fallback for browsers without dvh — they simply get the old behaviour. */
+@media (max-width: 639px) {
+  body:has(.share-stage-fullbleed) { min-height: 0; }
+  body:has(.share-stage-fullbleed) > main { min-height: 0; }
+  .share-stage-fullbleed {
+    height: 100vh;
+    height: 100dvh;
+  }
+}

@@ -134,26 +134,32 @@ export default function ShareClient() {
   const hasBack = design.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'back')
   const hasBoth = hasFront && hasBack
   const m3d = getModel3D(design.productType, design.fabricType)
+  // On phones, a product that HAS a 3D model turns the whole screen into the
+  // stage, so the page must hug it — a 100vh floor under a 100dvh stage is
+  // exactly the URL-bar-sized scroll we are trying to remove. Everything else
+  // (the 2D mockup paths) keeps the old centred-card page untouched.
+  const fullScreen3D = !!m3d
 
   return (
-    <div className="min-h-screen bg-[#fffdf5] relative overflow-hidden" dir="rtl">
+    <div className={`bg-[#fffdf5] relative overflow-hidden ${fullScreen3D ? 'sm:min-h-screen' : 'min-h-screen'}`} dir="rtl">
       {/* Background blobs */}
       <div className="absolute -top-32 -right-32 w-[250px] h-[250px] md:w-[500px] md:h-[500px] bg-gradient-radial from-[#fef08a]/60 to-transparent rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -top-48 -left-48 w-[250px] h-[250px] md:w-[600px] md:h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[350px] h-[200px] md:w-[800px] md:h-[400px] bg-gradient-radial from-[#fef08a]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 gap-6">
+      <div className={`relative z-10 flex flex-col items-center justify-center gap-6 ${fullScreen3D ? 'sm:min-h-screen sm:px-4 sm:py-8' : 'min-h-screen px-4 py-8'}`}>
 
         {/* Preview — 3D for products with a model, else the 2D mockup */}
         {m3d ? (
-          // Full-bleed on phones: the stage escapes the container's px-4 with a
-          // matching negative margin instead of 100vw, so it lands exactly on the
-          // device edges and can never add a scrollbar's worth of overflow.
-          <div className="-mx-4 w-[calc(100%+2rem)] sm:mx-0 sm:w-full sm:max-w-sm md:max-w-md lg:max-w-lg">
+          // Full-bleed on phones: the container drops its padding below sm, so
+          // w-full already reaches both device edges — no 100vw, which would add
+          // a scrollbar's width of overflow.
+          <div className="w-full sm:max-w-sm md:max-w-md lg:max-w-lg">
             <ThreeErrorBoundary fallback={<MockupView view="front" color={design.color} designs={design.designs} />}>
-              {/* Edge to edge it is a band, not a card: no corners, no shadow.
-                  Both come back once the stage is inset again (sm and up). */}
-              <div className="relative w-full overflow-hidden sm:rounded-2xl sm:shadow-lg" style={{ aspectRatio: '3/4' }}>
+              {/* Phone: the stage IS the screen — full dynamic viewport, and a
+                  band rather than a card, so no corners and no shadow. From sm up
+                  it goes back to being an inset 3:4 card, unchanged. */}
+              <div className="share-stage-fullbleed relative w-full overflow-hidden sm:aspect-[3/4] sm:rounded-2xl sm:shadow-lg">
                 <Preview3DStage
                   colorHex={getColorHex(design.color)}
                   designs={design.designs.map(d => ({ area: d.area, url: d.imageBase64, transform: d.transform }))}
