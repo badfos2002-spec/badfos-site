@@ -631,13 +631,19 @@ export default function CartPage() {
             color: item.color,
             designs: await Promise.all(
               item.designs.map(async (d, dIdx) => {
-                // Upload to Firebase Storage instead of storing base64 in Firestore
-                const base64 = await blobToBase64(d.imageUrl)
-                const url = await uploadBase64Image(
-                  base64,
-                  sharePrefix,
-                  `item${itemIdx}-${d.area}-${dIdx}.png`
-                )
+                // A design the designer already uploaded IS a Storage URL —
+                // reuse it. Re-uploading would hand an https string to
+                // uploadBase64Image → dataUrlToBlob, which splits on ',' and
+                // throws on a URL that has no base64 payload.
+                // Otherwise (a legacy data: cart) upload it now, so Firestore
+                // never has to hold the base64.
+                const url = d.imageUrl.startsWith('https://')
+                  ? d.imageUrl
+                  : await uploadBase64Image(
+                      await blobToBase64(d.imageUrl),
+                      sharePrefix,
+                      `item${itemIdx}-${d.area}-${dIdx}.png`
+                    )
                 return {
                   area: d.area,
                   areaName: d.areaName,

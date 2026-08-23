@@ -141,7 +141,7 @@ export function printUploadErrorMessage(err: unknown): string {
     case 'not_image':
       return `${name} אינו קובץ תמונה. יש להעלות קובץ PNG או JPG.`
     case 'undecodable':
-      return `לא הצלחנו לפתוח את ${name} — ייתכן שהקובץ פגום או בפורמט שהדפדפן לא קורא. שמרו אותו כ-PNG או JPG ונסו שוב.`
+      return `לא הצלחנו לפתוח את ${name} — ייתכן שהקובץ פגום או בפורמט שהדפדפן לא קורא. שמרו אותו כ-PNG או JPG ונסו שוב, או שלחו לנו אותו ${whatsapp} ונטפל בזה בשבילכם.`
     case 'too_large':
       return `${name} גדול מדי (${mb(bytes ?? 0)}MB). לא ניתן להקטין אותו מתחת ל-${mb(RULE_LIMIT_BYTES)}MB בלי לרדת מתחת לרזולוציה הדרושה להדפסה, ואנחנו לא מוכנים לפגוע באיכות ההדפסה שלכם. שמרו את הקובץ מחדש כ-JPG באיכות גבוהה ונסו שוב, או שלחו לנו אותו ${whatsapp} ונטפל בזה בשבילכם.`
   }

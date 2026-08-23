@@ -100,14 +100,22 @@ const stepConfig = [
 const DESIGNER_SESSION_KEY = 'designer_session'
 
 function saveDesignerSession(step: number, config: Partial<ProductConfig>) {
+  // A blob: preview lives only in the tab that made it. Snapshotting one would
+  // restore a design that renders as a broken image and prints as nothing, so
+  // an upload still in flight is simply left out of the snapshot (DesignStep
+  // writes the https URL in a moment and this effect runs again).
+  const designs = config.designs
+  const safeConfig = designs && designs.some(d => d.imageUrl.startsWith('blob:'))
+    ? { ...config, designs: designs.filter(d => !d.imageUrl.startsWith('blob:')) }
+    : config
   try {
-    const data = { step, config, timestamp: Date.now() }
+    const data = { step, config: safeConfig, timestamp: Date.now() }
     sessionStorage.setItem(DESIGNER_SESSION_KEY, JSON.stringify(data))
   } catch {
     // Quota exceeded — clear old data and retry once
     try {
       sessionStorage.removeItem(DESIGNER_SESSION_KEY)
-      sessionStorage.setItem(DESIGNER_SESSION_KEY, JSON.stringify({ step, config, timestamp: Date.now() }))
+      sessionStorage.setItem(DESIGNER_SESSION_KEY, JSON.stringify({ step, config: safeConfig, timestamp: Date.now() }))
     } catch { /* truly full — nothing we can do */ }
   }
 }
@@ -150,6 +158,10 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     editingItem ? totalSteps : (savedSession.current?.step || 1)
   )
   const [activeDesignArea, setActiveDesignArea] = useState<string>('front_full')
+  // True while DesignStep is preparing/uploading a file. Its own state can't be
+  // read from here, and the design isn't in `config.designs` yet during the
+  // HEIC-convert / reduce window, so the step reports it up.
+  const [designUploading, setDesignUploading] = useState(false)
   const [previewView, setPreviewView] = useState<'front' | 'back'>('front')
   const [config, setConfig] = useState<Partial<ProductConfig>>(() =>
     editingItem
@@ -171,8 +183,9 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
           }
   )
 
-  // Persist step + config to sessionStorage on every change
-  // Designs are already base64 (converted at upload time), so no async needed
+  // Persist step + config to sessionStorage on every change.
+  // Designs are short https Storage URLs (DesignStep uploads at selection
+  // time), so this snapshot is tiny and needs no async.
   useEffect(() => {
     if (editingItemId) return
     saveDesignerSession(currentStep, config)
@@ -236,9 +249,17 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const handleAddToCart = async () => {
     if (addingToCart) return
     if (config.productType && config.fabricType && config.color && config.designs && config.sizes && config.sizes.length > 0) {
+      // Last line of defence: a blob: URL is alive only in this tab, so an
+      // order carrying one would reach the owner with nothing to print.
+      // DesignStep already blocks Next while an upload runs; this catches the
+      // case where the customer left the step mid-upload and came back.
+      if (config.designs.some(d => d.imageUrl.startsWith('blob:'))) {
+        alert('העיצוב עדיין נטען. עוד רגע ואפשר להוסיף לעגלה.')
+        return
+      }
       setAddingToCart(true)
       try {
-        // Images are already compressed base64 from DesignStep (1000px, JPEG 85%)
+        // Designs are already permanent https Storage URLs from DesignStep
         const persistedConfig = { ...config } as ProductConfig
 
         if (editingItemId) {
@@ -260,11 +281,18 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     }
   }
 
+  // A design whose upload has not landed yet is still a local blob: preview.
+  // Same condition the add-to-cart guard uses — surfaced here so the button is
+  // visibly disabled instead of silently rejecting the click.
+  const designPending = (config.designs || []).some(d => d.imageUrl.startsWith('blob:'))
+
   const canProceed = () => {
     switch (currentStep) {
       case 1: return !!config.fabricType
       case 2: return !!config.color
-      case 3: return true // design is optional (plain-garment orders allowed)
+      // Design is optional (plain-garment orders allowed) — but you cannot
+      // leave the step while a file is still being prepared or uploaded.
+      case 3: return !designUploading
       case 4: return !!(config.sizes && config.sizes.length > 0 && config.sizes.some(s => s.quantity > 0))
       default: return false
     }
@@ -290,7 +318,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
       case 2:
         return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} fabricType={config.fabricType} />
       case 3:
-        return <DesignStep designs={config.designs || []} onUpdate={(designs) => updateConfig({ designs })} onAreaFocus={(area) => {
+        return <DesignStep designs={config.designs || []} onUpdate={(designs) => updateConfig({ designs })} onBusyChange={setDesignUploading} onAreaFocus={(area) => {
           setActiveDesignArea(area)
           const overlay = DESIGN_AREA_OVERLAYS[area]
           if (overlay) setPreviewView(overlay.view as 'front' | 'back')
@@ -437,10 +465,10 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
       ) : (
         <Button
           onClick={handleAddToCart}
-          disabled={!canProceed() || addingToCart}
+          disabled={!canProceed() || addingToCart || designPending}
           className={`gradient-yellow text-white ${fullWidth ? 'flex-1 h-10 rounded-md px-8' : ''}`}
         >
-          {addingToCart ? 'מוסיף...' : editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
+          {designPending ? 'מעלה עיצוב…' : addingToCart ? 'מוסיף...' : editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
         </Button>
       )}
     </>
@@ -487,10 +515,10 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
             ) : (
               <Button
                 onClick={handleAddToCart}
-                disabled={!canProceed() || addingToCart}
+                disabled={!canProceed() || addingToCart || designPending}
                 className="gradient-yellow text-white"
               >
-                {addingToCart ? 'מוסיף...' : editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
+                {designPending ? 'מעלה עיצוב…' : addingToCart ? 'מוסיף...' : editingItemId ? 'עדכן בעגלה ✓' : 'הוסף לעגלה 🛒'}
               </Button>
             )}
           </div>
