@@ -258,5 +258,31 @@
   .share-stage-fullbleed {
     height: 100vh;
     height: 100dvh;
+    /* Breathing room for the stage's two overlays, which were laid out for a
+       card and now sit against the device bezel: the 360° badge was 4px from
+       the top, the disclaimer 10px from the bottom. Preview3DStage reads these
+       custom properties (with those same numbers as fallbacks), so the SHARED
+       component is nudged from here — no prop for the designers and the sketch
+       tool to pass, and their stages, plus this one from sm up, keep the
+       defaults. env() clears the notch / home indicator; the root layout
+       already sets viewport-fit=cover, so the stage does run underneath them. */
+    --stage-badge-top: calc(env(safe-area-inset-top, 0px) + 18px);
+    --stage-caption-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+  /* One screen tall with nothing to scroll, so a single finger must never pan
+     or rubber-band the page. Turntable sets `touch-action: pan-y` inline to
+     hand vertical swipes back to the page — correct for a stage inside a
+     scrolling page (every designer, the sketch tool), wrong for this one. An
+     author !important beats that inline style, and the selector keeps the
+     override on this page at this breakpoint only. `pinch-zoom` rather than
+     `none` so the page can still be zoomed for accessibility; it disables only
+     single-finger panning, which is what leaves the horizontal drag to
+     Turntable's pointermove handler — the model still spins. Two declarations,
+     in this order on purpose: an engine without `pinch-zoom` (Firefox) drops
+     that line as invalid and keeps `none`, so the scroll lock holds everywhere
+     and only the zoom is lost where it cannot be had anyway. */
+  .share-stage-fullbleed canvas {
+    touch-action: none !important;
+    touch-action: pinch-zoom !important;
   }
 }

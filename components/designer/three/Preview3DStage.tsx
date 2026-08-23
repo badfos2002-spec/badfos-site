@@ -153,6 +153,11 @@ function Turntable({
   }, [locked, focusArea]);
 
   // Own effect, so toggling the lock never re-runs the pointer effect.
+  // `pan-y` is the right default for a stage sitting INSIDE a scrolling page.
+  // A host whose stage is the whole screen has nothing to scroll and overrides
+  // this with an `!important` rule (globals.css, `.share-stage-fullbleed
+  // canvas`) — an author !important beats an inline style, so that host wins
+  // deterministically without this component knowing about it.
   useEffect(() => {
     gl.domElement.style.touchAction = locked ? 'none' : 'pan-y';
   }, [gl, locked]);
@@ -278,12 +283,16 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
         </Suspense>
       </Canvas>
 
-      {/* 360° badge — centered on the branded background, top of the stage. */}
+      {/* 360° badge — centered on the branded background, top of the stage.
+          The offset is a CSS custom property so a HOST can give it breathing
+          room without a prop every call site would have to pass; the fallback
+          is the value every stage has always used. See `.share-stage-fullbleed`
+          in globals.css — the only place that overrides it today. */}
       <div
         aria-hidden="true"
         style={{
           position: 'absolute',
-          top: 4,
+          top: 'var(--stage-badge-top, 4px)',
           left: 0,
           right: 0,
           display: 'flex',
@@ -352,11 +361,12 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
         </div>
       </div>
 
-      {/* Caption below the shirt — illustration disclaimer (black). */}
+      {/* Caption below the shirt — illustration disclaimer (black).
+          Offset overridable by the host, same as the badge above. */}
       <div
         style={{
           position: 'absolute',
-          bottom: 10,
+          bottom: 'var(--stage-caption-bottom, 10px)',
           left: 0,
           right: 0,
           textAlign: 'center',
