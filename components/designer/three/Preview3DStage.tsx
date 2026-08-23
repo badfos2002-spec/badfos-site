@@ -12,6 +12,59 @@ import type { DecalPreviewFn } from './DecalDragController';
 // Camera position sets the viewing angle; Bounds auto-fits the distance.
 const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
 
+/** How far past the 3:4 framing each garment may be zoomed in before a
+ *  turntable spin would touch the canvas edge. Measured off the rendered
+ *  silhouette (canvas alpha) at every 15° of rotation, worst angle wins, with
+ *  ~6% of the width kept as slack. 1 = the garment already fills the width and
+ *  has no room at all; a variant missing from the map never zooms.
+ *  Trailing % = how much of the canvas width the silhouette covers TODAY at its
+ *  widest rotation — that is what leaves (or denies) the room. */
+const MAX_ZOOM: Record<string, number> = {
+  tshirt: 1.15,      // 81%
+  polo: 1.25,        // 74%
+  oversized: 1,      // 96%
+  sweatshirt: 1,     // 97%
+  hoodie: 1,         // 98%
+  ziphoodie: 1,      // 98%
+  cap: 1.17,         // 80% (of a 1.2-margin frame)
+  meshcap: 1,        // 97% — side-on the visor nearly fills the frame already
+  tote: 1.7,         // 54%
+  totevolume: 1.65,  // 56%
+  dsbag: 1,          // 98%
+  buff: 1,           // 98% — an oval tube: end-on it is as wide as the frame
+  apron: 2.4,        // 38%
+  baby: 1.22,        // 76%
+  vest: 1.38,        // 67%
+};
+
+/**
+ * `Bounds` fits by the limiting dimension, and on a PORTRAIT canvas that is
+ * always the width: its distance comes out as `margin × maxSize / aspect`, so
+ * the visible world width is `margin × maxSize` however tall the canvas is.
+ * A full-screen phone stage (~1:2.16) therefore draws the garment at exactly
+ * the pixel size it has in a 3:4 card and pads the extra height with backdrop —
+ * a cap ends up 183 px tall inside 844 px.
+ *
+ * This gives that height back: shrink the margin in proportion to how much
+ * taller than 3:4 the canvas is, but never past the point where a spin would
+ * clip the garment. At aspect >= 3/4 the factor is exactly 1, so every designer
+ * card, the cart, the sketch tool and desktop keep the framing they have.
+ */
+function FitBounds({ variant, margin, refitKey, children }: {
+  variant?: ShirtVariant;
+  margin: number;
+  refitKey: string;
+  children: React.ReactNode;
+}) {
+  const aspect = useThree((s) => s.size.width / s.size.height);
+  const zoom = Math.min(Math.max(0.75 / aspect, 1), MAX_ZOOM[variant ?? 'tshirt'] ?? 1);
+  return (
+    <Bounds key={refitKey} fit clip margin={margin / zoom}>
+      {children}
+    </Bounds>
+  );
+}
+
 interface Preview3DStageProps {
   colorHex: string;
   designs: ShirtDesign[];
@@ -206,7 +259,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
               the shirt swaps (the polo is ~100× larger in world units). No
               `observe`: it must NOT re-fit on container resize between steps —
               the camera distance stays constant across all steps. */}
-          <Bounds key={modelUrl ?? 'tshirt'} fit clip margin={fitMargin}>
+          <FitBounds refitKey={modelUrl ?? 'tshirt'} variant={variant} margin={fitMargin}>
             <Turntable focusArea={editArea ?? activeArea} locked={dragEnabled} onFirstInteract={() => setInteracted(true)}>
               <Tshirt3DModel
                 color={colorHex}
@@ -220,7 +273,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
                 modelUrl={modelUrl}
               />
             </Turntable>
-          </Bounds>
+          </FitBounds>
           <ContactShadows position={[0, -1.05, 0]} opacity={0.45} scale={6} blur={2.6} far={2} />
         </Suspense>
       </Canvas>
