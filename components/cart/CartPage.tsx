@@ -11,7 +11,8 @@ import ShippingForm from './ShippingForm'
 import OrderSummary from './OrderSummary'
 import { ArrowRight, ShoppingBag, Check, Share2, Loader2, Package, Trash2 } from 'lucide-react'
 import { createSharedCart, createOrder, getOrdersPaused } from '@/lib/db'
-import { uploadBase64Image, generateUniqueFileName } from '@/lib/storage'
+import { uploadBase64Image, uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { preparePrintDataUrl, printUploadErrorMessage, isDesignUploadError } from '@/lib/print-image'
 import { calculateOrderTotal } from '@/lib/pricing'
 import { EXPRESS_PICKUP, CONTACT_INFO } from '@/lib/constants'
 import type { CustomerInfo, Shipping } from '@/lib/types'
@@ -192,15 +193,16 @@ export default function CartPage() {
     for (const item of items) {
       for (const d of item.designs) {
         if (d.imageUrl.startsWith('data:') && !cache.has(d.imageUrl)) {
-          const uploadPromise = uploadBase64Image(
-            d.imageUrl,
-            tempOrderId,
-            generateUniqueFileName(d.fileName || 'design.png')
-          ).catch((err) => {
-            console.warn('Pre-upload failed, will retry at checkout:', err)
-            cache.delete(d.imageUrl)
-            return ''
-          })
+          // Print-safe: byte-identical under the storage cap, reduced above it
+          // (lib/print-image.ts). storage.rules reports an oversized design as
+          // `storage/unauthorized`, which used to look like an auth failure.
+          const uploadPromise = preparePrintDataUrl(d.imageUrl, d.fileName || 'design.png')
+            .then((ready) => uploadDesignFile(ready, tempOrderId, generateUniqueFileName(ready.name)))
+            .catch((err) => {
+              console.warn('Pre-upload failed, will retry at checkout:', err)
+              cache.delete(d.imageUrl)
+              return ''
+            })
           cache.set(d.imageUrl, uploadPromise)
         }
       }
@@ -338,9 +340,12 @@ export default function CartPage() {
               // Check pre-upload cache first
               const cached = cache.get(d.imageUrl)
               const url = cached ? await cached : ''
+              if (url) return { ...d, imageUrl: url }
+              const ready = await preparePrintDataUrl(d.imageUrl, d.fileName || 'design.png')
               return {
                 ...d,
-                imageUrl: url || await uploadBase64Image(d.imageUrl, tempOrderId, generateUniqueFileName(d.fileName || 'design.png')),
+                imageUrl: await uploadDesignFile(ready, tempOrderId, generateUniqueFileName(ready.name)),
+                fileName: ready.name,
               }
             })
           ),
@@ -589,7 +594,11 @@ export default function CartPage() {
 
     } catch (error: any) {
       console.error('Checkout error:', error?.message || error)
-      alert(`אירעה שגיאה: ${error?.message || 'אנא נסו שוב.'}`)
+      // A design the storage rules refused arrives here as an English
+      // `storage/...` code — never let that reach the customer raw.
+      alert(isDesignUploadError(error)
+        ? printUploadErrorMessage(error)
+        : `אירעה שגיאה: ${error?.message || 'אנא נסו שוב.'}`)
     } finally {
       // Guarantee loading state resets (prevents infinite spinner)
       checkoutInProgress.current = false

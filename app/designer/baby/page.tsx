@@ -12,6 +12,7 @@ import type { DesignAreaType } from '@/lib/types'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
@@ -96,10 +97,11 @@ export default function BabyDesignerPage() {
       const designs = []
       for (const [area, file] of Object.entries(designFiles)) {
         if (!file) continue
-        const uniqueName = generateUniqueFileName(file.name)
-        const imageUrl = await uploadDesignFile(file, sessionId, uniqueName)
+        // Print-safe: byte-identical under the storage cap, reduced above it (lib/print-image.ts).
+        const ready = await preparePrintFile(file)
+        const imageUrl = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
         const areaConfig = babyAreas.find(a => a.id === area)
-        designs.push({ area: area as DesignAreaType, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: file.name })
+        designs.push({ area: area as DesignAreaType, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: ready.name })
       }
       const sizes = Object.entries(sizeQuantities).map(([size, quantity]) => ({ size, quantity }))
       addItem({
@@ -111,7 +113,7 @@ export default function BabyDesignerPage() {
       router.push('/cart')
     } catch (err) {
       console.error('Design upload failed:', err)
-      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
+      alert(printUploadErrorMessage(err))
     } finally {
       setAddingToCart(false)
     }

@@ -11,6 +11,7 @@ import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
@@ -79,9 +80,10 @@ export default function BuffDesignerPage() {
     try {
       const designs = []
       if (designFile) {
-        const uniqueName = generateUniqueFileName(designFile.name)
-        const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
-        designs.push({ area: 'center' as const, areaName: 'מרכזי', imageUrl, fileName: designFile.name })
+        // Print-safe: byte-identical under the storage cap, reduced above it (lib/print-image.ts).
+        const ready = await preparePrintFile(designFile)
+        const imageUrl = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
+        designs.push({ area: 'center' as const, areaName: 'מרכזי', imageUrl, fileName: ready.name })
       }
       addItem({
         productType: 'buff',
@@ -92,7 +94,7 @@ export default function BuffDesignerPage() {
       router.push('/cart')
     } catch (err) {
       console.error('Design upload failed:', err)
-      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
+      alert(printUploadErrorMessage(err))
     } finally {
       setAddingToCart(false)
     }

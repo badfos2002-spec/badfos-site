@@ -10,6 +10,7 @@ import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { capMockups, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER, CAP_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
@@ -87,10 +88,11 @@ export default function CapDesignerPage() {
     try {
       const designs = []
       if (designFile) {
-        const uniqueName = generateUniqueFileName(designFile.name)
-        const imageUrl = await uploadDesignFile(designFile, sessionId, uniqueName)
+        // Print-safe: byte-identical under the storage cap, reduced above it (lib/print-image.ts).
+        const ready = await preparePrintFile(designFile)
+        const imageUrl = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
         const areaConfig = CAP_DESIGN_AREAS.find(a => a.id === selectedArea)
-        designs.push({ area: selectedArea, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: designFile.name })
+        designs.push({ area: selectedArea, areaName: areaConfig?.name || 'קידמי', imageUrl, fileName: ready.name })
       }
       addItem({
         productType: 'cap',
@@ -102,7 +104,7 @@ export default function CapDesignerPage() {
       router.push('/cart')
     } catch (err) {
       console.error('Design upload failed:', err)
-      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
+      alert(printUploadErrorMessage(err))
     } finally {
       setAddingToCart(false)
     }

@@ -28,8 +28,20 @@ service firebase.storage {
       // customers' artwork cannot be enumerated.
       allow read: if true;
 
-      // Anonymous checkout may upload images, constrained to <15MB and image/* only.
-      allow create: if request.resource.size < 15 * 1024 * 1024
+      // Anonymous checkout may upload images, constrained to <30MB and image/* only.
+      //
+      // 30MB, raised from 15MB: 15MB rejected ordinary customer artwork (a 20MB
+      // phone photo or exported PNG), and Firebase surfaces a rules denial as
+      // `storage/unauthorized` — so the customer saw a generic failure and left.
+      // The trade-off is accepted knowingly: this path is ANONYMOUSLY writable,
+      // so doubling the cap doubles the bytes one abusive request can park in
+      // the bucket. What bounds the damage is unchanged — image/* only, no
+      // listing (so nothing here is reachable as a public file host), and
+      // clients never exceed the cap in the first place because
+      // lib/print-image.ts reduces oversized artwork before upload. Anything
+      // above 30MB is still refused here, and now with a Hebrew explanation
+      // instead of a silent 403.
+      allow create: if request.resource.size < 30 * 1024 * 1024
                     && request.resource.contentType.matches('image/.*');
 
       // Only authenticated admins (Firebase Auth) may delete (admin order deletion).

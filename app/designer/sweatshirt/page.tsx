@@ -10,6 +10,7 @@ import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIR
 import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
@@ -148,11 +149,6 @@ export default function SweatshirtDesignerPage() {
   const hasDesign = (areaId: string) => designs.some(d => d.area === areaId)
 
   const handleFileSelect = async (file: File) => {
-    if (file.size > 100 * 1024 * 1024) {
-      alert('הקובץ גדול מ-100MB. אנא בחר קובץ קטן יותר.')
-      return
-    }
-
     const areaId = selectedAreaId as DesignArea['area']
 
     // Never silently overwrite: if this area already holds a design in the current
@@ -164,13 +160,16 @@ export default function SweatshirtDesignerPage() {
     // order would break admin download + upscale (the design would be lost).
     setUploadingArea(selectedAreaId)
     try {
-      const uniqueName = generateUniqueFileName(file.name)
-      const permanentUrl = await uploadDesignFile(file, sessionId, uniqueName)
+      // Print-safe: byte-identical under the storage cap, reduced above it
+      // (lib/print-image.ts, which also carries the 100MB refuse-to-decode
+      // ceiling this designer used to check inline).
+      const ready = await preparePrintFile(file)
+      const permanentUrl = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
       const newDesign: DesignArea = {
         area: areaId,
         areaName: selectedArea.name,
         imageUrl: permanentUrl,
-        fileName: file.name,
+        fileName: ready.name,
       }
       setDesigns(prev => {
         const idx = prev.findIndex(d => d.area === areaId)
@@ -179,7 +178,7 @@ export default function SweatshirtDesignerPage() {
       })
     } catch (err) {
       console.error('Design upload failed:', err)
-      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
+      alert(printUploadErrorMessage(err))
     } finally {
       setUploadingArea(null)
     }

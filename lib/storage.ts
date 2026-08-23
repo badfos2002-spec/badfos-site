@@ -69,6 +69,19 @@ export async function uploadSiteImage(
 }
 
 /**
+ * Convert a data URL → Blob (Safari doesn't support fetch() on data: URLs).
+ * Shared so the print-safe reducer decodes exactly the bytes that get uploaded.
+ */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, b64] = dataUrl.split(',')
+  const mime = header.match(/:(.*?);/)?.[1] || 'image/png'
+  const binary = atob(b64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
+/**
  * Upload a base64 data URL to Firebase Storage and return the download URL.
  * Used at checkout to move design images out of the Firestore document.
  */
@@ -79,13 +92,7 @@ export async function uploadBase64Image(
 ): Promise<string> {
   ensureFirebase()
 
-  // Convert data URL → Blob (Safari doesn't support fetch() on data: URLs)
-  const [header, b64] = base64DataUrl.split(',')
-  const mime = header.match(/:(.*?);/)?.[1] || 'image/png'
-  const binary = atob(b64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  const blob = new Blob([bytes], { type: mime })
+  const blob = dataUrlToBlob(base64DataUrl)
 
   const filePath = `designs/${orderId}/${fileName}`
   const storageRef = ref(storage!, filePath)

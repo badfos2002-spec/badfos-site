@@ -9,6 +9,7 @@ import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { TOTE_TYPES, TOTE_COLORS, TOTE_COLOR_FILTER, TOTE_DESIGN_AREAS, TOTE_AREA_FILTER, TOTE_MIN_QUANTITY, getBasePrice, getDesignAreasByProductType, getModel3D, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignAreaType } from '@/lib/types'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
@@ -96,10 +97,11 @@ export default function ToteDesignerPage() {
       const designs = []
       for (const [area, file] of Object.entries(designFiles)) {
         if (!file) continue
-        const uniqueName = generateUniqueFileName(file.name)
-        const imageUrl = await uploadDesignFile(file, sessionId, uniqueName)
+        // Print-safe: byte-identical under the storage cap, reduced above it (lib/print-image.ts).
+        const ready = await preparePrintFile(file)
+        const imageUrl = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
         const areaConfig = TOTE_DESIGN_AREAS.find(a => a.id === area)
-        designs.push({ area: area as DesignAreaType, areaName: areaConfig?.name || 'צד קדמי', imageUrl, fileName: file.name })
+        designs.push({ area: area as DesignAreaType, areaName: areaConfig?.name || 'צד קדמי', imageUrl, fileName: ready.name })
       }
       addItem({
         productType: 'tote',
@@ -111,7 +113,7 @@ export default function ToteDesignerPage() {
       router.push('/cart')
     } catch (err) {
       console.error('Design upload failed:', err)
-      alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
+      alert(printUploadErrorMessage(err))
     } finally {
       setAddingToCart(false)
     }

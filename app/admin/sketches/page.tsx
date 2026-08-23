@@ -358,10 +358,11 @@ export default function AdminSketchesPage() {
       }
       const designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[] = []
       for (const [area, file] of Object.entries(files)) {
-        // storage.rules rejects anything >=15MB under designs/, and Firebase
+        // storage.rules rejects anything >=30MB under designs/, and Firebase
         // surfaces that as `storage/unauthorized` — so shrink before uploading.
-        // Sketch files are illustration only; the print masters come from the
-        // customer designers and are never routed through here.
+        // Sketch files are illustration only and keep a much tighter budget than
+        // the rule allows; the print masters come from the customer designers,
+        // go through lib/print-image.ts, and are never routed through here.
         const ready = await compressSketchImage(file)
         if (ready !== file) console.info(`[sketch] ${file.name}: ${file.size} → ${ready.size} bytes (${ready.type})`)
         const url = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
