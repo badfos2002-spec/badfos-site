@@ -3,8 +3,9 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info } from 'lucide-react'
+import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info, AlertTriangle } from 'lucide-react'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { compressSketchImage, sketchUploadErrorMessage } from '@/lib/sketch-image'
 import { useCoarsePointer } from '@/hooks/useCoarsePointer'
 import { createSharedDesign } from '@/lib/db'
 import { captureSketchPreview } from '@/lib/sketch-preview'
@@ -62,7 +63,13 @@ const PRODUCTS: ProductDef[] = [
  */
 async function removeBackgroundFile(file: File): Promise<File> {
   const bmp = await createImageBitmap(file)
-  const MAX = 3000
+  // The cut-out is illustration only, and compressSketchImage caps what actually
+  // ships at a 1600px longest edge — so 3000 bought nothing above the display
+  // ceiling while making the flood fill chew through 9M pixels (and its output
+  // PNG-with-alpha the file that broke the 15MB Storage rule). 2000 keeps
+  // headroom over 1600, cuts the fill work ~2.25x, and lands under the cap on
+  // its own for ordinary artwork.
+  const MAX = 2000
   const scale = Math.min(1, MAX / Math.max(bmp.width, bmp.height))
   const w = Math.max(1, Math.round(bmp.width * scale))
   const h = Math.max(1, Math.round(bmp.height * scale))
@@ -167,6 +174,9 @@ export default function AdminSketchesPage() {
   const [removingBg, setRemovingBg] = useState<string | null>(null)
   const [phone, setPhone] = useState('')
   const [creating, setCreating] = useState(false)
+  // Why the last attempt failed, in Hebrew the owner can act on. A generic
+  // "יצירת הסקיצה נכשלה" is what hid a 15MB Storage-rule rejection for weeks.
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   // Per-area adjustment. A missing entry IS the default — never substitute an
@@ -320,6 +330,7 @@ export default function AdminSketchesPage() {
   const handleCreate = async () => {
     if (!canCreate) return
     setCreating(true)
+    setErrorMsg(null)
     try {
       const sessionId = `sketch-${Date.now()}`
       // Snapshot the stage FIRST, so the link preview is exactly the frame the
@@ -347,7 +358,13 @@ export default function AdminSketchesPage() {
       }
       const designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[] = []
       for (const [area, file] of Object.entries(files)) {
-        const url = await uploadDesignFile(file, sessionId, generateUniqueFileName(file.name))
+        // storage.rules rejects anything >=15MB under designs/, and Firebase
+        // surfaces that as `storage/unauthorized` — so shrink before uploading.
+        // Sketch files are illustration only; the print masters come from the
+        // customer designers and are never routed through here.
+        const ready = await compressSketchImage(file)
+        if (ready !== file) console.info(`[sketch] ${file.name}: ${file.size} → ${ready.size} bytes (${ready.type})`)
+        const url = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
         const areaName = product.areas.find(a => a.id === area)?.name || area
         // `imageBase64` historically holds the image source — an https Storage
         // URL works everywhere (share page <img> + 3D via the design proxy)
@@ -371,7 +388,7 @@ export default function AdminSketchesPage() {
       setShareUrl(`${window.location.origin}/share/${id}`)
     } catch (err) {
       console.error('Sketch creation failed:', err)
-      alert('יצירת הסקיצה נכשלה. נסה/י שוב בעוד רגע.')
+      setErrorMsg(sketchUploadErrorMessage(err))
     } finally {
       setCreating(false)
     }
@@ -397,7 +414,7 @@ export default function AdminSketchesPage() {
 
   // Transforms go too — otherwise the previous customer's adjustment silently
   // lands on the next sketch that uses the same areaId.
-  const resetAll = () => { setFiles({}); setOriginals({}); setTransforms({}); setEditArea(null); setColorId(''); setShareUrl(null); setPhone('') }
+  const resetAll = () => { setFiles({}); setOriginals({}); setTransforms({}); setEditArea(null); setColorId(''); setShareUrl(null); setPhone(''); setErrorMsg(null) }
 
   // ── Preview ──
   const colorHex = allowedColors.find(c => c.id === colorId)?.hex ?? '#d1d5db'
@@ -612,6 +629,8 @@ export default function AdminSketchesPage() {
                             setFiles(prev => ({ ...prev, [area.id]: f }))
                             setOriginals(prev => { const u = { ...prev }; delete u[area.id]; return u })
                             setShareUrl(null)
+                            // Swapping the file is the fix for most of these.
+                            setErrorMsg(null)
                           }
                           e.target.value = ''
                         }} />
@@ -650,6 +669,12 @@ export default function AdminSketchesPage() {
             <Input dir="ltr" inputMode="tel" placeholder="טלפון הלקוח (לא חובה) 050-1234567" value={phone} onChange={e => setPhone(e.target.value)} className="text-left" />
             {!shareUrl ? (
               <>
+                {errorMsg && (
+                  <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
                 {missing.length > 0 && (
                   <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     <Info className="w-4 h-4 shrink-0 mt-px" />
