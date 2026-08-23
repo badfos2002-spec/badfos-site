@@ -775,6 +775,12 @@ export interface SharedDesignData {
    *  before this existed, and whenever the capture failed — /share/<id> then
    *  falls back to the company logo. */
   previewUrl?: string
+  /** Set by the nightly retention sweep (app/api/cleanup-old-designs) once the
+   *  heavy uploaded originals have been deleted from Storage. The document and
+   *  `previewUrl` stay, so /share/<id> keeps resolving and shows the captured
+   *  still of the sketch instead of the interactive 3D stage.
+   *  See lib/sketch-retention.ts. */
+  designsDeleted?: boolean
   // `transform` is optional and written only when non-default — documents
   // created before this field exist without it and render exactly as before.
   designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[]

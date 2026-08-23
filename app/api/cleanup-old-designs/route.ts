@@ -9,6 +9,7 @@ import {
 } from '@/lib/upscale-order'
 import { PIXEL_LIMIT_ERROR } from '@/lib/upscale'
 import { runBackup, BackupSummary } from '@/lib/backup'
+import { sweepOldSketches, SketchSweepSummary } from '@/lib/sketch-sweep'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const CLEANUP_DAYS = 30
@@ -30,6 +31,10 @@ const MAX_EMERGENCY_DELETIONS = 500 // safety cap per run
  * Layer 0: Self-heal upscales — retry failed/stuck design upscales of recent
  *          paid orders (up to 3 total attempts per design, then gave_up).
  * Layer 1: Delete design files of orders older than 30 days (keep order docs).
+ * Layer 1b: Shared sketches older than 2 days lose their uploaded originals but
+ *          keep their Firestore doc AND their preview.jpg, so /share/<id> still
+ *          shows the sketch — as a still instead of the 3D stage. Policy and
+ *          every fail-closed rule live in lib/sketch-retention.ts.
  * Layer 2: If Storage usage still high → delete entire oldest orders (doc + files) until safe.
  *
  * Triggered by Vercel Cron daily, or manually with the CRON_SECRET.
@@ -41,6 +46,22 @@ export async function GET(req: NextRequest) {
   }
 
   const bucket = adminStorage.bucket()
+
+  // ── Dry run ─────────────────────────────────────────────────────────────
+  // `?dryRun=1` plans the sketch sweep and returns it WITHOUT touching
+  // anything — no Storage delete, no document write, and none of the other
+  // layers run at all (they are listed in `skipped` so nobody reads this
+  // response as a verdict on them). The Vercel cron never passes it.
+  if (req.nextUrl.searchParams.get('dryRun') === '1') {
+    const sketches = await sweepOldSketches(adminDb, bucket, false)
+    return NextResponse.json({
+      success: true,
+      mode: 'dry-run',
+      sketches,
+      skipped: ['backup', 'upscale-self-heal', 'expired-quotes', 'order-designs', 'emergency-storage'],
+    })
+  }
+
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - CLEANUP_DAYS)
   const cutoffTs = Timestamp.fromDate(cutoff)
@@ -54,6 +75,7 @@ export async function GET(req: NextRequest) {
   let upscalesGaveUp = 0
   let upscalesHealed = 0
   let upscalesSkipped = 0
+  let sketches: SketchSweepSummary | { error: string } = { error: 'not run' }
 
   // ── Nightly backup — FIRST, before any deletion below. Failure here must
   //    never block the cleanup (and cleanup failures never block the backup,
@@ -169,6 +191,18 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // ── Layer 1b: shared sketches older than 2 days (link keeps working) ─
+    //    Isolated: a sketch-sweep failure must not cost the order cleanup or
+    //    the emergency layer below, which are what protect the quota.
+    try {
+      sketches = await sweepOldSketches(adminDb, bucket, true)
+      errors += sketches.errors
+    } catch (e) {
+      console.error('Sketch retention sweep failed:', e)
+      sketches = { error: e instanceof Error ? e.message : 'sketch sweep failed' }
+      errors++
+    }
+
     // ── Check current storage usage in designs/ ─────────────────────────
     let { totalMB: usageMB, count: filesCount } = await getDesignsUsage(bucket)
 
@@ -216,6 +250,7 @@ export async function GET(req: NextRequest) {
       cleaned,
       emergencyDeleted,
       deletedQuotes,
+      sketches,
       upscalesRetried,
       upscalesGaveUp,
       upscalesHealed,

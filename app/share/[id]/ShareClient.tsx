@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import { getColorHex, getModel3D } from '@/lib/constants'
+import { isSketchPreviewUrl } from '@/lib/sketch-retention'
 
 const Preview3DStage = dynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
 
@@ -90,6 +91,75 @@ function MockupView({ view, color, designs, productType, fabricType }: {
   )
 }
 
+/** The page's cream backdrop + blobs, shared by every state below. */
+function PageShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-[#fffdf5] relative overflow-hidden" dir="rtl">
+      <div className="absolute -top-32 -right-32 w-[250px] h-[250px] md:w-[500px] md:h-[500px] bg-gradient-radial from-[#fef08a]/60 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-48 -left-48 w-[250px] h-[250px] md:w-[600px] md:h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[350px] h-[200px] md:w-[800px] md:h-[400px] bg-gradient-radial from-[#fef08a]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center gap-5 px-4 py-8 text-center">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function DesignerButton({ label }: { label: string }) {
+  return (
+    <Link href="/designer">
+      <Button className="rounded-full px-8 font-bold text-white" style={{ backgroundColor: 'rgb(255, 195, 46)' }}>
+        {label}
+      </Button>
+    </Link>
+  )
+}
+
+/**
+ * The sketch AFTER the nightly retention sweep (lib/sketch-retention.ts) has
+ * removed its uploaded originals.
+ *
+ * The 3D stage builds its decals from those originals, so rendering it here
+ * would paint a bare garment — a link that looks broken. Instead we show
+ * `preview.jpg`, the snapshot taken when the sketch was created, which already
+ * contains the garment AND the artwork on it. The copy names the trade-off out
+ * loud so the still reads as the designed end state, not as a failure.
+ *
+ * `src` is null only if a sketch were ever swept without a usable preview. The
+ * policy refuses to sweep in that case, so this is a guard, not a path — but it
+ * is here because the one thing that must never happen is silently rendering an
+ * empty garment.
+ */
+function SweptSketchView({ src }: { src: string | null }) {
+  if (!src) {
+    return (
+      <PageShell>
+        <p className="text-2xl font-bold text-gray-700">הסקיצה כבר לא זמינה לצפייה</p>
+        <p className="text-gray-500 max-w-md">נשמח להכין לכם סקיצה חדשה — או שתעצבו בעצמכם עכשיו.</p>
+        <DesignerButton label="לעיצוב חדש" />
+      </PageShell>
+    )
+  }
+
+  return (
+    <PageShell>
+      <div className="w-full max-w-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt="הסקיצה שהוכנה עבורך"
+          className="w-full h-auto block rounded-2xl shadow-lg"
+        />
+      </div>
+      <p className="text-xl sm:text-2xl font-bold text-gray-700">זו הסקיצה שהוכנה עבורך</p>
+      <p className="text-sm sm:text-base text-gray-500 max-w-md leading-relaxed">
+        התצוגה בתלת־ממד זמינה ביומיים הראשונים מרגע יצירת הסקיצה. הקישור נשמר — והסקיצה מוצגת כאן כתמונה.
+      </p>
+      <DesignerButton label="לעיצוב חדש" />
+    </PageShell>
+  )
+}
+
 export default function ShareClient() {
   const params = useParams()
   const id = params?.id as string
@@ -128,6 +198,13 @@ export default function ShareClient() {
         </Link>
       </div>
     )
+  }
+
+  // Swept by the retention cron: the originals the 3D stage needs are gone, so
+  // the page shows the captured still instead. Deliberately an early return —
+  // every branch below assumes the artwork is still fetchable.
+  if (design.designsDeleted === true) {
+    return <SweptSketchView src={isSketchPreviewUrl(design.previewUrl) ? design.previewUrl : null} />
   }
 
   const hasFront = design.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'front')
