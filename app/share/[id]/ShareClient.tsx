@@ -146,9 +146,14 @@ export default function ShareClient() {
 
         {/* Preview — 3D for products with a model, else the 2D mockup */}
         {m3d ? (
-          <div className="w-full max-w-[340px] sm:max-w-sm md:max-w-md lg:max-w-lg">
+          // Full-bleed on phones: the stage escapes the container's px-4 with a
+          // matching negative margin instead of 100vw, so it lands exactly on the
+          // device edges and can never add a scrollbar's worth of overflow.
+          <div className="-mx-4 w-[calc(100%+2rem)] sm:mx-0 sm:w-full sm:max-w-sm md:max-w-md lg:max-w-lg">
             <ThreeErrorBoundary fallback={<MockupView view="front" color={design.color} designs={design.designs} />}>
-              <div className="relative w-full rounded-2xl overflow-hidden shadow-lg" style={{ aspectRatio: '3/4' }}>
+              {/* Edge to edge it is a band, not a card: no corners, no shadow.
+                  Both come back once the stage is inset again (sm and up). */}
+              <div className="relative w-full overflow-hidden sm:rounded-2xl sm:shadow-lg" style={{ aspectRatio: '3/4' }}>
                 <Preview3DStage
                   colorHex={getColorHex(design.color)}
                   designs={design.designs.map(d => ({ area: d.area, url: d.imageBase64, transform: d.transform }))}
