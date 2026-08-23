@@ -7,6 +7,7 @@ import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Pa
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { useCoarsePointer } from '@/hooks/useCoarsePointer'
 import { createSharedDesign } from '@/lib/db'
+import { captureSketchPreview } from '@/lib/sketch-preview'
 import {
   FABRIC_TYPES, TSHIRT_COLORS, FABRIC_COLOR_FILTER, TSHIRT_DESIGN_AREAS,
   SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_AREA_FILTER,
@@ -173,11 +174,18 @@ export default function AdminSketchesPage() {
   // each render busts the `eff` memo in ShirtDecal and reprojects for nothing.
   const [transforms, setTransforms] = useState<Record<string, DesignTransform>>({})
   const [editArea, setEditArea] = useState<string | null>(null)
+  // Guides off while the share-link snapshot is taken: the dashed
+  // placeholder boxes are an authoring aid, and the customer's share page
+  // never shows them. `editArea` deliberately stays put, so the snapshot
+  // keeps facing whatever the owner was looking at.
+  const [capturing, setCapturing] = useState(false)
   // Size slider: `input` fires on every step of a drag, and each committed step
   // is a full DecalGeometry rebuild (248 ms on the t-shirt). The live value
   // previews imperatively through this ref; only release commits. Filled by the
   // drag controller while an area is being edited.
   const previewRef = useRef<DecalPreviewFn | null>(null)
+  // Wraps the 3D stage, so the share-link snapshot can find its WebGL canvas.
+  const previewBoxRef = useRef<HTMLDivElement | null>(null)
   const [sizeUi, setSizeUi] = useState(1)
   const coarse = useCoarsePointer()
 
@@ -314,6 +322,29 @@ export default function AdminSketchesPage() {
     setCreating(true)
     try {
       const sessionId = `sketch-${Date.now()}`
+      // Snapshot the stage FIRST, so the link preview is exactly the frame the
+      // owner was looking at when they clicked. Isolated in its own try: a
+      // failed capture or upload must cost the preview only — never the sketch,
+      // which then simply falls back to the logo in the link preview.
+      let previewUrl: string | null = null
+      setCapturing(true)
+      try {
+        // React flushes the `capturing` re-render well inside the snapshot's
+        // 500ms stability window, and a guide disappearing resets that window —
+        // so the frame that gets captured is always the guide-free one.
+        const shot = await captureSketchPreview(previewBoxRef.current, Object.values(previews))
+        if (shot) {
+          previewUrl = await uploadDesignFile(
+            new File([shot], 'preview.jpg', { type: 'image/jpeg' }),
+            sessionId,
+            'preview.jpg',
+          )
+        }
+      } catch (err) {
+        console.error('Sketch preview unavailable — falling back to the logo:', err)
+      } finally {
+        setCapturing(false)
+      }
       const designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[] = []
       for (const [area, file] of Object.entries(files)) {
         const url = await uploadDesignFile(file, sessionId, generateUniqueFileName(file.name))
@@ -332,6 +363,9 @@ export default function AdminSketchesPage() {
         productType: productId,
         color: colorId,
         ...(typeId ? { fabricType: typeId } : {}),
+        // Absent, never `undefined` — lib/firebase.ts has no
+        // ignoreUndefinedProperties, so an explicit undefined makes addDoc throw.
+        ...(previewUrl ? { previewUrl } : {}),
         designs,
       })
       setShareUrl(`${window.location.origin}/share/${id}`)
@@ -378,13 +412,13 @@ export default function AdminSketchesPage() {
         ) : <span className="text-sm text-gray-400">תצוגה מקדימה</span>}
       </div>
     }>
-      <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
+      <div ref={previewBoxRef} className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
           warmAll
           noHint
           colorHex={colorHex}
           designs={previewDesigns}
-          showGuides
+          showGuides={!capturing}
           editArea={editArea ?? undefined}
           onCommit={commitTransform}
           previewRef={previewRef}
