@@ -212,7 +212,7 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
       <div class="item-block">
         <div class="item-header">
           <h2>פריט ${items.length > 1 ? `#${index + 1} - ` : ''}${escapeHtml(getProductLabel(item.productType))}</h2>
-          <p>צבע: ${escapeHtml(getColorLabel(item.color))} ${item.fabricType ? `• ${escapeHtml(getTypeLabel(item.fabricType))}` : ''} • ${item.totalQuantity} יחידות</p>
+          <p>צבע: ${escapeHtml(getColorLabel(item.color, item.productType))} ${item.fabricType ? `• ${escapeHtml(getTypeLabel(item.fabricType))}` : ''} • ${item.totalQuantity} יחידות</p>
         </div>
 
         ${frontImg ? `

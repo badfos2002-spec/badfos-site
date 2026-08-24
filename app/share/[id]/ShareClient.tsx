@@ -238,7 +238,7 @@ export default function ShareClient() {
                   it goes back to being an inset 3:4 card, unchanged. */}
               <div className="share-stage-fullbleed relative w-full overflow-hidden sm:aspect-[3/4] sm:rounded-2xl sm:shadow-lg">
                 <Preview3DStage
-                  colorHex={getColorHex(design.color)}
+                  colorHex={getColorHex(design.color, design.productType)}
                   designs={design.designs.map(d => ({ area: d.area, url: d.imageBase64, transform: d.transform }))}
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   variant={m3d.variant as any}

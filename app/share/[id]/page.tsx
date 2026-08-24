@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   // Labels come from the shared id→Hebrew lookups, so nothing raw from the
   // document is interpolated into the tags.
   const product = design?.productType ? getProductLabel(design.productType) : null
-  const color = design?.color ? getColorLabel(design.color) : null
+  const color = design?.color ? getColorLabel(design.color, design.productType) : null
 
   const title = product ? `הסקיצה שלך מוכנה — ${product} בהתאמה אישית | בדפוס` : FALLBACK_TITLE
   const description = product

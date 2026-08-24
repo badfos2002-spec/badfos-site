@@ -123,8 +123,8 @@ function MockupView({ view, color, designs, onClick }: {
 function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMockup: (view: 'front' | 'back', color: string, designs: SharedDesignData['designs']) => void }) {
   const hasFront = item.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'front')
   const hasBack = item.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'back')
-  const colorLabel = getColorLabel(item.color)
-  const colorHex = getColorHex(item.color)
+  const colorLabel = getColorLabel(item.color, item.productType)
+  const colorHex = getColorHex(item.color, item.productType)
   const productLabel = getProductLabel(item.productType)
   const productIcon = getProductIcon(item.productType)
   const m3d = getModel3D(item.productType, item.fabricType)
@@ -137,7 +137,7 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
           <ThreeErrorBoundary fallback={<MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />}>
             <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
               <Preview3DStage
-                colorHex={getColorHex(item.color)}
+                colorHex={getColorHex(item.color, item.productType)}
                 designs={item.designs.map(d => ({ area: d.area, url: d.imageBase64 }))}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 variant={m3d.variant as any}

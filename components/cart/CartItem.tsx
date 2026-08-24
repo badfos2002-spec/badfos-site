@@ -239,7 +239,7 @@ export default function CartItem({ item }: CartItemProps) {
                   }[item.productType] || item.productType}
                 </h3>
                 <p className="text-sm text-text-gray">
-                  {item.fabricType ? `${getTypeLabel(item.fabricType)} • ` : ''}{getColorLabel(item.color)}
+                  {item.fabricType ? `${getTypeLabel(item.fabricType)} • ` : ''}{getColorLabel(item.color, item.productType)}
                 </p>
               </div>
               <div className="flex gap-1">

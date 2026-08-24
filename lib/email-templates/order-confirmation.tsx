@@ -153,7 +153,7 @@ export function OrderConfirmationEmail({
             (item) => `
           <div class="item">
             <strong>${escapeHtml(getProductLabel(item.productType))}${item.fabricType ? ' - ' + escapeHtml(getTypeLabel(item.fabricType)) : ''}</strong><br>
-            צבע: ${escapeHtml(getColorLabel(item.color))}<br>
+            צבע: ${escapeHtml(getColorLabel(item.color, item.productType))}<br>
             כמות: ${item.totalQuantity} יחידות<br>
             מחיר: ₪${item.totalPrice}
           </div>

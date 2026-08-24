@@ -685,15 +685,41 @@ export function getColorsByProductType(productType: ProductType) {
   }
 }
 
+// Color ids are NOT globally unique — 'red' is a t-shirt red (#A81C22) and a
+// buff red (#8A0303). Resolving one without knowing the product picks whichever
+// palette happens to come first in the scan, so a shared design or an order can
+// render the wrong shade. Pass the product type whenever the caller has it and
+// the id resolves against THAT product's palette; the plain single-argument form
+// keeps the historic global scan for callers with no product context.
+const PRODUCT_COLOR_PALETTES: Record<string, readonly { id: string; name: string; hex: string }[]> = {
+  tshirt: TSHIRT_COLORS,
+  sweatshirt: SWEATSHIRT_COLORS,
+  cap: CAP_COLORS,
+  buff: BUFF_COLORS,
+  apron: APRON_COLORS,
+  baby: BABY_COLORS,
+  tote: TOTE_COLORS,
+  vest: VEST_COLORS,
+}
+
+// Historic scan order, kept exactly as-is: it is the fallback both for callers
+// without a product type and for ids missing from the product's own palette
+// (e.g. an old order whose color was since retired from that palette).
+const ALL_COLORS: readonly { id: string; name: string; hex: string }[] = [
+  ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
+  ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS, ...VEST_COLORS,
+]
+
+function findColor(id: string, productType?: string) {
+  const palette = productType ? PRODUCT_COLOR_PALETTES[productType] : undefined
+  return palette?.find(c => c.id === id) ?? ALL_COLORS.find(c => c.id === id)
+}
+
 // Hebrew label helpers — resolve any color / type / product id to its Hebrew
 // name across ALL product categories, so the admin, emails and cart always
 // show Hebrew (never a raw english id). Falls back to the id if unknown.
-export function getColorLabel(id: string): string {
-  const all: readonly { id: string; name: string }[] = [
-    ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
-    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS, ...VEST_COLORS,
-  ]
-  return all.find(c => c.id === id)?.name ?? id
+export function getColorLabel(id: string, productType?: string): string {
+  return findColor(id, productType)?.name ?? id
 }
 
 export function getTypeLabel(id: string): string {
@@ -707,12 +733,8 @@ export function getProductLabel(id: string): string {
   return (PRODUCT_CATEGORIES as readonly { id: string; name: string }[]).find(p => p.id === id)?.name ?? id
 }
 
-export function getColorHex(id: string): string {
-  const all: readonly { id: string; hex: string }[] = [
-    ...TSHIRT_COLORS, ...SWEATSHIRT_COLORS, ...CAP_COLORS,
-    ...BUFF_COLORS, ...APRON_COLORS, ...BABY_COLORS, ...TOTE_COLORS, ...VEST_COLORS,
-  ]
-  return all.find(c => c.id === id)?.hex ?? '#000000'
+export function getColorHex(id: string, productType?: string): string {
+  return findColor(id, productType)?.hex ?? '#000000'
 }
 
 // The 3D model for a product+type (null → no 3D model, use the 2D mockup).
