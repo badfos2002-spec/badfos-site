@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
 import { adminDb } from '@/lib/firebase-admin'
+import { applyPricingOverrides, getLiveShippingCost, EXPRESS_PICKUP } from '@/lib/constants'
+import { calculateItemPrice, applyQuantityDiscount } from '@/lib/pricing'
 
 // Hebrew copy shown to the customer if a charge is attempted while paused
 const ORDERS_PAUSED_MESSAGE = 'לא ניתן לבצע הזמנות כרגע — אנחנו חוזרים לפעילות בקרוב. העגלה שלכם נשמרת.'
@@ -45,60 +47,62 @@ async function areOrdersPaused(): Promise<boolean> {
   }
 }
 
-// Server-side price verification constants (mirrors lib/constants.ts)
-const BASE_PRICES: Record<string, number> = { tshirt: 37, sweatshirt: 53, buff: 8, cap: 0, apron: 29 }
-const FABRIC_SURCHARGES: Record<string, number> = { cotton: 0, 'dri-fit': 0, polo: 10, oversized: 10 }
-const AREA_SURCHARGES: Record<string, number> = { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, center: 10 }
-const SIZE_SURCHARGES: Record<string, number> = { '3XL': 12, '4XL': 12 }
-const SHIPPING_COST = 35
-const QUANTITY_DISCOUNT_THRESHOLD = 15
-const QUANTITY_DISCOUNT_PERCENT = 5
-// Express pickup surcharge — allowed only for small orders (mirrors EXPRESS_PICKUP in lib/constants.ts)
-const EXPRESS_COST = 50
-const EXPRESS_MAX_QUANTITY = 20
-
-function calculateServerAmount(items: any[], couponDiscount: number = 0): { amount: number; totalQuantity: number } {
-  let subtotal = 0
-  let totalQuantity = 0
-
-  for (const item of items) {
-    if (item.fixedPrice) {
-      for (const size of (item.sizes || [])) {
-        const sizeSurcharge = SIZE_SURCHARGES[size.size] || 0
-        subtotal += (item.fixedPrice + sizeSurcharge) * size.quantity
-        totalQuantity += size.quantity
-      }
-    } else {
-      const base = BASE_PRICES[item.productType] || 37
-      const fabric = FABRIC_SURCHARGES[item.fabricType] || 0
-      const areas = (item.designs || []).reduce((sum: number, d: any) => sum + (AREA_SURCHARGES[d.area] || 0), 0)
-      const pricePerUnit = base + fabric + areas
-      for (const size of (item.sizes || [])) {
-        const sizeSurcharge = SIZE_SURCHARGES[size.size] || 0
-        subtotal += (pricePerUnit + sizeSurcharge) * size.quantity
-        totalQuantity += size.quantity
-      }
-    }
+/**
+ * Server-side price verification — runs THE SAME code the cart runs.
+ *
+ * History, so nobody reintroduces the bug: this file used to carry its own
+ * hardcoded price table "mirroring" lib/constants.ts. It drifted — cap was 0
+ * (falsy → fell back to 37 instead of the real 30), and tote/baby/vest were
+ * missing entirely — so once verification started running on every request
+ * (checkout reorder, a423003), every cap/tote/vest/baby cart was refused with
+ * "Amount verification failed" and customers could not pay. A copied table
+ * WILL rot; calculateItemPrice/applyQuantityDiscount from lib/pricing are the
+ * exact functions the customer's cart used to display the total.
+ *
+ * Admin price overrides (settings/pricing, editable at /admin/pricing) are
+ * loaded into the same module state the client hydrates via PricingLoader —
+ * without this, any admin price change would break verification the same way.
+ * FAIL OPEN to code defaults if the doc is unreadable: verification still
+ * runs, only the override layer is skipped (grep: PRICING_OVERRIDES_UNREADABLE).
+ */
+async function loadPricingOverrides(): Promise<void> {
+  try {
+    const snap = await adminDb.collection('settings').doc('pricing').get()
+    applyPricingOverrides(snap.exists ? (snap.data() as Record<string, unknown>) ?? {} : {})
+  } catch (error) {
+    applyPricingOverrides({})
+    console.error(
+      '[PRICING_OVERRIDES_UNREADABLE] settings/pricing could not be read — verifying against code-default prices. ' +
+      'If the admin has overridden prices, legitimate carts may be refused until this recovers:',
+      error
+    )
   }
-
-  // Quantity discount
-  let discount = 0
-  if (totalQuantity >= QUANTITY_DISCOUNT_THRESHOLD) {
-    discount = subtotal * (QUANTITY_DISCOUNT_PERCENT / 100)
-  }
-
-  return { amount: subtotal - discount - couponDiscount, totalQuantity }
 }
 
 function verifyAmount(items: any[], clientAmount: number, couponDiscount: number = 0, express: boolean = false): boolean {
   if (!items || items.length === 0) return true
-  const { amount: serverAmount, totalQuantity } = calculateServerAmount(items, couponDiscount)
-  // Express pickup surcharge is legitimate ONLY for small orders (≤20 units) —
+
+  let subtotal = 0
+  let totalQuantity = 0
+  for (const item of items) {
+    // calculateItemPrice is the exact per-unit price the cart displayed,
+    // including fixed-price packages, per-product area prices and weighted
+    // size surcharges — all with admin overrides applied.
+    const unit = calculateItemPrice({ ...item, designs: item.designs || [], sizes: item.sizes || [] })
+    const qty = (item.sizes || []).reduce((sum: number, s: any) => sum + (Number(s?.quantity) || 0), 0)
+    subtotal += unit * qty
+    totalQuantity += qty
+  }
+
+  const discount = applyQuantityDiscount(totalQuantity, subtotal)
+  const serverAmount = subtotal - discount - couponDiscount
+
+  // Express pickup surcharge is legitimate ONLY for small orders —
   // never a silent ₪50 allowance on a big order
-  const expressAllowance = express && totalQuantity <= EXPRESS_MAX_QUANTITY ? EXPRESS_COST : 0
-  // Allow only shipping variance (₪0-35) + express (when eligible) + ₪2 rounding tolerance
+  const expressAllowance = express && totalQuantity <= EXPRESS_PICKUP.maxQuantity ? EXPRESS_PICKUP.cost : 0
+  // Allow only shipping variance + express (when eligible) + ₪2 rounding tolerance
   const min = serverAmount - 2 // rounding
-  const max = serverAmount + SHIPPING_COST + expressAllowance + 2 // shipping + express + rounding
+  const max = serverAmount + getLiveShippingCost('delivery') + expressAllowance + 2 // shipping + express + rounding
   if (clientAmount < min || clientAmount > max) {
     console.error(`Price mismatch: server=${serverAmount}, client=${clientAmount}, diff=${clientAmount - serverAmount}`)
     return false
@@ -139,8 +143,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Amount exceeds maximum allowed (₪10,000)' }, { status: 400 })
     }
 
-    // Server-side amount verification (if items provided)
+    // Server-side amount verification (if items provided) — against the same
+    // prices the cart showed, admin overrides included
     if (items && Array.isArray(items) && items.length > 0) {
+      await loadPricingOverrides()
       if (!verifyAmount(items, verifiedAmount, couponDiscount || 0, express === true)) {
         console.error('Amount mismatch: client sent', verifiedAmount, 'for items', JSON.stringify(items.map((i: any) => i.productType)))
         return NextResponse.json({ error: 'Amount verification failed' }, { status: 400 })
