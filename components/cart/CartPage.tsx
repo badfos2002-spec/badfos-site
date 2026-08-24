@@ -60,6 +60,19 @@ function stripUndefined<T>(obj: T): T {
 const ORDERS_PAUSED_TITLE = 'לא מקבלים הזמנות כרגע'
 const ORDERS_PAUSED_TEXT = 'אנחנו בהפסקה קצרה ולא מקבלים הזמנות חדשות ולא מבצעים חיובים. נחזור לפעילות בקרוב — העגלה שלכם נשמרת ותחכה לכם בדיוק כמו שהיא.'
 
+/**
+ * Payment-link creation failed AFTER the order was saved — the mirror risk of
+ * creating the order first. The order is a real `pending_payment` order: the
+ * customer's retry reuses it (badfos_pending_order → /api/order-sync) and the
+ * abandoned-cart flow (/api/notify-abandoned, and the 10-minute cart-revisit
+ * marking above) picks it up if they leave. So the copy promises exactly what
+ * is true: the order is saved, nothing was charged, retrying is safe.
+ */
+const PAYMENT_LINK_FAILED_MESSAGE =
+  'ההזמנה שלכם נשמרה אצלנו, אבל לא הצלחנו לפתוח את עמוד התשלום כרגע — לא בוצע שום חיוב.\n' +
+  'אפשר לנסות שוב עוד רגע (לא תיווצר הזמנה כפולה), או לשלוח לנו הודעה בוואטסאפ ' +
+  `${CONTACT_INFO.phone} ונשלח לכם קישור לתשלום.`
+
 /** Flat express surcharge — pickup only, never discounted */
 function getExpressCost(shipping: Shipping | null): number {
   return shipping?.method === 'pickup' && shipping.express
@@ -180,10 +193,6 @@ export default function CartPage() {
   })()
   const tempOrderIdRef = useRef(existingOrderId || `order-${Date.now()}`)
 
-  // Pre-fetch payment link cache
-  const paymentCacheRef = useRef<{ promise: Promise<any>; amount: number; key: string } | null>(null)
-  const [paymentReady, setPaymentReady] = useState(false)
-
   // Pre-upload design images in background while user fills contact/shipping
   useEffect(() => {
     if (items.length === 0) return
@@ -209,62 +218,15 @@ export default function CartPage() {
     }
   }, [items])
 
-  // Pre-fetch payment link as soon as customer info + shipping are ready
-  useEffect(() => {
-    if (ordersPaused) return
-    if (!customerInfo || !shipping || (items.length === 0 && packageItems.length === 0)) return
-    if (!/^05\d{8}$/.test(customerInfo.phone)) return
-
-    const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', couponDiscount, undefined, getExpressCost(shipping))
-    const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
-    const total = orderCalc.total + packagesTotal
-    // Fingerprint of cart contents — ANY cart mutation (item added/removed/edited,
-    // design swapped, quantity changed, package changed) must invalidate the cached link
-    const cartFingerprint = items
-      .map(i => `${i.id}:${i.totalQuantity}:${i.designs.map(d => `${d.area}.${d.imageUrl.length}`).join('+')}`)
-      .join('|') + '#' + packageItems.map(p => `${p.id}:${p.quantity}`).join('|')
-    const cacheKey = `${customerInfo.phone}-${total}-${couponCode}-${cartFingerprint}`
-
-    // Skip if already fetching same data
-    if (paymentCacheRef.current?.key === cacheKey) return
-
-    setPaymentReady(false)
-
-    // Check sessionStorage for a cached payment URL (from a previous attempt)
-    try {
-      const cached = sessionStorage.getItem('badfos_payment_cache')
-      if (cached) {
-        const parsed = JSON.parse(cached)
-        if (parsed.key === cacheKey && parsed.url) {
-          paymentCacheRef.current = { promise: Promise.resolve({ url: parsed.url }), amount: total, key: cacheKey }
-          setPaymentReady(true)
-          return
-        }
-      }
-    } catch {}
-
-    const promise = fetch('/api/payment/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        orderId: tempOrderIdRef.current,
-        amount: total,
-        name: `${customerInfo.firstName} ${customerInfo.lastName}`,
-        phone: customerInfo.phone,
-        email: customerInfo.email,
-        description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
-        ...(getGclid() && { gclid: getGclid() }),
-      }),
-    }).then(r => r.json()).then(data => {
-      if (data?.url) {
-        try { sessionStorage.setItem('badfos_payment_cache', JSON.stringify({ key: cacheKey, url: data.url })) } catch {}
-        setPaymentReady(true)
-      }
-      return data
-    }).catch(() => null)
-
-    paymentCacheRef.current = { promise, amount: total, key: cacheKey }
-  }, [customerInfo, shipping, items, packageItems, couponDiscount, couponCode, ordersPaused])
+  // The green "ready" pulse next to the secure-payment note: everything needed
+  // to start a charge is filled in. It used to mean "a payment link is already
+  // pre-fetched" — payment links are no longer created before the order exists.
+  const paymentReady =
+    !ordersPaused &&
+    !!customerInfo &&
+    !!shipping &&
+    /^05\d{8}$/.test(customerInfo.phone) &&
+    (items.length > 0 || packageItems.length > 0)
 
   const handleCheckout = async () => {
     if (checkoutInProgress.current) return
@@ -309,8 +271,7 @@ export default function CartPage() {
             effectiveCouponCode = ''
             setCouponDiscount(0)
             setCouponCode('')
-            // Invalidate the pre-fetched payment link — its amount includes the removed coupon
-            paymentCacheRef.current = null
+            // Invalidate any cached payment link — its amount includes the removed coupon
             try { sessionStorage.removeItem('badfos_payment_cache') } catch {}
             alert('הקופון שהוזן אישי ללקוח אחר ולכן הוסר מההזמנה')
           }
@@ -409,7 +370,6 @@ export default function CartPage() {
             console.error('Order sync skipped, creating a fresh order:', sync?.reason)
             tempOrderId = `order-${Date.now()}`
             tempOrderIdRef.current = tempOrderId
-            paymentCacheRef.current = null
             try {
               sessionStorage.removeItem('badfos_payment_cache')
               sessionStorage.removeItem('badfos_pending_order')
@@ -429,65 +389,25 @@ export default function CartPage() {
         }
       }
 
-      setLoadingMessage('יוצר לינק תשלום...')
+      setLoadingMessage('שומר הזמנה...')
 
-      // Use pre-fetched payment link if amount matches, otherwise create new
-      let paymentPromise: Promise<any>
-      const cached = paymentCacheRef.current
-      if (cached && cached.amount === orderCalc.total) {
-        paymentPromise = cached.promise
-      } else {
-        paymentPromise = fetch('/api/payment/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: tempOrderId,
-            amount: orderCalc.total,
-            name: `${customerInfo.firstName} ${customerInfo.lastName}`,
-            phone: customerInfo.phone,
-            email: customerInfo.email,
-            description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
-            items: items.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
-            couponDiscount: effectiveCouponDiscount,
-            ...(expressCost > 0 && { express: true }),
-            ...(getGclid() && { gclid: getGclid() }),
-          }),
-        }).then(r => r.json())
-      }
+      // ── The order is persisted BEFORE any payment link exists ─────────────
+      // A Grow link created first is a link the customer can pay against while
+      // the order does not exist: /api/order/next-number is deliberately
+      // fail-closed (503 while the Admin SDK is down) and EVERY first-time
+      // checkout allocates a number here, so that failure used to strand a live
+      // payment link with nothing to mark paid. Now it fails before anything
+      // can charge — no link is ever requested.
+      let orderId: string
+      // Share link creation — non-blocking, overlaps the order write
+      let sharePromise: Promise<void> | null = null
 
-      const paymentData = await paymentPromise
-
-      if (paymentData.url) {
-        if (!isAuthorizedRedirect(paymentData.url)) {
-          throw new Error('כתובת התשלום אינה מאושרת')
-        }
-
-        setLoadingMessage('שומר הזמנה...')
-
-        // Skip creating order if one already exists (user pressed back and
+      if (reuseOrderId) {
+        // Skip creating an order if one already exists (user pressed back and
         // retried, or came back to a cart_abandoned order — synced above)
-        if (reuseOrderId) {
-          const orderId = reuseOrderId
-          const orderJson = JSON.stringify({
-            orderId,
-            customer: customerInfo,
-            items: itemsForOrder,
-            subtotal: orderCalc.subtotal,
-            discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
-            couponCode: effectiveCouponCode || '',
-            total: orderCalc.total,
-            express: expressCost > 0,
-            timestamp: Date.now(),
-          })
-          sessionStorage.setItem('badfos_pending_order', orderJson)
-          // Also save to cookie — survives cross-origin redirect from Grow
-          document.cookie = `badfos_pending_order=${encodeURIComponent(orderJson)}; max-age=3600; path=/; SameSite=Lax`
-          setLoadingMessage('מעביר לעמוד תשלום...')
-          window.location.href = paymentData.url
-          return
-        }
-
-        // Create order in Firestore BEFORE redirecting to payment (pending_payment status)
+        orderId = reuseOrderId
+      } else {
+        // Create order in Firestore BEFORE the payment link (pending_payment status)
         const orderData = stripUndefined({
           status: 'pending_payment' as const,
           paymentId: tempOrderId,
@@ -507,19 +427,15 @@ export default function CartPage() {
           subtotal: orderCalc.subtotal,
           discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
           ...(effectiveCouponCode && { couponCode: effectiveCouponCode }),
-          // orderCalc.total is the amount actually charged: when the pre-fetched
-          // payment link is reused its amount equals orderCalc.total, and when it
-          // doesn't match, a fresh link is created at orderCalc.total. Never use
-          // the cached amount here — it may be stale (e.g. pre-coupon).
+          // orderCalc.total is the amount actually charged: the payment link is
+          // created below at exactly this amount, and a cached link is only
+          // reused when its cache key carries this same total.
           total: orderCalc.total,
           ...(getGclid() && { gclid: getGclid() }),
         })
 
-        // Run order creation + share link in parallel for speed
-        const orderPromise = createOrder(orderData as any)
-
         // Share link creation — non-blocking, runs in parallel
-        const sharePromise = (async () => {
+        sharePromise = (async () => {
           const itemsWithDesigns2 = items.filter(item => item.designs.length > 0)
           if (itemsWithDesigns2.length === 0) return
           try {
@@ -549,8 +465,11 @@ export default function CartPage() {
           }
         })()
 
-        // Wait for order (critical) — share link can finish in background
-        const orderId = await orderPromise
+        // Wait for order (critical) — share link can finish in background.
+        // A throw here (e.g. the Hebrew ORDER_NUMBER_UNAVAILABLE_MESSAGE from
+        // getNextOrderNumber) reaches the catch below with NO payment link
+        // created and nothing to pay against.
+        orderId = await createOrder(orderData as any)
 
         // Customer returned with a personal BACK5 recovery coupon → link this new
         // order to the original abandoned one. Fire-and-forget: must never block
@@ -565,32 +484,90 @@ export default function CartPage() {
             }).catch(() => {})
           }
         } catch {}
-
-        const orderJson = JSON.stringify({
-          orderId,
-          customer: customerInfo,
-          items: itemsForOrder,
-          subtotal: orderCalc.subtotal,
-          discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
-          couponCode: effectiveCouponCode || '',
-          total: orderCalc.total,
-          express: expressCost > 0,
-          timestamp: Date.now(),
-        })
-        sessionStorage.setItem('badfos_pending_order', orderJson)
-        // Also save to cookie — survives cross-origin redirect from Grow
-        document.cookie = `badfos_pending_order=${encodeURIComponent(orderJson)}; max-age=3600; path=/; SameSite=Lax`
-
-        // Redirect immediately — don't wait for share link
-        setLoadingMessage('מעביר לעמוד תשלום...')
-        window.location.href = paymentData.url
-
-        // Let share link finish in background (best effort)
-        sharePromise.catch(() => {})
-        return
-      } else {
-        throw new Error(paymentData.error || 'No payment URL')
       }
+
+      // Track the order BEFORE the payment link exists. If link creation fails
+      // below, the customer's retry finds this orderId (existingOrderId →
+      // /api/order-sync) and reuses the SAME order instead of creating a
+      // duplicate — the #1312/#1313 failure mode.
+      const orderJson = JSON.stringify({
+        orderId,
+        customer: customerInfo,
+        items: itemsForOrder,
+        subtotal: orderCalc.subtotal,
+        discount: effectiveCouponDiscount + orderCalc.quantityDiscount,
+        couponCode: effectiveCouponCode || '',
+        total: orderCalc.total,
+        express: expressCost > 0,
+        timestamp: Date.now(),
+      })
+      sessionStorage.setItem('badfos_pending_order', orderJson)
+      // Also save to cookie — survives cross-origin redirect from Grow
+      document.cookie = `badfos_pending_order=${encodeURIComponent(orderJson)}; max-age=3600; path=/; SameSite=Lax`
+
+      setLoadingMessage('יוצר לינק תשלום...')
+
+      // A cached Grow link is reusable ONLY for the exact same charge: same
+      // payment identifier, same customer, same amount, same cart. ANY cart
+      // mutation (item added/removed/edited, design swapped, quantity or
+      // package changed) changes the fingerprint and forces a fresh link.
+      const cartFingerprint = items
+        .map(i => `${i.id}:${i.totalQuantity}:${i.designs.map(d => `${d.area}.${d.imageUrl.length}`).join('+')}`)
+        .join('|') + '#' + packageItems.map(p => `${p.id}:${p.quantity}`).join('|')
+      const cacheKey = `${tempOrderId}-${customerInfo.phone}-${orderCalc.total}-${effectiveCouponCode}-${cartFingerprint}`
+
+      // Reuse a link already created for this exact charge (customer pressed
+      // Back from Grow and checked out again) — it belongs to an order that,
+      // by construction, was persisted before the link was created.
+      let paymentUrl: string | null = null
+      try {
+        const cached = JSON.parse(sessionStorage.getItem('badfos_payment_cache') || 'null')
+        if (cached?.key === cacheKey && typeof cached.url === 'string') paymentUrl = cached.url
+      } catch {}
+
+      let paymentError: string | undefined
+      let paymentPaused = false
+      if (!paymentUrl) {
+        const paymentData = await fetch('/api/payment/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: tempOrderId,
+            amount: orderCalc.total,
+            name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+            phone: customerInfo.phone,
+            email: customerInfo.email,
+            description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
+            items: items.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
+            couponDiscount: effectiveCouponDiscount,
+            ...(expressCost > 0 && { express: true }),
+            ...(getGclid() && { gclid: getGclid() }),
+          }),
+        }).then(r => r.json()).catch(() => null)
+        paymentUrl = typeof paymentData?.url === 'string' ? paymentData.url : null
+        paymentError = typeof paymentData?.error === 'string' ? paymentData.error : undefined
+        paymentPaused = paymentData?.paused === true
+      }
+
+      // Whatever the source (fresh or cached), never redirect off the whitelist
+      if (!paymentUrl || !isAuthorizedRedirect(paymentUrl)) {
+        console.error('Payment link unavailable after the order was saved:', paymentError || paymentUrl || 'no url')
+        try { sessionStorage.removeItem('badfos_payment_cache') } catch {}
+        // The order is a real pending_payment order and stays tracked: a retry
+        // reuses it, and the abandoned-cart flow picks it up if the customer
+        // leaves. Nothing was charged — say exactly that, in Hebrew.
+        alert(paymentPaused && paymentError ? paymentError : PAYMENT_LINK_FAILED_MESSAGE)
+        return
+      }
+      try { sessionStorage.setItem('badfos_payment_cache', JSON.stringify({ key: cacheKey, url: paymentUrl })) } catch {}
+
+      // Redirect immediately — don't wait for share link
+      setLoadingMessage('מעביר לעמוד תשלום...')
+      window.location.href = paymentUrl
+
+      // Let share link finish in background (best effort)
+      sharePromise?.catch(() => {})
+      return
 
     } catch (error: any) {
       console.error('Checkout error:', error?.message || error)
