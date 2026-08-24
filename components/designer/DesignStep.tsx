@@ -39,7 +39,7 @@ import type { DesignArea } from '@/lib/types'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
-import { failImageFit, imageFitInfo } from '@/lib/image-fit'
+import { failImageFit } from '@/lib/image-fit'
 import { ImagePlus, CheckCircle, X } from 'lucide-react'
 
 interface DesignStepProps {
@@ -101,32 +101,125 @@ async function prepare(file: File): Promise<File> {
 }
 
 /**
- * The exact File that gets uploaded: an iPhone HEIC turned into JPEG first, then
- * lib/print-image.ts — which returns anything under the Storage cap
- * byte-identical and never reduces below print resolution.
+ * The image type these BYTES are, when it is one the whole pipeline already
+ * carries end to end: the mockup <img>, the cart, the mockup email, and the
+ * file the owner downloads and opens in his print software. `null` means "this
+ * may well decode in this browser, but is not something to hand on untouched"
+ * — HEIC and HEIF above all, which is the point of the caller below.
+ *
+ * Read from the file's own header, never from its name or its MIME type: iOS
+ * reports the very same photo as image/heic, as an empty string, or as an
+ * already-converted image/jpeg depending on how the customer picked it.
+ */
+async function pipelineFormat(file: File): Promise<string | null> {
+  const head = new Uint8Array(await file.slice(0, 64).arrayBuffer())
+  const tag = (i: number, s: string) => Array.from(s).every((c, k) => head[i + k] === c.charCodeAt(0))
+  const magic = (...v: number[]) => v.every((b, k) => head[k] === b)
+
+  if (magic(0xff, 0xd8, 0xff)) return 'image/jpeg'
+  if (magic(0x89, 0x50, 0x4e, 0x47)) return 'image/png'
+  if (tag(0, 'GIF8')) return 'image/gif'
+  if (tag(0, 'RIFF') && tag(8, 'WEBP')) return 'image/webp'
+  // ISO base media: an AVIF is fine to hand on, a HEIC is not, and BOTH are
+  // written with 'mif1' as the major brand often enough that the major brand
+  // alone cannot tell them apart — so read the whole compatible-brand list.
+  if (tag(4, 'ftyp')) {
+    const boxEnd = ((head[0] << 24) | (head[1] << 16) | (head[2] << 8) | head[3]) >>> 0
+    const end = Math.min(head.length, boxEnd || head.length)
+    for (let i = 8; i + 4 <= end; i += 4) if (tag(i, 'avif') || tag(i, 'avis')) return 'image/avif'
+  }
+  return null
+}
+
+/**
+ * How many pixels the re-encode canvas may have. iOS Safari silently hands back
+ * a BLANK canvas past ~16.7M pixels, and a current iPhone shoots 24MP
+ * (5712×4284) or 48MP HEIF — exactly the photos this path exists for, so
+ * without the clamp the fix would produce an empty print master on the newest
+ * phones. On a 4:3 frame the clamp lands at ~4730px on the long edge, above the
+ * 4000px print floor in lib/print-image.ts, so it gives up nothing that the
+ * print profile would not have given up anyway.
+ */
+const MAX_CANVAS_PX = 4096 * 4096
+
+/** The top rung lib/print-image.ts itself encodes at. */
+const REENCODE_QUALITY = 0.95
+
+/**
+ * Pixels the browser already decoded, as a JPEG the rest of the pipeline can
+ * carry. Native resolution bar the clamp above — lib/print-image.ts still has
+ * the last word on file size and never goes below the print floor.
+ */
+async function reencodeDecoded(bmp: ImageBitmap, file: File): Promise<File> {
+  const scale = Math.min(1, Math.sqrt(MAX_CANVAS_PX / (bmp.width * bmp.height)))
+  const w = Math.max(1, Math.round(bmp.width * scale))
+  const h = Math.max(1, Math.round(bmp.height * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  if (!ctx) failImageFit('undecodable', file.name, file.size)
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(bmp, 0, 0, w, h)
+  const blob = await new Promise<Blob | null>(resolve =>
+    canvas.toBlob(resolve, 'image/jpeg', REENCODE_QUALITY)
+  )
+  if (!blob) failImageFit('undecodable', file.name, file.size)
+  return new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' })
+}
+
+/**
+ * The exact File that gets uploaded, then lib/print-image.ts — which returns
+ * anything under the Storage cap byte-identical and never reduces below print
+ * resolution.
+ *
+ * ASK THE BROWSER FIRST, DO NOT GUESS FROM THE NAME.
+ * The customers this path exists for are on iPhones, and Safari decodes HEIC
+ * NATIVELY: `createImageBitmap` just works there. So the first thing tried is a
+ * plain decode, for every file. When it succeeds there is no library, no worker
+ * and no CSP problem — which matters, because heic2any runs libheif in a
+ * blob: worker that inherits this document's CSP and dies on EvalError while
+ * script-src (rightly) has no 'unsafe-eval'. Sniffing the extension first, as
+ * this used to, sent every one of those customers into the broken path.
+ *
+ * heic2any stays as the fallback for a browser that genuinely cannot decode the
+ * file — bounded, and with the same Hebrew dead end offering WhatsApp.
  */
 async function toPrintFile(file: File): Promise<File> {
-  const looksHeic = /image\/hei[cf]/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)
-  if (looksHeic) return prepare(await convertHeicToJpeg(file))
+  let bmp: ImageBitmap | null = null
   try {
-    return await prepare(file)
-  } catch (err) {
-    // Some HEIC files arrive with an empty or generic MIME type and miss the
-    // test above; they land here as "not an image" / "can't decode".
-    const reason = imageFitInfo(err).reason
-    if (reason !== 'not_image' && reason !== 'undecodable') throw err
-    // Only worth a HEIC attempt when the browser was never told what this is. A
-    // file that declares image/png and still will not decode is simply broken;
-    // handing that to heic2any leaves the customer on a spinner that never ends.
-    if (/^image\/(png|jpe?g|gif|webp|avif)$/i.test(file.type)) throw err
-    try {
-      return await prepare(await convertHeicToJpeg(file))
-    } catch {
-      // Not HEIC after all — rethrow the tagged original so the customer gets
-      // the specific Hebrew message instead of heic2any's English.
-      throw err
-    }
+    bmp = await createImageBitmap(file)
+  } catch {
+    // This browser cannot read it. Either a HEIC outside Safari, or a file that
+    // is genuinely broken — sorted out below.
   }
+
+  if (bmp) {
+    let converted: File
+    try {
+      const known = await pipelineFormat(file)
+      // Decodes here AND travels everywhere: upload the original bytes
+      // untouched, exactly as before this change. The one repair is the label:
+      // iOS hands over a perfectly good JPEG with an empty MIME type often
+      // enough that lib/image-fit.ts's `image/` test would refuse it, and the
+      // signature has just proved what these bytes are. Same bytes either way.
+      if (known) return await preparePrintFile(file.type.startsWith('image/') ? file : new File([file], file.name, { type: known }))
+      // Decodes here but cannot travel — the Safari HEIC case. Re-encode the
+      // pixels we are already holding rather than decoding the file twice.
+      converted = await reencodeDecoded(bmp, file)
+    } finally {
+      bmp.close()
+    }
+    return preparePrintFile(converted)
+  }
+
+  // Would not decode, and the browser was told this is a plain web image: the
+  // file is simply broken. Handing that to heic2any leaves the customer on a
+  // spinner until the timeout for nothing.
+  if (/^image\/(png|jpe?g|gif|webp|avif)$/i.test(file.type)) {
+    failImageFit('undecodable', file.name, file.size)
+  }
+  return prepare(await convertHeicToJpeg(file))
 }
 
 /** Let the browser fetch the uploaded file before the preview switches to it, so
