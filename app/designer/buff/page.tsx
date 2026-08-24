@@ -12,7 +12,7 @@ import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
-import { getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
+import { BUFF_COLORS, getBasePrice, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
 import nextDynamic from 'next/dynamic'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
@@ -23,23 +23,17 @@ const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Pre
   loading: () => <Preview3DLoading />,
 })
 
+// Keyed by BUFF_COLORS ids — the single source of truth for buff colours.
 const buffMockups: Record<string, string> = {
   red: '/assets/באף אדום.webp',
   green: '/assets/באף ירוק.webp',
   blue: '/assets/באף כחול.webp',
   orange: '/assets/באף כתום.webp',
   purple: '/assets/באף סגול.webp',
-  lightblue: '/assets/באף תכלת.webp',
+  turquoise: '/assets/באף תכלת.webp',
 }
 
-const colors = [
-  { id: 'red', name: 'אדום', hex: '#EF4444' },
-  { id: 'green', name: 'ירוק', hex: '#10B981' },
-  { id: 'blue', name: 'כחול', hex: '#3B82F6' },
-  { id: 'orange', name: 'כתום', hex: '#F97316' },
-  { id: 'purple', name: 'סגול', hex: '#8B5CF6' },
-  { id: 'lightblue', name: 'תכלת', hex: '#38BDF8' },
-]
+const colors = BUFF_COLORS
 
 const stepConfig = [
   { title: 'בחר צבע', icon: Palette },

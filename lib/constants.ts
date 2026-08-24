@@ -153,8 +153,8 @@ export const SWEATSHIRT_AREA_FILTER: Record<string, string[]> = {
 }
 
 export const BUFF_COLORS = [
-  { id: 'red', name: 'אדום', hex: '#EF4444' },
-  { id: 'navy', name: 'נייבי', hex: '#1E3A8A' },
+  { id: 'red', name: 'אדום', hex: '#8A0303' },
+  { id: 'blue', name: 'כחול', hex: '#3B82F6' },
   { id: 'purple', name: 'סגול', hex: '#A855F7' },
   { id: 'orange', name: 'כתום', hex: '#F97316' },
   { id: 'green', name: 'ירוק', hex: '#10B981' },
