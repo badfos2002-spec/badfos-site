@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase-admin'
+import { adminDb, adminSdkUnavailable } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import {
@@ -62,11 +62,23 @@ export async function GET(req: NextRequest) {
 
   const recipients = digestRecipients(settings)
   if (recipients.length === 0) {
-    // דילוג מכוון, לא שגיאה: הפיצ'ר נשלח עם נמענים ריקים במתכוון.
+    // ── תקלה מול דילוג מכוון ─────────────────────────────────────────────
+    // אין נמענים כי הבעלים לא הגדיר אותם = דילוג מכוון, 200.
+    // אין נמענים כי הקריאה ל-Firestore נכשלה = תקלה. קודם הוחזר 200 גם
+    // במקרה הזה — ה-cron של Vercel הציג ריצה ירוקה, והדוח פשוט הפסיק
+    // להגיע בלי שאיש ידע. 5xx הוא מה שגורם לריצה להיראות אדומה.
     const reason = settingsError ? 'settings_unavailable' : 'no_recipients'
+    if (settingsError) {
+      const unavailable = adminSdkUnavailable()
+      console.error(
+        `${unavailable ? '[ADMIN_SDK_UNAVAILABLE] ' : ''}Cost digest FAILED (${reason}): the recipient list ` +
+          `could not be read, so the weekly digest was not sent. Settings read failed: ${settingsError}` +
+          `${unavailable ? ` — Firebase Admin SDK is not initialised: ${unavailable}` : ''}`
+      )
+      return NextResponse.json({ success: false, skipped: true, reason }, { status: 503 })
+    }
     console.warn(
-      `Cost digest skipped (${reason}): no valid recipient addresses configured. ` +
-        `Set them at /admin/costs.${settingsError ? ` Settings read failed: ${settingsError}` : ''}`
+      `Cost digest skipped (${reason}): no valid recipient addresses configured. Set them at /admin/costs.`
     )
     return NextResponse.json({ success: true, skipped: true, reason }, { status: 200 })
   }

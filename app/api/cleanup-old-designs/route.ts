@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb, adminStorage } from '@/lib/firebase-admin'
+import { adminDb, adminStorage, adminSdkUnavailable } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import {
   runUpscaleForOrder,
@@ -43,6 +43,23 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization') || req.nextUrl.searchParams.get('secret')
   if (!CRON_SECRET || (auth !== CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // `adminStorage.bucket()` below sits OUTSIDE the try/catch that guards the
+  // rest of this handler, so with the Admin SDK down it threw an unhandled
+  // TypeError: Next answered a bare 500 with no body and the log showed a raw
+  // "Cannot read properties of undefined (reading 'bucket')" with nothing
+  // naming this route. Same outcome (nothing runs, the cron is red) but now
+  // it says which job died and why. Nothing below this line changes.
+  const unavailable = adminSdkUnavailable()
+  if (unavailable) {
+    console.error(
+      '[ADMIN_SDK_UNAVAILABLE] cleanup-old-designs did not run: no nightly Firestore backup, no 30-day design ' +
+      'cleanup, no sketch retention sweep and no emergency storage relief. Storage keeps growing until this is ' +
+      'fixed. Check FIREBASE_ADMIN_* on Vercel. Reason:',
+      unavailable
+    )
+    return NextResponse.json({ error: 'admin_sdk_unavailable' }, { status: 503 })
   }
 
   const bucket = adminStorage.bucket()

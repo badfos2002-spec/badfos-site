@@ -110,10 +110,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ consistent: false, healed })
   } catch (e) {
-    // The guard must never break the success page — swallow everything
+    // The guard must never break the success page — swallow everything. That
+    // direction is right and does not change here.
+    //
+    // `reason` is a fixed token, never e.message: this endpoint is public and
+    // unauthenticated, and it was echoing internals straight back — with the
+    // Admin SDK down the body read
+    // {"consistent":null,"reason":"Cannot read properties of undefined (reading 'collection')"}.
+    // The detail belongs in the server log.
     console.error('verify-order-sync endpoint error:', e)
-    const reason = e instanceof Error ? e.message : 'internal_error'
-    return NextResponse.json({ consistent: null, reason })
+    return NextResponse.json({ consistent: null, reason: 'internal_error' })
   }
 }
 

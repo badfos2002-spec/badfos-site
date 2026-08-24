@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminAuth } from '@/lib/firebase-admin'
+import { adminAuth, adminSdkUnavailable } from '@/lib/firebase-admin'
 import { runUpscaleForOrder } from '@/lib/upscale-order'
 
 export const runtime = 'nodejs'
@@ -21,6 +21,20 @@ export async function POST(request: NextRequest) {
     try {
       decoded = await adminAuth.verifyIdToken(idToken)
     } catch {
+      // A dead Admin SDK is not a bad token. verifyIdToken() on an undefined
+      // adminAuth throws a TypeError, which landed here and answered 401 —
+      // telling the logged-in owner to re-authenticate for a problem no login
+      // can fix, and telling any monitoring that someone was poking at admin
+      // auth. Fail closed either way; just say which failure it is.
+      const unavailable = adminSdkUnavailable()
+      if (unavailable) {
+        console.error(
+          '[ADMIN_SDK_UNAVAILABLE] retry-upscale: the admin token could not be verified because the Firebase ' +
+          'Admin SDK is not initialised — this is an outage, not a rejected login. Reason:',
+          unavailable
+        )
+        return NextResponse.json({ error: 'admin_sdk_unavailable' }, { status: 503 })
+      }
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     }
     if (decoded.email !== 'badfos2002@gmail.com' || decoded.email_verified !== true) {

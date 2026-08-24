@@ -123,9 +123,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ synced: true })
   } catch (e) {
     // A sync failure must never block checkout — the client treats any
-    // non-synced response as best-effort and continues to payment.
+    // non-synced response as best-effort and continues to payment. That
+    // direction is right and does not change here.
+    //
+    // The `reason` is a fixed token, never e.message: this endpoint is public
+    // and unauthenticated, and it was echoing internals straight back —
+    // with the Admin SDK down the body read
+    // {"synced":false,"reason":"Cannot read properties of undefined (reading 'collection')"}.
+    // The detail belongs in the server log, not in the response. 'internal_error'
+    // is deliberately NOT in CREATE_FRESH_ORDER_REASONS (lib/pending-order.ts),
+    // so the client still treats it as transient and reuses the order.
     console.error('order-sync endpoint error:', e)
-    const reason = e instanceof Error ? e.message : 'internal_error'
-    return NextResponse.json({ synced: false, reason })
+    return NextResponse.json({ synced: false, reason: 'internal_error' })
   }
 }

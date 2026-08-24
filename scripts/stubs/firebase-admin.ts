@@ -88,3 +88,12 @@ export const adminStorage = {
 
 export const adminAuth = {} as any
 export const adminApp = {} as any
+
+/**
+ * Mirrors the real helper. The doubles above are always present, so this stub
+ * reports a healthy SDK — the outage direction is covered separately by
+ * scripts/test-admin-sdk-outage.ts.
+ */
+export function adminSdkUnavailable(): string | null {
+  return null
+}

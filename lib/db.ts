@@ -180,17 +180,31 @@ export async function getAllDocuments<T>(
 // ============================================================================
 
 /**
+ * Shown to the customer when the order-number allocator is unreachable, so
+ * checkout cannot proceed. Hebrew — CartPage puts it straight into an alert.
+ */
+export const ORDER_NUMBER_UNAVAILABLE_MESSAGE =
+  'לא ניתן ליצור הזמנה כרגע — נסו שוב בעוד מספר דקות. העגלה שלכם נשמרת.'
+
+/**
  * Get the next order number (auto-increment)
  */
 export async function getNextOrderNumber(): Promise<number> {
   // Allocated server-side (admin SDK) so the browser never touches
   // `counters/orders` — firestore.rules lock `counters` to admins only.
   // The transaction there guarantees atomic, duplicate-free numbering.
+  //
+  // The message is Hebrew because it is CUSTOMER-FACING: CartPage's catch
+  // renders it verbatim in an alert. It used to read
+  // "אירעה שגיאה: Failed to allocate order number", which told the customer
+  // nothing and told us nothing either. If the allocator is down, checkout
+  // cannot continue (see the fail-closed rationale in the route) — so at least
+  // say so in their language, and say the cart is safe.
   const res = await fetch('/api/order/next-number', { method: 'POST' })
-  if (!res.ok) throw new Error('Failed to allocate order number')
+  if (!res.ok) throw new Error(ORDER_NUMBER_UNAVAILABLE_MESSAGE)
   const data = await res.json()
   if (typeof data?.orderNumber !== 'number') {
-    throw new Error('Invalid order number response')
+    throw new Error(ORDER_NUMBER_UNAVAILABLE_MESSAGE)
   }
   return data.orderNumber
 }

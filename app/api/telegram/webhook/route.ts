@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase-admin'
+import { adminDb, adminSdkUnavailable } from '@/lib/firebase-admin'
 import { sendTelegramMessage, parseSale, extractSaleFromPhoto } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
@@ -32,6 +32,43 @@ function jslDateKey(d: Date): string {
 function toDate(c: any): Date {
   return c?.toDate ? c.toDate() : new Date(c)
 }
+
+/**
+ * The bot must never go quiet on a sale it failed to record.
+ *
+ * Without this the Admin SDK being down made adminDb.collection(...).add()
+ * throw before the "✅ נרשם" reply, the outer catch answered Telegram with
+ * 200 { ok: true }, and the owner got NOTHING back: a real cash/Bit sale
+ * vanished with no retry (Telegram only redelivers on a non-2xx) and no trace
+ * anywhere the owner looks. Losing a revenue record silently is the worst
+ * outcome on this route, so say it out loud, in the chat.
+ *
+ * The 200 stays deliberate: a retry storm would double-record the same sale
+ * once the SDK recovers. Telling the owner to resend is both safer and
+ * something a human can act on.
+ *
+ * Returns true when it handled (refused) the request.
+ */
+async function refusedForSdkOutage(
+  chatId: number | string,
+  what: string,
+  reply: string
+): Promise<boolean> {
+  const unavailable = adminSdkUnavailable()
+  if (!unavailable) return false
+  console.error(
+    `[ADMIN_SDK_UNAVAILABLE] telegram webhook: ${what} — nothing was written to or read from Firestore. ` +
+    'The owner was told in-chat. Reason:',
+    unavailable
+  )
+  await sendTelegramMessage(chatId, reply)
+  return true
+}
+
+const SALE_NOT_SAVED =
+  '⚠️ לא הצלחתי לשמור — מסד הנתונים לא זמין כרגע.\nהעסקה לא נרשמה. נסה/י לשלוח אותה שוב בעוד כמה דקות.'
+const DATA_UNAVAILABLE =
+  '⚠️ מסד הנתונים לא זמין כרגע ואי אפשר להציג נתונים. נסה/י שוב בעוד כמה דקות.'
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,6 +126,11 @@ export async function POST(request: NextRequest) {
       if (isGroup && !caption.includes('מכירה')) {
         return NextResponse.json({ ok: true })
       }
+      // Checked before the vision call, not after: reading the screenshot costs
+      // money, and there is nowhere to store the result.
+      if (await refusedForSdkOutage(chatId, 'photo sale', SALE_NOT_SAVED)) {
+        return NextResponse.json({ ok: true })
+      }
       const fileId = msg.photo[msg.photo.length - 1].file_id // largest size
       await sendTelegramMessage(chatId, '📸 קורא את הצילום…')
       const sale = await extractSaleFromPhoto(fileId, caption)
@@ -131,6 +173,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (cmd === 'היום' || cmd === 'החודש') {
+      if (await refusedForSdkOutage(chatId, `command ${cmd}`, DATA_UNAVAILABLE)) {
+        return NextResponse.json({ ok: true })
+      }
       const snap = await adminDb
         .collection('manualSales')
         .orderBy('createdAt', 'desc')
@@ -162,6 +207,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (cmd === 'רשימה') {
+      if (await refusedForSdkOutage(chatId, 'command רשימה', DATA_UNAVAILABLE)) {
+        return NextResponse.json({ ok: true })
+      }
       const snap = await adminDb
         .collection('manualSales')
         .orderBy('createdAt', 'desc')
@@ -201,6 +249,10 @@ export async function POST(request: NextRequest) {
         chatId,
         'לא הצלחתי להבין 🤔\nפורמט: שם טלפון סכום סוג-תשלום\nלמשל: יוסי כהן 0501234567 150 ביט'
       )
+      return NextResponse.json({ ok: true })
+    }
+
+    if (await refusedForSdkOutage(chatId, 'text sale', SALE_NOT_SAVED)) {
       return NextResponse.json({ ok: true })
     }
 
