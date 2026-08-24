@@ -1,5 +1,30 @@
 /** @type {import('next').NextConfig} */
 
+/**
+ * worker-src — DO NOT DELETE. Kept out of the template literal below only so
+ * this note can sit next to it.
+ *
+ * Declaring worker-src at all stops workers inheriting from script-src, so it
+ * must name every worker the site legitimately creates:
+ *   blob:  heic2any builds its libheif worker from a blob: URL — that is how an
+ *          iPhone HEIC upload becomes a JPEG in the designer. Without it the
+ *          worker never starts and the conversion promise never settles: the
+ *          customer sits on a spinner until the 45s timeout in DesignStep.
+ *          three-stdlib's DRACOLoader/KTX2Loader build workers the same way.
+ *   'self' same-origin worker chunks, should Next ever emit one.
+ *
+ * blob: here is much narrower than blob: in script-src: it only permits
+ * starting a worker from a Blob this origin's own script already created. It
+ * does not let a <script> element or an import load a blob: URL.
+ *
+ * NOT SUFFICIENT ON ITS OWN for HEIC: a blob: worker inherits this document's
+ * CSP, and heic2any's libheif build evaluates a string at startup, so it still
+ * dies on EvalError while script-src has no 'unsafe-eval'. Fixing that means
+ * moving libheif to a same-origin worker file with its own path-scoped header
+ * below — NOT adding 'unsafe-eval' to the page-wide script-src.
+ */
+const WORKER_SRC = "worker-src 'self' blob:"
+
 const ContentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"}
@@ -15,6 +40,7 @@ const ContentSecurityPolicy = `
     https://ep1.adtrafficquality.google
     https://ep2.adtrafficquality.google
     https://connect.facebook.net;
+  ${WORKER_SRC};
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com data:;
   img-src 'self' data: blob: https:;
