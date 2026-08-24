@@ -12,29 +12,44 @@ import type { DecalPreviewFn } from './DecalDragController';
 // Camera position sets the viewing angle; Bounds auto-fits the distance.
 const CAMERA = { position: [0, 0, 3.2] as [number, number, number], fov: 30 };
 
-/** How far past the 3:4 framing each garment may be zoomed in before a
- *  turntable spin would touch the canvas edge. Measured off the rendered
- *  silhouette (canvas alpha) at every 15° of rotation, worst angle wins, with
- *  ~6% of the width kept as slack. 1 = the garment already fills the width and
- *  has no room at all; a variant missing from the map never zooms.
- *  Trailing % = how much of the canvas width the silhouette covers TODAY at its
- *  widest rotation — that is what leaves (or denies) the room. */
+/** The framing each garment gets on a canvas TALLER than 3:4 — i.e. the phone
+ *  full-screen share stage — relative to the 3:4 card framing. Above 1 the
+ *  garment is drawn larger than in a card; BELOW 1 it is deliberately drawn
+ *  smaller, because a card sits inside a padded page while this stage runs edge
+ *  to edge against the bezel, and several garments fill 95-99% of a card's width
+ *  once they spin.
+ *
+ *  Every entry is the zoom at which the silhouette still clears all four canvas
+ *  edges by 6% of the canvas width AT ITS WORST ROTATION — measured off the
+ *  rendered canvas alpha over a full 360° turntable sweep at 15° steps, on
+ *  360×640 / 390×844 / 430×932, with the worst angle of the worst viewport
+ *  deciding, then rounded DOWN to 1/100. A variant missing from the map keeps
+ *  the card framing (1).
+ *
+ *  Trailing % = the width the silhouette covered at its worst rotation BEFORE
+ *  this table was re-derived — that is what left (or denied) the room. */
 const MAX_ZOOM: Record<string, number> = {
-  tshirt: 1.15,      // 81%
-  polo: 1.25,        // 74%
-  oversized: 1,      // 96%
-  sweatshirt: 1,     // 97%
-  hoodie: 1,         // 98%
-  ziphoodie: 1,      // 98%
-  cap: 1.17,         // 80% (of a 1.2-margin frame)
-  meshcap: 1,        // 97% — side-on the visor nearly fills the frame already
-  tote: 1.7,         // 54%
-  totevolume: 1.65,  // 56%
-  dsbag: 1,          // 98%
-  buff: 1,           // 98% — an oval tube: end-on it is as wide as the frame
-  apron: 2.4,        // 38%
-  baby: 1.22,        // 76%
-  vest: 1.38,        // 67%
+  tshirt: 1.08,      // was 1.15 → 93.3%
+  polo: 1.17,        // was 1.25 → 87.2%
+  oversized: 0.91,   // was 1    → 95.4%
+  sweatshirt: 0.9,   // was 1    → 97.8%
+  hoodie: 0.88,      // was 1    → 95.4%
+  ziphoodie: 0.88,   // was 1    → 95.4%
+  cap: 1.09,         // was 1.17 → 93.9% (of a 1.2-margin frame)
+  meshcap: 0.9,      // was 1    → 96.7% — side-on the visor fills the frame
+  tote: 1.62,        // was 1.7  → 87.9%
+  totevolume: 1.56,  // was 1.65 → 91.4%
+  dsbag: 0.88,       // was 1    → 97.2%
+  buff: 0.81,        // was 1    → 88.9% AND cut off. An oval tube: its worst
+                     //   turn is a THIRD-ANGLE view that also swings well
+                     //   off-centre, so it reaches the edge long before the
+                     //   silhouette looks wide. Re-derived from a frame where
+                     //   it still clears the edge — at 1 it is clipped, and a
+                     //   clipped silhouette measures 0 however far it overruns.
+  apron: 2.4,        // unchanged — never reached: at 0.45, the tallest phone
+                     //   aspect there is, the aspect term itself stops at 1.67
+  baby: 1.14,        // was 1.22 → 89.1%
+  vest: 1.28,        // was 1.38 → 89.5%
 };
 
 /**
@@ -46,9 +61,14 @@ const MAX_ZOOM: Record<string, number> = {
  * a cap ends up 183 px tall inside 844 px.
  *
  * This gives that height back: shrink the margin in proportion to how much
- * taller than 3:4 the canvas is, but never past the point where a spin would
- * clip the garment. At aspect >= 3/4 the factor is exactly 1, so every designer
- * card, the cart, the sketch tool and desktop keep the framing they have.
+ * taller than 3:4 the canvas is, but never past the per-garment ceiling above,
+ * which is where a spin would come within 6% of the width of an edge.
+ *
+ * The "is this canvas taller than 3:4" test is what keeps every card, the cart,
+ * the sketch tool and desktop byte-identical: a canvas at 3:4 or wider pins the
+ * zoom at 1 and never reads MAX_ZOOM at all, so the entries below 1 — which pull
+ * a garment IN from a card framing that is too tight to sit against a phone
+ * bezel — reach the full-screen phone stage and nothing else.
  */
 function FitBounds({ variant, margin, refitKey, children }: {
   variant?: ShirtVariant;
@@ -57,7 +77,14 @@ function FitBounds({ variant, margin, refitKey, children }: {
   children: React.ReactNode;
 }) {
   const aspect = useThree((s) => s.size.width / s.size.height);
-  const zoom = Math.min(Math.max(0.75 / aspect, 1), MAX_ZOOM[variant ?? 'tshirt'] ?? 1);
+  const tall = 0.75 / aspect;
+  // The 1% deadband is load-bearing, not cosmetic: `aspect-[3/4]` resolves to a
+  // FRACTIONAL height, so a card measures 0.74999 as readily as 0.75. A bare
+  // `> 1` would drop it into the phone branch, and now that MAX_ZOOM holds
+  // entries below 1 that is a visible jump — a hoodie card would shrink 12% on
+  // a sub-pixel. No phone comes near: the tallest aspect in circulation (0.45)
+  // puts `tall` at 1.67.
+  const zoom = tall > 1.01 ? Math.min(tall, MAX_ZOOM[variant ?? 'tshirt'] ?? 1) : 1;
   return (
     <Bounds key={refitKey} fit clip margin={margin / zoom}>
       {children}
