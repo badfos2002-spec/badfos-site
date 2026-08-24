@@ -22,7 +22,10 @@
  * `keep`. A sketch is swept only when ALL of these hold:
  *
  *   1. it is not already swept,
- *   2. `createdAt` is a real Firestore Timestamp inside a sane date window,
+ *   2. `createdAt` is a real Firestore Timestamp inside a sane date window —
+ *      and so is `updatedAt` whenever the field is present at all (an edited
+ *      sketch is fresh work: age is measured from max(createdAt, updatedAt),
+ *      and an `updatedAt` we cannot read might be fresh, so it keeps),
  *   3. it is STRICTLY older than SKETCH_RETENTION_DAYS,
  *   4. it has a preview whose Storage path we can name — no preview means the
  *      link would be left with nothing to show, which is the one outcome this
@@ -130,7 +133,8 @@ export function isSketchPreviewUrl(value: unknown): value is string {
 export type SketchKeepReason =
   /** Already swept on an earlier run. */
   | 'already-swept'
-  /** No `createdAt`, or one that is not a Timestamp inside the sanity window. */
+  /** No `createdAt`, or one that is not a Timestamp inside the sanity window —
+   *  or an `updatedAt` that is present but not a readable, sane Timestamp. */
   | 'invalid-timestamp'
   /** Younger than (or exactly at) the retention boundary. */
   | 'within-retention'
@@ -164,7 +168,23 @@ export function planSketchSweep(data: unknown, nowMs: number): SketchSweepPlan {
     return { action: 'keep', reason: 'invalid-timestamp', ageMs: null }
   }
 
-  const ageMs = nowMs - createdMs
+  // updateSharedDesign (lib/db.ts) rewrites the designs and sets `updatedAt`:
+  // the artwork on the doc is as fresh as the update, so the retention clock
+  // restarts there. Absent field = never edited = the createdAt clock, exactly
+  // as before this field existed. PRESENT but unreadable (null, a bare number,
+  // a string) fails CLOSED — unlike createdAt, where a malformed value can only
+  // be old junk, a malformed updatedAt might be hiding yesterday's revision.
+  let effectiveMs = createdMs
+  if (doc.updatedAt !== undefined) {
+    const updatedMs = timestampMillis(doc.updatedAt)
+    if (updatedMs === null) return { action: 'keep', reason: 'invalid-timestamp', ageMs: null }
+    if (updatedMs > nowMs + MAX_CLOCK_SKEW_MS) {
+      return { action: 'keep', reason: 'invalid-timestamp', ageMs: null }
+    }
+    effectiveMs = Math.max(createdMs, updatedMs)
+  }
+
+  const ageMs = nowMs - effectiveMs
   if (ageMs <= SKETCH_RETENTION_MS) return { action: 'keep', reason: 'within-retention', ageMs }
 
   if (!isSketchPreviewUrl(doc.previewUrl)) return { action: 'keep', reason: 'no-preview', ageMs }

@@ -7,10 +7,12 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   query,
   where,
   orderBy,
   limit,
+  startAfter,
   Timestamp,
   WhereFilterOp,
   DocumentData,
@@ -784,6 +786,13 @@ export interface SharedDesignData {
   productType: string
   color: string
   fabricType?: string
+  /** Customer phone the admin typed into the sketch maker — identifies whose
+   *  sketch this is in the history list. Optional; never shown to customers
+   *  (the share page ignores it, and Firestore rules only let the admin LIST
+   *  this collection, so the field cannot be enumerated publicly). */
+  phone?: string
+  /** Free-text label for the history list, e.g. "יוסי - חולצות למסיבה". */
+  label?: string
   /** Snapshot of the 3D stage, used as og:image on /share/<id> so the WhatsApp
    *  link previews the customer's own sketch. Absent on documents created
    *  before this existed, and whenever the capture failed — /share/<id> then
@@ -820,6 +829,72 @@ export async function getSharedDesign(id: string): Promise<(SharedDesignData & {
   const snap = await getDoc(doc(db!, 'shared_designs', id))
   if (!snap.exists()) return null
   return { id: snap.id, ...snap.data() } as SharedDesignData & { id: string }
+}
+
+/**
+ * Update a shared design IN PLACE — the whole point is that the customer's
+ * existing /share/<id> link now shows the new revision, instead of the admin
+ * minting a new sketch (and a new link) for every "הזיזו קצת שמאלה".
+ *
+ * Admin-only by Firestore rules (`update: if isAdmin()`), called from the
+ * sketch maker with the admin signed in.
+ *
+ * Fields the new revision no longer carries are DELETED, not left behind:
+ * updateDoc merges, so a tshirt→buff edit would otherwise keep a stale
+ * `fabricType`, and a cleared phone would keep leaking into the history list.
+ * `previewUrl` is the exception — when the new capture failed the payload has
+ * no previewUrl key and the previous still is deliberately kept (a stale
+ * preview beats the logo).
+ *
+ * The sweep marks are cleared and `updatedAt` is set: an updated sketch is
+ * fresh work, so its 2-day retention clock restarts — lib/sketch-retention.ts
+ * measures age from max(createdAt, updatedAt). `createdAt` is never touched.
+ */
+export async function updateSharedDesign(id: string, data: SharedDesignData): Promise<void> {
+  ensureFirebase()
+  await updateDoc(doc(db!, 'shared_designs', id), {
+    ...data,
+    ...(data.fabricType ? {} : { fabricType: deleteField() }),
+    ...(data.phone ? {} : { phone: deleteField() }),
+    ...(data.label ? {} : { label: deleteField() }),
+    updatedAt: Timestamp.now(),
+    designsDeleted: deleteField(),
+    designsDeletedAt: deleteField(),
+  })
+}
+
+/** One row of the admin sketch history. `createdAt` is set by
+ *  createSharedDesign; `updatedAt` only by updateSharedDesign. */
+export interface SharedDesignHistoryItem extends SharedDesignData {
+  id: string
+  createdAt?: Timestamp
+  updatedAt?: Timestamp
+  designsDeletedAt?: Timestamp
+}
+
+/**
+ * Recent shared designs, newest first, for the admin history list.
+ *
+ * LIST (as opposed to get) requires isAdmin() in firestore.rules — this is
+ * what keeps customer phones un-enumerable while single-doc share links stay
+ * public. Cursor pagination by `createdAt` value: pass the previous call's
+ * `nextCursor` to fetch the next page; null cursor result means no more rows.
+ */
+export async function getRecentSharedDesigns(
+  pageSize: number,
+  after?: Timestamp
+): Promise<{ items: SharedDesignHistoryItem[]; nextCursor: Timestamp | null }> {
+  ensureFirebase()
+  const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc')]
+  if (after) constraints.push(startAfter(after))
+  // One extra row answers "is there another page" without a second query.
+  constraints.push(limit(pageSize + 1))
+  const snap = await getDocs(query(collection(db!, 'shared_designs'), ...constraints))
+  const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }) as SharedDesignHistoryItem)
+  const hasMore = docs.length > pageSize
+  const items = hasMore ? docs.slice(0, pageSize) : docs
+  const nextCursor = hasMore ? (items[items.length - 1].createdAt ?? null) : null
+  return { items, nextCursor }
 }
 
 // ============================================================================

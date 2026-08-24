@@ -3,12 +3,14 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info, AlertTriangle } from 'lucide-react'
+import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info, AlertTriangle, History, Pencil } from 'lucide-react'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { compressSketchImage, sketchUploadErrorMessage } from '@/lib/sketch-image'
 import { useCoarsePointer } from '@/hooks/useCoarsePointer'
-import { createSharedDesign } from '@/lib/db'
+import { createSharedDesign, updateSharedDesign, getRecentSharedDesigns, type SharedDesignData, type SharedDesignHistoryItem } from '@/lib/db'
 import { captureSketchPreview } from '@/lib/sketch-preview'
+import { isSketchPreviewUrl, timestampMillis } from '@/lib/sketch-retention'
+import type { Timestamp } from 'firebase/firestore'
 import {
   FABRIC_TYPES, TSHIRT_COLORS, FABRIC_COLOR_FILTER, TSHIRT_DESIGN_AREAS,
   SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_AREA_FILTER,
@@ -16,7 +18,7 @@ import {
   TOTE_TYPES, TOTE_COLORS, TOTE_COLOR_FILTER, TOTE_DESIGN_AREAS, TOTE_AREA_FILTER,
   BUFF_COLORS, BUFF_DESIGN_AREAS, APRON_COLORS, APRON_DESIGN_AREAS, BABY_COLORS, BABY_DESIGN_AREAS,
   VEST_COLORS, VEST_DESIGN_AREAS,
-  getModel3D,
+  getModel3D, getColorLabel, getProductLabel, getTypeLabel,
 } from '@/lib/constants'
 import nextDynamic from 'next/dynamic'
 import { DEFAULT_TRANSFORM, clampTransform, isDefaultTransform, type DesignTransform } from '@/components/designer/three/decalTransform'
@@ -164,6 +166,58 @@ function waPhone(raw: string): string {
   return d
 }
 
+/** History rows per fetch. */
+const HISTORY_PAGE = 20
+
+/** What the maker is editing, when it is not creating from scratch. */
+interface EditingState {
+  /** The `shared_designs` doc id — updates land on THIS doc, so the customer's
+   *  existing share link shows the new revision. */
+  id: string
+  /** The doc was swept (originals deleted): every original area must be
+   *  re-uploaded before an update can be saved. */
+  swept: boolean
+  /** Areas the swept doc had — the re-upload checklist. Empty when live. */
+  requiredAreas: string[]
+  /** The swept doc's preview still, shown as reference while re-uploading. */
+  sweptPreview: string | null
+}
+
+/** "24.08.26 14:05" from a Firestore Timestamp-ish value, or null. */
+function formatWhen(value: unknown): string | null {
+  const ms = timestampMillis(value)
+  if (ms === null) return null
+  const d = new Date(ms)
+  return `${d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`
+}
+
+/** Copy with the execCommand fallback (clipboard API needs a secure context). */
+async function copyText(text: string): Promise<void> {
+  try { await navigator.clipboard.writeText(text) } catch {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta)
+  }
+}
+
+/** History thumbnail: the sketch preview still, or a neutral placeholder when
+ *  there is none / it fails to load (never a broken-image icon). */
+function HistoryThumb({ src, alt }: { src: string | null; alt: string }) {
+  const [broken, setBroken] = useState(false)
+  if (!src || broken) {
+    return (
+      <div className="w-16 h-16 shrink-0 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
+        <Paintbrush className="w-5 h-5 text-gray-300" />
+      </div>
+    )
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={alt} onError={() => setBroken(true)}
+      className="w-16 h-16 shrink-0 rounded-lg border border-gray-200 object-cover bg-white" />
+  )
+}
+
 export default function AdminSketchesPage() {
   const [productId, setProductId] = useState('tshirt')
   const [typeId, setTypeId] = useState<string>('cotton')
@@ -171,8 +225,15 @@ export default function AdminSketchesPage() {
   const [files, setFiles] = useState<Record<string, File>>({})
   // Pre-background-removal originals, for undo.
   const [originals, setOriginals] = useState<Record<string, File>>({})
+  // Edit mode: artwork that ALREADY lives in Storage (per-area https URL).
+  // A new File in `files` shadows it; untouched areas keep these URLs on save
+  // and are never re-uploaded. Disjoint from nothing — `files` wins on merge.
+  const [existing, setExisting] = useState<Record<string, string>>({})
+  // Non-null while a history sketch is loaded for editing.
+  const [editing, setEditing] = useState<EditingState | null>(null)
   const [removingBg, setRemovingBg] = useState<string | null>(null)
   const [phone, setPhone] = useState('')
+  const [label, setLabel] = useState('')
   const [creating, setCreating] = useState(false)
   // Why the last attempt failed, in Hebrew the owner can act on. A generic
   // "יצירת הסקיצה נכשלה" is what hid a 15MB Storage-rule rejection for weeks.
@@ -199,6 +260,32 @@ export default function AdminSketchesPage() {
   const [sizeUi, setSizeUi] = useState(1)
   const coarse = useCoarsePointer()
 
+  // ── History ──
+  const [history, setHistory] = useState<SharedDesignHistoryItem[]>([])
+  const [historyCursor, setHistoryCursor] = useState<Timestamp | null>(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState(false)
+  const [copiedRow, setCopiedRow] = useState<string | null>(null)
+
+  const loadHistory = async (cursor: Timestamp | null) => {
+    setHistoryLoading(true)
+    setHistoryError(false)
+    try {
+      const { items, nextCursor } = await getRecentSharedDesigns(HISTORY_PAGE, cursor ?? undefined)
+      setHistory(prev => (cursor ? [...prev, ...items] : items))
+      setHistoryCursor(nextCursor)
+    } catch (err) {
+      console.error('Sketch history fetch failed:', err)
+      setHistoryError(true)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+  useEffect(() => {
+    loadHistory(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const product = PRODUCTS.find(p => p.id === productId)!
 
   const allowedColors = useMemo(() => {
@@ -213,25 +300,39 @@ export default function AdminSketchesPage() {
     return product.areas.filter(a => filter.includes(a.id))
   }, [product, typeId])
 
-  // Blob previews per area (revoked on change/unmount).
-  const previews = useMemo(() => {
+  // Blob previews for freshly uploaded files (revoked on change/unmount).
+  const blobPreviews = useMemo(() => {
     const map: Record<string, string> = {}
     for (const [area, file] of Object.entries(files)) map[area] = URL.createObjectURL(file)
     return map
   }, [files])
   useEffect(() => {
-    return () => { Object.values(previews).forEach(u => URL.revokeObjectURL(u)) }
-  }, [previews])
+    return () => { Object.values(blobPreviews).forEach(u => URL.revokeObjectURL(u)) }
+  }, [blobPreviews])
+  // What each area actually shows: a new File's blob URL when one was uploaded,
+  // else the already-stored https URL loaded from the doc being edited. The 3D
+  // stage takes either happily (the share page renders these same https URLs).
+  const previews = useMemo(() => ({ ...existing, ...blobPreviews }), [existing, blobPreviews])
 
   const selectProduct = (id: string) => {
     const p = PRODUCTS.find(x => x.id === id)!
+    const firstType = p.types ? p.types[0].id : ''
     setProductId(id)
-    setTypeId(p.types ? p.types[0].id : '')
+    setTypeId(firstType)
     setColorId('')
     setFiles({})
     setOriginals({})
+    // Existing artwork belongs to the areas of the product it was made for.
+    setExisting({})
     setTransforms({})
     setEditArea(null)
+    // Editing survives a product switch (updating the sketch to a sweatshirt is
+    // legitimate), but a swept doc's re-upload checklist must only name areas
+    // the NEW product can print — otherwise עדכן could never re-enable.
+    const af = p.areaFilter?.[firstType]
+    setEditing(prev => prev
+      ? { ...prev, requiredAreas: prev.requiredAreas.filter(a => p.areas.some(x => x.id === a) && (!af || af.includes(a))) }
+      : prev)
     setShareUrl(null)
   }
   const selectType = (id: string) => {
@@ -243,15 +344,22 @@ export default function AdminSketchesPage() {
     if (af) {
       setFiles(prev => Object.fromEntries(Object.entries(prev).filter(([a]) => af.includes(a))))
       setOriginals(prev => Object.fromEntries(Object.entries(prev).filter(([a]) => af.includes(a))))
+      setExisting(prev => Object.fromEntries(Object.entries(prev).filter(([a]) => af.includes(a))))
       // The transform of an area this fabric cannot print goes with its file.
       setTransforms(prev => Object.fromEntries(Object.entries(prev).filter(([a]) => af.includes(a))))
+      // A swept sketch's re-upload checklist can only ask for areas that exist.
+      setEditing(prev => prev ? { ...prev, requiredAreas: prev.requiredAreas.filter(a => af.includes(a)) } : prev)
       if (editArea && !af.includes(editArea)) setEditArea(null)
     }
     setShareUrl(null)
   }
 
-  const uploadedCount = Object.keys(files).length
-  const canCreate = uploadedCount > 0 && !!colorId && !creating
+  const uploadedCount = Object.keys(previews).length
+  // Swept sketch: the originals are gone, so every area the doc had must be
+  // re-uploaded before an update may save — otherwise the update would write
+  // designs whose files no longer exist.
+  const missingReupload = editing?.swept ? editing.requiredAreas.filter(a => !files[a]) : []
+  const canCreate = uploadedCount > 0 && !!colorId && !creating && missingReupload.length === 0
 
   // What still blocks the button, in the order the form asks for it. A grey
   // button with no explanation is the whole problem — this drives BOTH the hint
@@ -260,8 +368,10 @@ export default function AdminSketchesPage() {
     const m: string[] = []
     if (!colorId) m.push('בחרו צבע')
     if (uploadedCount === 0) m.push('העלו קובץ עיצוב')
+    else if (missingReupload.length > 0) m.push('העלו מחדש את כל הקבצים')
     return m
-  }, [colorId, uploadedCount])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colorId, uploadedCount, missingReupload.length])
 
   const handleRemoveBg = async (areaId: string) => {
     const file = files[areaId]
@@ -327,8 +437,40 @@ export default function AdminSketchesPage() {
     setShareUrl(null)
   }
 
-  const handleCreate = async () => {
+  /**
+   * A duplicate must OWN its files. If the new doc borrowed the original's
+   * URLs, the original's retention sweep (which deletes the exact paths ITS
+   * doc names) would delete them out from under the duplicate while the
+   * duplicate is still fresh. Fetched through the same-origin design proxy —
+   * Firebase download URLs serve without CORS headers.
+   */
+  const copyExistingFile = async (url: string, sessionId: string, area: string): Promise<string> => {
+    // Legacy pre-Storage sketches inlined the image itself — self-contained,
+    // nothing in Storage to copy.
+    if (url.startsWith('data:')) return url
+    const res = await fetch(`/api/design-proxy?url=${encodeURIComponent(url)}`)
+    if (!res.ok) throw new Error(`לא הצלחנו להעתיק קובץ קיים (${res.status})`)
+    const blob = await res.blob()
+    const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : blob.type.includes('svg') ? 'svg' : 'jpg'
+    const f = new File([blob], `${area}-copy.${ext}`, { type: blob.type || 'image/png' })
+    return uploadDesignFile(f, sessionId, generateUniqueFileName(f.name))
+  }
+
+  /**
+   * One save path for all three flows:
+   *  - 'create'    — today's fresh sketch, byte-for-byte (new doc, preview.jpg).
+   *  - 'update'    — writes the SAME doc, so the customer's existing link shows
+   *    the new revision. The preview goes up under a NEW filename: WhatsApp
+   *    caches per URL, so overwriting preview.jpg would keep showing the stale
+   *    image; a fresh URL gets a fresh crawl.
+   *  - 'duplicate' — a new doc from the current state ("אותו דבר אבל בשחור"),
+   *    with existing files copied so the new sketch owns its Storage objects.
+   * Areas whose artwork was not touched keep their existing URL and are NOT
+   * re-uploaded ('update' only).
+   */
+  const handleSave = async (mode: 'create' | 'update' | 'duplicate') => {
     if (!canCreate) return
+    if (mode === 'update' && !editing) return
     setCreating(true)
     setErrorMsg(null)
     try {
@@ -336,7 +478,8 @@ export default function AdminSketchesPage() {
       // Snapshot the stage FIRST, so the link preview is exactly the frame the
       // owner was looking at when they clicked. Isolated in its own try: a
       // failed capture or upload must cost the preview only — never the sketch,
-      // which then simply falls back to the logo in the link preview.
+      // which then simply falls back to the logo in the link preview (on
+      // update: to the previous still, which updateSharedDesign keeps).
       let previewUrl: string | null = null
       setCapturing(true)
       try {
@@ -345,10 +488,11 @@ export default function AdminSketchesPage() {
         // so the frame that gets captured is always the guide-free one.
         const shot = await captureSketchPreview(previewBoxRef.current, Object.values(previews))
         if (shot) {
+          const previewName = mode === 'update' ? `preview-${Date.now()}.jpg` : 'preview.jpg'
           previewUrl = await uploadDesignFile(
-            new File([shot], 'preview.jpg', { type: 'image/jpeg' }),
+            new File([shot], previewName, { type: 'image/jpeg' }),
             sessionId,
-            'preview.jpg',
+            previewName,
           )
         }
       } catch (err) {
@@ -357,15 +501,25 @@ export default function AdminSketchesPage() {
         setCapturing(false)
       }
       const designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[] = []
-      for (const [area, file] of Object.entries(files)) {
-        // storage.rules rejects anything >=30MB under designs/, and Firebase
-        // surfaces that as `storage/unauthorized` — so shrink before uploading.
-        // Sketch files are illustration only and keep a much tighter budget than
-        // the rule allows; the print masters come from the customer designers,
-        // go through lib/print-image.ts, and are never routed through here.
-        const ready = await compressSketchImage(file)
-        if (ready !== file) console.info(`[sketch] ${file.name}: ${file.size} → ${ready.size} bytes (${ready.type})`)
-        const url = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
+      for (const area of Object.keys(previews)) {
+        const file = files[area]
+        let url: string
+        if (file) {
+          // storage.rules rejects anything >=30MB under designs/, and Firebase
+          // surfaces that as `storage/unauthorized` — so shrink before uploading.
+          // Sketch files are illustration only and keep a much tighter budget than
+          // the rule allows; the print masters come from the customer designers,
+          // go through lib/print-image.ts, and are never routed through here.
+          const ready = await compressSketchImage(file)
+          if (ready !== file) console.info(`[sketch] ${file.name}: ${file.size} → ${ready.size} bytes (${ready.type})`)
+          url = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
+        } else if (mode === 'duplicate') {
+          url = await copyExistingFile(existing[area], sessionId, area)
+        } else {
+          // Untouched area on update: the file already sits in Storage under
+          // this very doc — no re-upload, the URL carries over as-is.
+          url = existing[area]
+        }
         const areaName = product.areas.find(a => a.id === area)?.name || area
         // `imageBase64` historically holds the image source — an https Storage
         // URL works everywhere (share page <img> + 3D via the design proxy)
@@ -377,22 +531,93 @@ export default function AdminSketchesPage() {
         const t = transforms[area]
         designs.push({ area, areaName, imageBase64: url, ...(isDefaultTransform(t) ? {} : { transform: t }) })
       }
-      const id = await createSharedDesign({
+      const payload: SharedDesignData = {
         productType: productId,
         color: colorId,
         ...(typeId ? { fabricType: typeId } : {}),
         // Absent, never `undefined` — lib/firebase.ts has no
         // ignoreUndefinedProperties, so an explicit undefined makes addDoc throw.
         ...(previewUrl ? { previewUrl } : {}),
+        ...(phone.trim() ? { phone: phone.trim() } : {}),
+        ...(label.trim() ? { label: label.trim() } : {}),
         designs,
-      })
+      }
+      let id: string
+      if (mode === 'update') {
+        await updateSharedDesign(editing!.id, payload)
+        id = editing!.id
+      } else {
+        id = await createSharedDesign(payload)
+      }
+      if (mode !== 'create') {
+        // Stay in edit mode on the saved doc (duplicate switches to the copy):
+        // what was just uploaded is now "existing", so a follow-up tweak only
+        // re-uploads what it changes.
+        setExisting(Object.fromEntries(designs.map(d => [d.area, d.imageBase64])))
+        setFiles({})
+        setOriginals({})
+        setEditing({ id, swept: false, requiredAreas: [], sweptPreview: null })
+      }
       setShareUrl(`${window.location.origin}/share/${id}`)
+      loadHistory(null)
     } catch (err) {
-      console.error('Sketch creation failed:', err)
+      console.error('Sketch save failed:', err)
       setErrorMsg(sketchUploadErrorMessage(err))
     } finally {
       setCreating(false)
     }
+  }
+
+  /**
+   * Load a history sketch into the maker. Live artwork arrives as its https
+   * Storage URL (`existing`); a SWEPT sketch has no artwork left, so every
+   * area it had goes on the re-upload checklist and only its preview still is
+   * shown as reference — broken image URLs are never rendered.
+   */
+  const loadForEdit = (item: SharedDesignHistoryItem) => {
+    const p = PRODUCTS.find(x => x.id === item.productType)
+    if (!p) {
+      setErrorMsg(`מוצר לא מוכר בסקיצה הזו (${item.productType}) — אי אפשר לערוך אותה כאן`)
+      return
+    }
+    const fabric = item.fabricType && p.types?.some(t => t.id === item.fabricType)
+      ? item.fabricType
+      : (p.types ? p.types[0].id : '')
+    const swept = item.designsDeleted === true
+    const af = p.areaFilter?.[fabric]
+    const inAreas = (a: string) => p.areas.some(x => x.id === a) && (!af || af.includes(a))
+    const ex: Record<string, string> = {}
+    const tr: Record<string, DesignTransform> = {}
+    const docAreas: string[] = []
+    for (const d of item.designs ?? []) {
+      if (!inAreas(d.area)) continue
+      docAreas.push(d.area)
+      // https Storage URLs and legacy inline data: URLs both render; anything
+      // else (blob: from a dead session, junk) requires re-upload.
+      if (!swept && typeof d.imageBase64 === 'string' && (d.imageBase64.startsWith('https://') || d.imageBase64.startsWith('data:image/'))) {
+        ex[d.area] = d.imageBase64
+      }
+      if (d.transform && !isDefaultTransform(d.transform)) tr[d.area] = d.transform
+    }
+    setProductId(item.productType)
+    setTypeId(fabric)
+    setColorId(item.color)
+    setFiles({})
+    setOriginals({})
+    setExisting(ex)
+    setTransforms(tr)
+    setEditArea(null)
+    setPhone(item.phone ?? '')
+    setLabel(item.label ?? '')
+    setShareUrl(null)
+    setErrorMsg(null)
+    setEditing({
+      id: item.id,
+      swept,
+      requiredAreas: swept ? docAreas : [],
+      sweptPreview: swept && isSketchPreviewUrl(item.previewUrl) ? item.previewUrl : null,
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const waLink = useMemo(() => {
@@ -404,18 +629,28 @@ export default function AdminSketchesPage() {
 
   const copyLink = async () => {
     if (!shareUrl) return
-    try { await navigator.clipboard.writeText(shareUrl) } catch {
-      const ta = document.createElement('textarea')
-      ta.value = shareUrl
-      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta)
-    }
+    await copyText(shareUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const copyRowLink = async (id: string) => {
+    await copyText(`${window.location.origin}/share/${id}`)
+    setCopiedRow(id)
+    setTimeout(() => setCopiedRow(null), 2000)
+  }
+
+  // Built on click, not in render: window is not there during SSR.
+  const openRowWhatsApp = (item: SharedDesignHistoryItem) => {
+    const url = `${window.location.origin}/share/${item.id}`
+    const text = encodeURIComponent(`היי! הכנו עבורך סקיצה 🎨\nאפשר לצפות בה כאן:\n${url}`)
+    const p = waPhone(item.phone ?? '')
+    window.open(p.length >= 11 ? `https://wa.me/${p}?text=${text}` : `https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer')
+  }
+
   // Transforms go too — otherwise the previous customer's adjustment silently
-  // lands on the next sketch that uses the same areaId.
-  const resetAll = () => { setFiles({}); setOriginals({}); setTransforms({}); setEditArea(null); setColorId(''); setShareUrl(null); setPhone(''); setErrorMsg(null) }
+  // lands on the next sketch that uses the same areaId. Exits edit mode.
+  const resetAll = () => { setFiles({}); setOriginals({}); setExisting({}); setEditing(null); setTransforms({}); setEditArea(null); setColorId(''); setShareUrl(null); setPhone(''); setLabel(''); setErrorMsg(null) }
 
   // ── Preview ──
   const colorHex = allowedColors.find(c => c.id === colorId)?.hex ?? '#d1d5db'
@@ -588,14 +823,19 @@ export default function AdminSketchesPage() {
             <div className="grid grid-cols-2 gap-3">
               {allowedAreas.map(area => {
                 const file = files[area.id]
+                // Artwork present: a fresh File, or (edit mode) the sketch's
+                // already-stored https URL. Either way the card reads "filled".
+                const has = !!previews[area.id]
+                const required = !has && !!editing?.swept && editing.requiredAreas.includes(area.id)
                 return (
-                  <div key={area.id} className={`rounded-xl border-2 ${file ? 'border-green-300 bg-green-50' : 'border-dashed border-gray-300'} p-3`}>
+                  <div key={area.id} className={`rounded-xl border-2 ${has ? 'border-green-300 bg-green-50' : required ? 'border-dashed border-amber-400 bg-amber-50/50' : 'border-dashed border-gray-300'} p-3`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold text-gray-700">{area.name}</span>
-                      {file && (
+                      {has && (
                         <button onClick={() => {
                           setFiles(prev => { const u = { ...prev }; delete u[area.id]; return u })
                           setOriginals(prev => { const u = { ...prev }; delete u[area.id]; return u })
+                          setExisting(prev => { const u = { ...prev }; delete u[area.id]; return u })
                           // The adjustment belongs to the file that just left.
                           setTransforms(prev => { const u = { ...prev }; delete u[area.id]; return u })
                           if (editArea === area.id) setEditArea(null)
@@ -607,7 +847,7 @@ export default function AdminSketchesPage() {
                       )}
                     </div>
                     <label className="cursor-pointer block">
-                      {file ? (
+                      {has ? (
                         <div
                           className="w-full h-20 rounded-lg overflow-hidden border border-green-200 flex items-center justify-center"
                           style={{ background: 'repeating-conic-gradient(#e8e8e8 0 25%, #ffffff 0 50%) 0 0 / 14px 14px' }}
@@ -620,7 +860,7 @@ export default function AdminSketchesPage() {
                       ) : (
                         <div className="w-full h-20 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 transition-colors">
                           <ImagePlus className="w-6 h-6 mb-1" />
-                          <span className="text-[11px]">העלאת קובץ</span>
+                          <span className="text-[11px]">{required ? 'נדרשת העלאה מחדש' : 'העלאת קובץ'}</span>
                         </div>
                       )}
                       <input type="file" accept="image/*" className="hidden"
@@ -667,7 +907,30 @@ export default function AdminSketchesPage() {
           {/* Share */}
           <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
             <h3 className="font-bold text-sm">שיתוף ללקוח</h3>
+            {editing && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Pencil className="w-4 h-4 shrink-0 mt-px" />
+                  <span><b>עריכת סקיצה קיימת</b> — השמירה תעדכן את אותו קישור שכבר נשלח ללקוח.</span>
+                </div>
+                {editing.swept && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-amber-900">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
+                    <span>הקבצים נמחקו — עריכה מחייבת העלאה מחדש של כל האזורים.</span>
+                  </div>
+                )}
+                {editing.swept && editing.sweptPreview && (
+                  <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={editing.sweptPreview} alt="הסקיצה כפי שנשלחה"
+                      className="w-20 h-20 rounded-lg border border-blue-200 object-cover bg-white" />
+                    <span className="text-[11px] text-blue-700">כך הסקיצה נראתה — לייחוס בזמן ההעלאה מחדש</span>
+                  </div>
+                )}
+              </div>
+            )}
             <Input dir="ltr" inputMode="tel" placeholder="טלפון הלקוח (לא חובה) 050-1234567" value={phone} onChange={e => setPhone(e.target.value)} className="text-left" />
+            <Input placeholder='שם לזיהוי בהיסטוריה (לא חובה) — למשל "יוסי — חולצות למסיבה"' value={label} onChange={e => setLabel(e.target.value)} />
             {!shareUrl ? (
               <>
                 {errorMsg && (
@@ -679,14 +942,30 @@ export default function AdminSketchesPage() {
                 {missing.length > 0 && (
                   <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     <Info className="w-4 h-4 shrink-0 mt-px" />
-                    <span>כדי ליצור סקיצה: {missing.join(' ו')}</span>
+                    <span>{editing ? 'כדי לעדכן את הסקיצה' : 'כדי ליצור סקיצה'}: {missing.join(' ו')}</span>
                   </div>
                 )}
-                <Button onClick={handleCreate} disabled={!canCreate} className="w-full gradient-yellow text-white font-bold h-11 disabled:opacity-50">
-                  {creating
-                    ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />מעלה קבצים ויוצר סקיצה...</span>
-                    : missing.length > 0 ? `${missing.join(' ו')} כדי להמשיך` : 'צור סקיצה 🎨'}
-                </Button>
+                {editing ? (
+                  <div className="space-y-2">
+                    <Button onClick={() => handleSave('update')} disabled={!canCreate} className="w-full gradient-yellow text-white font-bold h-11 disabled:opacity-50">
+                      {creating
+                        ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />שומר את העדכון...</span>
+                        : missing.length > 0 ? `${missing.join(' ו')} כדי להמשיך` : 'עדכן סקיצה — אותו קישור 🎨'}
+                    </Button>
+                    <Button variant="outline" onClick={() => handleSave('duplicate')} disabled={!canCreate} className="w-full h-10 text-sm">
+                      <Copy className="w-4 h-4 ml-1" />שכפל כסקיצה חדשה (קישור חדש)
+                    </Button>
+                    <Button variant="outline" onClick={resetAll} disabled={creating} className="w-full h-9 text-xs text-gray-500">
+                      <X className="w-3.5 h-3.5 ml-1" />ביטול עריכה — סקיצה חדשה מאפס
+                    </Button>
+                  </div>
+                ) : (
+                  <Button onClick={() => handleSave('create')} disabled={!canCreate} className="w-full gradient-yellow text-white font-bold h-11 disabled:opacity-50">
+                    {creating
+                      ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />מעלה קבצים ויוצר סקיצה...</span>
+                      : missing.length > 0 ? `${missing.join(' ו')} כדי להמשיך` : 'צור סקיצה 🎨'}
+                  </Button>
+                )}
               </>
             ) : (
               <div className="space-y-2">
@@ -721,6 +1000,81 @@ export default function AdminSketchesPage() {
             {arrangeEl}
           </div>
         </div>
+      </div>
+
+      {/* ── History ── */}
+      <div className="mt-8 bg-white rounded-2xl border border-gray-200 p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <History className="w-4 h-4 text-gray-500" />
+          <h3 className="font-bold text-sm">סקיצות אחרונות</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-3">פתיחה לעריכה שומרת על אותו קישור אצל הלקוח — מעדכנים ושולחים שוב</p>
+        {historyError ? (
+          <div className="flex items-center gap-2 text-sm text-red-600">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>טעינת ההיסטוריה נכשלה</span>
+            <button onClick={() => loadHistory(null)} className="underline font-medium">נסו שוב</button>
+          </div>
+        ) : history.length === 0 && !historyLoading ? (
+          <p className="text-sm text-gray-400">עוד אין סקיצות — הראשונה שתיצרו תופיע כאן</p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {history.map(item => {
+              const swept = item.designsDeleted === true
+              const when = formatWhen(item.updatedAt ?? item.createdAt)
+              const details = [
+                getProductLabel(item.productType),
+                item.fabricType ? getTypeLabel(item.fabricType) : null,
+                getColorLabel(item.color, item.productType),
+              ].filter(Boolean).join(' · ')
+              return (
+                <div key={item.id}
+                  className={`py-3 flex flex-wrap items-center gap-3 ${editing?.id === item.id ? 'bg-yellow-50/70 -mx-2 px-2 rounded-lg' : ''}`}>
+                  <HistoryThumb src={isSketchPreviewUrl(item.previewUrl) ? item.previewUrl : null} alt={details} />
+                  <div className="flex-1 min-w-[180px]">
+                    <div className="text-sm font-bold text-gray-800 truncate">{item.label || details}</div>
+                    <div className="text-xs text-gray-500 flex flex-wrap items-center gap-x-2">
+                      {item.label && <span>{details}</span>}
+                      {when && <span>{when}{item.updatedAt ? ' (עודכן)' : ''}</span>}
+                      {item.phone && <span dir="ltr">{item.phone}</span>}
+                    </div>
+                    {swept && (
+                      <div className="mt-1 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700">
+                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        הקבצים נמחקו — עריכה מחייבת העלאה מחדש
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => loadForEdit(item)}
+                      className="flex items-center gap-1 h-8 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-yellow-400 hover:bg-yellow-50">
+                      <Pencil className="w-3.5 h-3.5" />פתח לעריכה
+                    </button>
+                    <button onClick={() => copyRowLink(item.id)}
+                      className="flex items-center gap-1 h-8 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">
+                      {copiedRow === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedRow === item.id ? 'הועתק' : 'העתק קישור'}
+                    </button>
+                    <button onClick={() => openRowWhatsApp(item)}
+                      className="flex items-center gap-1 h-8 px-2.5 rounded-md bg-[#25D366] text-xs font-bold text-white hover:opacity-90">
+                      <Share2 className="w-3.5 h-3.5" />וואטסאפ
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {historyLoading && (
+          <div className="flex items-center justify-center py-4 text-gray-400">
+            <Loader2 className="w-5 h-5 animate-spin" />
+          </div>
+        )}
+        {!historyLoading && historyCursor && (
+          <Button variant="outline" onClick={() => loadHistory(historyCursor)} className="w-full h-9 mt-3 text-xs text-gray-600">
+            טען עוד
+          </Button>
+        )}
       </div>
     </div>
   )

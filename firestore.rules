@@ -107,15 +107,22 @@ service cloud.firestore {
     }
 
     // ── Shared Designs ────────────────────────────────────────────────────────
-    // Anyone can create and read shared designs (public share links)
+    // Share links are single-doc getDoc reads (app/share/[id]/ShareClient.tsx),
+    // so `get` stays public and every existing link keeps working. `list` is
+    // admin-only: `allow read: if true` covered list too, which made the whole
+    // collection publicly enumerable — and it now carries customer phones for
+    // the admin history. Creation stays public (cart share + sketch maker).
     match /shared_designs/{designId} {
-      allow read, create: if true;
+      allow get, create: if true;
+      allow list: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
     // ── Shared Carts (multiple designs) ─────────────────────────────────────
+    // Same get/list split: the share-cart page only ever getDoc()s one id.
     match /shared_carts/{cartId} {
-      allow read, create: if true;
+      allow get, create: if true;
+      allow list: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
