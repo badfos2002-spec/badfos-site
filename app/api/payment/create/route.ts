@@ -8,19 +8,40 @@ const ORDERS_PAUSED_MESSAGE = 'לא ניתן לבצע הזמנות כרגע — 
 /**
  * The owner's "pause orders" switch (settings/orders → { paused: true }).
  *
- * FAIL CLOSED — a flag we cannot read counts as PAUSED and the charge is
- * refused. This is deliberate, do NOT "fix" it to fail open: while the shop is
- * paused, a transient Firestore error that blocks one checkout is far cheaper
- * than an unwanted charge the owner cannot service. The whole site is
- * Firestore-backed anyway, so a Firestore outage already means nothing works.
+ * FAIL OPEN — only an explicit `paused: true` refuses the charge. A read that
+ * throws (Firestore outage, a mis-rotated FIREBASE_ADMIN_* on Vercel) lets
+ * checkout continue, and is logged with the PAUSE_FLAG_UNREADABLE marker below.
+ *
+ * This used to fail CLOSED, and that was the right call at the time: the shop
+ * was deliberately closed, so an unreadable flag most likely still meant
+ * "paused", and one blocked checkout was far cheaper than a charge nobody was
+ * there to fulfil. The shop is open again, which inverts the cost — the same
+ * behaviour turns any transient Firestore hiccup into a site-wide payment
+ * outage whose only symptom is sales that never arrive. Losing every order to
+ * protect against a flag we cannot read is now the more expensive mistake.
+ *
+ * The trade-off is that a broken flag is invisible in normal operation, which
+ * is why the failure is logged loudly: grep Vercel logs for
+ * PAUSE_FLAG_UNREADABLE. If the shop ever closes for a stretch again, flipping
+ * this back to `return true` is defensible — make it a deliberate decision and
+ * re-read the paragraph above first.
+ *
+ * A MISSING settings/orders document is not a failure and is not a pause: the
+ * admin toggle (setOrdersPaused in lib/db.ts) always writes an explicit
+ * boolean, so a pause is never expressed by the document's absence. No
+ * document means the switch was never touched — i.e. the shop is open.
  */
 async function areOrdersPaused(): Promise<boolean> {
   try {
     const snap = await adminDb.collection('settings').doc('orders').get()
     return snap.exists && snap.data()?.paused === true
   } catch (error) {
-    console.error('Orders-pause flag unreadable — refusing payment (fail closed):', error)
-    return true
+    console.error(
+      '[PAUSE_FLAG_UNREADABLE] settings/orders could not be read — allowing the charge through (fail open). ' +
+      'The pause switch is NOT being enforced right now; check FIREBASE_ADMIN_* on Vercel and Firestore health:',
+      error
+    )
+    return false
   }
 }
 
