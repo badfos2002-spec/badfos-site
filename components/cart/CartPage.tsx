@@ -219,14 +219,120 @@ export default function CartPage() {
   }, [items])
 
   // The green "ready" pulse next to the secure-payment note: everything needed
-  // to start a charge is filled in. It used to mean "a payment link is already
-  // pre-fetched" — payment links are no longer created before the order exists.
+  // to start a charge is filled in. It is also the trigger for the payment-link
+  // prefetch below.
   const paymentReady =
     !ordersPaused &&
     !!customerInfo &&
     !!shipping &&
     /^05\d{8}$/.test(customerInfo.phone) &&
     (items.length > 0 || packageItems.length > 0)
+
+  /**
+   * ONE place computes the charge: totals, cart fingerprint, cache key and the
+   * /api/payment/create request body. The form-time prefetch and the click
+   * path MUST agree byte-for-byte — a prefetched link is only ever reused when
+   * this exact computation reproduces the exact same cache key.
+   *
+   * The cache key covers everything that affects the charge: any item /
+   * design / quantity / package mutation changes cartFingerprint, and coupon,
+   * express, shipping-method and size-surcharge changes all land in
+   * orderCalc.total. Same paymentId + same phone + same total + same cart ⇒
+   * the same charge ⇒ the link is safely reusable. Anything else ⇒ cache miss
+   * ⇒ a fresh link at the fresh amount.
+   */
+  const buildPaymentPlan = (info: CustomerInfo, ship: Shipping, cCode: string, cDiscount: number) => {
+    const expressCost = getExpressCost(ship)
+    const orderCalc = calculateOrderTotal(items, ship.method as 'delivery' | 'pickup', cDiscount, undefined, expressCost)
+    // Add package totals
+    const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
+    orderCalc.subtotal += packagesTotal
+    orderCalc.total += packagesTotal
+    const cartFingerprint = items
+      .map(i => `${i.id}:${i.totalQuantity}:${i.designs.map(d => `${d.area}.${d.imageUrl.length}`).join('+')}`)
+      .join('|') + '#' + packageItems.map(p => `${p.id}:${p.quantity}`).join('|')
+    const cacheKey = `${tempOrderIdRef.current}-${info.phone}-${orderCalc.total}-${cCode}-${cartFingerprint}`
+    const paymentBody = {
+      orderId: tempOrderIdRef.current,
+      amount: orderCalc.total,
+      name: `${info.firstName} ${info.lastName}`,
+      phone: info.phone,
+      email: info.email,
+      description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
+      // items are ALWAYS sent — server-side amount verification must run on
+      // EVERY link request, prefetches included. (The old pre-fetch omitted
+      // them and silently skipped verifyAmount — never again.)
+      items: items.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
+      couponDiscount: cDiscount,
+      ...(expressCost > 0 && { express: true }),
+      ...(getGclid() && { gclid: getGclid() }),
+    }
+    return { expressCost, orderCalc, cacheKey, paymentBody }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const requestPaymentLink = (paymentBody: Record<string, unknown>): Promise<any> =>
+    fetch('/api/payment/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentBody),
+    }).then(r => r.json()).catch(() => null)
+
+  /** A link already created for this EXACT charge (see buildPaymentPlan), or null */
+  const readCachedPaymentUrl = (cacheKey: string): string | null => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('badfos_payment_cache') || 'null')
+      if (cached?.key === cacheKey && typeof cached.url === 'string') return cached.url
+    } catch {}
+    return null
+  }
+
+  /**
+   * Prefetch the Grow payment link while the customer is still on the form.
+   *
+   * This buys back the old flow's speed WITHOUT its two bugs:
+   * - The customer is never NAVIGATED anywhere early — handleCheckout persists
+   *   the order first, always. A link that exists at Grow but was never handed
+   *   to anyone is harmless.
+   * - The prefetch carries full `items` + amount, so server-side amount
+   *   verification runs on it exactly like on a click-time request.
+   *
+   * Debounced: the forms push a new customerInfo/shipping on every valid
+   * keystroke — only the state that survives 800ms quiet triggers a fetch, and
+   * an identical charge (same cache key) is never fetched twice.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prefetchRef = useRef<{ key: string; promise: Promise<any> } | null>(null)
+  useEffect(() => {
+    if (!paymentReady || loading) return
+    const timer = setTimeout(() => {
+      if (checkoutInProgress.current || !customerInfo || !shipping) return
+      const { orderCalc, cacheKey, paymentBody } = buildPaymentPlan(customerInfo, shipping, couponCode, couponDiscount)
+      if (orderCalc.total < 1) return
+      if (readCachedPaymentUrl(cacheKey)) return // this exact link already exists
+      if (prefetchRef.current?.key === cacheKey) return // already in flight
+      const promise = requestPaymentLink(paymentBody).then((data) => {
+        if (data?.paused === true) {
+          // The owner's kill switch flipped while the form was being filled —
+          // surface the pause UI now instead of after a doomed checkout.
+          setOrdersPaused(true)
+          return data
+        }
+        const url = typeof data?.url === 'string' ? data.url : null
+        if (url && isAuthorizedRedirect(url)) {
+          try { sessionStorage.setItem('badfos_payment_cache', JSON.stringify({ key: cacheKey, url })) } catch {}
+        } else if (prefetchRef.current?.key === cacheKey) {
+          // A failed prefetch must not poison checkout — clear it so the click
+          // path requests a fresh link instead of reusing this failure.
+          prefetchRef.current = null
+        }
+        return data
+      })
+      prefetchRef.current = { key: cacheKey, promise }
+    }, 800)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentReady, loading, customerInfo, shipping, couponCode, couponDiscount, items, packageItems])
 
   const handleCheckout = async () => {
     if (checkoutInProgress.current) return
@@ -251,45 +357,42 @@ export default function CartPage() {
     setLoadingMessage('מכין את ההזמנה...')
 
     try {
+      // Coupon re-validation and design-image resolution are independent —
+      // they run CONCURRENTLY; the totals below wait for both.
       // Re-validate personal coupons against the customer's phone.
       // A Firestore hiccup must NEVER block checkout — on error, proceed as today.
-      let effectiveCouponDiscount = couponDiscount
-      let effectiveCouponCode = couponCode
-      if (couponCode) {
-        try {
-          // Server-side re-validation (admin SDK) — strips a personal coupon
-          // that belongs to a different phone. The browser no longer reads the
-          // coupons collection directly.
-          const res = await fetch('/api/coupon/validate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: couponCode.trim().toUpperCase(), phone: customerInfo.phone }),
-          })
-          const data = await res.json().catch(() => null)
-          if (data && data.valid === false && data.reason === 'personal_wrong_phone') {
-            effectiveCouponDiscount = 0
-            effectiveCouponCode = ''
-            setCouponDiscount(0)
-            setCouponCode('')
-            // Invalidate any cached payment link — its amount includes the removed coupon
-            try { sessionStorage.removeItem('badfos_payment_cache') } catch {}
-            alert('הקופון שהוזן אישי ללקוח אחר ולכן הוסר מההזמנה')
-          }
-        } catch {}
-      }
-
-      // Calculate correct totals (including quantity discount + coupon + express)
-      const expressCost = getExpressCost(shipping)
-      const orderCalc = calculateOrderTotal(items, shipping.method as 'delivery' | 'pickup', effectiveCouponDiscount, undefined, expressCost)
-      // Add package totals
-      const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
-      orderCalc.subtotal += packagesTotal
-      orderCalc.total += packagesTotal
+      const couponPromise = (async () => {
+        let effectiveCouponDiscount = couponDiscount
+        let effectiveCouponCode = couponCode
+        if (couponCode) {
+          try {
+            // Server-side re-validation (admin SDK) — strips a personal coupon
+            // that belongs to a different phone. The browser no longer reads the
+            // coupons collection directly.
+            const res = await fetch('/api/coupon/validate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: couponCode.trim().toUpperCase(), phone: customerInfo.phone }),
+            })
+            const data = await res.json().catch(() => null)
+            if (data && data.valid === false && data.reason === 'personal_wrong_phone') {
+              effectiveCouponDiscount = 0
+              effectiveCouponCode = ''
+              setCouponDiscount(0)
+              setCouponCode('')
+              // Invalidate any cached payment link — its amount includes the removed coupon
+              try { sessionStorage.removeItem('badfos_payment_cache') } catch {}
+              alert('הקופון שהוזן אישי ללקוח אחר ולכן הוסר מההזמנה')
+            }
+          } catch {}
+        }
+        return { effectiveCouponDiscount, effectiveCouponCode }
+      })()
 
       // Use pre-uploaded images from cache, fallback to upload now if needed
       const cache = uploadCacheRef.current
       let tempOrderId = tempOrderIdRef.current
-      const itemsForOrder = await Promise.all(
+      const itemsPromise = Promise.all(
         items.map(async (item) => ({
           productType: item.productType,
           fabricType: item.fabricType,
@@ -315,6 +418,45 @@ export default function CartPage() {
           totalPrice: item.totalPrice,
         }))
       )
+
+      const [{ effectiveCouponDiscount, effectiveCouponCode }, itemsForOrder] =
+        await Promise.all([couponPromise, itemsPromise])
+
+      // Correct totals (quantity discount + coupon + express) + cache key +
+      // link request body — the SAME computation the form-time prefetch used.
+      let plan = buildPaymentPlan(customerInfo, shipping, effectiveCouponCode, effectiveCouponDiscount)
+      let orderCalc = plan.orderCalc
+      const expressCost = plan.expressCost
+
+      // ── Resolve the payment link EARLY, hand it over LATE ─────────────────
+      // A Grow link may exist before the order does (prefetched during
+      // form-fill, or requested here in parallel with the order write) — that
+      // is harmless while nobody sees it. What is NON-NEGOTIABLE is the other
+      // direction: the navigation at the bottom happens strictly AFTER the
+      // order document is persisted. A link created for an order that failed
+      // to persist is simply never handed out.
+      let linkSource: 'cache' | 'prefetch' | 'fresh' | null = null
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let linkPromise: Promise<any> | null = null
+      const cachedPaymentUrl = readCachedPaymentUrl(plan.cacheKey)
+      if (cachedPaymentUrl) {
+        // A link already created for this exact charge (form-time prefetch, or
+        // Back from Grow and retrying) — reuse it, skip the Make/Grow round trip.
+        linkSource = 'cache'
+        linkPromise = Promise.resolve({ url: cachedPaymentUrl })
+      } else if (prefetchRef.current?.key === plan.cacheKey) {
+        // The form-time prefetch for this exact charge is still in flight —
+        // await THAT promise instead of paying for a second link.
+        linkSource = 'prefetch'
+        linkPromise = prefetchRef.current.promise
+      } else if (!existingOrderId) {
+        // Fresh checkout, no usable prefetch: the payment identifier cannot
+        // change anymore, so the link request can overlap the order write below.
+        linkSource = 'fresh'
+        linkPromise = requestPaymentLink(plan.paymentBody)
+      }
+      // (Existing order + no usable cache: the link is requested only AFTER
+      // /api/order-sync below — the sync can rotate the payment identifier.)
 
       // ALWAYS reuse the existing pending order on an ACTIVE re-checkout —
       // even if >10 minutes passed and it was marked cart_abandoned.
@@ -375,6 +517,14 @@ export default function CartPage() {
               sessionStorage.removeItem('badfos_pending_order')
               document.cookie = 'badfos_pending_order=; max-age=0; path=/'
             } catch {}
+            // The rotated paymentId invalidates any link created for the old
+            // one — drop it and recompute the charge plan; a fresh link is
+            // requested after the new order is persisted below.
+            prefetchRef.current = null
+            linkSource = null
+            linkPromise = null
+            plan = buildPaymentPlan(customerInfo, shipping, effectiveCouponCode, effectiveCouponDiscount)
+            orderCalc = plan.orderCalc
           } else {
             // Transient server issue — sync is best-effort, keep reusing the
             // order exactly like before (payment still matches via webhook).
@@ -507,47 +657,24 @@ export default function CartPage() {
 
       setLoadingMessage('יוצר לינק תשלום...')
 
-      // A cached Grow link is reusable ONLY for the exact same charge: same
-      // payment identifier, same customer, same amount, same cart. ANY cart
-      // mutation (item added/removed/edited, design swapped, quantity or
-      // package changed) changes the fingerprint and forces a fresh link.
-      const cartFingerprint = items
-        .map(i => `${i.id}:${i.totalQuantity}:${i.designs.map(d => `${d.area}.${d.imageUrl.length}`).join('+')}`)
-        .join('|') + '#' + packageItems.map(p => `${p.id}:${p.quantity}`).join('|')
-      const cacheKey = `${tempOrderId}-${customerInfo.phone}-${orderCalc.total}-${effectiveCouponCode}-${cartFingerprint}`
-
-      // Reuse a link already created for this exact charge (customer pressed
-      // Back from Grow and checked out again) — it belongs to an order that,
-      // by construction, was persisted before the link was created.
-      let paymentUrl: string | null = null
-      try {
-        const cached = JSON.parse(sessionStorage.getItem('badfos_payment_cache') || 'null')
-        if (cached?.key === cacheKey && typeof cached.url === 'string') paymentUrl = cached.url
-      } catch {}
-
-      let paymentError: string | undefined
-      let paymentPaused = false
-      if (!paymentUrl) {
-        const paymentData = await fetch('/api/payment/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: tempOrderId,
-            amount: orderCalc.total,
-            name: `${customerInfo.firstName} ${customerInfo.lastName}`,
-            phone: customerInfo.phone,
-            email: customerInfo.email,
-            description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
-            items: items.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
-            couponDiscount: effectiveCouponDiscount,
-            ...(expressCost > 0 && { express: true }),
-            ...(getGclid() && { gclid: getGclid() }),
-          }),
-        }).then(r => r.json()).catch(() => null)
-        paymentUrl = typeof paymentData?.url === 'string' ? paymentData.url : null
-        paymentError = typeof paymentData?.error === 'string' ? paymentData.error : undefined
-        paymentPaused = paymentData?.paused === true
+      // The link was resolved early (cache / in-flight prefetch / parallel
+      // fetch) whenever it safely could be. Only the reuse path with no usable
+      // cache still requests it here, after order-sync settled the paymentId —
+      // today's sequential behaviour: correctness first, speed when possible.
+      if (!linkPromise) {
+        linkSource = 'fresh'
+        linkPromise = requestPaymentLink(plan.paymentBody)
       }
+      let paymentData = await linkPromise
+      if (typeof paymentData?.url !== 'string' && paymentData?.paused !== true && linkSource !== 'fresh') {
+        // A cached/prefetched link fell through (e.g. the prefetch failed after
+        // its promise was grabbed) — one fresh attempt, the sequential path.
+        linkSource = 'fresh'
+        paymentData = await requestPaymentLink(plan.paymentBody)
+      }
+      let paymentUrl: string | null = typeof paymentData?.url === 'string' ? paymentData.url : null
+      const paymentError = typeof paymentData?.error === 'string' ? paymentData.error : undefined
+      const paymentPaused = paymentData?.paused === true
 
       // Whatever the source (fresh or cached), never redirect off the whitelist
       if (!paymentUrl || !isAuthorizedRedirect(paymentUrl)) {
@@ -559,7 +686,7 @@ export default function CartPage() {
         alert(paymentPaused && paymentError ? paymentError : PAYMENT_LINK_FAILED_MESSAGE)
         return
       }
-      try { sessionStorage.setItem('badfos_payment_cache', JSON.stringify({ key: cacheKey, url: paymentUrl })) } catch {}
+      try { sessionStorage.setItem('badfos_payment_cache', JSON.stringify({ key: plan.cacheKey, url: paymentUrl })) } catch {}
 
       // Redirect immediately — don't wait for share link
       setLoadingMessage('מעביר לעמוד תשלום...')

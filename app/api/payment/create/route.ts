@@ -32,11 +32,25 @@ const ORDERS_PAUSED_MESSAGE = 'לא ניתן לבצע הזמנות כרגע — 
  * admin toggle (setOrdersPaused in lib/db.ts) always writes an explicit
  * boolean, so a pause is never expressed by the document's absence. No
  * document means the switch was never touched — i.e. the shop is open.
+ *
+ * Cached for 10 seconds per warm instance (checkout prefetches the payment
+ * link while the form is being filled, so one checkout can hit this route
+ * twice within seconds). 10s is deliberately far below the ~15s ceiling the
+ * kill switch tolerates: after the admin flips the flag, every instance
+ * enforces it on its first read more than 10s after its last one. Failures
+ * are NEVER cached — a broken read stays fail-open and is retried on the
+ * next request.
  */
+const PAUSE_TTL_MS = 10_000
+let pauseCache: { paused: boolean; at: number } | null = null
+
 async function areOrdersPaused(): Promise<boolean> {
+  if (pauseCache && Date.now() - pauseCache.at < PAUSE_TTL_MS) return pauseCache.paused
   try {
     const snap = await adminDb.collection('settings').doc('orders').get()
-    return snap.exists && snap.data()?.paused === true
+    const paused = snap.exists && snap.data()?.paused === true
+    pauseCache = { paused, at: Date.now() }
+    return paused
   } catch (error) {
     console.error(
       '[PAUSE_FLAG_UNREADABLE] settings/orders could not be read — allowing the charge through (fail open). ' +
@@ -64,11 +78,29 @@ async function areOrdersPaused(): Promise<boolean> {
  * without this, any admin price change would break verification the same way.
  * FAIL OPEN to code defaults if the doc is unreadable: verification still
  * runs, only the override layer is skipped (grep: PRICING_OVERRIDES_UNREADABLE).
+ *
+ * The raw document is cached for 60 seconds per warm instance — admin price
+ * edits are rare, and the only cost of staleness is that for up to a minute
+ * after an edit, verification checks against the PREVIOUS prices (the ±₪2 +
+ * shipping tolerance absorbs small deltas; a large edit could refuse a
+ * legitimate cart for that one minute — the same window PricingLoader clients
+ * that loaded a minute ago already create). applyPricingOverrides still runs
+ * on every request so the module pricing state is always freshly stamped.
+ * Failures are NEVER cached.
  */
+const PRICING_OVERRIDES_TTL_MS = 60_000
+let pricingOverridesCache: { data: Record<string, unknown>; at: number } | null = null
+
 async function loadPricingOverrides(): Promise<void> {
+  if (pricingOverridesCache && Date.now() - pricingOverridesCache.at < PRICING_OVERRIDES_TTL_MS) {
+    applyPricingOverrides(pricingOverridesCache.data)
+    return
+  }
   try {
     const snap = await adminDb.collection('settings').doc('pricing').get()
-    applyPricingOverrides(snap.exists ? (snap.data() as Record<string, unknown>) ?? {} : {})
+    const data = snap.exists ? (snap.data() as Record<string, unknown>) ?? {} : {}
+    pricingOverridesCache = { data, at: Date.now() }
+    applyPricingOverrides(data)
   } catch (error) {
     applyPricingOverrides({})
     console.error(
@@ -112,7 +144,13 @@ function verifyAmount(items: any[], clientAmount: number, couponDiscount: number
 
 export async function POST(request: NextRequest) {
   try {
-    // Authoritative pause check — runs before anything else. The cart also
+    // The pause flag and the pricing overrides are independent Firestore
+    // reads — start them together instead of serially. Neither ever rejects
+    // (both fail open internally), so the floating promise is safe on every
+    // early return below.
+    const overridesReady = loadPricingOverrides()
+
+    // Authoritative pause check — still gates everything else. The cart also
     // hides the checkout button, but a stale client bundle or a crafted
     // request must never be able to start a charge.
     if (await areOrdersPaused()) {
@@ -146,7 +184,7 @@ export async function POST(request: NextRequest) {
     // Server-side amount verification (if items provided) — against the same
     // prices the cart showed, admin overrides included
     if (items && Array.isArray(items) && items.length > 0) {
-      await loadPricingOverrides()
+      await overridesReady
       if (!verifyAmount(items, verifiedAmount, couponDiscount || 0, express === true)) {
         console.error('Amount mismatch: client sent', verifiedAmount, 'for items', JSON.stringify(items.map((i: any) => i.productType)))
         return NextResponse.json({ error: 'Amount verification failed' }, { status: 400 })

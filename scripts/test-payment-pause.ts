@@ -31,7 +31,9 @@ function ok(name: string, fn: () => void | Promise<void>): Promise<void> {
       console.log(`  ✅ ${name}`)
     })
     .catch((e: any) => {
-      console.error(`  ❌ ${name}: ${e.message}`)
+      // console.log, NOT console.error — console.error is patched into
+      // errorLog while the tests run, which used to swallow failures silently
+      console.log(`  ❌ ${name}: ${e.message}`)
       process.exitCode = 1
     })
 }
@@ -47,6 +49,14 @@ let errorLog: string[] = []
 const realFetch = globalThis.fetch
 const realError = console.error
 
+// The route caches the pause flag (10s) and the pricing overrides (60s) per
+// warm instance. Each post() advances a fake clock past both TTLs so every
+// request behaves like a fresh instance — same semantics the asserts always
+// assumed. TTL behaviour itself is asserted separately at the end.
+const realDateNow = Date.now
+let clockSkewMs = 0
+Date.now = () => realDateNow() + clockSkewMs
+
 globalThis.fetch = (async (url: any) => {
   fetchCalls.push(String(url))
   return new Response(PAYMENT_URL, { status: 200 })
@@ -60,11 +70,12 @@ console.error = (...args: unknown[]) => {
 async function post(
   mode: PauseFlagMode,
   body: Record<string, unknown>,
-  { webhook = true }: { webhook?: boolean } = {}
+  { webhook = true, advanceMs = 61_000 }: { webhook?: boolean; advanceMs?: number } = {}
 ) {
   __stub.reset(mode)
   fetchCalls = []
   errorLog = []
+  clockSkewMs += advanceMs // default: expire the route's pause + pricing TTL caches
   if (webhook) process.env.MAKE_WEBHOOK_URL = WEBHOOK
   else delete process.env.MAKE_WEBHOOK_URL
 
@@ -125,8 +136,11 @@ async function main() {
     assert.strictEqual(open.status, 200)
     assert.strictEqual(open.body.url, PAYMENT_URL)
   })
-  await ok('the flag was actually read', () =>
-    assert.deepStrictEqual(__stub.events, ['read:settings/orders']))
+  await ok('the flag was actually read (pricing overrides read alongside it)', () => {
+    assert.ok(__stub.events.includes('read:settings/orders'), JSON.stringify(__stub.events))
+    assert.ok(__stub.events.includes('read:settings/pricing'), JSON.stringify(__stub.events))
+    assert.strictEqual(__stub.events.length, 2, JSON.stringify(__stub.events))
+  })
   await ok('the charge reached the Make webhook', () =>
     assert.deepStrictEqual(fetchCalls, [WEBHOOK]))
   await ok('nothing logged', () => assert.deepStrictEqual(errorLog, []))
@@ -140,12 +154,17 @@ async function main() {
   })
   await ok('the charge reached the Make webhook', () =>
     assert.deepStrictEqual(fetchCalls, [WEBHOOK]))
-  await ok('exactly one failure was logged', () => assert.strictEqual(errorLog.length, 1))
-  await ok('it carries the greppable PAUSE_FLAG_UNREADABLE marker', () =>
-    assert.ok(errorLog[0].includes('PAUSE_FLAG_UNREADABLE'), errorLog[0]))
-  await ok('it includes the underlying error', () =>
-    assert.ok(errorLog[0].includes('could not reach Firestore backend'), errorLog[0]))
-  const failureLine = errorLog[0]
+  await ok('both unreadable reads were logged, one marker each', () => {
+    assert.strictEqual(errorLog.length, 2, errorLog.join(' ||| '))
+    assert.ok(errorLog.some((l) => l.includes('PAUSE_FLAG_UNREADABLE')), errorLog.join(' ||| '))
+    assert.ok(errorLog.some((l) => l.includes('PRICING_OVERRIDES_UNREADABLE')), errorLog.join(' ||| '))
+  })
+  await ok('the pause line includes the underlying error', () =>
+    assert.ok(
+      errorLog.find((l) => l.includes('PAUSE_FLAG_UNREADABLE'))!.includes('could not reach Firestore backend'),
+      errorLog.join(' ||| ')
+    ))
+  const failureLine = errorLog.find((l) => l.includes('PAUSE_FLAG_UNREADABLE'))!
 
   console.log('\n3️⃣ b  FIREBASE_ADMIN_* broken (adminDb undefined) → same fail-open path')
 
@@ -155,11 +174,12 @@ async function main() {
     assert.strictEqual(unconfigured.body.url, PAYMENT_URL)
   })
   await ok('logged with the same PAUSE_FLAG_UNREADABLE marker', () => {
-    assert.strictEqual(errorLog.length, 1)
-    assert.ok(errorLog[0].includes('PAUSE_FLAG_UNREADABLE'), errorLog[0])
-    assert.ok(errorLog[0].includes('TypeError'), errorLog[0])
+    assert.strictEqual(errorLog.length, 2, errorLog.join(' ||| '))
+    const pauseLine = errorLog.find((l) => l.includes('PAUSE_FLAG_UNREADABLE'))
+    assert.ok(pauseLine, errorLog.join(' ||| '))
+    assert.ok(pauseLine!.includes('TypeError'), pauseLine)
   })
-  const unconfiguredLine = errorLog[0]
+  const unconfiguredLine = errorLog.find((l) => l.includes('PAUSE_FLAG_UNREADABLE'))!
 
   console.log('\n4️⃣  the document is MISSING → the request proceeds')
 
@@ -211,6 +231,31 @@ async function main() {
   const withShipping = await post('open', { ...ORDER, amount: 94 + 35 })
   await ok('open + legitimate shipping (₪35) still passes', () =>
     assert.strictEqual(withShipping.status, 200))
+
+  console.log('\n7️⃣  the pause cache — at most 10s stale, in BOTH directions')
+
+  // Direction 1: shop pauses. A request 5s later may still ride the cached
+  // "open" (the documented ≤10s cost) — but 11s later the pause is enforced.
+  await post('open', ORDER)
+  const cachedOpen = await post('paused', ORDER, { advanceMs: 5_000 })
+  await ok('5s after an "open" read, the flip to paused is not yet seen (cached)', () => {
+    assert.strictEqual(cachedOpen.status, 200)
+    assert.ok(!__stub.events.includes('read:settings/orders'), JSON.stringify(__stub.events))
+  })
+  const enforced = await post('paused', ORDER, { advanceMs: 11_000 })
+  await ok('11s later the flag is re-read and the pause IS enforced → 503', () => {
+    assert.strictEqual(enforced.status, 503)
+    assert.ok(__stub.events.includes('read:settings/orders'), JSON.stringify(__stub.events))
+  })
+
+  // Direction 2: shop reopens. Within 10s the cached "paused" may still
+  // refuse; after it expires, charges flow again.
+  const cachedPaused = await post('open', ORDER, { advanceMs: 5_000 })
+  await ok('5s after a "paused" read, reopening is not yet seen → still 503', () =>
+    assert.strictEqual(cachedPaused.status, 503))
+  const reopened = await post('open', ORDER, { advanceMs: 11_000 })
+  await ok('11s later the charge flows again → 200', () =>
+    assert.strictEqual(reopened.status, 200))
 
   console.error = realError
   globalThis.fetch = realFetch
