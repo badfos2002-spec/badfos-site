@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import SystemStatusBoard from '@/components/admin/SystemStatusBoard'
+import StorageCleanupPanel from '@/components/admin/StorageCleanupPanel'
 import { PROVIDER_REGISTRY, PROVIDER_BY_ID } from '@/lib/system-status'
 import {
   COST_SETTINGS_COLLECTION,
@@ -170,6 +171,16 @@ export default function AdminCostsPage() {
 
       {/* ── לוח המצב ────────────────────────────────────────────────────── */}
       <SystemStatusBoard />
+
+      {/* ── ניקוי אחסון ─────────────────────────────────────────────────── */}
+      <div className="mt-10 pt-8 border-t border-gray-200">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">ניקוי אחסון</h2>
+        <p className="text-xs sm:text-sm text-gray-500 mb-6">
+          קבצי עיצוב שכבר אף אחד לא צריך תופסים מכסה ועולים כסף. כאן רואים בדיוק מה יימחק —
+          ומוחקים רק אחרי שרואים.
+        </p>
+        <StorageCleanupPanel />
+      </div>
 
       {/* ── הגדרות ──────────────────────────────────────────────────────── */}
       <div className="mt-10 pt-8 border-t border-gray-200">
