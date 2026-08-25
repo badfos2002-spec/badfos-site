@@ -51,27 +51,42 @@ export interface CaptureDiagnostics {
   lastDiff: number
 }
 
+/** An artwork decode that neither loads nor errors (a stalled request) must
+ *  not hang the save forever — this is the ONLY unbounded await the capture
+ *  ever had. Generous: a slow decode only delays the preview, never the doc. */
+const DECODE_TIMEOUT_MS = 8000
+
 /**
- * Decode every artwork bitmap before we start judging stability.
+ * Decode every artwork bitmap before we start judging stability, and keep the
+ * decoded images for the no-stage fallback composite.
  *
  * ShirtDecal loads its texture through a NON-suspending TextureLoader
  * (Tshirt3DModel.useArtworkTexture), so the garment renders first and the
  * design pops in whenever its image finishes. Forcing the decode up front means
  * the texture resolves from cache, so "the frame stopped changing" cannot mean
  * "the design has not started loading yet".
+ *
+ * https Storage URLs (edit mode) are decoded THROUGH the same-origin design
+ * proxy — the exact URL useArtworkTexture loads — so the warm-up actually hits
+ * the texture's cache entry, and the decoded image is same-origin and safe to
+ * draw onto the fallback canvas without tainting it.
  */
-async function decodeArtwork(urls: string[]): Promise<void> {
-  await Promise.all(
+async function decodeArtwork(urls: string[]): Promise<HTMLImageElement[]> {
+  const settled = await Promise.all(
     urls.map(
       url =>
-        new Promise<void>(resolve => {
+        new Promise<HTMLImageElement | null>(resolve => {
           const img = new Image()
-          img.onload = () => resolve()
-          img.onerror = () => resolve() // a broken artwork skips its own decal
-          img.src = url
+          const timer = setTimeout(() => resolve(null), DECODE_TIMEOUT_MS)
+          img.onload = () => { clearTimeout(timer); resolve(img) }
+          img.onerror = () => { clearTimeout(timer); resolve(null) } // a broken artwork skips its own decal
+          img.src = /^https:\/\/firebasestorage\.googleapis\.com\//.test(url)
+            ? `/api/design-proxy?url=${encodeURIComponent(url)}`
+            : url
         })
     )
   )
+  return settled.filter((i): i is HTMLImageElement => i !== null)
 }
 
 /**
@@ -175,52 +190,112 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, dw: num
 }
 
 /**
+ * Paint the branded backdrop, hand the stage-drawing off to `draw`, and encode
+ * to a budget-sized JPEG. Shared by the live-stage capture and the no-stage
+ * artwork fallback so both produce the identical card format.
+ */
+async function composePreview(
+  draw: (ctx: CanvasRenderingContext2D) => void
+): Promise<Blob | null> {
+  const out = document.createElement('canvas')
+  out.width = PREVIEW_WIDTH
+  out.height = PREVIEW_HEIGHT
+  const ctx = out.getContext('2d')
+  if (!ctx) {
+    console.error('[SKETCH_PREVIEW_NO_2D_CONTEXT] could not create the output canvas')
+    return null
+  }
+
+  const backdrop = await loadBackdrop()
+  if (backdrop) {
+    drawCover(ctx, backdrop, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+  } else {
+    ctx.fillStyle = BACKDROP_FALLBACK
+    ctx.fillRect(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+  }
+
+  draw(ctx)
+
+  const encode = (q: number) =>
+    new Promise<Blob | null>(resolve => out.toBlob(b => resolve(b), 'image/jpeg', q))
+
+  const blob = await encode(JPEG_QUALITY)
+  if (blob && blob.size > SIZE_BUDGET_BYTES) return await encode(JPEG_FALLBACK_QUALITY)
+  if (!blob) console.error('[SKETCH_PREVIEW_ENCODE_FAILED] toBlob returned null')
+  return blob
+}
+
+/** Contain-fit `w`x`h` content into the card, centred, never cropped. */
+function containBox(w: number, h: number) {
+  const scale = Math.min(PREVIEW_WIDTH / w, (PREVIEW_HEIGHT * 0.98) / h)
+  const dw = w * scale
+  const dh = h * scale
+  return { x: (PREVIEW_WIDTH - dw) / 2, y: (PREVIEW_HEIGHT - dh) / 2, w: dw, h: dh }
+}
+
+/**
+ * No live stage to shoot (3D fell to the 2D fallback, WebGL missing, blank
+ * frame): compose the card from the artwork itself on the branded backdrop.
+ * A flat artwork card in WhatsApp is not the 3D still, but it IS the
+ * customer's design — strictly better than the company logo.
+ */
+async function composeArtworkFallback(artwork: HTMLImageElement[]): Promise<Blob | null> {
+  const img = artwork.find(i => i.naturalWidth > 0 && i.naturalHeight > 0)
+  if (!img) {
+    console.error('[SKETCH_PREVIEW_NO_ARTWORK] fallback had no decodable artwork — the link will preview with the logo')
+    return null
+  }
+  return composePreview(ctx => {
+    // Slightly inset so the artwork reads as a card, not an edge-to-edge crop.
+    const box = containBox(img.naturalWidth, img.naturalHeight)
+    const inset = 0.88
+    const w = box.w * inset
+    const h = box.h * inset
+    ctx.drawImage(img, (PREVIEW_WIDTH - w) / 2, (PREVIEW_HEIGHT - h) / 2, w, h)
+  })
+}
+
+/**
  * Capture the sketch stage inside `container` as a WhatsApp-sized JPEG.
  *
  * Resolves to `null` — never throws — on any failure, so a bad capture can only
- * cost the preview, never the sketch itself.
+ * cost the preview, never the sketch itself. Every degraded path says so loudly
+ * on the console ([SKETCH_PREVIEW_*] markers): a silent null here is how a
+ * whole day of sketches once shipped with the logo card and nobody knew.
  */
 export async function captureSketchPreview(
   container: HTMLElement | null,
   artworkUrls: string[]
 ): Promise<Blob | null> {
   try {
-    if (!container) return null
+    const artwork = await decodeArtwork(artworkUrls)
+
+    if (!container) {
+      // The ref only exists inside ThreeErrorBoundary's healthy branch — a
+      // null container means the 3D stage is NOT mounted (boundary tripped,
+      // no-3D product, or a restructure detached the ref).
+      console.error('[SKETCH_PREVIEW_NO_STAGE] preview container is null — 3D stage not mounted; composing artwork fallback')
+      return await composeArtworkFallback(artwork)
+    }
     const canvas = await waitForCanvas(container)
-    if (!canvas) return null
+    if (!canvas) {
+      console.error('[SKETCH_PREVIEW_NO_CANVAS] no <canvas> inside the stage container after 5s; composing artwork fallback')
+      return await composeArtworkFallback(artwork)
+    }
 
-    await decodeArtwork(artworkUrls)
     const diag = await waitForRenderedFrame(canvas)
-    if (!diag.ready) return null
-
-    const out = document.createElement('canvas')
-    out.width = PREVIEW_WIDTH
-    out.height = PREVIEW_HEIGHT
-    const ctx = out.getContext('2d')
-    if (!ctx) return null
-
-    const backdrop = await loadBackdrop()
-    if (backdrop) {
-      drawCover(ctx, backdrop, PREVIEW_WIDTH, PREVIEW_HEIGHT)
-    } else {
-      ctx.fillStyle = BACKDROP_FALLBACK
-      ctx.fillRect(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+    if (!diag.ready) {
+      console.error('[SKETCH_PREVIEW_BLANK_FRAME] canvas never showed a scene; composing artwork fallback', diag)
+      return await composeArtworkFallback(artwork)
     }
 
     // Contain-fit the portrait stage so the garment is never cropped.
-    const scale = Math.min(PREVIEW_WIDTH / canvas.width, (PREVIEW_HEIGHT * 0.98) / canvas.height)
-    const w = canvas.width * scale
-    const h = canvas.height * scale
-    ctx.drawImage(canvas, (PREVIEW_WIDTH - w) / 2, (PREVIEW_HEIGHT - h) / 2, w, h)
-
-    const encode = (q: number) =>
-      new Promise<Blob | null>(resolve => out.toBlob(b => resolve(b), 'image/jpeg', q))
-
-    const blob = await encode(JPEG_QUALITY)
-    if (blob && blob.size > SIZE_BUDGET_BYTES) return await encode(JPEG_FALLBACK_QUALITY)
-    return blob
+    return await composePreview(ctx => {
+      const box = containBox(canvas.width, canvas.height)
+      ctx.drawImage(canvas, box.x, box.y, box.w, box.h)
+    })
   } catch (err) {
-    console.error('Sketch preview capture failed:', err)
+    console.error('[SKETCH_PREVIEW_CAPTURE_ERROR] Sketch preview capture failed:', err)
     return null
   }
 }

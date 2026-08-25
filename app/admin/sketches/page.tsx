@@ -250,6 +250,16 @@ export default function AdminSketchesPage() {
   // never shows them. `editArea` deliberately stays put, so the snapshot
   // keeps facing whatever the owner was looking at.
   const [capturing, setCapturing] = useState(false)
+  // The save finished but the WhatsApp still could not be captured/uploaded —
+  // the link will preview with the logo. Shown to the owner instead of failing
+  // silently: a whole day of logo-card sketches once shipped this way with no
+  // signal anywhere.
+  const [previewFailed, setPreviewFailed] = useState(false)
+  // Bumped before every save and on entering edit mode. ThreeErrorBoundary is
+  // sticky once tripped — in a long-lived admin tab that meant every later
+  // capture found no stage and silently fell back to the logo. A changed key
+  // clears a tripped boundary; a healthy one ignores it.
+  const [stageEpoch, setStageEpoch] = useState(0)
   // Size slider: `input` fires on every step of a drag, and each committed step
   // is a full DecalGeometry rebuild (248 ms on the t-shirt). The live value
   // previews imperatively through this ref; only release commits. Filled by the
@@ -473,6 +483,10 @@ export default function AdminSketchesPage() {
     if (mode === 'update' && !editing) return
     setCreating(true)
     setErrorMsg(null)
+    setPreviewFailed(false)
+    // Give a tripped 3D stage one fresh chance before the snapshot (no-op on a
+    // healthy stage). The state flush lands at the first await below.
+    setStageEpoch(e => e + 1)
     try {
       const sessionId = `sketch-${Date.now()}`
       // Snapshot the stage FIRST, so the link preview is exactly the frame the
@@ -496,10 +510,13 @@ export default function AdminSketchesPage() {
           )
         }
       } catch (err) {
-        console.error('Sketch preview unavailable — falling back to the logo:', err)
+        console.error('[SKETCH_PREVIEW_UPLOAD_FAILED] Sketch preview unavailable — falling back to the logo:', err)
       } finally {
         setCapturing(false)
       }
+      // Surfaced only after the save succeeds (below); a failed save has its
+      // own error and no doc to warn about.
+      const previewMissing = !previewUrl
       const designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[] = []
       for (const area of Object.keys(previews)) {
         const file = files[area]
@@ -559,6 +576,9 @@ export default function AdminSketchesPage() {
         setEditing({ id, swept: false, requiredAreas: [], sweptPreview: null })
       }
       setShareUrl(`${window.location.origin}/share/${id}`)
+      // On update a missing capture keeps the PREVIOUS still (updateSharedDesign
+      // never deletes previewUrl), so only create/duplicate degrade to the logo.
+      setPreviewFailed(previewMissing && mode !== 'update')
       loadHistory(null)
     } catch (err) {
       console.error('Sketch save failed:', err)
@@ -597,7 +617,17 @@ export default function AdminSketchesPage() {
       if (!swept && typeof d.imageBase64 === 'string' && (d.imageBase64.startsWith('https://') || d.imageBase64.startsWith('data:image/'))) {
         ex[d.area] = d.imageBase64
       }
-      if (d.transform && !isDefaultTransform(d.transform)) tr[d.area] = d.transform
+      // Doc data is untrusted: a malformed transform (missing field, string,
+      // NaN) would flow into the decal math as NaN and can throw inside the
+      // render loop — tripping ThreeErrorBoundary and killing the 3D stage
+      // (and with it the preview capture). Finite numbers only, then clamped.
+      const t = d.transform
+      if (
+        t && Number.isFinite(t.dx) && Number.isFinite(t.dy) && Number.isFinite(t.scale) &&
+        !isDefaultTransform(t)
+      ) {
+        tr[d.area] = clampTransform(t)
+      }
     }
     setProductId(item.productType)
     setTypeId(fabric)
@@ -617,6 +647,9 @@ export default function AdminSketchesPage() {
       requiredAreas: swept ? docAreas : [],
       sweptPreview: swept && isSketchPreviewUrl(item.previewUrl) ? item.previewUrl : null,
     })
+    setPreviewFailed(false)
+    // A stage that tripped on a previous sketch gets a clean start with this one.
+    setStageEpoch(e => e + 1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -650,14 +683,14 @@ export default function AdminSketchesPage() {
 
   // Transforms go too — otherwise the previous customer's adjustment silently
   // lands on the next sketch that uses the same areaId. Exits edit mode.
-  const resetAll = () => { setFiles({}); setOriginals({}); setExisting({}); setEditing(null); setTransforms({}); setEditArea(null); setColorId(''); setShareUrl(null); setPhone(''); setLabel(''); setErrorMsg(null) }
+  const resetAll = () => { setFiles({}); setOriginals({}); setExisting({}); setEditing(null); setTransforms({}); setEditArea(null); setColorId(''); setShareUrl(null); setPhone(''); setLabel(''); setErrorMsg(null); setPreviewFailed(false) }
 
   // ── Preview ──
   const colorHex = allowedColors.find(c => c.id === colorId)?.hex ?? '#d1d5db'
   const m3d = getModel3D(productId, typeId || undefined)
   const previewDesigns = Object.entries(previews).map(([area, url]) => ({ area, url, transform: transforms[area] }))
   const previewEl = m3d ? (
-    <ThreeErrorBoundary fallback={
+    <ThreeErrorBoundary resetKey={stageEpoch} fallback={
       <div className="relative w-full flex items-center justify-center rounded-2xl border bg-gray-50 p-6" style={{ aspectRatio: '3/4' }}>
         {previewDesigns[0] ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -969,6 +1002,12 @@ export default function AdminSketchesPage() {
               </>
             ) : (
               <div className="space-y-2">
+                {previewFailed && (
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
+                    <span>הסקיצה נשמרה, אבל צילום התצוגה לוואטסאפ נכשל — הקישור יציג את הלוגו במקום הסקיצה. רעננו את העמוד ושמרו שוב כדי לנסות שנית (פרטים בקונסול).</span>
+                  </div>
+                )}
                 <div className="text-xs bg-gray-50 border border-gray-200 rounded-lg p-2 break-all text-gray-600" dir="ltr">{shareUrl}</div>
                 <div className="grid grid-cols-3 gap-2">
                   <a href={waLink} target="_blank" rel="noopener noreferrer"
