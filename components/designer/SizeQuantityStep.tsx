@@ -33,6 +33,16 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasKidSizes, isBuff])
 
+  // Dri-fit has no 4XL (supplier doesn't stock it). If the user picked 4XL on
+  // another fabric and then switched to dri-fit, drop that row the same way.
+  useEffect(() => {
+    if (config.fabricType !== 'dri-fit') return
+    if (sizes.some(s => s.size === '4XL')) {
+      onUpdate(sizes.filter(s => s.size !== '4XL'))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.fabricType])
+
   // ── Buff: quantity-only mode ──────────────────────────────────────────────
   if (isBuff) {
     const selectedQty = sizes[0]?.quantity ?? null
@@ -69,10 +79,14 @@ export default function SizeQuantityStep({ sizes, onUpdate, config }: SizeQuanti
 
   // ── Default: size + quantity grid ─────────────────────────────────────────
   // Oversized t-shirts: no XS, 3XL, or 4XL — sizes start from S
+  // Dri-fit: no 4XL — the supplier doesn't stock it
   const isOversized = config.fabricType === 'oversized'
+  const isDriFit = config.fabricType === 'dri-fit'
   const availableSizes = isOversized
     ? STANDARD_SIZES.filter(s => s.id !== 'XS' && s.id !== '3XL' && s.id !== '4XL')
-    : STANDARD_SIZES
+    : isDriFit
+      ? STANDARD_SIZES.filter(s => s.id !== '4XL')
+      : STANDARD_SIZES
 
   const getQuantity = (sizeId: string) => sizes.find(s => s.size === sizeId)?.quantity || 0
   const totalQuantity = sizes.reduce((sum, s) => sum + s.quantity, 0)
