@@ -4,6 +4,7 @@ import { Rubik, Secular_One } from 'next/font/google'
 import './globals.css'
 import TrackingScripts from '@/components/common/TrackingScripts'
 import PricingLoader from '@/components/common/PricingLoader'
+import { getBasePrice } from '@/lib/constants'
 
 const rubik = Rubik({
   subsets: ['hebrew', 'latin'],
@@ -32,12 +33,12 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://badfos.co.il'),
   alternates: { canonical: '/' },
-  title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
-  description: 'עצבו חולצות מותאמות אישית עם הדפסה איכותית. משלוח מהיר, מחירים משתלמים, עיצוב קל ונוח.',
-  keywords: 'הדפסה על חולצות, הדפסת DTF, הדפסה אישית, חולצות ממותגות, הדפסה על ביגוד, הדפסת חולצות, עיצוב חולצות, חולצות מודפסות, חולצות בהתאמה אישית',
+  title: 'בדפוס - הדפסת חולצות ומוצרי טקסטיל בעיצוב אישי',
+  description: 'עיצוב והדפסה אישית על חולצות, סווטשרטים, כובעים, תיקי בד, סינרים ועוד מוצרי טקסטיל — עם משלוח מהיר, מחירים משתלמים ועיצוב קל ונוח.',
+  keywords: 'הדפסה על חולצות, הדפסת DTF, הדפסה אישית, חולצות ממותגות, הדפסה על ביגוד, הדפסת חולצות, עיצוב חולצות, חולצות מודפסות, חולצות בהתאמה אישית, הדפסה על כובעים, הדפסת תיקי בד, הדפסה על סינרים, הדפסה על סווטשרטים, מוצרי טקסטיל בהדפסה אישית',
   openGraph: {
-    title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
-    description: 'עצבו חולצות מותאמות אישית עם הדפסה איכותית',
+    title: 'בדפוס - הדפסת חולצות ומוצרי טקסטיל בעיצוב אישי',
+    description: 'עיצוב והדפסה אישית על חולצות, סווטשרטים, כובעים, תיקי בד, סינרים ועוד מוצרי טקסטיל',
     locale: 'he_IL',
     type: 'website',
     url: 'https://badfos.co.il',
@@ -47,14 +48,14 @@ export const metadata: Metadata = {
         url: 'https://badfos.co.il/og/home.jpg',
         width: 1200,
         height: 630,
-        alt: 'בדפוס - הדפסת חולצות בעיצוב אישי',
+        alt: 'בדפוס - הדפסת חולצות ומוצרי טקסטיל בעיצוב אישי',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'בדפוס - הדפסת חולצות בעיצוב אישי',
-    description: 'עצבו חולצות מותאמות אישית עם הדפסה איכותית',
+    title: 'בדפוס - הדפסת חולצות ומוצרי טקסטיל בעיצוב אישי',
+    description: 'עיצוב והדפסה אישית על חולצות, סווטשרטים, כובעים, תיקי בד, סינרים ועוד מוצרי טקסטיל',
     images: ['https://badfos.co.il/og/home.jpg'],
   },
   verification: {
@@ -172,8 +173,31 @@ export default function RootLayout({
               },
               hasMap: 'https://www.google.com/maps/place/?q=place_id:ChIJdWBwSp2984gRNGbFgb-Kykc',
               areaServed: ['ראשון לציון', 'נס ציונה', 'רחובות', 'באר יעקב'],
-              description: 'הדפסת חולצות בעיצוב אישי – חולצות, סווטשירטים, באפים ועוד. משלוח מהיר לכל הארץ.',
+              description: 'הדפסת חולצות ומוצרי טקסטיל בעיצוב אישי – חולצות, סווטשרטים, כובעים, תיקי בד, סינרים, באפים, בגדי גוף לתינוקות ווסטים זוהרים. משלוח מהיר לכל הארץ ואיסוף עצמי מראשון לציון.',
               priceRange: '₪₪',
+              hasOfferCatalog: {
+                '@type': 'OfferCatalog',
+                name: 'מוצרי טקסטיל בהדפסה אישית',
+                itemListElement: ([
+                  ['הדפסת חולצות', 'tshirt'],
+                  ['הדפסה על סווטשרטים', 'sweatshirt'],
+                  ['הדפסה על כובעים', 'cap'],
+                  ['הדפסת תיקי בד', 'tote'],
+                  ['הדפסה על סינרים', 'apron'],
+                  ['באפים מודפסים', 'buff'],
+                  ['בגדי גוף מודפסים לתינוקות', 'baby'],
+                  ['וסטים זוהרים מודפסים', 'vest'],
+                ] as const).map(([name, id]) => ({
+                  '@type': 'Offer',
+                  url: `https://badfos.co.il/designer/${id}`,
+                  itemOffered: { '@type': 'Product', name },
+                  priceSpecification: {
+                    '@type': 'PriceSpecification',
+                    minPrice: getBasePrice(id),
+                    priceCurrency: 'ILS',
+                  },
+                })),
+              },
               openingHoursSpecification: [
                 { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'], opens: '09:00', closes: '23:00' },
                 { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Friday'], opens: '09:00', closes: '14:00' },

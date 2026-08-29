@@ -17,11 +17,16 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { getSeoPage } from '@/lib/seo-pages'
+import LiveBasePrice from '@/components/seo/LiveBasePrice'
 import type { SeoLayoutProps } from './types'
 
 const BENEFIT_ICONS = [BadgePercent, Palette, Sparkles, Truck]
 
 export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
+  // Product pages send visitors straight to their designer; audience pages keep
+  // the original targets (homepage hero CTA, t-shirt designer in the strip).
+  const ctaHref = page.productType ? `/designer/${page.productType}` : '/'
+  const designerHref = page.productType ? `/designer/${page.productType}` : '/designer/tshirt'
   const relatedPages = page.related
     .map((slug) => getSeoPage(slug))
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
@@ -66,7 +71,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
           </p>
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
             <Link
-              href="/"
+              href={ctaHref}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] px-8 py-4 text-lg font-extrabold text-white shadow-[0_15px_35px_-10px_rgba(245,158,11,0.6)] hover:from-[#e6ac28] hover:to-[#d97706] transition-colors"
             >
               {page.ctaText}
@@ -203,9 +208,14 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
               <p className="text-[#64748b] font-semibold mt-1">
                 מעצבים אונליין עם תצוגה מקדימה חיה ומקבלים הצעת מחיר מהירה
               </p>
+              {page.productType && (
+                <p className="text-[#1e293b] font-extrabold mt-2">
+                  מחיר בסיס: <LiveBasePrice productType={page.productType} /> ליחידה + תוספת הדפסה לפי אזור
+                </p>
+              )}
             </div>
             <Link
-              href="/designer/tshirt"
+              href={designerHref}
               className="inline-flex items-center gap-2 rounded-full border-2 border-[#f59e0b] px-6 py-3 font-extrabold text-[#b45309] hover:bg-[#f59e0b] hover:text-white transition-colors"
             >
               מתחילים לעצב
@@ -261,7 +271,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/"
+              href={ctaHref}
               className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-extrabold text-[#b45309] shadow-lg hover:bg-[#fffdf5] transition-colors"
             >
               {page.ctaText}

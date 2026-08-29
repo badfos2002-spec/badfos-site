@@ -142,11 +142,30 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* SEO landing pages */}
+        {/* Product SEO pages */}
+        <div className="border-t border-gray-800 mt-8 pt-6 text-center md:text-right" dir="rtl">
+          <h3 className="text-white text-sm font-bold mb-3">המוצרים שלנו</h3>
+          <ul className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-xs">
+            <li>
+              <Link href="/designer/tshirt" className="hover:text-yellow-400 transition-colors">
+                הדפסה על חולצות
+              </Link>
+            </li>
+            {SEO_PAGES.filter((page) => page.productType).map((page) => (
+              <li key={page.slug}>
+                <Link href={`/${page.slug}`} className="hover:text-yellow-400 transition-colors">
+                  {page.h1}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Audience SEO landing pages */}
         <div className="border-t border-gray-800 mt-8 pt-6 text-center md:text-right" dir="rtl">
           <h3 className="text-white text-sm font-bold mb-3">הדפסת חולצות לכל אירוע</h3>
           <ul className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-xs">
-            {SEO_PAGES.map((page) => (
+            {SEO_PAGES.filter((page) => !page.productType).map((page) => (
               <li key={page.slug}>
                 <Link href={`/${page.slug}`} className="hover:text-yellow-400 transition-colors">
                   {page.h1}
