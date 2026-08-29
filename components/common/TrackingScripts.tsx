@@ -30,35 +30,15 @@ export default function TrackingScripts() {
     } catch {}
   }, [])
 
-  // Google Consent Mode v2 — must run BEFORE any gtag/GTM scripts
-  //
-  // ORDERING DEPENDENCY: this effect MUST stay declared above the script-loading
-  // effect below. React runs effects in declaration order, so gtag('consent',
-  // 'default', ...) is pushed to dataLayer before gtm.js/gtag.js are ever
-  // requested. Reordering these two effects would let Google write cookies
-  // before the default consent state is known.
+  // Google Consent Mode v2 — the gtag stub + consent DEFAULT now live as a
+  // static inline script in app/layout.tsx <head>, so they execute before
+  // gtag.js/gtm.js are ever requested. This effect only listens for the user
+  // accepting cookies and fires the consent UPDATE via the head-defined
+  // window.gtag. Do NOT re-stub window.gtag or re-send a consent default here —
+  // that would double the page_view.
   useEffect(() => {
-    window.dataLayer = window.dataLayer || []
-    function gtag(..._args: any[]) { window.dataLayer.push(arguments) }
-    window.gtag = gtag
-
-    // Check if user already consented
-    let hasConsent = false
-    try { hasConsent = localStorage.getItem('cookie_consent') === 'accepted' } catch {}
-    if (!hasConsent) hasConsent = document.cookie.includes('cookie_consent=accepted')
-
-    // Set default consent state
-    gtag('consent', 'default', {
-      ad_storage: hasConsent ? 'granted' : 'denied',
-      ad_user_data: hasConsent ? 'granted' : 'denied',
-      ad_personalization: hasConsent ? 'granted' : 'denied',
-      analytics_storage: hasConsent ? 'granted' : 'denied',
-      wait_for_update: 500,
-    })
-
-    // Listen for consent acceptance
     const handleConsent = () => {
-      gtag('consent', 'update', {
+      window.gtag?.('consent', 'update', {
         ad_storage: 'granted',
         ad_user_data: 'granted',
         ad_personalization: 'granted',
@@ -70,13 +50,12 @@ export default function TrackingScripts() {
   }, [])
 
   // Script loading — split by vendor:
-  //  • Google (GTM + gtag.js) loads ALWAYS, so the tag stays detectable (Tag
-  //    Assistant, crawlers) and all traffic is measured. Consent Mode v2 above
-  //    keeps it cookieless until the user accepts.
+  //  • GTM loads ALWAYS (gtag.js is static in app/layout.tsx <head>, so the
+  //    tag is detectable in raw HTML and all traffic is measured). Consent
+  //    Mode v2 — default set in <head> — keeps Google cookieless until the
+  //    user accepts.
   //  • Meta Pixel + AdSense stay gated behind cookie consent — Consent Mode has
   //    no authority over them.
-  //
-  // MUST stay declared BELOW the Consent Mode effect above (see note there).
   useEffect(() => {
     let googleLoaded = false
     let marketingLoaded = false
@@ -99,21 +78,9 @@ export default function TrackingScripts() {
         f.parentNode?.insertBefore(j, f)
       })(window, document, 'script', 'dataLayer', 'GTM-W677BNL4')
 
-      // Google Ads (gtag.js)
-      const gtagScript = document.createElement('script')
-      gtagScript.async = true
-      gtagScript.src =
-        'https://www.googletagmanager.com/gtag/js?id=AW-17871272500'
-      document.head.appendChild(gtagScript)
-
-      window.dataLayer = window.dataLayer || []
-      function gtag(..._args: any[]) {
-        window.dataLayer.push(arguments)
-      }
-      window.gtag = gtag
-      gtag('js', new Date())
-      gtag('config', 'AW-17871272500')
-      gtag('config', 'G-4P6F1YWVN5') // GA4
+      // gtag.js itself (with 'js'/'config' calls) is loaded statically from
+      // app/layout.tsx <head>. Loading or configuring it again here would
+      // double-count every page_view.
 
       // Helper function to delay opening a URL until a gtag event is sent
       window.gtagSendEvent = function (url?: string) {

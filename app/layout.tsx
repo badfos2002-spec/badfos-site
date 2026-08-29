@@ -94,6 +94,45 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="format-detection" content="telephone=no" />
+        {/* Google tag (gtag.js) — emitted statically so scanners (Google Ads
+            "בדיקת החיבור") see it in the raw HTML. ORDER IS CRITICAL: the inline
+            Consent Mode default below MUST execute before gtag.js loads. Inline
+            head scripts run synchronously in document order; the async lib
+            executes after — so the default always lands first. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              (function () {
+                var hasConsent = false;
+                try { hasConsent = localStorage.getItem('cookie_consent') === 'accepted'; } catch (e) {}
+                if (!hasConsent) hasConsent = document.cookie.indexOf('cookie_consent=accepted') !== -1;
+                gtag('consent', 'default', {
+                  ad_storage: hasConsent ? 'granted' : 'denied',
+                  ad_user_data: hasConsent ? 'granted' : 'denied',
+                  ad_personalization: hasConsent ? 'granted' : 'denied',
+                  analytics_storage: hasConsent ? 'granted' : 'denied',
+                  wait_for_update: 500,
+                });
+              })();
+            `,
+          }}
+        />
+        {/* defer (not async): React Float hoists async-src scripts to the top of
+            <head>, ABOVE the consent-default inline script. defer renders in
+            place and executes after parsing — consent default always runs first. */}
+        <script defer src="https://www.googletagmanager.com/gtag/js?id=G-4P6F1YWVN5" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              gtag('js', new Date());
+              gtag('config', 'AW-17871272500');
+              gtag('config', 'G-4P6F1YWVN5');
+            `,
+          }}
+        />
         {/* GCLID capture — runs immediately, no consent needed (first-party URL param) */}
         <script
           dangerouslySetInnerHTML={{
