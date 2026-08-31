@@ -206,7 +206,7 @@ export const CAP_COLORS = [
 
 export const CAP_COLOR_FILTER: Record<string, string[]> = {
   tembel: ['white', 'black', 'gray', 'burgundy', 'olive', 'khaki', 'royalblue', 'orange', 'yellow'],
-  mesh: ['burgundy', 'beige', 'pink', 'green', 'royalblue', 'black'],
+  mesh: ['white', 'burgundy', 'beige', 'pink', 'green', 'royalblue', 'black'],
 }
 
 export const BABY_COLORS = [
