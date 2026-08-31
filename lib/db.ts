@@ -849,18 +849,24 @@ export async function getSharedDesign(id: string): Promise<(SharedDesignData & {
  * The sweep marks are cleared and `updatedAt` is set: an updated sketch is
  * fresh work, so its 2-day retention clock restarts — lib/sketch-retention.ts
  * measures age from max(createdAt, updatedAt). `createdAt` is never touched.
+ *
+ * Returns the exact `updatedAt` it wrote: the sketch maker versions the share
+ * link with it (`/share/<id>?v=<seconds>`), and using the stored value keeps
+ * that URL identical to the one the history row derives from the doc.
  */
-export async function updateSharedDesign(id: string, data: SharedDesignData): Promise<void> {
+export async function updateSharedDesign(id: string, data: SharedDesignData): Promise<Timestamp> {
   ensureFirebase()
+  const updatedAt = Timestamp.now()
   await updateDoc(doc(db!, 'shared_designs', id), {
     ...data,
     ...(data.fabricType ? {} : { fabricType: deleteField() }),
     ...(data.phone ? {} : { phone: deleteField() }),
     ...(data.label ? {} : { label: deleteField() }),
-    updatedAt: Timestamp.now(),
+    updatedAt,
     designsDeleted: deleteField(),
     designsDeletedAt: deleteField(),
   })
+  return updatedAt
 }
 
 /** One row of the admin sketch history. `createdAt` is set by

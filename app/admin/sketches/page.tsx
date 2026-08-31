@@ -3,13 +3,13 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info, AlertTriangle, History, Pencil } from 'lucide-react'
-import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
+import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info, AlertTriangle, History, Pencil, Trash2 } from 'lucide-react'
+import { uploadDesignFile, generateUniqueFileName, deleteFile } from '@/lib/storage'
 import { compressSketchImage, sketchUploadErrorMessage } from '@/lib/sketch-image'
 import { useCoarsePointer } from '@/hooks/useCoarsePointer'
-import { createSharedDesign, updateSharedDesign, getRecentSharedDesigns, type SharedDesignData, type SharedDesignHistoryItem } from '@/lib/db'
+import { createSharedDesign, updateSharedDesign, getRecentSharedDesigns, deleteDocument, type SharedDesignData, type SharedDesignHistoryItem } from '@/lib/db'
 import { captureSketchPreview } from '@/lib/sketch-preview'
-import { isSketchPreviewUrl, timestampMillis } from '@/lib/sketch-retention'
+import { isSketchPreviewUrl, timestampMillis, storagePathFromUrl } from '@/lib/sketch-retention'
 import type { Timestamp } from 'firebase/firestore'
 import {
   FABRIC_TYPES, TSHIRT_COLORS, FABRIC_COLOR_FILTER, TSHIRT_DESIGN_AREAS,
@@ -191,6 +191,19 @@ function formatWhen(value: unknown): string | null {
   return `${d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`
 }
 
+/**
+ * The customer-facing link for a sketch. An UPDATED sketch gets
+ * `?v=<updatedAt seconds>`: WhatsApp caches its link preview PER URL for days,
+ * so re-sharing the bare /share/<id> after an update keeps showing the old
+ * card no matter what og:image now says. A changed URL forces a fresh crawl —
+ * the share page itself ignores the query (the id comes from the path).
+ * Never-updated sketches keep the clean URL.
+ */
+function shareUrlFor(id: string, updatedAt?: unknown): string {
+  const ms = timestampMillis(updatedAt)
+  return `${window.location.origin}/share/${id}${ms !== null ? `?v=${Math.floor(ms / 1000)}` : ''}`
+}
+
 /** Copy with the execCommand fallback (clipboard API needs a secure context). */
 async function copyText(text: string): Promise<void> {
   try { await navigator.clipboard.writeText(text) } catch {
@@ -276,6 +289,11 @@ export default function AdminSketchesPage() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyError, setHistoryError] = useState(false)
   const [copiedRow, setCopiedRow] = useState<string | null>(null)
+  // Row whose delete is awaiting confirmation. Deleting kills the customer's
+  // link, so a stray tap must not do it — same posture as the orders-pause
+  // toggle: the destructive direction takes an explicit second, in-page confirm.
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [deletingRow, setDeletingRow] = useState<string | null>(null)
 
   const loadHistory = async (cursor: Timestamp | null) => {
     setHistoryLoading(true)
@@ -560,8 +578,12 @@ export default function AdminSketchesPage() {
         designs,
       }
       let id: string
+      // Set on update only — versions the share link so WhatsApp's per-URL
+      // preview cache re-crawls. Create/duplicate mint a fresh id, which is a
+      // fresh URL already.
+      let updatedAt: Timestamp | null = null
       if (mode === 'update') {
-        await updateSharedDesign(editing!.id, payload)
+        updatedAt = await updateSharedDesign(editing!.id, payload)
         id = editing!.id
       } else {
         id = await createSharedDesign(payload)
@@ -575,7 +597,7 @@ export default function AdminSketchesPage() {
         setOriginals({})
         setEditing({ id, swept: false, requiredAreas: [], sweptPreview: null })
       }
-      setShareUrl(`${window.location.origin}/share/${id}`)
+      setShareUrl(shareUrlFor(id, updatedAt))
       // On update a missing capture keeps the PREVIOUS still (updateSharedDesign
       // never deletes previewUrl), so only create/duplicate degrade to the logo.
       setPreviewFailed(previewMissing && mode !== 'update')
@@ -667,15 +689,15 @@ export default function AdminSketchesPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const copyRowLink = async (id: string) => {
-    await copyText(`${window.location.origin}/share/${id}`)
-    setCopiedRow(id)
+  const copyRowLink = async (item: SharedDesignHistoryItem) => {
+    await copyText(shareUrlFor(item.id, item.updatedAt))
+    setCopiedRow(item.id)
     setTimeout(() => setCopiedRow(null), 2000)
   }
 
   // Built on click, not in render: window is not there during SSR.
   const openRowWhatsApp = (item: SharedDesignHistoryItem) => {
-    const url = `${window.location.origin}/share/${item.id}`
+    const url = shareUrlFor(item.id, item.updatedAt)
     const text = encodeURIComponent(`היי! הכנו עבורך סקיצה 🎨\nאפשר לצפות בה כאן:\n${url}`)
     const p = waPhone(item.phone ?? '')
     window.open(p.length >= 11 ? `https://wa.me/${p}?text=${text}` : `https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer')
@@ -684,6 +706,48 @@ export default function AdminSketchesPage() {
   // Transforms go too — otherwise the previous customer's adjustment silently
   // lands on the next sketch that uses the same areaId. Exits edit mode.
   const resetAll = () => { setFiles({}); setOriginals({}); setExisting({}); setEditing(null); setTransforms({}); setEditArea(null); setColorId(''); setShareUrl(null); setPhone(''); setLabel(''); setErrorMsg(null); setPreviewFailed(false) }
+
+  /**
+   * Delete a sketch for good. The DOC delete comes first — it is the action
+   * that kills the customer's link, and it must not depend on Storage. The
+   * files the doc names (artwork + preview) then go best-effort, each resolved
+   * through storagePathFromUrl so only exact, verified `designs/...` paths are
+   * ever deleted — a failed file delete logs and moves on (an orphaned file
+   * costs bucket bytes; aborting midway would cost correctness).
+   * Client-side on purpose: firestore.rules gives shared_designs delete to
+   * isAdmin(), storage.rules gives designs/ delete to any signed-in user, and
+   * this page only renders behind the admin's Firebase sign-in.
+   */
+  const handleDelete = async (item: SharedDesignHistoryItem) => {
+    if (deletingRow) return
+    setDeletingRow(item.id)
+    try {
+      await deleteDocument('shared_designs', item.id)
+    } catch (err) {
+      console.error('Sketch delete failed:', err)
+      alert('מחיקת הסקיצה נכשלה — נסו שוב')
+      setDeletingRow(null)
+      return
+    }
+    const paths: string[] = []
+    for (const d of item.designs ?? []) {
+      const p = storagePathFromUrl(d?.imageBase64)
+      if (p && !paths.includes(p)) paths.push(p)
+    }
+    const previewPath = storagePathFromUrl(item.previewUrl)
+    if (previewPath && !paths.includes(previewPath)) paths.push(previewPath)
+    for (const path of paths) {
+      try { await deleteFile(path) } catch (err) { console.error(`[SKETCH_DELETE_FILE_FAILED] ${path}:`, err) }
+    }
+    setHistory(prev => prev.filter(x => x.id !== item.id))
+    // The maker must not keep operating on a doc that no longer exists.
+    if (editing?.id === item.id) resetAll()
+    // Nor may the share box keep offering the now-dead link (fresh create,
+    // then its row deleted — editing is null in that flow).
+    else if (shareUrl && new URL(shareUrl).pathname === `/share/${item.id}`) { setShareUrl(null); setPreviewFailed(false) }
+    setConfirmDelete(null)
+    setDeletingRow(null)
+  }
 
   // ── Preview ──
   const colorHex = allowedColors.find(c => c.id === colorId)?.hex ?? '#d1d5db'
@@ -1084,21 +1148,41 @@ export default function AdminSketchesPage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => loadForEdit(item)}
-                      className="flex items-center gap-1 h-8 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-yellow-400 hover:bg-yellow-50">
-                      <Pencil className="w-3.5 h-3.5" />פתח לעריכה
-                    </button>
-                    <button onClick={() => copyRowLink(item.id)}
-                      className="flex items-center gap-1 h-8 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">
-                      {copiedRow === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copiedRow === item.id ? 'הועתק' : 'העתק קישור'}
-                    </button>
-                    <button onClick={() => openRowWhatsApp(item)}
-                      className="flex items-center gap-1 h-8 px-2.5 rounded-md bg-[#25D366] text-xs font-bold text-white hover:opacity-90">
-                      <Share2 className="w-3.5 h-3.5" />וואטסאפ
-                    </button>
-                  </div>
+                  {confirmDelete === item.id ? (
+                    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5">
+                      <span className="text-xs font-bold text-red-800">למחוק את הסקיצה? הקישור שנשלח ללקוח יפסיק לעבוד</span>
+                      <button onClick={() => handleDelete(item)} disabled={deletingRow !== null}
+                        className="flex items-center gap-1 h-8 px-2.5 rounded-md bg-red-600 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-50">
+                        {deletingRow === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        מחק סופית
+                      </button>
+                      <button onClick={() => setConfirmDelete(null)} disabled={deletingRow === item.id}
+                        className="h-8 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                        ביטול
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => loadForEdit(item)}
+                        className="flex items-center gap-1 h-8 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-yellow-400 hover:bg-yellow-50">
+                        <Pencil className="w-3.5 h-3.5" />פתח לעריכה
+                      </button>
+                      <button onClick={() => copyRowLink(item)}
+                        className="flex items-center gap-1 h-8 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">
+                        {copiedRow === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedRow === item.id ? 'הועתק' : 'העתק קישור'}
+                      </button>
+                      <button onClick={() => openRowWhatsApp(item)}
+                        className="flex items-center gap-1 h-8 px-2.5 rounded-md bg-[#25D366] text-xs font-bold text-white hover:opacity-90">
+                        <Share2 className="w-3.5 h-3.5" />וואטסאפ
+                      </button>
+                      <button onClick={() => setConfirmDelete(item.id)}
+                        aria-label={`מחיקת הסקיצה ${item.label || details}`}
+                        className="flex items-center justify-center h-8 w-8 rounded-md border border-gray-300 bg-white text-red-500 hover:border-red-300 hover:bg-red-50">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             })}
