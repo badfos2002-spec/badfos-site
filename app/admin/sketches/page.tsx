@@ -294,6 +294,19 @@ export default function AdminSketchesPage() {
   // toggle: the destructive direction takes an explicit second, in-page confirm.
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [deletingRow, setDeletingRow] = useState<string | null>(null)
+  // ── Bulk selection ──
+  // Ids ticked for מחיקה ביחד. Survives "טען עוד" (earlier rows stay ticked);
+  // a row that leaves the list leaves the selection too (onSketchGone), so the
+  // counter never counts ghosts.
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  // Bulk confirm strip open — same explicit-second-confirm posture as the
+  // per-row trash. Any selection change closes it: the question it asks
+  // ("למחוק X סקיצות?") must always describe the set that will actually go.
+  const [confirmBulk, setConfirmBulk] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  // Honest outcome of the last bulk run ("נמחקו 2 מתוך 3") — cleared as soon
+  // as the selection changes, so it never describes a different set of rows.
+  const [bulkResult, setBulkResult] = useState<string | null>(null)
 
   const loadHistory = async (cursor: Timestamp | null) => {
     setHistoryLoading(true)
@@ -717,17 +730,15 @@ export default function AdminSketchesPage() {
    * Client-side on purpose: firestore.rules gives shared_designs delete to
    * isAdmin(), storage.rules gives designs/ delete to any signed-in user, and
    * this page only renders behind the admin's Firebase sign-in.
+   * Returns false only when the DOC delete failed (the sketch still exists);
+   * Storage failures never fail it. UI updates are the caller's job.
    */
-  const handleDelete = async (item: SharedDesignHistoryItem) => {
-    if (deletingRow) return
-    setDeletingRow(item.id)
+  const deleteSketchForGood = async (item: SharedDesignHistoryItem): Promise<boolean> => {
     try {
       await deleteDocument('shared_designs', item.id)
     } catch (err) {
       console.error('Sketch delete failed:', err)
-      alert('מחיקת הסקיצה נכשלה — נסו שוב')
-      setDeletingRow(null)
-      return
+      return false
     }
     const paths: string[] = []
     for (const d of item.designs ?? []) {
@@ -739,14 +750,78 @@ export default function AdminSketchesPage() {
     for (const path of paths) {
       try { await deleteFile(path) } catch (err) { console.error(`[SKETCH_DELETE_FILE_FAILED] ${path}:`, err) }
     }
-    setHistory(prev => prev.filter(x => x.id !== item.id))
+    return true
+  }
+
+  /** Everything the UI owes once a sketch is gone — shared by the per-row
+   *  trash and the bulk delete, so the two can never drift apart. */
+  const onSketchGone = (id: string) => {
+    setHistory(prev => prev.filter(x => x.id !== id))
+    setSelected(prev => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev); next.delete(id); return next
+    })
     // The maker must not keep operating on a doc that no longer exists.
-    if (editing?.id === item.id) resetAll()
+    if (editing?.id === id) resetAll()
     // Nor may the share box keep offering the now-dead link (fresh create,
     // then its row deleted — editing is null in that flow).
-    else if (shareUrl && new URL(shareUrl).pathname === `/share/${item.id}`) { setShareUrl(null); setPreviewFailed(false) }
+    else if (shareUrl && new URL(shareUrl).pathname === `/share/${id}`) { setShareUrl(null); setPreviewFailed(false) }
+  }
+
+  const handleDelete = async (item: SharedDesignHistoryItem) => {
+    if (deletingRow || bulkDeleting) return
+    setDeletingRow(item.id)
+    if (!(await deleteSketchForGood(item))) {
+      alert('מחיקת הסקיצה נכשלה — נסו שוב')
+      setDeletingRow(null)
+      return
+    }
+    onSketchGone(item.id)
     setConfirmDelete(null)
     setDeletingRow(null)
+  }
+
+  /**
+   * Bulk delete: the exact single-sketch routine per id, up to 3 in flight.
+   * One failing sketch must not abort the rest — a doc whose delete failed
+   * stays in the list untouched, and the outcome message says exactly how
+   * many actually went.
+   */
+  const handleBulkDelete = async () => {
+    if (bulkDeleting || deletingRow) return
+    const items = history.filter(x => selected.has(x.id))
+    if (items.length === 0) return
+    setBulkDeleting(true)
+    let ok = 0
+    const queue = [...items]
+    const worker = async () => {
+      for (let item = queue.shift(); item; item = queue.shift()) {
+        if (await deleteSketchForGood(item)) { ok++; onSketchGone(item.id) }
+      }
+    }
+    await Promise.all([worker(), worker(), worker()])
+    setBulkResult(ok === items.length
+      ? (ok === 1 ? 'הסקיצה שנבחרה נמחקה' : `נמחקו ${ok} הסקיצות שנבחרו`)
+      : `נמחקו ${ok} מתוך ${items.length} — מה שנכשל נשאר ברשימה`)
+    setSelected(new Set())
+    setConfirmBulk(false)
+    setBulkDeleting(false)
+  }
+
+  const toggleSelect = (id: string) => {
+    setBulkResult(null)
+    setConfirmBulk(false)
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+  const allSelected = history.length > 0 && history.every(x => selected.has(x.id))
+  const toggleSelectAll = () => {
+    setBulkResult(null)
+    setConfirmBulk(false)
+    setSelected(allSelected ? new Set() : new Set(history.map(x => x.id)))
   }
 
   // ── Preview ──
@@ -1112,6 +1187,48 @@ export default function AdminSketchesPage() {
           <h3 className="font-bold text-sm">סקיצות אחרונות</h3>
         </div>
         <p className="text-xs text-gray-500 mb-3">פתיחה לעריכה שומרת על אותו קישור אצל הלקוח — מעדכנים ושולחים שוב</p>
+        {!historyError && history.length > 0 && (
+          <div className="mb-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <label className="flex items-center gap-2 cursor-pointer select-none py-1.5 text-xs font-medium text-gray-700">
+                <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} disabled={bulkDeleting}
+                  className="w-[18px] h-[18px] accent-red-600" />
+                בחר הכל
+              </label>
+              {selected.size > 0 && (
+                <>
+                  <span className="text-xs font-bold text-gray-700">נבחרו {selected.size}</span>
+                  {!confirmBulk && (
+                    <button onClick={() => { setBulkResult(null); setConfirmBulk(true) }}
+                      className="flex items-center gap-1 h-8 px-2.5 rounded-md bg-red-600 text-xs font-bold text-white hover:bg-red-700">
+                      <Trash2 className="w-3.5 h-3.5" />
+                      מחק את הנבחרות ({selected.size})
+                    </button>
+                  )}
+                </>
+              )}
+              {bulkResult && <span className="text-xs font-bold text-amber-700">{bulkResult}</span>}
+            </div>
+            {confirmBulk && selected.size > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5">
+                <span className="text-xs font-bold text-red-800">
+                  {selected.size === 1
+                    ? 'למחוק את הסקיצה שנבחרה? הקישור שנשלח ללקוח יפסיק לעבוד'
+                    : `למחוק ${selected.size} סקיצות? הקישורים שנשלחו ללקוחות יפסיקו לעבוד`}
+                </span>
+                <button onClick={handleBulkDelete} disabled={bulkDeleting || deletingRow !== null}
+                  className="flex items-center gap-1 h-8 px-2.5 rounded-md bg-red-600 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-50">
+                  {bulkDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  מחק סופית
+                </button>
+                <button onClick={() => setConfirmBulk(false)} disabled={bulkDeleting}
+                  className="h-8 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                  ביטול
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {historyError ? (
           <div className="flex items-center gap-2 text-sm text-red-600">
             <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -1133,6 +1250,12 @@ export default function AdminSketchesPage() {
               return (
                 <div key={item.id}
                   className={`py-3 flex flex-wrap items-center gap-3 ${editing?.id === item.id ? 'bg-yellow-50/70 -mx-2 px-2 rounded-lg' : ''}`}>
+                  {/* Full-height label = a 36×64px tap target at 390px, not an 18px box. */}
+                  <label className="flex items-center justify-center h-16 w-9 shrink-0 cursor-pointer">
+                    <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)}
+                      disabled={bulkDeleting} aria-label={`בחירת הסקיצה ${item.label || details}`}
+                      className="w-[18px] h-[18px] accent-red-600" />
+                  </label>
                   <HistoryThumb src={isSketchPreviewUrl(item.previewUrl) ? item.previewUrl : null} alt={details} />
                   <div className="flex-1 min-w-[180px]">
                     <div className="text-sm font-bold text-gray-800 truncate">{item.label || details}</div>
