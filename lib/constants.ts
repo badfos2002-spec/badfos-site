@@ -715,10 +715,21 @@ function findColor(id: string, productType?: string) {
   return palette?.find(c => c.id === id) ?? ALL_COLORS.find(c => c.id === id)
 }
 
+// A color value is either a palette id ('black') or a raw hex the admin picked
+// freely in the sketch maker ('#8a4fff') — the SAME string field everywhere
+// (colorId state, the sketch doc's `color`), no schema change. Both resolvers
+// below pass a hex through BEFORE any palette lookup, so a custom color
+// survives the whole doc → share page → 3D stage journey. Inert for every
+// existing id: no palette id starts with '#'.
+export function isHexColor(value: string): boolean {
+  return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)
+}
+
 // Hebrew label helpers — resolve any color / type / product id to its Hebrew
 // name across ALL product categories, so the admin, emails and cart always
 // show Hebrew (never a raw english id). Falls back to the id if unknown.
 export function getColorLabel(id: string, productType?: string): string {
+  if (isHexColor(id)) return 'צבע מותאם'
   return findColor(id, productType)?.name ?? id
 }
 
@@ -734,6 +745,7 @@ export function getProductLabel(id: string): string {
 }
 
 export function getColorHex(id: string, productType?: string): string {
+  if (isHexColor(id)) return id
   return findColor(id, productType)?.hex ?? '#000000'
 }
 

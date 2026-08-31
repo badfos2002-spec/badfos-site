@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { adminDb } from '@/lib/firebase-admin'
-import { getColorLabel, getProductLabel } from '@/lib/constants'
+import { getColorLabel, getProductLabel, isHexColor } from '@/lib/constants'
 import { PREVIEW_WIDTH, PREVIEW_HEIGHT } from '@/lib/sketch-preview'
 import ShareClient from './ShareClient'
 
@@ -49,11 +49,17 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   // Labels come from the shared id→Hebrew lookups, so nothing raw from the
   // document is interpolated into the tags.
   const product = design?.productType ? getProductLabel(design.productType) : null
-  const color = design?.color ? getColorLabel(design.color, design.productType) : null
+  // A free-picked color stores its raw hex in `color` (see isHexColor in
+  // lib/constants). "בצבע צבע מותאם" reads broken and a raw hex must never
+  // appear in the og description — so the whole phrase branches. Preset ids
+  // keep the exact wording they always had.
+  const colorPhrase = design?.color
+    ? (isHexColor(design.color) ? 'בצבע מותאם אישית' : `בצבע ${getColorLabel(design.color, design.productType)}`)
+    : null
 
   const title = product ? `הסקיצה שלך מוכנה — ${product} בהתאמה אישית | בדפוס` : FALLBACK_TITLE
   const description = product
-    ? `${product}${color ? ` בצבע ${color}` : ''} עם העיצוב שלך — לחצו לצפייה בסקיצה בתלת־ממד מכל הזוויות.`
+    ? `${product}${colorPhrase ? ` ${colorPhrase}` : ''} עם העיצוב שלך — לחצו לצפייה בסקיצה בתלת־ממד מכל הזוויות.`
     : FALLBACK_DESCRIPTION
 
   const image = preview

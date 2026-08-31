@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info, AlertTriangle, History, Pencil, Trash2 } from 'lucide-react'
+import { ImagePlus, X, Check, Loader2, Share2, Copy, ExternalLink, RefreshCw, Paintbrush, Palette, Eraser, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, RotateCcw, Info, AlertTriangle, History, Pencil, Trash2 } from 'lucide-react'
 import { uploadDesignFile, generateUniqueFileName, deleteFile } from '@/lib/storage'
 import { compressSketchImage, sketchUploadErrorMessage } from '@/lib/sketch-image'
 import { useCoarsePointer } from '@/hooks/useCoarsePointer'
@@ -18,7 +18,7 @@ import {
   TOTE_TYPES, TOTE_COLORS, TOTE_COLOR_FILTER, TOTE_DESIGN_AREAS, TOTE_AREA_FILTER,
   BUFF_COLORS, BUFF_DESIGN_AREAS, APRON_COLORS, APRON_DESIGN_AREAS, BABY_COLORS, BABY_DESIGN_AREAS,
   VEST_COLORS, VEST_DESIGN_AREAS,
-  getModel3D, getColorLabel, getProductLabel, getTypeLabel,
+  getModel3D, getColorLabel, getProductLabel, getTypeLabel, isHexColor,
 } from '@/lib/constants'
 import nextDynamic from 'next/dynamic'
 import { DEFAULT_TRANSFORM, clampTransform, isDefaultTransform, type DesignTransform } from '@/components/designer/three/decalTransform'
@@ -164,6 +164,20 @@ function waPhone(raw: string): string {
   if (d.startsWith('972')) return d
   if (d.startsWith('0')) return '972' + d.slice(1)
   return d
+}
+
+/** '#8a4fff' → itself, '#f0c' → '#ff00cc' — <input type="color"> only accepts
+ *  a 7-char lowercase hex as its value. */
+function toInputHex(h: string): string {
+  return (h.length === 4 ? `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}` : h).toLowerCase()
+}
+
+/** Bright custom color → dark check mark — the same job the hardcoded
+ *  light-preset id list does for the preset swatches. */
+function isLightHex(h: string): boolean {
+  const x = toInputHex(h)
+  const r = parseInt(x.slice(1, 3), 16), g = parseInt(x.slice(3, 5), 16), b = parseInt(x.slice(5, 7), 16)
+  return (r * 299 + g * 587 + b * 114) / 1000 > 150
 }
 
 /** History rows per fetch. */
@@ -380,7 +394,9 @@ export default function AdminSketchesPage() {
     setTypeId(id)
     const p = product
     const cf = p.colorFilter?.[id]
-    if (colorId && cf && !cf.includes(colorId)) setColorId('')
+    // The per-fabric filters only limit the PRESETS — a free-picked hex is
+    // printable on every fabric and must survive the type switch.
+    if (colorId && !isHexColor(colorId) && cf && !cf.includes(colorId)) setColorId('')
     const af = p.areaFilter?.[id]
     if (af) {
       setFiles(prev => Object.fromEntries(Object.entries(prev).filter(([a]) => af.includes(a))))
@@ -825,7 +841,9 @@ export default function AdminSketchesPage() {
   }
 
   // ── Preview ──
-  const colorHex = allowedColors.find(c => c.id === colorId)?.hex ?? '#d1d5db'
+  // colorId is either a preset id or a raw hex (free color picker) — the
+  // stage needs the hex either way.
+  const colorHex = isHexColor(colorId) ? colorId : (allowedColors.find(c => c.id === colorId)?.hex ?? '#d1d5db')
   const m3d = getModel3D(productId, typeId || undefined)
   const previewDesigns = Object.entries(previews).map(([area, url]) => ({ area, url, transform: transforms[area] }))
   const previewEl = m3d ? (
@@ -977,7 +995,7 @@ export default function AdminSketchesPage() {
 
           {/* Color */}
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <h3 className="font-bold text-sm mb-3">צבע {colorId ? <span className="font-normal text-gray-500">— {allowedColors.find(c => c.id === colorId)?.name}</span> : <span className="font-normal text-red-400">(חובה)</span>}</h3>
+            <h3 className="font-bold text-sm mb-3">צבע {colorId ? <span className="font-normal text-gray-500">— {isHexColor(colorId) ? 'צבע מותאם' : allowedColors.find(c => c.id === colorId)?.name}</span> : <span className="font-normal text-red-400">(חובה)</span>}</h3>
             <div className="flex flex-wrap gap-3">
               {allowedColors.map(c => (
                 <button key={c.id} onClick={() => { setColorId(c.id); setShareUrl(null) }} aria-label={c.name}
@@ -986,6 +1004,40 @@ export default function AdminSketchesPage() {
                   {colorId === c.id && <Check className={`w-4 h-4 ${['white','beige','yellow','pink','lightblue','babypink','melange'].includes(c.id) ? 'text-gray-800' : 'text-white'}`} strokeWidth={3} />}
                 </button>
               ))}
+              {/* Free color — ANY hex via the OS picker, in every category and
+                  sub-type (the per-fabric filters only limit the presets). The
+                  picked hex ITSELF becomes colorId → the doc's `color`; the
+                  shared resolvers pass it through (isHexColor, lib/constants).
+                  A label wraps the input so a tap opens the native picker with
+                  no JS clicking; onChange maps to the native `input` event, so
+                  the stage re-colors live while dragging inside the picker —
+                  a re-color is cheap, nothing recaptures. */}
+              <label
+                data-testid="custom-color"
+                title="צבע חופשי — כל צבע"
+                // Activate on the CLICK, not only on the picker's change event:
+                // a controlled <input type="color"> fires no event at all when
+                // the admin confirms the exact value it already shows, so
+                // "open picker, like the shown color, hit OK" would otherwise
+                // select nothing. Idempotent — the label's forwarded input
+                // click fires it a second time.
+                onClick={() => { if (!isHexColor(colorId)) { setColorId('#8a4fff'); setShareUrl(null) } }}
+                className={`relative w-9 h-9 rounded-full cursor-pointer transition-all flex items-center justify-center border border-gray-300 ${isHexColor(colorId) ? 'ring-4 ring-[#fbbf24] ring-offset-2 scale-110' : 'hover:scale-105'}`}
+                style={isHexColor(colorId)
+                  ? { backgroundColor: colorId }
+                  : { background: 'conic-gradient(#ef4444, #f59e0b, #facc15, #22c55e, #3b82f6, #8b5cf6, #ef4444)' }}
+              >
+                {isHexColor(colorId)
+                  ? <Check className={`w-4 h-4 ${isLightHex(colorId) ? 'text-gray-800' : 'text-white'}`} strokeWidth={3} />
+                  : <Palette className="w-4 h-4 text-white drop-shadow" />}
+                <input
+                  type="color"
+                  aria-label="צבע חופשי"
+                  value={isHexColor(colorId) ? toInputHex(colorId) : '#8a4fff'}
+                  onChange={e => { setColorId(e.target.value); setShareUrl(null) }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </label>
             </div>
           </div>
 
@@ -1260,6 +1312,11 @@ export default function AdminSketchesPage() {
                   <div className="flex-1 min-w-[180px]">
                     <div className="text-sm font-bold text-gray-800 truncate">{item.label || details}</div>
                     <div className="text-xs text-gray-500 flex flex-wrap items-center gap-x-2">
+                      {/* details already reads 'צבע מותאם' for a hex — the dot
+                          shows WHICH color that actually is. */}
+                      {isHexColor(item.color) && (
+                        <span title={item.color} className="inline-block w-3 h-3 rounded-full border border-gray-300" style={{ backgroundColor: item.color }} />
+                      )}
                       {item.label && <span>{details}</span>}
                       {when && <span>{when}{item.updatedAt ? ' (עודכן)' : ''}</span>}
                       {item.phone && <span dir="ltr">{item.phone}</span>}
