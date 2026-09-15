@@ -34,6 +34,7 @@ import type {
   PackageOrder,
   OrderItem,
   Quote,
+  BrandProduct,
 } from './types'
 // Type-only: `decalTransform` imports three, and lib/db.ts is pulled into pages
 // that have no 3D at all (/contact, /reviews). `import type` is erased at build.
@@ -700,6 +701,70 @@ export async function createPackageOrder(
   orderData: Omit<PackageOrder, 'id' | 'createdAt'>
 ): Promise<string> {
   return await createDocument<PackageOrder>('packageOrders', orderData)
+}
+
+// ============================================================================
+// Brand Products (קטלוג המותג — החנות השנייה)
+// ============================================================================
+
+/** Everything the admin edits on a brand product; timestamps are set here. */
+export type BrandProductInput = Omit<BrandProduct, 'id' | 'createdAt' | 'updatedAt'>
+
+/**
+ * All brand products, sorted by sortOrder (admin catalog list)
+ */
+export async function getAllBrandProducts(): Promise<BrandProduct[]> {
+  const products = await getAllDocuments<BrandProduct>('brandProducts')
+  return products.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+}
+
+/**
+ * Create a brand product. `description` is optional — the field is written
+ * only when non-empty (`undefined` values throw in this project's Firestore;
+ * conditional-spread, same as createRecoveryCoupon above).
+ */
+export async function createBrandProduct(
+  data: BrandProductInput
+): Promise<string> {
+  ensureFirebase()
+  const { description, ...rest } = data
+  const docRef = await addDoc(collection(db!, 'brandProducts'), {
+    ...rest,
+    ...(description?.trim() ? { description: description.trim() } : {}),
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  })
+  return docRef.id
+}
+
+/**
+ * Update a brand product. Pass only the fields that changed; `updatedAt` is
+ * set automatically. Clearing `description` DELETES the field — updateDoc
+ * merges, so an emptied description would otherwise linger (same pattern as
+ * updateSharedDesign below).
+ */
+export async function updateBrandProduct(
+  productId: string,
+  data: Partial<BrandProductInput>
+): Promise<void> {
+  ensureFirebase()
+  const { description, ...rest } = data
+  await updateDoc(doc(db!, 'brandProducts', productId), {
+    ...rest,
+    ...('description' in data
+      ? description?.trim()
+        ? { description: description.trim() }
+        : { description: deleteField() }
+      : {}),
+    updatedAt: Timestamp.now(),
+  })
+}
+
+/**
+ * Delete a brand product permanently
+ */
+export async function deleteBrandProduct(productId: string): Promise<void> {
+  await deleteDocument('brandProducts', productId)
 }
 
 // ============================================================================

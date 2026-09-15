@@ -358,6 +358,28 @@ export interface PackageOrder {
 }
 
 // ============================================================================
+// Brand Products (קטלוג המותג — החנות השנייה)
+// ============================================================================
+
+export interface BrandProductSize {
+  size: string // flexible per product (default suggestion S-XXL)
+  stock: number // exact units on hand — owner-controlled after each print run
+}
+
+export interface BrandProduct {
+  id: string
+  name: string // Hebrew
+  description?: string // Hebrew, optional
+  price: number // ₪ — the authoritative price server-side verification will read
+  images: string[] // https Storage URLs; first = primary
+  sizes: BrandProductSize[]
+  active: boolean // shown in the future brand storefront
+  sortOrder: number
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// ============================================================================
 // Quotes (הצעות מחיר)
 // ============================================================================
 

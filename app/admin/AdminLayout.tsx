@@ -18,6 +18,7 @@ import {
   BarChart3,
   Wallet,
   Paintbrush,
+  Shirt,
   Menu,
   X,
   LogOut,
@@ -39,6 +40,7 @@ const menuItems = [
   { icon: Tag, label: 'קופונים', href: '/admin/coupons' },
   { icon: Percent, label: 'הנחות ומבצעים', href: '/admin/discounts' },
   { icon: Gift, label: 'חבילות', href: '/admin/packages' },
+  { icon: Shirt, label: 'קטלוג המותג', href: '/admin/brand' },
   { icon: BarChart3, label: 'אנליטיקה', href: '/admin/analytics' },
   { icon: Wallet, label: 'עלויות מערכות', href: '/admin/costs' },
 ]
