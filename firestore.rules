@@ -132,14 +132,6 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // ── Brand Products (קטלוג המותג) ─────────────────────────────────────────
-    // Public read (the brand storefront reads the catalog anonymously);
-    // only admin writes — prices and stock are owner-controlled
-    match /brandProducts/{productId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
     // ── Deny everything else ──────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
