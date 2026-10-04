@@ -108,3 +108,21 @@ export function pickFallbackOrder(
   const sorted = [...candidates].sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0))
   return { action: 'match', order: sorted[0], candidates: sorted }
 }
+
+/**
+ * Did Grow report this transaction as successfully paid?
+ * Grow webhook format change (4.10): `status` now arrives as the Hebrew
+ * string 'שולם' instead of the numeric 1 — accept both (plus legacy
+ * statusCode === '1'). Pure, so the webhook route never marks an order
+ * paid on a failed/unknown status.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isPaymentSucceeded(d: any): boolean {
+  return (
+    Number(d?.status) === 1 ||
+    d?.status === '1' ||
+    Number(d?.statusCode) === 1 ||
+    d?.statusCode === '1' ||
+    (typeof d?.status === 'string' && d.status.trim() === 'שולם')
+  )
+}

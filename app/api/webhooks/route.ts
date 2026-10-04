@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { waitUntil } from '@vercel/functions'
 import { adminDb } from '@/lib/firebase-admin'
-import { findOrderByFallback } from '@/lib/order-fallback'
+import { findOrderByFallback, alertUnmatchedPayment, alertNotPaidWebhook } from '@/lib/order-fallback'
+import { isPaymentSucceeded } from '@/lib/payment-matching'
 import { notifyOwnerNewOrder } from '@/lib/telegram'
 
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
@@ -69,17 +70,48 @@ export async function POST(request: NextRequest) {
 
     // Fallback auth: Grow webhooks have a recognizable structure — validates it really is Grow
     // (transactionToken + sum + payerPhone are all present and look right). Auto-trust these.
+    // STRUCTURAL ONLY — no status condition here: Grow changed the webhook format (4.10)
+    // and `status` now arrives as the Hebrew string 'שולם' instead of 1, which made the
+    // old status===1 condition reject real paid webhooks with 401. Payment success is
+    // checked separately below (paymentSucceeded).
     const looksLikeGrow = !!(
       d.transactionToken &&
       d.processToken &&
       d.sum &&
-      (d.payerPhone || d.payerEmail) &&
-      (Number(d.status) === 1 || d.statusCode === '1' || d.status === '1')
+      (d.payerPhone || d.payerEmail)
     )
 
     if (!isAuthedByHeader && !isAuthedByQuery && !isFromGrowByKey && !looksLikeGrow) {
       console.error('Webhook unauthorized — no valid auth method', { hasData: !!body.data, status: d.status })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Payment success — separated from auth (Grow format change, 4.10): status may be
+    // 1, '1' or 'שולם'. A verified webhook for a non-successful payment is acknowledged
+    // (200) WITHOUT touching state — never mark paid on a failed/unknown status.
+    // Checked on both d and body, like every other field extraction here (d || body).
+    const paymentSucceeded = isPaymentSucceeded(d) || isPaymentSucceeded(body)
+    if (!paymentSucceeded) {
+      console.log('[WEBHOOK_NOT_PAID] verified webhook without a successful payment status — ack, no state change', {
+        status: d.status,
+        statusCode: d.statusCode,
+      })
+      // Alert the admin (deduped) — if Grow changes the status wording again
+      // (the 4.10 incident: 1 → 'שולם'), this silent 200 must stay visible.
+      waitUntil(alertNotPaidWebhook({
+        ...(d.status !== undefined ? { rawStatus: d.status } : body.status !== undefined ? { rawStatus: body.status } : {}),
+        ...(d.statusCode !== undefined ? { rawStatusCode: d.statusCode } : {}),
+        paymentSum: d.sum || body.paymentSum || body.amount,
+        ...((d.payerPhone || body.payerPhone) && { payerPhone: String(d.payerPhone || body.payerPhone) }),
+        ...((d.payerEmail || body.payerEmail) && { payerEmail: String(d.payerEmail || body.payerEmail) }),
+        ...((d.asmachta || body.transactionCode || body.asmachta) && { transactionCode: String(d.asmachta || body.transactionCode || body.asmachta) }),
+        ...(d.transactionToken && { transactionToken: String(d.transactionToken) }),
+      }))
+      return NextResponse.json({
+        success: false,
+        notPaid: true,
+        message: 'Payment status is not successful — no state change',
+      }, { status: 200 })
     }
 
     // Extract paymentId — Grow sends it under data.customFields.cField1
@@ -145,6 +177,19 @@ export async function POST(request: NextRequest) {
 
     if (!orderDoc || !order) {
       console.error('Webhook: order not found', { paymentId, payerPhone, payerEmail })
+      // A verified SUCCESSFUL payment with no matching order must never fail
+      // silently — alert the admin (deduped via unmatched_payments, so Grow
+      // retries don't flood). Reaching here implies paymentSucceeded (non-paid
+      // webhooks returned 200 above). The 404 stays: Grow retries, and a late
+      // retry can still match if the order gets saved meanwhile.
+      waitUntil(alertUnmatchedPayment({
+        paymentSum,
+        ...(payerPhone && { payerPhone: String(payerPhone) }),
+        ...(payerEmail && { payerEmail: String(payerEmail) }),
+        ...(paymentId && { paymentId: String(paymentId) }),
+        ...(transactionCode && { transactionCode: String(transactionCode) }),
+        ...(d.transactionToken && { transactionToken: String(d.transactionToken) }),
+      }))
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
