@@ -80,7 +80,7 @@ console.log('\n1. Retention boundary (createdAt only)')
 
 console.log('\n2. updatedAt restarts the retention clock')
 {
-  const oldCreated = NOW - 10 * 24 * 60 * 60 * 1000 // 10 days ago — way past retention
+  const oldCreated = NOW - SKETCH_RETENTION_MS - 10 * 24 * 60 * 60 * 1000 // well past retention
 
   const freshEdit = planSketchSweep(doc({ createdAt: ts(oldCreated), updatedAt: ts(NOW - 60_000) }), NOW)
   assert(freshEdit.action === 'keep' && freshEdit.reason === 'within-retention',
@@ -103,7 +103,7 @@ console.log('\n2. updatedAt restarts the retention clock')
 
 console.log('\n3. Malformed updatedAt makes the doc UNSWEEPABLE (fail closed)')
 {
-  const ancient = NOW - 10 * 24 * 60 * 60 * 1000
+  const ancient = NOW - SKETCH_RETENTION_MS - 10 * 24 * 60 * 60 * 1000
   const malformed: [string, unknown][] = [
     ['bare number (unit is a guess)', 1755000000],
     ['numeric string', '1755000000000'],
@@ -117,7 +117,7 @@ console.log('\n3. Malformed updatedAt makes the doc UNSWEEPABLE (fail closed)')
   for (const [name, value] of malformed) {
     const plan = planSketchSweep(doc({ createdAt: ts(ancient), updatedAt: value }), NOW)
     assert(plan.action === 'keep' && plan.reason === 'invalid-timestamp',
-      `${name} → keep invalid-timestamp, even with 10-day-old createdAt`, plan)
+      `${name} → keep invalid-timestamp, even with a createdAt well past retention`, plan)
   }
 
   const future = planSketchSweep(

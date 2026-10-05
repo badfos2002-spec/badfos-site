@@ -31,7 +31,7 @@ const MAX_EMERGENCY_DELETIONS = 500 // safety cap per run
  * Layer 0: Self-heal upscales — retry failed/stuck design upscales of recent
  *          paid orders (up to 3 total attempts per design, then gave_up).
  * Layer 1: Delete design files of orders older than 30 days (keep order docs).
- * Layer 1b: Shared sketches older than 2 days lose their uploaded originals but
+ * Layer 1b: Shared sketches older than 30 days lose their uploaded originals but
  *          keep their Firestore doc AND their preview.jpg, so /share/<id> still
  *          shows the sketch — as a still instead of the 3D stage. Policy and
  *          every fail-closed rule live in lib/sketch-retention.ts.
@@ -208,7 +208,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // ── Layer 1b: shared sketches older than 2 days (link keeps working) ─
+    // ── Layer 1b: shared sketches older than 30 days (link keeps working) ─
     //    Isolated: a sketch-sweep failure must not cost the order cleanup or
     //    the emergency layer below, which are what protect the quota.
     try {

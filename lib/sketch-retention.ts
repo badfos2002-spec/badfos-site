@@ -40,10 +40,10 @@
 
 /**
  * Sketches strictly older than this are swept. See `planSketchSweep`.
- * The Hebrew copy on the swept share page says "ביומיים הראשונים" — change both
+ * The Hebrew copy on the swept share page says "בחודש הראשון" — change both
  * together (app/share/[id]/ShareClient.tsx, SweptSketchView).
  */
-export const SKETCH_RETENTION_DAYS = 2
+export const SKETCH_RETENTION_DAYS = 30
 export const SKETCH_RETENTION_MS = SKETCH_RETENTION_DAYS * 24 * 60 * 60 * 1000
 
 /** The only Storage prefix this policy may ever delete from. */
@@ -151,7 +151,7 @@ export type SketchSweepPlan =
  * Decide what happens to one `shared_designs` document.
  *
  * BOUNDARY: swept only when `ageMs > SKETCH_RETENTION_MS` — STRICTLY older than
- * two days. A sketch exactly two days old to the millisecond is kept.
+ * 30 days. A sketch exactly 30 days old to the millisecond is kept.
  *
  * Pure: no clock, no network, no SDK. `nowMs` is passed in so the boundary can
  * be tested at the millisecond.

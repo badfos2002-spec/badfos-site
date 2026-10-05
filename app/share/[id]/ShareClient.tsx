@@ -153,7 +153,7 @@ function SweptSketchView({ src }: { src: string | null }) {
       </div>
       <p className="text-xl sm:text-2xl font-bold text-gray-700">זו הסקיצה שהוכנה עבורך</p>
       <p className="text-sm sm:text-base text-gray-500 max-w-md leading-relaxed">
-        התצוגה בתלת־ממד זמינה ביומיים הראשונים מרגע יצירת הסקיצה. הקישור נשמר — והסקיצה מוצגת כאן כתמונה.
+        התצוגה בתלת־ממד זמינה בחודש הראשון מרגע יצירת הסקיצה. הקישור נשמר — והסקיצה מוצגת כאן כתמונה.
       </p>
       <DesignerButton label="לעיצוב חדש" />
     </PageShell>

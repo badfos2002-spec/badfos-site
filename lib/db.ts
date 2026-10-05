@@ -847,7 +847,7 @@ export async function getSharedDesign(id: string): Promise<(SharedDesignData & {
  * preview beats the logo).
  *
  * The sweep marks are cleared and `updatedAt` is set: an updated sketch is
- * fresh work, so its 2-day retention clock restarts — lib/sketch-retention.ts
+ * fresh work, so its 30-day retention clock restarts — lib/sketch-retention.ts
  * measures age from max(createdAt, updatedAt). `createdAt` is never touched.
  *
  * Returns the exact `updatedAt` it wrote: the sketch maker versions the share
