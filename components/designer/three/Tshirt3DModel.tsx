@@ -425,7 +425,7 @@ function artworkScale(
   return [sx, sy, placement.depth];
 }
 
-function ShirtDecal({ url, eff, box, artScale = 1, dragRef, overStripes = false }: {
+function ShirtDecal({ url, eff, box, artScale = 1, dragRef }: {
   url: string;
   /** Base placement + the COMMITTED offset. Computed once by `Tshirt3DModel` so
    *  the decal and the drag controller can never disagree about the origin. */
@@ -436,13 +436,6 @@ function ShirtDecal({ url, eff, box, artScale = 1, dragRef, overStripes = false 
   /** Set for the area being edited: the drag controller moves this mesh
    *  imperatively instead of reprojecting on every pointermove. */
   dragRef?: React.MutableRefObject<THREE.Mesh | null>;
-  /** VEST ONLY. The reflective bands are a SEPARATE mesh primitive sitting proud
-   *  of the body, so a back print projected onto the body is depth-occluded where
-   *  it overlaps them — an enlarged print gets "eaten" by the bands. Turn the
-   *  depth test OFF and raise the render order so the print draws OVER the bands.
-   *  The decal stays single-sided (FrontSide), so a back projection is still
-   *  back-face-culled from the front — the print never leaks through the garment. */
-  overStripes?: boolean;
 }) {
   const texture = useArtworkTexture(url);
   const scale = useMemo<[number, number, number]>(
@@ -462,13 +455,8 @@ function ShirtDecal({ url, eff, box, artScale = 1, dragRef, overStripes = false 
   }, [dragRef, eff.position[0], eff.position[1], eff.position[2], artScale]);
   if (!texture) return null;
   return (
-    // `depthTest`/`renderOrder` live on the CHILD material + mesh, NOT on drei's
-    // `<Decal depthTest>` prop: drei applies that to the mesh's throwaway default
-    // material, which our explicit child material replaces on attach — so the
-    // prop is a no-op whenever a child material is supplied. The child's own
-    // `depthTest` is the one that takes effect.
-    <Decal ref={dragRef} position={eff.position} rotation={eff.rotation} scale={scale} renderOrder={overStripes ? 2 : 0}>
-      <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} depthTest={!overStripes} />
+    <Decal ref={dragRef} position={eff.position} rotation={eff.rotation} scale={scale} depthTest>
+      <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
     </Decal>
   );
 }
@@ -917,24 +905,36 @@ export default function Tshirt3DModel({
   return (
     <group scale={normScale * MODEL.scale} rotation={MODEL.rotation}>
       <group position={[-center.x, -center.y, -center.z]}>
-        {meshes.map((mesh, i) => (
+        {meshes.map((mesh, i) => {
+          // Compute the part kind ONCE: it drives the material AND the band's
+          // render order / depth-write below.
+          const matName = ((mesh.material as THREE.Material | undefined)?.name) || mesh.name || '';
+          const partKind = partRules ? (partRules.find(r => matName.includes(r.match))?.kind ?? 'body') : undefined;
+          // VEST reflective bands: draw their SILVER after the body (renderOrder 1 —
+          // the body sorts behind and would otherwise overwrite the band colour) but
+          // WITHOUT writing depth. The back print then depth-tests against the BODY
+          // behind the band and paints over the band colour (the print is shown OVER
+          // the bands), while the far FRONT panel still writes depth and fully
+          // occludes the back print from the front (no leak-through). Scoped to the
+          // vest: only its `parts` config yields a 'silver' kind.
+          const isBand = partKind === 'silver';
+          return (
           <mesh
             key={mesh.uuid ?? i}
             geometry={mesh.geometry}
             position={mesh.position}
             rotation={mesh.rotation}
             scale={mesh.scale}
+            renderOrder={isBand ? 1 : 0}
             castShadow
             receiveShadow
           >
             {(() => {
               if (partRules) {
-                const matName = ((mesh.material as THREE.Material | undefined)?.name) || mesh.name || '';
-                const kind = partRules.find(r => matName.includes(r.match))?.kind ?? 'body';
-                if (kind === 'silver') {
-                  return <meshStandardMaterial color="#d4d4d4" roughness={0.35} metalness={0.55} side={THREE.DoubleSide} />;
+                if (partKind === 'silver') {
+                  return <meshStandardMaterial color="#d4d4d4" roughness={0.35} metalness={0.55} side={THREE.DoubleSide} depthWrite={false} />;
                 }
-                if (kind === 'black') {
+                if (partKind === 'black') {
                   return <meshStandardMaterial color="#181818" roughness={0.9} metalness={0.05} side={THREE.DoubleSide} />;
                 }
                 return <ShirtMaterial color={shirtColor} emissiveIntensity={emissiveIntensity} />;
@@ -968,7 +968,7 @@ export default function Tshirt3DModel({
               const ref = d.area === editArea ? dragRef : undefined;
               return singleSheet
                 ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} />
-                : <ShirtDecal key={d.area} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} overStripes={variant === 'vest'} />;
+                : <ShirtDecal key={d.area} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} />;
             })}
             {/* `targetFor(...) === mesh` makes both mount EXACTLY once —
                 unguarded, the polo's 40 primitives would each get an anchor and
@@ -1014,7 +1014,8 @@ export default function Tshirt3DModel({
                   )
               : null}
           </mesh>
-        ))}
+          );
+        })}
       </group>
     </group>
   );
