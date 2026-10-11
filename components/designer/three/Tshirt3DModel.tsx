@@ -425,7 +425,7 @@ function artworkScale(
   return [sx, sy, placement.depth];
 }
 
-function ShirtDecal({ url, eff, box, artScale = 1, dragRef }: {
+function ShirtDecal({ url, eff, box, artScale = 1, dragRef, renderOrder = 0 }: {
   url: string;
   /** Base placement + the COMMITTED offset. Computed once by `Tshirt3DModel` so
    *  the decal and the drag controller can never disagree about the origin. */
@@ -436,6 +436,12 @@ function ShirtDecal({ url, eff, box, artScale = 1, dragRef }: {
   /** Set for the area being edited: the drag controller moves this mesh
    *  imperatively instead of reprojecting on every pointermove. */
   dragRef?: React.MutableRefObject<THREE.Mesh | null>;
+  /** Draw-order for the decal mesh. VEST: 2, so the print draws AFTER the
+   *  reflective band (renderOrder 1) and its colour always lands on top of the
+   *  silver — the band writes no depth (depthWrite=false) so it can never occlude
+   *  the print, and the far front panel still occludes it from the front. 0 for
+   *  every other product (unchanged). */
+  renderOrder?: number;
 }) {
   const texture = useArtworkTexture(url);
   const scale = useMemo<[number, number, number]>(
@@ -455,7 +461,7 @@ function ShirtDecal({ url, eff, box, artScale = 1, dragRef }: {
   }, [dragRef, eff.position[0], eff.position[1], eff.position[2], artScale]);
   if (!texture) return null;
   return (
-    <Decal ref={dragRef} position={eff.position} rotation={eff.rotation} scale={scale} depthTest>
+    <Decal ref={dragRef} position={eff.position} rotation={eff.rotation} scale={scale} renderOrder={renderOrder} depthTest>
       <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
     </Decal>
   );
@@ -775,6 +781,10 @@ export default function Tshirt3DModel({
   const normalStrength = (cfg as { normalScale?: number }).normalScale;
   const baseMapUrl = (cfg as { baseMapUrl?: string }).baseMapUrl;
   const partRules = (cfg as { parts?: { match: string; kind: 'body' | 'silver' | 'black' }[] }).parts;
+  // Garments with a reflective 'silver' band (the hi-vis vest): the back print's
+  // decal needs a high renderOrder so it draws AFTER the band and its colour lands
+  // over the silver. Same predicate that gives the band `depthWrite=false` below.
+  const hasReflectiveBand = !!partRules?.some((r) => r.kind === 'silver');
   const aoMapUrl = (cfg as { aoMapUrl?: string }).aoMapUrl;
   const heightMapUrl = (cfg as { heightMapUrl?: string }).heightMapUrl;
   const singleArea = (cfg as { singleArea?: boolean }).singleArea;
@@ -968,7 +978,7 @@ export default function Tshirt3DModel({
               const ref = d.area === editArea ? dragRef : undefined;
               return singleSheet
                 ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} />
-                : <ShirtDecal key={d.area} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} />;
+                : <ShirtDecal key={d.area} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} renderOrder={hasReflectiveBand ? 2 : 0} />;
             })}
             {/* `targetFor(...) === mesh` makes both mount EXACTLY once —
                 unguarded, the polo's 40 primitives would each get an anchor and
