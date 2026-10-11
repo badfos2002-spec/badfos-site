@@ -425,7 +425,7 @@ function artworkScale(
   return [sx, sy, placement.depth];
 }
 
-function ShirtDecal({ url, eff, box, artScale = 1, dragRef }: {
+function ShirtDecal({ url, eff, box, artScale = 1, dragRef, overStripes = false }: {
   url: string;
   /** Base placement + the COMMITTED offset. Computed once by `Tshirt3DModel` so
    *  the decal and the drag controller can never disagree about the origin. */
@@ -436,6 +436,13 @@ function ShirtDecal({ url, eff, box, artScale = 1, dragRef }: {
   /** Set for the area being edited: the drag controller moves this mesh
    *  imperatively instead of reprojecting on every pointermove. */
   dragRef?: React.MutableRefObject<THREE.Mesh | null>;
+  /** VEST ONLY. The reflective bands are a SEPARATE mesh primitive sitting proud
+   *  of the body, so a back print projected onto the body is depth-occluded where
+   *  it overlaps them — an enlarged print gets "eaten" by the bands. Turn the
+   *  depth test OFF and raise the render order so the print draws OVER the bands.
+   *  The decal stays single-sided (FrontSide), so a back projection is still
+   *  back-face-culled from the front — the print never leaks through the garment. */
+  overStripes?: boolean;
 }) {
   const texture = useArtworkTexture(url);
   const scale = useMemo<[number, number, number]>(
@@ -455,8 +462,13 @@ function ShirtDecal({ url, eff, box, artScale = 1, dragRef }: {
   }, [dragRef, eff.position[0], eff.position[1], eff.position[2], artScale]);
   if (!texture) return null;
   return (
-    <Decal ref={dragRef} position={eff.position} rotation={eff.rotation} scale={scale} depthTest>
-      <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} />
+    // `depthTest`/`renderOrder` live on the CHILD material + mesh, NOT on drei's
+    // `<Decal depthTest>` prop: drei applies that to the mesh's throwaway default
+    // material, which our explicit child material replaces on attach — so the
+    // prop is a no-op whenever a child material is supplied. The child's own
+    // `depthTest` is the one that takes effect.
+    <Decal ref={dragRef} position={eff.position} rotation={eff.rotation} scale={scale} renderOrder={overStripes ? 2 : 0}>
+      <meshStandardMaterial map={texture} transparent polygonOffset polygonOffsetFactor={-6} roughness={0.9} depthTest={!overStripes} />
     </Decal>
   );
 }
@@ -956,7 +968,7 @@ export default function Tshirt3DModel({
               const ref = d.area === editArea ? dragRef : undefined;
               return singleSheet
                 ? <SheetShirtDecal key={d.area} target={mesh} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} />
-                : <ShirtDecal key={d.area} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} />;
+                : <ShirtDecal key={d.area} url={d.url} eff={eff} box={cfg.guides[d.area]} artScale={d.transform?.scale ?? 1} dragRef={ref} overStripes={variant === 'vest'} />;
             })}
             {/* `targetFor(...) === mesh` makes both mount EXACTLY once —
                 unguarded, the polo's 40 primitives would each get an anchor and
