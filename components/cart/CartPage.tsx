@@ -242,13 +242,18 @@ export default function CartPage() {
    * ⇒ a fresh link at the fresh amount.
    */
   const buildPaymentPlan = (info: CustomerInfo, ship: Shipping, cCode: string, cDiscount: number) => {
+    // Always price from the LIVE store items: the checkout safety belt
+    // re-prices the persisted items mid-flight (handleCheckout's closure would
+    // otherwise keep the stale render snapshot). For the form-time prefetch
+    // this is identical to the render-scope `items`.
+    const liveItems = useCart.getState().items
     const expressCost = getExpressCost(ship)
-    const orderCalc = calculateOrderTotal(items, ship.method as 'delivery' | 'pickup', cDiscount, undefined, expressCost)
+    const orderCalc = calculateOrderTotal(liveItems, ship.method as 'delivery' | 'pickup', cDiscount, undefined, expressCost)
     // Add package totals
     const packagesTotal = packageItems.reduce((sum, pkg) => sum + pkg.totalPrice, 0)
     orderCalc.subtotal += packagesTotal
     orderCalc.total += packagesTotal
-    const cartFingerprint = items
+    const cartFingerprint = liveItems
       .map(i => `${i.id}:${i.totalQuantity}:${i.designs.map(d => `${d.area}.${d.imageUrl.length}`).join('+')}`)
       .join('|') + '#' + packageItems.map(p => `${p.id}:${p.quantity}`).join('|')
     const cacheKey = `${tempOrderIdRef.current}-${info.phone}-${orderCalc.total}-${cCode}-${cartFingerprint}`
@@ -258,11 +263,11 @@ export default function CartPage() {
       name: `${info.firstName} ${info.lastName}`,
       phone: info.phone,
       email: info.email,
-      description: `הזמנה ${items.length + packageItems.length} פריטים - badfos.co.il`,
+      description: `הזמנה ${liveItems.length + packageItems.length} פריטים - badfos.co.il`,
       // items are ALWAYS sent — server-side amount verification must run on
       // EVERY link request, prefetches included. (The old pre-fetch omitted
       // them and silently skipped verifyAmount — never again.)
-      items: items.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
+      items: liveItems.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
       couponDiscount: cDiscount,
       ...(expressCost > 0 && { express: true }),
       ...(getGclid() && { gclid: getGclid() }),
@@ -389,11 +394,39 @@ export default function CartPage() {
         return { effectiveCouponDiscount, effectiveCouponCode }
       })()
 
+      // ── Pricing safety belt ────────────────────────────────────────────────
+      // If a content blocker killed the early overrides load (PricingLoader),
+      // the client is still on code-default prices here and the server — which
+      // DOES read the overrides — would refuse the charge ("Price mismatch").
+      // One same-origin fetch stamps the same overrides the server verifies
+      // against. Usually instant (/api/pricing is HTTP-cached for 60s by
+      // PricingLoader's page-load fetch); capped at 2s and FAIL-OPEN — a slow
+      // or failed fetch (e.g. 503) never blocks checkout and never wipes
+      // overrides that already loaded. Overlaps the coupon fetch above.
+      await Promise.race([
+        fetch('/api/pricing')
+          .then(r => (r.ok ? r.json() : null))
+          .then(data => { if (data) applyPricingOverrides(data) })
+          .catch(() => {}),
+        new Promise<void>(resolve => setTimeout(resolve, 2000)),
+      ])
+      // Re-price the persisted cart items from the CURRENT live pricing —
+      // their pricePerUnit/totalPrice were stamped at add-to-cart time
+      // (possibly before any overrides loaded, possibly in an older session at
+      // older prices). Idempotent, so it runs unconditionally: even when the
+      // fetch above failed, overrides PricingLoader already applied still get
+      // stamped into the items. This is also what the customer sees — the
+      // on-screen total corrects itself before the charge. The store now holds
+      // the repriced items; the render-scope `items` is a stale snapshot, so
+      // everything below reads fresh.
+      useCart.getState().repriceItems()
+      const pricedItems = useCart.getState().items
+
       // Use pre-uploaded images from cache, fallback to upload now if needed
       const cache = uploadCacheRef.current
       let tempOrderId = tempOrderIdRef.current
       const itemsPromise = Promise.all(
-        items.map(async (item) => ({
+        pricedItems.map(async (item) => ({
           productType: item.productType,
           fabricType: item.fabricType,
           color: item.color,
@@ -419,24 +452,8 @@ export default function CartPage() {
         }))
       )
 
-      // Safety belt: re-align the price overrides right before the amount is
-      // computed. If a content blocker killed the early load (PricingLoader),
-      // the client is still on code-default prices here and the server — which
-      // DOES read the overrides — would refuse the charge ("Price mismatch").
-      // One same-origin fetch stamps the same overrides the server verifies
-      // against. Runs CONCURRENTLY with the coupon/upload work above, capped
-      // at 2s and FAIL-OPEN — a slow or failed fetch never blocks checkout,
-      // we proceed with whatever prices are already loaded.
-      const pricingPromise = Promise.race([
-        fetch('/api/pricing')
-          .then(r => (r.ok ? r.json() : null))
-          .then(data => { if (data) applyPricingOverrides(data) })
-          .catch(() => {}),
-        new Promise<void>(resolve => setTimeout(resolve, 2000)),
-      ])
-
       const [{ effectiveCouponDiscount, effectiveCouponCode }, itemsForOrder] =
-        await Promise.all([couponPromise, itemsPromise, pricingPromise])
+        await Promise.all([couponPromise, itemsPromise])
 
       // Correct totals (quantity discount + coupon + express) + cache key +
       // link request body — the SAME computation the form-time prefetch used.

@@ -17,24 +17,45 @@ export const dynamic = 'force-dynamic'
  * Public by design: settings/pricing is already world-readable in the
  * Firestore rules — this exposes nothing new.
  *
- * FAIL OPEN to {} if the document is unreadable — exactly like
- * loadPricingOverrides in app/api/payment/create/route.ts, with the same
- * grep-able log marker, so the client falls back to code-default prices the
- * same way the server's verification does.
+ * Failure contract: a MISSING document is a legitimate "no overrides" and
+ * returns 200 + {}. An UNREADABLE document returns 503 + no-store — never a
+ * cacheable 200+{} that would wipe overrides already applied on the client
+ * (applyPricingOverrides replaces wholesale) and silence the SDK fallback.
+ * Both consumers handle it: PricingLoader falls back to the SDK, the checkout
+ * safety belt keeps the already-loaded state.
+ *
+ * Reads are cached per warm instance for 60s (same pattern and TTL as
+ * loadPricingOverrides in app/api/payment/create/route.ts — failures are
+ * NEVER cached), and the last-known-good document is served, stale, when a
+ * read fails mid-flight.
  */
+const PRICING_TTL_MS = 60_000
+let pricingCache: { data: Record<string, unknown>; at: number } | null = null
+
+const CACHE_HEADERS = { 'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300' }
+
 export async function GET() {
-  let data: Record<string, unknown> = {}
+  if (pricingCache && Date.now() - pricingCache.at < PRICING_TTL_MS) {
+    return NextResponse.json(pricingCache.data, { headers: CACHE_HEADERS })
+  }
   try {
     const snap = await adminDb.collection('settings').doc('pricing').get()
-    data = snap.exists ? (snap.data() as Record<string, unknown>) ?? {} : {}
+    const data = snap.exists ? (snap.data() as Record<string, unknown>) ?? {} : {}
+    pricingCache = { data, at: Date.now() }
+    return NextResponse.json(data, { headers: CACHE_HEADERS })
   } catch (error) {
     console.error(
-      '[PRICING_OVERRIDES_UNREADABLE] settings/pricing could not be read — serving {} (code-default prices). ' +
-      'If the admin has overridden prices, clients are showing defaults until this recovers:',
+      '[PRICING_OVERRIDES_UNREADABLE] settings/pricing could not be read — ' +
+      (pricingCache ? 'serving the last-known-good overrides (stale).' : 'returning 503 (no last-known-good yet).') +
+      ' If the admin has overridden prices, clients may show defaults until this recovers:',
       error
     )
+    if (pricingCache) {
+      return NextResponse.json(pricingCache.data, { headers: CACHE_HEADERS })
+    }
+    return NextResponse.json(
+      { error: 'pricing_unavailable' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } }
+    )
   }
-  return NextResponse.json(data, {
-    headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' },
-  })
 }

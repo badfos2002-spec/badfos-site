@@ -18,6 +18,7 @@ interface CartStore {
   removeItem: (itemId: string) => void
   updateItemQuantity: (itemId: string, sizes: SizeQuantity[]) => void
   replaceItem: (itemId: string, config: ProductConfig) => void
+  repriceItems: () => void
   setEditingItem: (itemId: string | null) => void
   addPackage: (pkg: Omit<PackageCartItem, 'id' | 'totalPrice'>) => void
   removePackage: (id: string) => void
@@ -122,6 +123,26 @@ export const useCart = create<CartStore>()(
           totalPrice,
         }
         set({ items: updatedItems, editingItemId: null })
+      },
+
+      /**
+       * Re-price every item from the CURRENT live pricing (admin overrides
+       * included). Items persist pricePerUnit/totalPrice from add-to-cart
+       * time (localStorage), so a cart created before the overrides loaded —
+       * or in an older session, at older prices — carries stale prices.
+       * Idempotent: with unchanged pricing the recomputed values are equal.
+       */
+      repriceItems: () => {
+        set((state) => ({
+          items: state.items.map((item) => {
+            const pricePerUnit = calculateItemPrice(item)
+            return {
+              ...item,
+              pricePerUnit,
+              totalPrice: calculateTotalPrice(pricePerUnit, item.totalQuantity),
+            }
+          }),
+        }))
       },
 
       /**
