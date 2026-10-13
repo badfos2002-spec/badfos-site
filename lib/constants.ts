@@ -115,10 +115,15 @@ export const TSHIRT_COLORS = [
   { id: 'beige', name: 'בז׳', hex: '#FFEABE' },
   { id: 'burgundy', name: 'בורדו', hex: '#6E2A48' },
   { id: 'olive', name: 'זית', hex: '#6B7245' },
+  // NOTE: the 3D stage lifts near-black colors (linear max < 0.12) to a fixed
+  // dark gray — a darker chocolate (e.g. #5D4037) loses its hue there. Keep R ≥ ~100.
+  { id: 'chocolate', name: 'חום שוקולד', hex: '#6B4332' },
 ] as const
 
 // Colors available per fabric type (undefined = all TSHIRT_COLORS)
+// chocolate is stocked for cotton only — dri-fit lists everything but it.
 export const FABRIC_COLOR_FILTER: Record<string, string[]> = {
+  'dri-fit': ['white', 'black', 'gray', 'red', 'navy', 'beige', 'burgundy', 'olive'],
   oversized: ['white', 'black', 'beige'],
   polo: ['white', 'black', 'gray'],
 }
@@ -159,6 +164,7 @@ export const BUFF_COLORS = [
   { id: 'orange', name: 'כתום', hex: '#F97316' },
   { id: 'green', name: 'ירוק', hex: '#10B981' },
   { id: 'turquoise', name: 'טורקיז', hex: '#06B6D4' },
+  { id: 'black', name: 'שחור', hex: '#000000' },
 ] as const
 
 export const APRON_COLORS = [
