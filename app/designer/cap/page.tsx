@@ -149,6 +149,13 @@ export default function CapDesignerPage() {
     }
   }
 
+  // One-time preselect from ?type= (links from the home product river).
+  useEffect(() => {
+    const type = new URLSearchParams(window.location.search).get('type')
+    if (type && CAP_TYPES.some(t => t.id === type)) handleTypeChange(type)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const mockupSrc = (selectedType && selectedColor && capMockups[selectedType]?.[selectedColor]) ||
     (selectedType && capMockups[selectedType]?.['black']) ||
     '/assets/כובע טמבל שחור.png'

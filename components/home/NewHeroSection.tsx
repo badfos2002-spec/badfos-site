@@ -9,6 +9,8 @@ import { Sparkles, ShieldCheck, Truck, Star } from 'lucide-react'
 import HeroCarousel from './HeroCarousel'
 import RevealText from '@/components/common/RevealText'
 import { useTilt } from '@/components/common/useTilt'
+import { ProductRiver } from './ProductRiver'
+import { HOME_CAROUSEL_ITEMS } from '@/lib/home-carousel'
 
 const D = {
   hero_badge: 'עיצובים אישיים ייחודיים',
@@ -77,11 +79,15 @@ export default function NewHeroSection() {
       <div className="absolute -top-48 -left-48 w-[250px] h-[250px] md:w-[600px] md:h-[600px] bg-gradient-radial from-[#fdba74]/40 to-transparent rounded-full blur-3xl pointer-events-none will-change-transform"></div>
 
       <div className="mx-auto max-w-[1536px] px-4 md:px-0 relative z-10">
-        <div className="flex flex-col-reverse md:grid md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 items-center mt-4 md:mt-6">
+        {/* Mobile: the text wrapper is display:contents, so its children join this
+            flex column as siblings of the carousel and order-* classes arrange them:
+            badge+title+subtitle → carousel (+CTA) → desc → rating. md: restores the
+            exact production grid (wrapper back to flex, all orders reset). */}
+        <div className="flex flex-col md:grid md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 items-center mt-4 md:mt-6">
 
           {/* Text Content */}
-          <div className="text-center w-full px-4 space-y-5 flex flex-col items-center hero-text-rounded min-h-[320px] md:min-h-[380px]">
-            <div ref={badgeRef} className="inline-flex items-center gap-2 px-5 py-1.5 bg-[#fef9c3] rounded-full text-[#854d0e] text-sm font-medium border border-[#fde047] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
+          <div className="text-center w-full px-4 md:space-y-5 contents md:flex md:flex-col md:items-center hero-text-rounded min-h-[320px] md:min-h-[380px]">
+            <div ref={badgeRef} className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#fef9c3] rounded-full text-[#854d0e] text-sm font-medium border border-[#fde047] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
               {c.hero_badge}
               <Sparkles className="w-3.5 h-3.5" />
             </div>
@@ -92,7 +98,7 @@ export default function NewHeroSection() {
               text={c.hero_title1}
               y={36}
               stagger={0.09}
-              className="text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
+              className="order-2 md:order-none text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
             />
             <RevealText
               as="span"
@@ -101,14 +107,14 @@ export default function NewHeroSection() {
               y={36}
               stagger={0.09}
               delay={0.18}
-              className="block -mt-3 text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#f59e0b] leading-[1.1] tracking-tight drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)]"
+              className="order-3 md:order-none block -mt-3 text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#f59e0b] leading-[1.1] tracking-tight drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)]"
             />
 
-            <h2 ref={subtitleRef} className="text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
+            <h2 ref={subtitleRef} className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
               {c.hero_subtitle}
             </h2>
 
-            <p ref={descRef} className="text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed">
+            <p ref={descRef} className="order-6 md:order-none text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
               {c.hero_desc1}
               <br className="hidden sm:block" />
               {' '}{c.hero_desc2}
@@ -141,7 +147,7 @@ export default function NewHeroSection() {
             </div>
 
             {/* Rating row — always visible, never JS-dependent */}
-            <div className="flex items-center gap-2 text-sm sm:text-base text-gray-500 mt-3">
+            <div className="order-7 md:order-none flex items-center gap-2 text-sm sm:text-base text-gray-500 mt-3">
               <div className="flex -space-x-1 rtl:space-x-reverse">
                 {['#4285F4', '#34A853', '#E91E63', '#FF8F00'].map((bg, i) => (
                   <div key={i} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: bg }}>
@@ -154,7 +160,7 @@ export default function NewHeroSection() {
           </div>
 
           {/* Carousel + Mobile Button */}
-          <div className="relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mb-10 md:mb-0 mt-2">
+          <div className="order-5 md:order-none relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mb-10 md:mb-0 mt-2">
             {/* Richer halo behind the carousel card */}
             <div className="absolute inset-0 -z-0 mx-auto my-auto w-[88%] h-[88%] bg-gradient-radial from-[#ffc32e]/35 via-[#fef08a]/20 to-transparent rounded-[2.5rem] blur-2xl pointer-events-none will-change-transform"></div>
 
@@ -175,6 +181,9 @@ export default function NewHeroSection() {
 
         </div>
       </div>
+
+      {/* The river — two full-bleed product rows flowing below the hero copy */}
+      <ProductRiver items={HOME_CAROUSEL_ITEMS} className="relative z-10 mt-10 md:mt-14" />
     </section>
   )
 }

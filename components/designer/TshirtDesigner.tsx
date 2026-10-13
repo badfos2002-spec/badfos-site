@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import type { ProductConfig, SizeQuantity, DesignArea } from '@/lib/types'
+import type { ProductConfig, SizeQuantity, DesignArea, FabricType } from '@/lib/types'
 import ThreeErrorBoundary from './three/ThreeErrorBoundary'
 import Preview3DLoading from './three/Preview3DLoading'
 import StepIndicator from './StepIndicator'
@@ -18,7 +18,7 @@ import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { FABRIC_COLOR_FILTER, TSHIRT_COLORS } from '@/lib/constants'
+import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_COLORS } from '@/lib/constants'
 
 // The R3F Canvas cannot be server-rendered, so load the 3D stage client-side
 // only. A 3D failure never breaks the page — it's wrapped in an error boundary
@@ -190,6 +190,18 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     if (editingItemId) return
     saveDesignerSession(currentStep, config)
   }, [currentStep, config, editingItemId])
+
+  // One-time preselect from ?fabric= (links from the home product river).
+  // Applies only to a fresh designer — never over an edited item or a
+  // restored session.
+  useEffect(() => {
+    if (editingItem || savedSession.current) return
+    const fabric = new URLSearchParams(window.location.search).get('fabric')
+    if (fabric && FABRIC_TYPES.some((f) => f.id === fabric)) {
+      setConfig((prev) => ({ ...prev, fabricType: fabric as FabricType }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const updateConfig = (updates: Partial<ProductConfig>) => {
     setConfig((prev) => {

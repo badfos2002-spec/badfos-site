@@ -21,16 +21,16 @@ const SESSION_KEY = 'badfos_intro_seen'
 
 type Product = { src: string; tilt: number; angle: number }
 
-// One image per product category (6 categories) — shown on clean white tiles
-// (object-contain, never cropped). `angle` places each tile evenly around the
-// logo (degrees, 0 = top, clockwise) at 0/60/120/180/240/300.
+// One transparent 3D render per product category (6 categories) — shown on
+// clean white tiles (object-contain, never cropped). `angle` places each tile
+// evenly around the logo (degrees, 0 = top, clockwise) at 0/60/120/180/240/300.
 const PRODUCTS: readonly Product[] = [
-  { src: '/assets/חולצה לבנה קדימה.webp', tilt: -8, angle: 0 },   // חולצות
-  { src: '/assets/כובע רשת ירוק.png', tilt: 6, angle: 60 },       // כובעים
-  { src: '/assets/סווטשרט חזית אדום.webp', tilt: -4, angle: 120 }, // סווטשרטים
-  { src: '/assets/באף סגול.webp', tilt: 7, angle: 180 },           // באפים
-  { src: '/assets/סינר שחור.webp', tilt: -6, angle: 240 },        // סינרים
-  { src: '/assets/baby-blue.webp', tilt: 5, angle: 300 },          // תינוקות
+  { src: '/renders/tshirt.png', tilt: -8, angle: 0 },      // חולצות
+  { src: '/renders/cap-mesh.png', tilt: 6, angle: 60 },    // כובעים
+  { src: '/renders/sweatshirt.png', tilt: -4, angle: 120 }, // סווטשרטים
+  { src: '/renders/buff.png', tilt: 7, angle: 180 },        // באפים
+  { src: '/renders/apron.png', tilt: -6, angle: 240 },      // סינרים
+  { src: '/renders/baby.png', tilt: 5, angle: 300 },        // תינוקות
 ] as const
 
 export default function IntroOverlay() {

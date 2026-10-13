@@ -158,6 +158,13 @@ export default function ToteDesignerPage() {
     }
   }
 
+  // One-time preselect from ?type= (links from the home product river).
+  useEffect(() => {
+    const type = new URLSearchParams(window.location.search).get('type')
+    if (type && TOTE_TYPES.some(t => t.id === type)) handleTypeChange(type)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
 

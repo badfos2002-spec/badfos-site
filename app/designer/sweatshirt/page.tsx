@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useSyncExternalStore } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
@@ -83,6 +83,13 @@ export default function SweatshirtDesignerPage() {
   const [quantities, setQuantities] = useState<Record<string, number>>(
     () => Object.fromEntries(STANDARD_SIZES.map(s => [s.id, 0]))
   )
+
+  // One-time preselect from ?type= (links from the home product river).
+  useEffect(() => {
+    const type = new URLSearchParams(window.location.search).get('type')
+    if (type && SWEATSHIRT_TYPES.some(t => t.id === type)) handleTypeSelect(type)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const totalQuantity = Object.values(quantities).reduce((sum, q) => sum + q, 0)
   const liveDesignAreas = getDesignAreasByProductType('sweatshirt')

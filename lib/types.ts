@@ -411,3 +411,15 @@ export interface EmailData {
   data: Order | Lead
   couponCode?: string
 }
+
+// ============================================================================
+// Home Carousel Types
+// ============================================================================
+
+export interface CarouselItem {
+  id: string
+  imageUrl: string // transparent PNG of the product, roughly square
+  tag: string // short label shown in the pill under the image
+  order: number // sort ascending
+  href?: string // designer page for this product (optional — fallback /designer)
+}
