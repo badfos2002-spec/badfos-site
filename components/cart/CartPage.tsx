@@ -14,7 +14,7 @@ import { createSharedCart, createOrder, getOrdersPaused } from '@/lib/db'
 import { uploadBase64Image, uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintDataUrl, printUploadErrorMessage, isDesignUploadError } from '@/lib/print-image'
 import { calculateOrderTotal } from '@/lib/pricing'
-import { EXPRESS_PICKUP, CONTACT_INFO } from '@/lib/constants'
+import { EXPRESS_PICKUP, CONTACT_INFO, applyPricingOverrides } from '@/lib/constants'
 import type { CustomerInfo, Shipping } from '@/lib/types'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
 import { getGclid } from '@/lib/tracking'
@@ -419,8 +419,24 @@ export default function CartPage() {
         }))
       )
 
+      // Safety belt: re-align the price overrides right before the amount is
+      // computed. If a content blocker killed the early load (PricingLoader),
+      // the client is still on code-default prices here and the server — which
+      // DOES read the overrides — would refuse the charge ("Price mismatch").
+      // One same-origin fetch stamps the same overrides the server verifies
+      // against. Runs CONCURRENTLY with the coupon/upload work above, capped
+      // at 2s and FAIL-OPEN — a slow or failed fetch never blocks checkout,
+      // we proceed with whatever prices are already loaded.
+      const pricingPromise = Promise.race([
+        fetch('/api/pricing')
+          .then(r => (r.ok ? r.json() : null))
+          .then(data => { if (data) applyPricingOverrides(data) })
+          .catch(() => {}),
+        new Promise<void>(resolve => setTimeout(resolve, 2000)),
+      ])
+
       const [{ effectiveCouponDiscount, effectiveCouponCode }, itemsForOrder] =
-        await Promise.all([couponPromise, itemsPromise])
+        await Promise.all([couponPromise, itemsPromise, pricingPromise])
 
       // Correct totals (quantity discount + coupon + express) + cache key +
       // link request body — the SAME computation the form-time prefetch used.
