@@ -21,9 +21,9 @@ const SESSION_KEY = 'badfos_intro_seen'
 
 type Product = { src: string; tilt: number; angle: number }
 
-// One transparent 3D render per product category (6 categories) — shown on
-// clean white tiles (object-contain, never cropped). `angle` places each tile
-// evenly around the logo (degrees, 0 = top, clockwise) at 0/60/120/180/240/300.
+// One transparent 3D render per product category (6 categories) — floating
+// free on the cream background (object-contain, never cropped). `angle` places
+// each one evenly around the logo (degrees, 0 = top, clockwise) at 0/60/120/180/240/300.
 const PRODUCTS: readonly Product[] = [
   { src: '/renders/tshirt.png', tilt: -8, angle: 0 },      // חולצות
   { src: '/renders/cap-mesh.png', tilt: 6, angle: 60 },    // כובעים
@@ -353,7 +353,7 @@ export default function IntroOverlay() {
               key={p.src}
               data-intro-card-m
               dir="ltr"
-              className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-white p-2 shadow-[0_14px_34px_-10px_rgba(0,0,0,0.38)] ring-2 ring-[#ffc32e]/70"
+              className="relative aspect-[3/4] w-full"
               style={{ willChange: 'transform', transformStyle: 'preserve-3d' }}
             >
               <Image
@@ -362,7 +362,7 @@ export default function IntroOverlay() {
                 fill
                 priority={i < 2}
                 sizes="42vw"
-                className="object-contain p-1"
+                className="object-contain p-1 drop-shadow-[0_10px_16px_rgba(0,0,0,0.22)]"
               />
             </div>
           ))}
@@ -422,7 +422,7 @@ export default function IntroOverlay() {
               data-intro-tile
               data-angle={p.angle}
               dir="ltr"
-              className="absolute left-1/2 top-1/2 -ml-[2.125rem] -mt-12 h-24 w-[4.25rem] overflow-hidden rounded-2xl bg-white p-1.5 shadow-[0_14px_34px_-10px_rgba(0,0,0,0.38)] ring-2 ring-[#ffc32e]/70 sm:-ml-[4.5rem] sm:-mt-[6rem] sm:h-48 sm:w-36 sm:p-3"
+              className="absolute left-1/2 top-1/2 -ml-[2.125rem] -mt-12 h-24 w-[4.25rem] sm:-ml-[4.5rem] sm:-mt-[6rem] sm:h-48 sm:w-36"
               style={{ willChange: 'transform' }}
             >
               <Image
@@ -431,7 +431,7 @@ export default function IntroOverlay() {
                 fill
                 priority={i < 2}
                 sizes="(max-width:640px) 104px, 144px"
-                className="object-contain p-1"
+                className="object-contain p-1 drop-shadow-[0_10px_16px_rgba(0,0,0,0.22)]"
               />
             </div>
           ))}
