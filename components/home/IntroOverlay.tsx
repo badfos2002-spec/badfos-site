@@ -42,7 +42,7 @@ const MOBILE_SPOTS: readonly MobileSpot[] = [
   { x: -74, y: -244, w: 148, tilt: -10 }, // tshirt — top-left (hero)
   { x: 96, y: -150, w: 104, tilt: 9 },    // cap — upper-right
   { x: 102, y: 62, w: 132, tilt: -6 },    // sweatshirt — mid-right
-  { x: -114, y: -52, w: 92, tilt: 11 },   // buff — mid-left (small)
+  { x: -114, y: -52, w: 106, tilt: 11 },  // buff — mid-left (small)
   { x: -92, y: 182, w: 126, tilt: -8 },   // apron — lower-left
   { x: 74, y: 292, w: 110, tilt: 7 },     // baby — bottom-right
 ] as const
@@ -103,7 +103,7 @@ export default function IntroOverlay() {
           y: (x * Math.sin(swirl) + y * Math.cos(swirl)) * 1.9 * k,
         }))
 
-        // Mobile total lands ~3.75s; safety sits ~600ms past the end.
+        // Mobile total lands ~3.55s; safety sits ~800ms past the end.
         const mTimer = setTimeout(() => {
           doneRef.current = true
           setShow(false)
@@ -170,29 +170,34 @@ export default function IntroOverlay() {
             },
             0.4
           )
-          // 4) Gentle float while held.
+          // 4) Felt per-card bob while held (whole-container rotation read as static).
           .to(
-            '[data-intro-scatter-m]',
-            { rotation: 3, duration: 0.35, ease: 'sine.inOut', yoyo: true, repeat: 1 },
+            cards,
+            { y: '-=7', duration: 0.4, ease: 'sine.inOut', yoyo: true, repeat: 1, stagger: 0.06 },
             '>-0.05'
           )
-          // 5) CLIMAX: scatter retreats, logo grows with glow boost.
-          .addLabel('climax')
+          // 5) CLIMAX (0.35s into the bob): scatter retreats, logo grows with glow
+          //    boost. Opacity splits from scale so no half-faded ghosts linger, and
+          //    the logo starts growing only once the cards are mostly gone.
+          .addLabel('climax', '<+0.35')
+          .to('[data-intro-scatter-m]', { opacity: 0, duration: 0.3, ease: 'power1.in' }, 'climax')
           .to(
             '[data-intro-scatter-m]',
-            { scaleX: 0.55, scaleY: 0.55, opacity: 0, duration: 0.5, ease: 'power3.in' },
+            { scaleX: 0.55, scaleY: 0.55, duration: 0.5, ease: 'power3.in' },
             'climax'
           )
-          .to('[data-intro-logo-m]', { scaleX: 2.6, scaleY: 2.6, duration: 0.75, ease: 'expo.out' }, 'climax+=0.1')
-          .to('[data-intro-glow-m]', { scaleX: 2.4, scaleY: 2.4, opacity: 1, duration: 0.75, ease: 'power3.out' }, 'climax+=0.1')
+          .to('[data-intro-logo-m]', { scaleX: 2.6, scaleY: 2.6, duration: 0.75, ease: 'expo.out' }, 'climax+=0.2')
+          .to('[data-intro-glow-m]', { scaleX: 2.4, scaleY: 2.4, opacity: 1, duration: 0.75, ease: 'power3.out' }, 'climax+=0.2')
+          // Tagline: fade+rise only (animated letter-spacing reads badly in Hebrew),
+          // revealed early enough for a ~0.7s full-opacity read before the wipe.
           .fromTo(
             '[data-intro-tag-m]',
-            { opacity: 0, letterSpacing: '0.45em' },
-            { opacity: 1, letterSpacing: '0.02em', duration: 0.5, ease: 'expo.out' },
-            'climax+=0.45'
+            { opacity: 0, y: 14 },
+            { opacity: 1, y: 0, duration: 0.35, ease: 'expo.out' },
+            'climax+=0.25'
           )
           // 6) EXIT: logo fades, clip-path curtain wipe reveals the site.
-          .addLabel('exit', 'climax+=0.95')
+          .addLabel('exit', 'climax+=1.1')
           .to('[data-intro-logo-m]', { opacity: 0, scaleX: 2.9, scaleY: 2.9, duration: 0.4, ease: 'power2.in' }, 'exit')
           .to('[data-intro-glow-m]', { opacity: 0, scaleX: 3, scaleY: 3, duration: 0.4, ease: 'power2.in' }, 'exit')
           .to(
@@ -359,7 +364,7 @@ export default function IntroOverlay() {
         onClick={dismiss}
         onWheel={dismiss}
         onTouchMove={dismiss}
-        className="fixed inset-0 z-[120] flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden bg-[#fffdf5] px-4"
+        className="fixed inset-0 z-[10000] flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden bg-[#fffdf5] px-4"
       >
         {/* Soft brand glow */}
         <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffc32e]/25 blur-3xl" />
@@ -407,7 +412,13 @@ export default function IntroOverlay() {
                   fill
                   priority={i < 2}
                   sizes="42vw"
-                  className="object-contain p-1 drop-shadow-[0_10px_16px_rgba(0,0,0,0.22)]"
+                  // Stronger shadow on the light renders (tshirt, baby) so they
+                  // don't wash out against the cream background.
+                  className={`object-contain p-1 ${
+                    i === 0 || i === 5
+                      ? 'drop-shadow-[0_12px_22px_rgba(0,0,0,0.32)]'
+                      : 'drop-shadow-[0_10px_16px_rgba(0,0,0,0.22)]'
+                  }`}
                 />
               </div>
             )
@@ -418,7 +429,7 @@ export default function IntroOverlay() {
         <p
           data-intro-tag-m
           dir="rtl"
-          className="absolute left-1/2 top-[64%] z-40 -translate-x-1/2 text-center text-2xl font-black tracking-tight text-black"
+          className="absolute left-1/2 top-[66%] z-40 -translate-x-1/2 text-center text-2xl font-black tracking-tight text-black"
           style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)', opacity: 0 }}
         >
           עיצוב מוצרים<br />ברמה אחרת
@@ -435,7 +446,7 @@ export default function IntroOverlay() {
       onClick={dismiss}
       onWheel={dismiss}
       onTouchMove={dismiss}
-      className="fixed inset-0 z-[120] flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden bg-[#fffdf5]"
+      className="fixed inset-0 z-[10000] flex cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden bg-[#fffdf5]"
     >
       {/* Soft brand glow */}
       <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffc32e]/25 blur-3xl" />
