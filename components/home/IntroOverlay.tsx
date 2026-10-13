@@ -33,6 +33,20 @@ const PRODUCTS: readonly Product[] = [
   { src: '/renders/baby.png', tilt: 5, angle: 300 },        // תינוקות
 ] as const
 
+// Mobile scatter — the desktop composition's language, hand-placed for a tall
+// portrait screen (designed at 390×844, scaled down on smaller phones).
+// Offsets are px from screen center; order matches PRODUCTS. The products
+// zigzag top→bottom around the centered logo with varied sizes and tilts.
+type MobileSpot = { x: number; y: number; w: number; tilt: number }
+const MOBILE_SPOTS: readonly MobileSpot[] = [
+  { x: -74, y: -244, w: 148, tilt: -10 }, // tshirt — top-left (hero)
+  { x: 96, y: -150, w: 104, tilt: 9 },    // cap — upper-right
+  { x: 102, y: 62, w: 132, tilt: -6 },    // sweatshirt — mid-right
+  { x: -114, y: -52, w: 92, tilt: 11 },   // buff — mid-left (small)
+  { x: -92, y: 182, w: 126, tilt: -8 },   // apron — lower-left
+  { x: 74, y: 292, w: 110, tilt: 7 },     // baby — bottom-right
+] as const
+
 export default function IntroOverlay() {
   // Decide on the client only — avoids SSR flash and hydration mismatch.
   const [show, setShow] = useState(false)
@@ -78,12 +92,23 @@ export default function IntroOverlay() {
       if (isMobile) {
         const cards = gsap.utils.toArray<HTMLElement>('[data-intro-card-m]')
 
-        // Mobile total lands ~3.0s; safety sits ~600ms past the end.
+        // Scale the hand-placed 390×844 composition down on smaller phones so
+        // no product is clipped at an edge (never upscaled past design size).
+        const k = Math.min(window.innerWidth / 390, window.innerHeight / 844, 1)
+        // Start offsets: each product's final vector rotated +55° at ~1.9× the
+        // distance, so it swirls inward into its slot (desktop's swirl language).
+        const swirl = (55 * Math.PI) / 180
+        const starts = MOBILE_SPOTS.map(({ x, y }) => ({
+          x: (x * Math.cos(swirl) - y * Math.sin(swirl)) * 1.9 * k,
+          y: (x * Math.sin(swirl) + y * Math.cos(swirl)) * 1.9 * k,
+        }))
+
+        // Mobile total lands ~3.75s; safety sits ~600ms past the end.
         const mTimer = setTimeout(() => {
           doneRef.current = true
           setShow(false)
           signalIntroDone()
-        }, 3700)
+        }, 4350)
 
         const mtl = gsap.timeline({
           defaults: { ease: 'power3.out' },
@@ -109,58 +134,70 @@ export default function IntroOverlay() {
             0.15
           )
           .to('[data-intro-glow-m]', { scaleX: 1, scaleY: 1, opacity: 0.85, duration: 0.5, ease: 'sine.inOut' }, '>-0.1')
-          // 2) Cards cascade/flip in with stagger.
+          // 2) The whole scatter swirls into place while each product flies
+          //    inward + 3D-flips into its hand-placed slot (staggered).
+          .fromTo(
+            '[data-intro-scatter-m]',
+            { rotation: -35, transformOrigin: '50% 50%' },
+            { rotation: 0, duration: 1.1, ease: 'power4.out' },
+            0.3
+          )
           .fromTo(
             cards,
             {
               transformPerspective: 800,
               opacity: 0,
-              scaleX: 0.6,
-              scaleY: 0.6,
+              scaleX: 0,
+              scaleY: 0,
               rotationY: -90,
-              y: 30,
+              rotationZ: () => gsap.utils.random(-25, 25),
+              xPercent: -50,
+              yPercent: -50,
+              x: (i: number) => starts[i]?.x ?? 0,
+              y: (i: number) => starts[i]?.y ?? 0,
             },
             {
               opacity: 1,
               scaleX: 1,
               scaleY: 1,
               rotationY: 0,
-              y: 0,
-              rotationZ: (i: number) => PRODUCTS[i]?.tilt ?? 0,
-              duration: 0.7,
-              ease: 'back.out(1.6)',
+              rotationZ: (i: number) => MOBILE_SPOTS[i]?.tilt ?? 0,
+              x: (i: number) => (MOBILE_SPOTS[i]?.x ?? 0) * k,
+              y: (i: number) => (MOBILE_SPOTS[i]?.y ?? 0) * k,
+              duration: 0.8,
+              ease: 'back.out(1.4)',
               stagger: 0.09,
             },
-            0.35
+            0.4
           )
           // 4) Gentle float while held.
           .to(
-            '[data-intro-grid-m]',
-            { y: -6, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 1 },
+            '[data-intro-scatter-m]',
+            { rotation: 3, duration: 0.35, ease: 'sine.inOut', yoyo: true, repeat: 1 },
             '>-0.05'
           )
-          // 5) CLIMAX: cards retreat, logo grows with glow boost.
+          // 5) CLIMAX: scatter retreats, logo grows with glow boost.
           .addLabel('climax')
           .to(
-            cards,
-            { opacity: 0, scaleX: 0.6, scaleY: 0.6, duration: 0.5, ease: 'power3.in', stagger: 0.04 },
+            '[data-intro-scatter-m]',
+            { scaleX: 0.55, scaleY: 0.55, opacity: 0, duration: 0.5, ease: 'power3.in' },
             'climax'
           )
-          .to('[data-intro-logo-m]', { scaleX: 2.6, scaleY: 2.6, duration: 0.85, ease: 'expo.out' }, 'climax+=0.1')
-          .to('[data-intro-glow-m]', { scaleX: 2.4, scaleY: 2.4, opacity: 1, duration: 0.85, ease: 'power3.out' }, 'climax+=0.1')
+          .to('[data-intro-logo-m]', { scaleX: 2.6, scaleY: 2.6, duration: 0.75, ease: 'expo.out' }, 'climax+=0.1')
+          .to('[data-intro-glow-m]', { scaleX: 2.4, scaleY: 2.4, opacity: 1, duration: 0.75, ease: 'power3.out' }, 'climax+=0.1')
           .fromTo(
             '[data-intro-tag-m]',
             { opacity: 0, letterSpacing: '0.45em' },
-            { opacity: 1, letterSpacing: '0.02em', duration: 0.6, ease: 'expo.out' },
-            'climax+=0.55'
+            { opacity: 1, letterSpacing: '0.02em', duration: 0.5, ease: 'expo.out' },
+            'climax+=0.45'
           )
           // 6) EXIT: logo fades, clip-path curtain wipe reveals the site.
-          .addLabel('exit')
-          .to('[data-intro-logo-m]', { opacity: 0, scaleX: 2.9, scaleY: 2.9, duration: 0.45, ease: 'power2.in' }, 'exit')
-          .to('[data-intro-glow-m]', { opacity: 0, scaleX: 3, scaleY: 3, duration: 0.45, ease: 'power2.in' }, 'exit')
+          .addLabel('exit', 'climax+=0.95')
+          .to('[data-intro-logo-m]', { opacity: 0, scaleX: 2.9, scaleY: 2.9, duration: 0.4, ease: 'power2.in' }, 'exit')
+          .to('[data-intro-glow-m]', { opacity: 0, scaleX: 3, scaleY: 3, duration: 0.4, ease: 'power2.in' }, 'exit')
           .to(
             el,
-            { clipPath: 'inset(0 0 100% 0)', duration: 0.6, ease: 'power4.inOut' },
+            { clipPath: 'inset(0 0 100% 0)', duration: 0.45, ease: 'power4.inOut' },
             'exit+=0.05'
           )
 
@@ -328,7 +365,7 @@ export default function IntroOverlay() {
         <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffc32e]/25 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-1/2 h-64 w-[34rem] -translate-x-1/2 rounded-full bg-[#fbbf24]/15 blur-3xl" />
 
-        {/* Logo (centered over the grid, above the cards) */}
+        {/* Logo (centered, above the scattered products) */}
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
           <div className="relative flex items-center justify-center">
             <div
@@ -342,30 +379,39 @@ export default function IntroOverlay() {
           </div>
         </div>
 
-        {/* 2×3 product grid */}
+        {/* Products scattered asymmetrically around the logo (desktop's
+            scatter language, portrait values). GSAP owns position/centering;
+            widths scale with the viewport below the 390px design width. */}
         <div
-          data-intro-grid-m
-          className="relative z-10 grid w-full max-w-[22rem] grid-cols-2 gap-3"
-          style={{ perspective: '900px' }}
+          data-intro-scatter-m
+          className="absolute inset-0 z-10"
+          style={{ perspective: '900px', transformStyle: 'preserve-3d' }}
         >
-          {PRODUCTS.map((p, i) => (
-            <div
-              key={p.src}
-              data-intro-card-m
-              dir="ltr"
-              className="relative aspect-[3/4] w-full"
-              style={{ willChange: 'transform', transformStyle: 'preserve-3d' }}
-            >
-              <Image
-                src={p.src}
-                alt=""
-                fill
-                priority={i < 2}
-                sizes="42vw"
-                className="object-contain p-1 drop-shadow-[0_10px_16px_rgba(0,0,0,0.22)]"
-              />
-            </div>
-          ))}
+          {PRODUCTS.map((p, i) => {
+            const s = MOBILE_SPOTS[i]
+            return (
+              <div
+                key={p.src}
+                data-intro-card-m
+                dir="ltr"
+                className="absolute left-1/2 top-1/2 aspect-[3/4]"
+                style={{
+                  width: `min(${s.w}px, ${((s.w / 390) * 100).toFixed(2)}vw)`,
+                  willChange: 'transform',
+                  opacity: 0,
+                }}
+              >
+                <Image
+                  src={p.src}
+                  alt=""
+                  fill
+                  priority={i < 2}
+                  sizes="42vw"
+                  className="object-contain p-1 drop-shadow-[0_10px_16px_rgba(0,0,0,0.22)]"
+                />
+              </div>
+            )
+          })}
         </div>
 
         {/* Tagline */}
