@@ -196,6 +196,13 @@ export default function IntroOverlay() {
             { opacity: 1, y: 0, duration: 0.35, ease: 'expo.out' },
             'climax+=0.25'
           )
+          // Yellow marker highlight sweeps in behind the emphasis line (RTL: right→left).
+          .fromTo(
+            '[data-intro-hl-m]',
+            { scaleX: 0, rotation: -2, transformOrigin: '100% 50%' },
+            { scaleX: 1, rotation: -2, duration: 0.35, ease: 'power3.out' },
+            'climax+=0.35'
+          )
           // 6) EXIT: logo fades, clip-path curtain wipe reveals the site.
           .addLabel('exit', 'climax+=1.1')
           .to('[data-intro-logo-m]', { opacity: 0, scaleX: 2.9, scaleY: 2.9, duration: 0.4, ease: 'power2.in' }, 'exit')
@@ -330,9 +337,16 @@ export default function IntroOverlay() {
         // Tagline reveals at the climax, once the product cards are gone (no overlap).
         .fromTo(
           '[data-intro-tag]',
-          { opacity: 0, y: 18, letterSpacing: '0.45em' },
-          { opacity: 1, y: 0, letterSpacing: '0.02em', duration: 0.6, ease: 'expo.out' },
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.5, ease: 'expo.out' },
           'climax+=0.55'
+        )
+        // Yellow marker highlight sweeps in behind the emphasis line (RTL: right→left).
+        .fromTo(
+          '[data-intro-hl]',
+          { scaleX: 0, rotation: -2, transformOrigin: '100% 50%' },
+          { scaleX: 1, rotation: -2, duration: 0.45, ease: 'power3.out' },
+          'climax+=0.65'
         )
         // 6) Hand-off: the grown logo fades as a clip/curtain reveals the site.
         .addLabel('exit', 'climax+=1.75')
@@ -425,15 +439,40 @@ export default function IntroOverlay() {
           })}
         </div>
 
-        {/* Tagline */}
-        <p
+        {/* Tagline lockup: quiet Rubik kicker flanked by marker dashes, then the
+            emphasis line in the badge's own language — white Secular One letters
+            on a brand-yellow marker highlight (swept in by GSAP). */}
+        <div
           data-intro-tag-m
           dir="rtl"
-          className="absolute left-1/2 top-[66%] z-40 -translate-x-1/2 text-center text-2xl font-black tracking-tight text-black"
-          style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)', opacity: 0 }}
+          className="absolute left-1/2 top-[66%] z-40 flex -translate-x-1/2 flex-col items-center gap-1.5"
+          style={{ opacity: 0 }}
         >
-          עיצוב מוצרים<br />ברמה אחרת
-        </p>
+          <span className="flex items-center gap-2.5">
+            <span className="h-[2.5px] w-6 rounded-full bg-[#FDB913]" />
+            <span className="whitespace-nowrap text-base font-bold tracking-[0.08em] text-[#1A1A2E]/80">
+              עיצוב מוצרים
+            </span>
+            <span className="h-[2.5px] w-6 rounded-full bg-[#FDB913]" />
+          </span>
+          <span className="relative inline-block px-4 py-1">
+            <span
+              data-intro-hl-m
+              className="absolute inset-0 bg-gradient-to-l from-[#ffc32e] to-[#FDB913]"
+              style={{
+                borderRadius: '0.6rem 1rem 0.7rem 0.9rem / 1rem 0.6rem 0.9rem 0.7rem',
+                transform: 'rotate(-2deg)',
+                boxShadow: '0 3px 12px rgba(253,185,19,0.45)',
+              }}
+            />
+            <span
+              className="relative whitespace-nowrap text-4xl text-white"
+              style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 0 rgba(26,26,46,0.14), 0 5px 14px rgba(26,26,46,0.2)' }}
+            >
+              ברמה אחרת
+            </span>
+          </span>
+        </div>
       </div>
     )
   }
@@ -495,15 +534,35 @@ export default function IntroOverlay() {
         </div>
       </div>
 
-      {/* Tagline */}
-      <p
-        data-intro-tag
-        dir="rtl"
-        className="z-10 -mt-5 text-center text-3xl font-black tracking-tight text-black sm:text-4xl"
-        style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
-      >
-        עיצוב מוצרים ברמה אחרת
-      </p>
+      {/* Tagline lockup: quiet Rubik kicker flanked by marker dashes, then the
+          emphasis line in the badge's own language — white Secular One letters
+          on a brand-yellow marker highlight (swept in by GSAP). */}
+      <div data-intro-tag dir="rtl" className="z-10 -mt-5 flex flex-col items-center gap-2" style={{ opacity: 0 }}>
+        <span className="flex items-center gap-3">
+          <span className="h-[3px] w-9 rounded-full bg-[#FDB913]" />
+          <span className="whitespace-nowrap text-xl font-bold tracking-[0.08em] text-[#1A1A2E]/80">
+            עיצוב מוצרים
+          </span>
+          <span className="h-[3px] w-9 rounded-full bg-[#FDB913]" />
+        </span>
+        <span className="relative inline-block px-5 py-1">
+          <span
+            data-intro-hl
+            className="absolute inset-0 bg-gradient-to-l from-[#ffc32e] to-[#FDB913]"
+            style={{
+              borderRadius: '0.7rem 1.1rem 0.8rem 1rem / 1.1rem 0.7rem 1rem 0.8rem',
+              transform: 'rotate(-2deg)',
+              boxShadow: '0 4px 14px rgba(253,185,19,0.45)',
+            }}
+          />
+          <span
+            className="relative whitespace-nowrap text-5xl text-white"
+            style={{ fontFamily: 'var(--font-secular)', textShadow: '0 2px 0 rgba(26,26,46,0.14), 0 5px 16px rgba(26,26,46,0.2)' }}
+          >
+            ברמה אחרת
+          </span>
+        </span>
+      </div>
     </div>
   )
 }
