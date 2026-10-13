@@ -68,6 +68,19 @@ export async function GET(request: NextRequest) {
     }
     const order = snap.data()
 
+    // Design files of 30+ day old orders are swept from Storage by the nightly
+    // cleanup cron, which stamps designsDeleted on the order doc. When that
+    // flag is set, a missing or unfetchable file has one real explanation —
+    // answer 410 file_swept instead of a misleading generic failure.
+    const designsSwept = order?.designsDeleted === true
+    const sweptResponse = () => {
+      const deletedAt = order?.designsDeletedAt?.toDate?.()?.toISOString?.()
+      return NextResponse.json(
+        deletedAt ? { error: 'file_swept', deletedAt } : { error: 'file_swept' },
+        { status: 410 }
+      )
+    }
+
     // --- Resolve the design + url ---
     const design = order?.items?.[itemIdx]?.designs?.find((x: any) => x.area === area)
     let url: string | undefined
@@ -77,6 +90,7 @@ export async function GET(request: NextRequest) {
       url = order?.upscales?.[`${itemIdx}_${area}`]?.url
     }
     if (!url) {
+      if (designsSwept) return sweptResponse()
       return NextResponse.json({ error: 'file_missing' }, { status: 404 })
     }
 
@@ -88,45 +102,63 @@ export async function GET(request: NextRequest) {
         ? `עיצוב-לדפוס-${areaLabel}-${orderNo}`
         : `עיצוב-${areaLabel}-${orderNo}`
 
-    // --- Get the file bytes + contentType ---
-    let buffer: Buffer
-    let contentType: string
-    if (url.startsWith('data:')) {
-      const match = url.match(/^data:([^;]+);base64,(.*)$/)
-      if (!match) {
-        return NextResponse.json({ error: 'unsupported_url' }, { status: 400 })
+    // --- Download headers for a given contentType (+ length when known) ---
+    // Content-Disposition: ASCII fallback + RFC 5987 UTF-8 (Hebrew is non-ASCII)
+    const headersFor = (contentType: string, contentLength?: string | null) => {
+      const ext =
+        contentType === 'image/jpeg' ? 'jpg' : contentType === 'image/webp' ? 'webp' : 'png'
+      const fname = `${baseName}.${ext}`
+      const asciiFallback = `design.${ext}`
+      const headers: Record<string, string> = {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(fname)}`,
+        'Cache-Control': 'private, no-store',
       }
-      buffer = Buffer.from(match[2], 'base64')
-      contentType = match[1] || 'image/png'
-    } else if (url.startsWith('https://firebasestorage.googleapis.com/')) {
-      const r = await fetch(url)
-      if (!r.ok) {
-        return NextResponse.json({ error: 'fetch_failed' }, { status: 502 })
-      }
-      buffer = Buffer.from(await r.arrayBuffer())
-      contentType = r.headers.get('content-type') || 'image/png'
-    } else {
-      return NextResponse.json({ error: 'unsupported_url' }, { status: 400 })
+      if (contentLength) headers['Content-Length'] = contentLength
+      return headers
     }
 
-    // --- Extension from contentType ---
-    const ext =
-      contentType === 'image/jpeg' ? 'jpg' : contentType === 'image/webp' ? 'webp' : 'png'
+    // --- Serve the file ---
+    if (url.startsWith('data:')) {
+      // Inline base64 lives in the Firestore doc (≤1MB) — buffering is fine here.
+      const match = url.match(/^data:([^;]+);base64,(.*)$/)
+      if (!match) {
+        if (designsSwept) return sweptResponse()
+        return NextResponse.json({ error: 'unsupported_url' }, { status: 400 })
+      }
+      const buffer = Buffer.from(match[2], 'base64')
+      const contentType = match[1] || 'image/png'
+      return new NextResponse(new Uint8Array(buffer), {
+        status: 200,
+        headers: headersFor(contentType, String(buffer.length)),
+      })
+    }
 
-    // --- Content-Disposition: ASCII fallback + RFC 5987 UTF-8 (Hebrew is non-ASCII) ---
-    const fname = `${baseName}.${ext}`
-    const asciiFallback = `design.${ext}`
-    const disposition = `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(fname)}`
+    if (url.startsWith('https://firebasestorage.googleapis.com/')) {
+      const r = await fetch(url)
+      if (!r.ok || !r.body) {
+        if (designsSwept) return sweptResponse()
+        return NextResponse.json({ error: 'fetch_failed' }, { status: 502 })
+      }
+      // Upscaled files are 4x of sources that can reach 30MB — hundreds of MB.
+      // Buffering them (arrayBuffer) OOM-killed the function on Vercel: a
+      // silent 502 with no log line (FUNCTION_INVOCATION_FAILED). Stream the
+      // upstream body straight through instead — constant memory, and the
+      // response starts immediately. Content-Length is forwarded only when the
+      // body is not transparently decompressed (content-encoding present means
+      // undici decompressed it and the upstream length no longer matches).
+      const contentType = r.headers.get('content-type') || 'image/png'
+      const contentLength = r.headers.get('content-encoding')
+        ? null
+        : r.headers.get('content-length')
+      return new NextResponse(r.body, {
+        status: 200,
+        headers: headersFor(contentType, contentLength),
+      })
+    }
 
-    return new NextResponse(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': disposition,
-        'Cache-Control': 'private, no-store',
-        'Content-Length': String(buffer.length),
-      },
-    })
+    if (designsSwept) return sweptResponse()
+    return NextResponse.json({ error: 'unsupported_url' }, { status: 400 })
   } catch (err) {
     console.error('download-design error:', err)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

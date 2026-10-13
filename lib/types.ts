@@ -148,6 +148,9 @@ export interface Order {
   /** Per-design 4x upscale map, keyed `${itemIndex}_${areaId}` */
   upscales?: Record<string, DesignUpscale>
   gclid?: string // Google Ads click ID — order attributed to an ads click
+  /** Set by the nightly cleanup cron after the order's design files were deleted from Storage (30-day policy) */
+  designsDeleted?: boolean
+  designsDeletedAt?: Timestamp
   createdAt: Timestamp
   updatedAt: Timestamp
 }

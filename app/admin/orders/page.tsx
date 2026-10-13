@@ -254,7 +254,9 @@ export default function AdminOrdersPage() {
       )
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        if (data?.error === 'file_missing') {
+        if (data?.error === 'file_swept') {
+          alert('הקבצים של הזמנה זו נמחקו מהאחסון לפי מדיניות 30 הימים (הזמנות ישנות). ההעלאה המקורית של הלקוח אינה זמינה יותר להורדה.')
+        } else if (data?.error === 'file_missing') {
           alert('לא נמצא קובץ עיצוב שמור להזמנה הזו — ייתכן שהקובץ לא נשמר בעת ההזמנה. פנה/י לתמיכה.')
         } else {
           alert('ההורדה נכשלה, נסה/י שוב בעוד רגע')
@@ -796,6 +798,9 @@ export default function AdminOrdersPage() {
                                   <div className="border-t pt-3">
                                     <div className="flex items-center gap-3 mb-2">
                                       <h5 className="font-medium text-gray-900">קבצי עיצוב:</h5>
+                                      {order.designsDeleted && (
+                                        <span className="text-xs text-amber-600">⚠️ קבצים נמחקו — 30+ יום</span>
+                                      )}
                                       <button
                                         type="button"
                                         onClick={() => retryUpscale(order.id)}
