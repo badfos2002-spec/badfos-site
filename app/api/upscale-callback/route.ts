@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb, adminStorage } from '@/lib/firebase-admin'
 import { PIXEL_LIMIT_ERROR } from '@/lib/upscale'
+import { clearSweptFlagsIfFullyUpscaled } from '@/lib/upscale-order'
 import { randomUUID } from 'crypto'
 
 // Downloading a 4x image (can be several MB) + re-uploading to Storage
@@ -70,6 +71,11 @@ export async function POST(request: NextRequest) {
           [`upscales.${key}.completedAt`]: new Date(),
         })
         console.log(`Upscale callback: order ${orderId} [${key}] input too large for model — using original as print file`)
+        // A swept order whose last area just completed gets its designsDeleted
+        // flags cleared so the admin downloads work again (never throws).
+        if (snap.data()?.designsDeleted === true) {
+          await clearSweptFlagsIfFullyUpscaled(orderId)
+        }
         return NextResponse.json({ success: true, alreadyHighRes: true })
       }
       await orderRef.update({
@@ -120,6 +126,11 @@ export async function POST(request: NextRequest) {
     })
 
     console.log(`Upscale callback: order ${orderId} [${key}] done (${Math.round(buffer.length / 1024)}KB)`)
+    // A swept order whose last area just completed gets its designsDeleted
+    // flags cleared so the admin downloads work again (never throws).
+    if (snap.data()?.designsDeleted === true) {
+      await clearSweptFlagsIfFullyUpscaled(orderId)
+    }
     return NextResponse.json({ success: true, url: downloadUrl })
   } catch (error) {
     console.error('Upscale callback error:', error)

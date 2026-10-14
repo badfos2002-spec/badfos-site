@@ -254,7 +254,9 @@ export default function AdminOrdersPage() {
       )
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        if (data?.error === 'file_swept') {
+        if (data?.error === 'file_swept_storage') {
+          alert("קבצי ההזמנה נמחקו ע\"י ניקוי חירום של אחסון מלא (תקלה שתוקנה) — ניתן לייצר מחדש את קבצי ההדפסה בכפתור 'נסה שוב הגדלה'.")
+        } else if (data?.error === 'file_swept') {
           alert('הקבצים של הזמנה זו נמחקו מהאחסון לפי מדיניות 30 הימים (הזמנות ישנות). ההעלאה המקורית של הלקוח אינה זמינה יותר להורדה.')
         } else if (data?.error === 'file_missing') {
           alert('לא נמצא קובץ עיצוב שמור להזמנה הזו — ייתכן שהקובץ לא נשמר בעת ההזמנה. פנה/י לתמיכה.')
@@ -799,7 +801,11 @@ export default function AdminOrdersPage() {
                                     <div className="flex items-center gap-3 mb-2">
                                       <h5 className="font-medium text-gray-900">קבצי עיצוב:</h5>
                                       {order.designsDeleted && (
-                                        <span className="text-xs text-amber-600">⚠️ קבצים נמחקו — 30+ יום</span>
+                                        order.designsDeletedReason === 'storage_limit' ? (
+                                          <span className="text-xs text-red-600">⚠️ נמחקו בניקוי חירום של אחסון מלא — לשחזור: &apos;נסה שוב הגדלה&apos;</span>
+                                        ) : (
+                                          <span className="text-xs text-amber-600">⚠️ קבצים נמחקו — 30+ יום</span>
+                                        )
                                       )}
                                       <button
                                         type="button"

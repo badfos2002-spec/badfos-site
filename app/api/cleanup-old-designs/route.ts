@@ -10,6 +10,9 @@ import {
 import { PIXEL_LIMIT_ERROR } from '@/lib/upscale'
 import { runBackup, BackupSummary } from '@/lib/backup'
 import { sweepOldSketches, SketchSweepSummary } from '@/lib/sketch-sweep'
+import { Resend } from 'resend'
+import { escapeHtml } from '@/lib/utils'
+import { recordUsage } from '@/lib/usage-tracking'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const CLEANUP_DAYS = 30
@@ -23,6 +26,14 @@ const UPSCALE_RETRY_DAYS = 14 // ריפוי עצמי של הגדלות: רק ה�
 const STORAGE_AGGRESSIVE_MB = Number(process.env.STORAGE_AGGRESSIVE_MB || 4200)
 const STORAGE_TARGET_MB = Number(process.env.STORAGE_TARGET_MB || 3000)
 const MAX_EMERGENCY_DELETIONS = 500 // safety cap per run
+
+// HARD age guard for Layer 2: an order younger than this NEVER loses its
+// files — not even with storage over the emergency threshold. Incident
+// 2026-10: Layer 2 walked createdAt asc, but every old order was already
+// designsDeleted → continue — so it reached and deleted FRESH orders
+// (order #1491, two days old). Storage relief must never cost a live order
+// its files; when nothing old enough remains, the owner is alerted instead.
+const EMERGENCY_MIN_AGE_DAYS = 45
 
 /**
  * Backup (runs FIRST, before any deletion — captures pre-cleanup state):
@@ -232,10 +243,16 @@ export async function GET(req: NextRequest) {
         .limit(1000)
         .get()
 
+      const emergencyAgeCutoffMs = Date.now() - EMERGENCY_MIN_AGE_DAYS * 24 * 60 * 60 * 1000
       for (const doc of oldestSnap.docs) {
         if (usageMB <= STORAGE_TARGET_MB) break
         if (emergencyDeleted >= MAX_EMERGENCY_DELETIONS) break
         if (doc.data().designsDeleted) continue
+
+        // Hard age guard — a young order's files are never deleted, even in an
+        // emergency. Unknown/unparseable createdAt counts as young (fail safe).
+        const createdMs = doc.data().createdAt?.toMillis?.()
+        if (typeof createdMs !== 'number' || createdMs > emergencyAgeCutoffMs) continue
 
         try {
           const [orderFiles] = await bucket.getFiles({ prefix: `designs/${doc.id}/` })
@@ -258,6 +275,15 @@ export async function GET(req: NextRequest) {
         }
       }
       console.warn(`Emergency cleanup done: cleared images of ${emergencyDeleted} orders. Usage now ${usageMB.toFixed(0)}MB.`)
+
+      // Still above the emergency threshold and the loop ran out of SAFE
+      // candidates (not out of the per-run cap) — deleting more would mean
+      // touching young orders, which is exactly the incident this guards
+      // against. The cron cannot help any further: alert the owner, a human
+      // decision is needed (Blaze upgrade or a wider deletion policy).
+      if (usageMB > STORAGE_AGGRESSIVE_MB && emergencyDeleted < MAX_EMERGENCY_DELETIONS) {
+        await sendStorageFullAlert(usageMB)
+      }
     }
 
     return NextResponse.json({
@@ -280,6 +306,85 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.error('Cleanup endpoint error:', e)
     return NextResponse.json({ error: 'Cleanup failed', backup }, { status: 500 })
+  }
+}
+
+// Lazy-init Resend to avoid build-time errors when API key is missing
+let _resend: Resend | null = null
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
+
+/**
+ * Urgent owner alert: storage is over the emergency threshold and the cron has
+ * nothing left it may safely delete (everything older than
+ * EMERGENCY_MIN_AGE_DAYS is already cleaned). De-duplicated to one email per
+ * day via settings/storage_alert — the condition persists until a human acts,
+ * and the nightly rerun adds nothing. Never throws: an alert failure must not
+ * fail the cleanup run.
+ */
+async function sendStorageFullAlert(usageMB: number): Promise<void> {
+  try {
+    const resend = getResend()
+    const to = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+    if (!resend || !to) {
+      console.warn('⚠️ Resend or admin email not configured. Storage-full alert not sent.')
+      return
+    }
+
+    const today = new Date().toISOString().slice(0, 10)
+    const alertRef = adminDb.collection('settings').doc('storage_alert')
+    const prev = await alertRef.get()
+    if (prev.exists && prev.data()?.lastSentDate === today) return
+
+    const usage = escapeHtml(String(Math.round(usageMB)))
+    const threshold = escapeHtml(String(STORAGE_AGGRESSIVE_MB))
+    const minAge = escapeHtml(String(EMERGENCY_MIN_AGE_DAYS))
+
+    const html = `
+      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff;">
+        <div style="background: #dc2626; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 24px;">
+          <h1 style="margin: 0; color: #fff; font-size: 22px;">🚨 האחסון מלא — נדרשת החלטה</h1>
+        </div>
+        <p style="color: #1e293b; font-size: 15px; line-height: 1.8;">
+          האחסון מלא (<strong>${usage}MB</strong>, מעל סף החירום של ${threshold}MB) ואין יותר מה לנקות בבטחה —
+          כל ההזמנות שנותרו עם קבצים צעירות מ-${minAge} יום, והניקוי הלילי לעולם לא מוחק אותן.
+          <br /><br />
+          <strong>נדרשת החלטה: שדרוג ל-Blaze או הרחבת מדיניות המחיקה.</strong>
+          <br />
+          עד אז העלאות חדשות של לקוחות עלולות להיכשל כשהמכסה תיגמר.
+        </p>
+        <div style="text-align: center; margin-top: 24px;">
+          <a href="https://badfos.co.il/admin" style="background: #dc2626; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">📋 לממשק הניהול</a>
+        </div>
+      </div>
+    `
+
+    const { error } = await resend.emails.send({
+      from: 'בדפוס <no-reply@badfos.co.il>',
+      to,
+      subject: `🚨 האחסון מלא (${Math.round(usageMB)}MB) ואין מה לנקות בבטחה — נדרשת החלטה`,
+      html,
+    })
+    if (error) {
+      // Not sent — leave the dedup stamp alone so tomorrow's run retries.
+      console.error('Storage-full alert Resend error:', error)
+      return
+    }
+    await recordUsage('resend_email')
+    await alertRef.set(
+      {
+        lastSentDate: today,
+        lastSentAt: Timestamp.now(),
+        usageMB: Math.round(usageMB),
+      },
+      { merge: true }
+    )
+    console.warn(`Storage-full alert sent to owner (${Math.round(usageMB)}MB).`)
+  } catch (e) {
+    console.error('Storage-full alert failed (cleanup continues):', e)
   }
 }
 

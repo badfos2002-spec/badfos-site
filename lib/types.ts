@@ -151,6 +151,8 @@ export interface Order {
   /** Set by the nightly cleanup cron after the order's design files were deleted from Storage (30-day policy) */
   designsDeleted?: boolean
   designsDeletedAt?: Timestamp
+  /** 'storage_limit' = deleted by the emergency storage sweep (Layer 2). Absent = the regular 30-day policy. */
+  designsDeletedReason?: string
   createdAt: Timestamp
   updatedAt: Timestamp
 }

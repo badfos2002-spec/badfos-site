@@ -75,8 +75,14 @@ export async function GET(request: NextRequest) {
     const designsSwept = order?.designsDeleted === true
     const sweptResponse = () => {
       const deletedAt = order?.designsDeletedAt?.toDate?.()?.toISOString?.()
+      // Files deleted by the emergency storage sweep (designsDeletedReason
+      // 'storage_limit' — the since-fixed bug that hit fresh orders) get their
+      // own token: the admin UI answers with the truth and offers regeneration
+      // via the retry-upscale button, instead of the "30-day policy" story.
+      const error =
+        order?.designsDeletedReason === 'storage_limit' ? 'file_swept_storage' : 'file_swept'
       return NextResponse.json(
-        deletedAt ? { error: 'file_swept', deletedAt } : { error: 'file_swept' },
+        deletedAt ? { error, deletedAt } : { error },
         { status: 410 }
       )
     }

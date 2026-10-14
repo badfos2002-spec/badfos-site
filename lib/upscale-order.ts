@@ -1,4 +1,5 @@
 import { adminDb, adminStorage } from '@/lib/firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 import { createUpscalePrediction, SKIP_UPSCALE_PIXELS, PIXEL_LIMIT_ERROR } from '@/lib/upscale'
 import { readImagePixels } from '@/lib/image-dims'
 import { recordUsage } from '@/lib/usage-tracking'
@@ -14,6 +15,32 @@ function isHttpsUrl(s: string): boolean {
 /** True for an inline base64/data image URL that must be uploaded before upscaling. */
 function isDataUrl(s: string): boolean {
   return /^data:image\//i.test(s)
+}
+
+/** Decoded object path of a firebasestorage.googleapis.com download URL, else null. */
+function storagePathFromUrl(url: string): string | null {
+  const m = url.match(/^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[^/]+\/o\/([^?]+)/)
+  if (!m) return null
+  try {
+    return decodeURIComponent(m[1])
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Does the Storage object behind this path still exist? On any verification
+ * error → true: "could not verify" must leave the normal upscale flow
+ * unchanged (if the file really is gone the prediction fails on its own,
+ * exactly as before this check existed).
+ */
+async function storageFileExists(path: string): Promise<boolean> {
+  try {
+    const [exists] = await adminStorage.bucket().file(path).exists()
+    return exists === true
+  } catch {
+    return true
+  }
 }
 
 /** Decode a data: URL into raw bytes + content type. null when malformed/empty. */
@@ -149,11 +176,22 @@ export async function runUpscaleForOrder(
 
   // Atomically claim the designs that still need upscaling — prevents
   // duplicate predictions when several triggers fire at once.
-  const claimed: { key: string; itemIdx: number; area: string; imageUrl: string }[] = []
+  const claimed: { key: string; itemIdx: number; area: string; imageUrl: string; prevSourceUrl?: string }[] = []
   let notFound = false
   let wrongStatus: string | null = null
   let gaveUp = 0
   let healed = 0
+  let hadSweptFlag = false
+
+  // True when a 'done' entry's print file lived under designs/<orderId>/ —
+  // the exact prefix the storage sweeps delete — or when its url is unknown.
+  const sweptPrefix = `designs/${orderId}/`
+  const doneFileSwept = (u: unknown): boolean => {
+    if (typeof u !== 'string' || !u) return true
+    if (u.startsWith('data:')) return false
+    const path = storagePathFromUrl(u)
+    return path !== null && path.startsWith(sweptPrefix)
+  }
 
   await adminDb.runTransaction(async (tx) => {
     claimed.length = 0
@@ -161,6 +199,7 @@ export async function runUpscaleForOrder(
     wrongStatus = null
     gaveUp = 0
     healed = 0
+    hadSweptFlag = false
 
     const snap = await tx.get(orderRef)
     if (!snap.exists) {
@@ -173,6 +212,13 @@ export async function runUpscaleForOrder(
       wrongStatus = order.status
       return
     }
+
+    // Emergency-sweep recovery: an order whose designs/<orderId>/ files were
+    // deleted by the storage-limit sweep still carries 'done' upscale entries
+    // pointing at files that no longer exist. With force (the admin's retry
+    // button) those entries are re-attempted from the live sources below.
+    hadSweptFlag = order.designsDeleted === true
+    const sweptForRecovery = hadSweptFlag && order.designsDeletedReason === 'storage_limit'
 
     const upscales = order.upscales || {}
     const updates: Record<string, any> = {}
@@ -192,6 +238,10 @@ export async function runUpscaleForOrder(
           const ms = upscaleEntryMillis(rawExisting.createdAt)
           const freshPending = rawExisting.status === 'pending' && ms !== null && (Date.now() - ms) < STUCK_PENDING_MS
           if (!freshPending) existing = undefined   // re-attempt failed / gave_up / stuck-pending as a fresh design
+        } else if (opts.force && sweptForRecovery && rawExisting?.status === 'done' && doneFileSwept(rawExisting.url)) {
+          // The finished print file was deleted by the emergency storage sweep —
+          // re-attempt as a fresh design so it gets regenerated from a live source.
+          existing = undefined
         }
 
         // A base64/data: design is claimed too — it's uploaded to Storage in the
@@ -250,7 +300,13 @@ export async function runUpscaleForOrder(
           }
         }
 
-        claimed.push({ key, itemIdx, area, imageUrl })
+        claimed.push({
+          key,
+          itemIdx,
+          area,
+          imageUrl,
+          prevSourceUrl: typeof rawExisting?.sourceUrl === 'string' ? rawExisting.sourceUrl : undefined,
+        })
         updates[`upscales.${key}`] = {
           status: 'pending',
           sourceUrl: imageUrl,
@@ -273,7 +329,7 @@ export async function runUpscaleForOrder(
   // Network I/O only — never inside the claim transaction above.
   let created = 0
   let skipped = 0
-  for (const { key, itemIdx, area, imageUrl } of claimed) {
+  for (const { key, itemIdx, area, imageUrl, prevSourceUrl } of claimed) {
     let sourceUrl = imageUrl
 
     // base64/data: design → materialize it in Storage first (Replicate can't
@@ -303,6 +359,30 @@ export async function runUpscaleForOrder(
         console.error(`Upscale designs: failed to persist https imageUrl for ${orderRef.id} [${key}]:`, e))
       // (b) the upscale entry's sourceUrl becomes the https URL
       await orderRef.update({ [`upscales.${key}.sourceUrl`]: uploadedUrl }).catch(() => {})
+    }
+
+    // Sweep healing: a source under designs/<orderId>/ (e.g. a materialized
+    // <key>-src.png) may have been deleted by the storage cleanup. Sending a
+    // dead URL to Replicate burns an attempt on a guaranteed failure — verify
+    // it still exists first, and fall back to a live source when there is one.
+    if (isHttpsUrl(sourceUrl)) {
+      const path = storagePathFromUrl(sourceUrl)
+      if (path && path.startsWith(`designs/${orderRef.id}/`) && !(await storageFileExists(path))) {
+        const fallback = await resolveLiveFallbackSource(orderRef, key, itemIdx, area, prevSourceUrl)
+        if (!fallback) {
+          // The source file is gone and nothing live replaces it — permanent,
+          // honest gave_up: no retry can bring the file back.
+          await orderRef.update({
+            [`upscales.${key}.status`]: 'gave_up',
+            [`upscales.${key}.error`]: 'source_file_deleted',
+          }).catch(() => {})
+          gaveUp++
+          console.error(`Upscale designs: order ${orderRef.id} [${key}] source ${path} was deleted and no live fallback exists — gave up`)
+          continue
+        }
+        sourceUrl = fallback
+        console.log(`Upscale designs: order ${orderRef.id} [${key}] source was deleted — recovered from live fallback`)
+      }
     }
 
     // Pre-check: images already at/above the model's usable size can't be
@@ -340,5 +420,112 @@ export async function runUpscaleForOrder(
     }
   }
 
+  // An order marked designsDeleted whose areas all completed synchronously
+  // (alreadyHighRes/healed — no webhook will ever fire) gets its sweep flags
+  // cleared here; runs with pending predictions are cleared by the completion
+  // webhook (/api/upscale-callback) instead. Never throws.
+  if (hadSweptFlag) {
+    await clearSweptFlagsIfFullyUpscaled(orderRef.id)
+  }
+
   return { created, total: claimed.length, gaveUp, skipped, healed }
+}
+
+/**
+ * A claimed design whose stored source file was deleted by the storage sweep:
+ * find a live replacement. The only candidate we have is the design's previous
+ * upscale sourceUrl — it may still point at the original pre-checkout upload
+ * under a session prefix (designs/order-123.../ etc., which the sweeps never
+ * touch) as https, or still be an inline data: image (re-materialized like
+ * any base64 design). The recovered URL is persisted back onto the order so
+ * the admin "מקור" download and the upscale entry become truthful again.
+ * Returns the live https URL, or null when nothing survives.
+ */
+async function resolveLiveFallbackSource(
+  orderRef: FirebaseFirestore.DocumentReference,
+  key: string,
+  itemIdx: number,
+  area: string,
+  prevSourceUrl: string | undefined
+): Promise<string | null> {
+  if (!prevSourceUrl) return null
+
+  if (isDataUrl(prevSourceUrl)) {
+    // Still inline — re-materialize it exactly like a base64 design at claim.
+    let uploadedUrl: string | null = null
+    try {
+      uploadedUrl = await uploadBase64Source(orderRef.id, key, prevSourceUrl)
+    } catch (err) {
+      console.error(`Upscale designs: fallback base64 upload failed for ${orderRef.id} [${key}]:`, err)
+      return null
+    }
+    if (!uploadedUrl) return null
+    await persistDesignImageUrl(orderRef, itemIdx, area, uploadedUrl).catch(() => {})
+    await orderRef.update({ [`upscales.${key}.sourceUrl`]: uploadedUrl }).catch(() => {})
+    return uploadedUrl
+  }
+
+  if (isHttpsUrl(prevSourceUrl)) {
+    const path = storagePathFromUrl(prevSourceUrl)
+    // Only trust a candidate OUTSIDE the swept prefix that demonstrably exists.
+    if (path && !path.startsWith(`designs/${orderRef.id}/`) && (await storageFileExists(path))) {
+      await persistDesignImageUrl(orderRef, itemIdx, area, prevSourceUrl).catch(() => {})
+      await orderRef.update({ [`upscales.${key}.sourceUrl`]: prevSourceUrl }).catch(() => {})
+      return prevSourceUrl
+    }
+  }
+  return null
+}
+
+/**
+ * After print files were regenerated: when EVERY design area of the order has
+ * a done upscale whose file verifiably exists, remove the designsDeleted mark
+ * so the admin downloads stop answering "file swept" and work again. Called at
+ * the end of a runUpscaleForOrder pass on a swept order and from the upscale
+ * completion webhook. Returns true when the flags were cleared. Never throws.
+ */
+export async function clearSweptFlagsIfFullyUpscaled(orderId: string): Promise<boolean> {
+  try {
+    const orderRef = adminDb.collection('orders').doc(orderId)
+    const snap = await orderRef.get()
+    if (!snap.exists) return false
+    const order = snap.data()!
+    if (order.designsDeleted !== true) return false
+
+    const upscales = order.upscales || {}
+    const items = Array.isArray(order.items) ? order.items : []
+    const sweptPrefix = `designs/${orderId}/`
+
+    for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
+      const designs = Array.isArray(items[itemIdx]?.designs) ? items[itemIdx].designs : []
+      for (const design of designs) {
+        const area = typeof design?.area === 'string' ? design.area : ''
+        if (!area) continue
+        const entry = upscales[`${itemIdx}_${area}`]
+        if (!entry || entry.status !== 'done' || typeof entry.url !== 'string' || !entry.url) {
+          return false
+        }
+        // A done entry pointing under the swept prefix counts only when the
+        // file exists again — i.e. it was actually regenerated after the sweep.
+        if (isHttpsUrl(entry.url)) {
+          const path = storagePathFromUrl(entry.url)
+          if (path && path.startsWith(sweptPrefix) && !(await storageFileExists(path))) {
+            return false
+          }
+        }
+      }
+    }
+
+    await orderRef.update({
+      designsDeleted: FieldValue.delete(),
+      designsDeletedAt: FieldValue.delete(),
+      designsDeletedReason: FieldValue.delete(),
+      updatedAt: new Date(),
+    })
+    console.log(`Upscale designs: order ${orderId} fully regenerated — designsDeleted cleared`)
+    return true
+  } catch (e) {
+    console.error(`Upscale designs: clearing designsDeleted failed for ${orderId}:`, e)
+    return false
+  }
 }
