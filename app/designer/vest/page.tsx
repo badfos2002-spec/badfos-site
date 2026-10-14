@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus, Loader2 } from 'lucide-react'
+import AreaIcon, { areaRows, isChestArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
 import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
@@ -179,32 +180,38 @@ export default function VestDesignerPage() {
               בחר אזור, ואז העלה את התמונה שלך. אפשר להעלות עיצוב לכל אזור.
             </p>
 
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {VEST_DESIGN_AREAS.map(area => {
-                const isSelected = selectedArea === area.id
-                const hasFile = !!designFiles[area.id]
-                return (
-                  <button
-                    key={area.id}
-                    onClick={() => setSelectedArea(area.id as DesignAreaType)}
-                    className={`relative text-xs h-16 px-2 py-2 rounded-md font-medium border-2 flex items-center justify-center transition-all ${
-                      isSelected
-                        ? 'gradient-yellow text-white border-transparent shadow'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-yellow-400'
-                    }`}
-                  >
-                    {hasFile && (
-                      <span className="absolute top-1 left-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
-                        <Check className="w-3 h-3" strokeWidth={3} />
-                      </span>
-                    )}
-                    <div className="flex flex-col items-center">
-                      <span>{area.name}</span>
-                      <span className="text-[10px] opacity-80">+₪{vestDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
-                    </div>
-                  </button>
-                )
-              })}
+            <div className="space-y-2 mb-4">
+              {areaRows(VEST_DESIGN_AREAS).map(row => (
+              <div key={row[0].id} className={`grid gap-2 ${AREA_ROW_COLS[row.length]}`}>
+                {row.map(area => {
+                  const compact = isChestArea(area.id)
+                  const isSelected = selectedArea === area.id
+                  const hasFile = !!designFiles[area.id]
+                  return (
+                    <button
+                      key={area.id}
+                      onClick={() => setSelectedArea(area.id as DesignAreaType)}
+                      className={`relative text-xs ${compact ? 'h-20' : 'h-24'} px-2 py-2 rounded-md font-medium border-2 flex items-center justify-center transition-all ${
+                        isSelected
+                          ? 'gradient-yellow text-white border-transparent shadow'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-yellow-400'
+                      }`}
+                    >
+                      {hasFile && (
+                        <span className="absolute top-1 left-1 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                          <Check className="w-3 h-3" strokeWidth={3} />
+                        </span>
+                      )}
+                      <div className="flex flex-col items-center">
+                        <AreaIcon area={area.id} product="vest" className={compact ? 'w-8 h-8 mb-0.5' : 'w-10 h-10 mb-0.5'} />
+                        <span>{area.name}</span>
+                        <span className={`text-[10px] opacity-80${compact ? ' leading-none' : ''}`}>+₪{vestDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              ))}
             </div>
 
             <div className="space-y-3">

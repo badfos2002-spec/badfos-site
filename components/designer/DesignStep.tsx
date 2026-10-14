@@ -41,6 +41,7 @@ import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { failImageFit } from '@/lib/image-fit'
 import { ImagePlus, CheckCircle, X } from 'lucide-react'
+import AreaIcon, { areaRows, isChestArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
 
 interface DesignStepProps {
   designs: DesignArea[]
@@ -368,99 +369,120 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
       <p className="text-xs text-gray-400 mb-4">רוצה כמה עיצובים שונים? העלו לאזור אחר, או סיימו והוסיפו לעגלה ואז התחילו פריט חדש.</p>
 
       {/* ── MOBILE: merged area + upload buttons ── */}
-      <div className="lg:hidden grid gap-3 mb-4 grid-cols-2">
-        {availableAreas.map((area) => {
-          const uploaded = hasDesign(area.id)
-          const processing = isBusy(area.id)
-          return (
-            <div key={area.id} className="relative">
-              {processing && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80 rounded-xl">
-                  <span className="text-[11px] font-medium text-yellow-600">מעלה עיצוב…</span>
-                </div>
-              )}
-              <label
-                role="button"
-                tabIndex={0}
-                aria-label={`${uploaded ? 'החלפת' : 'העלאת'} עיצוב לאזור ${area.name}`}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
-                className={`cursor-pointer block border-2 border-dashed rounded-xl p-3 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 ${
-                  uploaded
-                    ? 'border-green-400 bg-green-50'
-                    : 'border-yellow-300 bg-white hover:border-yellow-400 hover:bg-yellow-50'
-                }`}
-                onClick={() => handleAreaSelect(area.id)}
-              >
-                {uploaded ? (
-                  <>
-                    <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
-                    <p className="text-xs font-medium text-green-700">{area.name}</p>
-                    <p className="text-[10px] text-yellow-600 mt-1">לחץ להחלפה</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-10 h-10 gradient-yellow rounded-full flex items-center justify-center mx-auto mb-2">
-                      <ImagePlus className="w-5 h-5 text-white" />
-                    </div>
-                    <p className="text-xs font-medium text-gray-900">{area.name}</p>
-                    <p className="text-[10px] text-gray-500">+₪{livePrice(area.id)}</p>
-                    <p className="text-[10px] text-yellow-600 mt-1">לחץ להעלאה</p>
-                  </>
+      <div className="lg:hidden space-y-3 mb-4">
+        {areaRows(availableAreas).map(row => (
+        <div key={row[0].id} className={`grid gap-3 ${AREA_ROW_COLS[row.length]}`}>
+          {row.map((area) => {
+            const compact = isChestArea(area.id)
+            const uploaded = hasDesign(area.id)
+            const processing = isBusy(area.id)
+            return (
+              <div key={area.id} className="relative">
+                {processing && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80 rounded-xl">
+                    <span className="text-[11px] font-medium text-yellow-600">מעלה עיצוב…</span>
+                  </div>
                 )}
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg, image/jpg, image/heic, image/heif, .heic, .heif"
-                  className="hidden"
-                  ref={(el) => { fileInputRefs.current[area.id] = el }}
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelectForArea(area.id, f); if (e.target) e.target.value = '' }}
-                />
-              </label>
-              {uploaded && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); removeDesign(area.id) }}
-                  aria-label={`הסרת עיצוב מאזור ${area.name}`}
-                  className="absolute top-1 left-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center z-10"
+                <label
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${uploaded ? 'החלפת' : 'העלאת'} עיצוב לאזור ${area.name}`}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }}
+                  className={`cursor-pointer block h-full border-2 border-dashed rounded-xl ${compact ? 'px-1 py-1.5' : 'p-3'} text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 ${
+                    uploaded
+                      ? 'border-green-400 bg-green-50'
+                      : 'border-yellow-300 bg-white hover:border-yellow-400 hover:bg-yellow-50'
+                  }`}
+                  onClick={() => handleAreaSelect(area.id)}
                 >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          )
-        })}
+                  {uploaded ? (
+                    <>
+                      <div className={`flex items-center justify-center gap-2 ${compact ? 'mb-1' : 'mb-2'}`}>
+                        {compact
+                          ? <CheckCircle className="absolute top-1 right-1 w-4 h-4 text-green-500" />
+                          : <CheckCircle className="w-10 h-10 text-green-500" />}
+                        <AreaIcon area={area.id} product="tshirt" className={compact ? 'w-8 h-8' : 'w-10 h-10'} />
+                      </div>
+                      <p className={`${compact ? 'text-[11px] leading-tight whitespace-nowrap' : 'text-xs'} font-medium text-green-700`}>{area.name}</p>
+                      <p className={`text-[10px] text-yellow-600 ${compact ? 'mt-0.5 leading-tight' : 'mt-1'}`}>לחץ להחלפה</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className={`flex items-center justify-center gap-2 ${compact ? 'mb-1' : 'mb-2'}`}>
+                        {!compact && (
+                          <div className="w-10 h-10 gradient-yellow rounded-full flex items-center justify-center">
+                            <ImagePlus className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        <AreaIcon area={area.id} product="tshirt" className={compact ? 'w-8 h-8' : 'w-10 h-10'} />
+                      </div>
+                      <p className={`${compact ? 'text-[11px] leading-tight whitespace-nowrap' : 'text-xs'} font-medium text-gray-900`}>{area.name}</p>
+                      <p className={`text-[10px] text-gray-500${compact ? ' leading-tight' : ''}`}>+₪{livePrice(area.id)}</p>
+                      <p className={`text-[10px] text-yellow-600 ${compact ? 'mt-0.5 leading-tight' : 'mt-1'}`}>לחץ להעלאה</p>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg, image/heic, image/heif, .heic, .heif"
+                    className="hidden"
+                    ref={(el) => { fileInputRefs.current[area.id] = el }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelectForArea(area.id, f); if (e.target) e.target.value = '' }}
+                  />
+                </label>
+                {uploaded && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeDesign(area.id) }}
+                    aria-label={`הסרת עיצוב מאזור ${area.name}`}
+                    className="absolute top-1 left-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center z-10"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        ))}
       </div>
 
       {/* ── DESKTOP: original area selector + upload area ── */}
       <div className="hidden lg:block">
         {/* Area selector buttons */}
-        <div className="grid gap-2 mb-4 grid-cols-2">
-          {availableAreas.map((area) => {
-            const isActive = selectedAreaId === area.id
-            const uploaded = hasDesign(area.id)
-            return (
-              <button
-                key={area.id}
-                onClick={() => handleAreaSelect(area.id)}
-                aria-pressed={isActive}
-                className={`relative text-xs h-16 px-2 py-2 rounded-md border font-medium transition-all flex items-center justify-center ${
-                  isActive
-                    ? 'gradient-yellow text-white border-transparent shadow'
-                    : 'bg-background shadow-sm border-yellow-200 hover:bg-yellow-50 hover:text-accent-foreground'
-                }`}
-              >
-                {uploaded && !isActive && (
-                  <span className="absolute top-1 right-1">
-                    <CheckCircle className="w-3 h-3 text-green-500" />
-                  </span>
-                )}
-                <div className="flex flex-col items-center">
-                  <span>{area.name}</span>
-                  {isBusy(area.id)
-                    ? <span className="text-[10px] opacity-80">מעלה…</span>
-                    : <span className="text-[10px] opacity-80">+₪{livePrice(area.id)}</span>}
-                </div>
-              </button>
-            )
-          })}
+        <div className="space-y-2 mb-4">
+          {areaRows(availableAreas).map(row => (
+          <div key={row[0].id} className={`grid gap-2 ${AREA_ROW_COLS[row.length]}`}>
+            {row.map((area) => {
+              const compact = isChestArea(area.id)
+              const isActive = selectedAreaId === area.id
+              const uploaded = hasDesign(area.id)
+              return (
+                <button
+                  key={area.id}
+                  onClick={() => handleAreaSelect(area.id)}
+                  aria-pressed={isActive}
+                  className={`relative text-xs ${compact ? 'h-20' : 'h-24'} px-2 py-2 rounded-md border font-medium transition-all flex items-center justify-center ${
+                    isActive
+                      ? 'gradient-yellow text-white border-transparent shadow'
+                      : 'bg-background shadow-sm border-yellow-200 hover:bg-yellow-50 hover:text-accent-foreground'
+                  }`}
+                >
+                  {uploaded && !isActive && (
+                    <span className="absolute top-1 right-1">
+                      <CheckCircle className="w-3 h-3 text-green-500" />
+                    </span>
+                  )}
+                  <div className="flex flex-col items-center">
+                    <AreaIcon area={area.id} product="tshirt" className={compact ? 'w-8 h-8 mb-0.5' : 'w-10 h-10 mb-0.5'} />
+                    <span>{area.name}</span>
+                    {isBusy(area.id)
+                      ? <span className={`text-[10px] opacity-80${compact ? ' leading-none' : ''}`}>מעלה…</span>
+                      : <span className={`text-[10px] opacity-80${compact ? ' leading-none' : ''}`}>+₪{livePrice(area.id)}</span>}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          ))}
         </div>
 
         {/* Upload area */}

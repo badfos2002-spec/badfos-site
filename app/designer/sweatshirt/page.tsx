@@ -6,6 +6,7 @@ import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
+import AreaIcon, { areaRows, isChestArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
 import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
@@ -296,35 +297,41 @@ export default function SweatshirtDesignerPage() {
             <p className="text-xs text-gray-400 mb-4">רוצה כמה עיצובים שונים? העלו לאזור אחר, או סיימו והוסיפו לעגלה ואז התחילו פריט חדש.</p>
 
             {/* Area selector tabs */}
-            <div className="grid gap-2 mb-4 grid-cols-2">
-              {availableAreas.map((area) => {
-                const isActive = selectedAreaId === area.id
-                const uploaded = hasDesign(area.id)
-                return (
-                  <button
-                    key={area.id}
-                    onClick={() => setSelectedAreaId(area.id)}
-                    className={`relative text-xs h-16 px-2 py-2 rounded-md border font-medium transition-all flex items-center justify-center ${
-                      isActive
-                        ? 'gradient-yellow text-white border-transparent shadow'
-                        : 'bg-background shadow-sm border-yellow-200 hover:bg-yellow-50 hover:text-accent-foreground'
-                    }`}
-                  >
-                    {uploaded && !isActive && (
-                      <span className="absolute top-1 right-1">
-                        <CheckCircle className="w-3 h-3 text-green-500" />
-                      </span>
-                    )}
-                    <div className="flex flex-col items-center">
-                      <span>{area.name}</span>
-                      {uploadingArea === area.id
-                        ? <span className="text-[10px] opacity-80">מעלה...</span>
-                        : <span className="text-[10px] opacity-80">+₪{liveDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
-                      }
-                    </div>
-                  </button>
-                )
-              })}
+            <div className="space-y-2 mb-4">
+              {areaRows(availableAreas).map(row => (
+              <div key={row[0].id} className={`grid gap-2 ${AREA_ROW_COLS[row.length]}`}>
+                {row.map((area) => {
+                  const compact = isChestArea(area.id)
+                  const isActive = selectedAreaId === area.id
+                  const uploaded = hasDesign(area.id)
+                  return (
+                    <button
+                      key={area.id}
+                      onClick={() => setSelectedAreaId(area.id)}
+                      className={`relative text-xs ${compact ? 'h-20' : 'h-24'} px-2 py-2 rounded-md border font-medium transition-all flex items-center justify-center ${
+                        isActive
+                          ? 'gradient-yellow text-white border-transparent shadow'
+                          : 'bg-background shadow-sm border-yellow-200 hover:bg-yellow-50 hover:text-accent-foreground'
+                      }`}
+                    >
+                      {uploaded && !isActive && (
+                        <span className="absolute top-1 right-1">
+                          <CheckCircle className="w-3 h-3 text-green-500" />
+                        </span>
+                      )}
+                      <div className="flex flex-col items-center">
+                        <AreaIcon area={area.id} product={selectedType === 'putter' ? 'sweatshirt' : 'hoodie'} className={compact ? 'w-8 h-8 mb-0.5' : 'w-10 h-10 mb-0.5'} />
+                        <span>{area.name}</span>
+                        {uploadingArea === area.id
+                          ? <span className={`text-[10px] opacity-80${compact ? ' leading-none' : ''}`}>מעלה...</span>
+                          : <span className={`text-[10px] opacity-80${compact ? ' leading-none' : ''}`}>+₪{liveDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
+                        }
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              ))}
             </div>
 
             {/* Upload area */}

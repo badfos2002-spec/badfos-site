@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, ShoppingBag, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus, Loader2 } from 'lucide-react'
+import AreaIcon from '@/components/designer/AreaIcon'
 import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
@@ -258,7 +259,7 @@ export default function ToteDesignerPage() {
                   <button
                     key={area.id}
                     onClick={() => setSelectedArea(area.id as DesignAreaType)}
-                    className={`relative text-xs h-16 px-2 py-2 rounded-md font-medium border-2 flex items-center justify-center transition-all ${
+                    className={`relative text-xs h-24 px-2 py-2 rounded-md font-medium border-2 flex items-center justify-center transition-all ${
                       isSelected
                         ? 'gradient-yellow text-white border-transparent shadow'
                         : 'bg-white text-gray-700 border-gray-200 hover:border-yellow-400'
@@ -270,6 +271,7 @@ export default function ToteDesignerPage() {
                       </span>
                     )}
                     <div className="flex flex-col items-center">
+                      <AreaIcon area={area.id} product="tote" className="w-10 h-10 mb-0.5" />
                       <span>{area.name}</span>
                       <span className="text-[10px] opacity-80">+₪{toteDesignAreas.find(a => a.id === area.id)?.price ?? area.price}</span>
                     </div>
