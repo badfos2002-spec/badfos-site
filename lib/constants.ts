@@ -258,7 +258,7 @@ export const TSHIRT_DESIGN_AREAS = [
   },
   {
     id: 'chest_logo_center' as DesignAreaType,
-    name: 'סמל כיס אמצע',
+    name: 'סמל אמצעי',
     description: 'סמל קטן בגובה הכיס במרכז החזה',
     price: 5,
   },
@@ -291,7 +291,7 @@ export const SWEATSHIRT_DESIGN_AREAS = [
   },
   {
     id: 'chest_logo_center' as DesignAreaType,
-    name: 'סמל כיס אמצע',
+    name: 'סמל אמצעי',
     description: 'סמל קטן בגובה הכיס במרכז החזה',
     price: 5,
   },

@@ -77,7 +77,7 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   },
   chest_logo_center: {
     view: 'front',
-    label: 'סמל אמצע',
+    label: 'סמל אמצעי',
     style: { width: '12%', aspectRatio: '1', top: '30%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
   },
   center: {

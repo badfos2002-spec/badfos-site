@@ -39,7 +39,7 @@ const CATALOG: {
       { id: 'back', label: 'גב' },
       { id: 'chest_logo', label: 'סמל כיס ימין' },
       { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
-      { id: 'chest_logo_center', label: 'סמל כיס אמצע' },
+      { id: 'chest_logo_center', label: 'סמל אמצעי' },
     ],
   },
   {
@@ -54,7 +54,7 @@ const CATALOG: {
       { id: 'back', label: 'גב' },
       { id: 'chest_logo', label: 'סמל כיס ימין' },
       { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
-      { id: 'chest_logo_center', label: 'סמל כיס אמצע' },
+      { id: 'chest_logo_center', label: 'סמל אמצעי' },
     ],
   },
   {

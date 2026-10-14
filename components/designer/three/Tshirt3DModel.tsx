@@ -44,7 +44,7 @@ const TSHIRT_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.72, h: 0.92, label: 'גב' },
   chest_logo: { w: 0.17, h: 0.17, label: 'סמל ימין' },
   chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
-  chest_logo_center: { w: 0.17, h: 0.17, label: 'סמל אמצע' },
+  chest_logo_center: { w: 0.17, h: 0.17, label: 'סמל אמצעי' },
 };
 
 // POLO — separate front panel (local z ∈ [-0.15,0.46]) and back panel
@@ -80,7 +80,7 @@ const OVERSIZED_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.6, h: 0.74, label: 'גב' },
   chest_logo: { w: 0.18, h: 0.18, label: 'סמל ימין' },
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
-  chest_logo_center: { w: 0.18, h: 0.18, label: 'סמל אמצע' },
+  chest_logo_center: { w: 0.18, h: 0.18, label: 'סמל אמצעי' },
 };
 
 // CAP (bucket hat) — one low-poly mesh. Y is up, the round brim is in the XZ
@@ -112,7 +112,7 @@ const HOODIE_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.55, h: 0.66, label: 'גב' },
   chest_logo: { w: 0.18, h: 0.18, label: 'סמל ימין' },
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
-  chest_logo_center: { w: 0.18, h: 0.18, label: 'סמל אמצע' },
+  chest_logo_center: { w: 0.18, h: 0.18, label: 'סמל אמצעי' },
 };
 
 // Crewneck (פוטר) — same body as the hoodie but no hood, so the back print
