@@ -395,27 +395,17 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
                   }`}
                   onClick={() => handleAreaSelect(area.id)}
                 >
+                  {uploaded && <CheckCircle className="absolute top-1 right-1 w-4 h-4 text-green-500" />}
+                  <div className={`flex items-center justify-center ${compact ? 'mb-1' : 'mb-2'}`}>
+                    <AreaIcon area={area.id} product="tshirt" className={compact ? 'w-8 h-8' : 'w-10 h-10'} />
+                  </div>
                   {uploaded ? (
                     <>
-                      <div className={`flex items-center justify-center gap-2 ${compact ? 'mb-1' : 'mb-2'}`}>
-                        {compact
-                          ? <CheckCircle className="absolute top-1 right-1 w-4 h-4 text-green-500" />
-                          : <CheckCircle className="w-10 h-10 text-green-500" />}
-                        <AreaIcon area={area.id} product="tshirt" className={compact ? 'w-8 h-8' : 'w-10 h-10'} />
-                      </div>
                       <p className={`${compact ? 'text-[11px] leading-tight whitespace-nowrap' : 'text-xs'} font-medium text-green-700`}>{area.name}</p>
                       <p className={`text-[10px] text-yellow-600 ${compact ? 'mt-0.5 leading-tight' : 'mt-1'}`}>לחץ להחלפה</p>
                     </>
                   ) : (
                     <>
-                      <div className={`flex items-center justify-center gap-2 ${compact ? 'mb-1' : 'mb-2'}`}>
-                        {!compact && (
-                          <div className="w-10 h-10 gradient-yellow rounded-full flex items-center justify-center">
-                            <ImagePlus className="w-5 h-5 text-white" />
-                          </div>
-                        )}
-                        <AreaIcon area={area.id} product="tshirt" className={compact ? 'w-8 h-8' : 'w-10 h-10'} />
-                      </div>
                       <p className={`${compact ? 'text-[11px] leading-tight whitespace-nowrap' : 'text-xs'} font-medium text-gray-900`}>{area.name}</p>
                       <p className={`text-[10px] text-gray-500${compact ? ' leading-tight' : ''}`}>+₪{livePrice(area.id)}</p>
                       <p className={`text-[10px] text-yellow-600 ${compact ? 'mt-0.5 leading-tight' : 'mt-1'}`}>לחץ להעלאה</p>
