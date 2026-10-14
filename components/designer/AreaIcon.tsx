@@ -81,10 +81,6 @@ export default function AreaIcon({ area, product, className = 'w-10 h-10' }: { a
       <path d={isBack ? shape.back : shape.front} fill="#fff" stroke={STROKE} strokeWidth={1.5} strokeLinejoin="round" fillRule="evenodd" />
       {extra && <path d={extra} fill="none" stroke={STROKE} strokeWidth={1.5} strokeLinecap="round" />}
       <rect x={rect[0]} y={rect[1]} width={rect[2]} height={rect[3]} rx={1.5} fill={PRINT} />
-      {isBack && (
-        // "Turned around" cue: small circular arrow in the top corner.
-        <path d="M45.9 3.64 A4.3 4.3 0 1 0 44.07 10.44 M45.9 3.64 L45.69 1.05 M45.9 3.64 L43.39 2.95" fill="none" stroke="#6B7280" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-      )}
     </svg>
   )
 }
