@@ -256,6 +256,12 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
   useEffect(() => {
     if (showGuides) setInteracted(false);
   }, [showGuides]);
+  // …and auto-dismiss it after 3s even without a drag (same path as the drag).
+  useEffect(() => {
+    if (!showGuides || interacted) return;
+    const t = setTimeout(() => setInteracted(true), 3000);
+    return () => clearTimeout(t);
+  }, [showGuides, interacted]);
   // The bucket hat's wide brim fills the frame — give it more margin so it
   // reads a touch smaller than the shirts.
   const fitMargin = variant === 'cap' ? 1.2 : 1.0;
