@@ -75,6 +75,11 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'סמל ימין',
     style: { width: '12%', aspectRatio: '1', top: '30%', left: '30%', borderRadius: '6px' },
   },
+  chest_logo_center: {
+    view: 'front',
+    label: 'סמל אמצע',
+    style: { width: '12%', aspectRatio: '1', top: '30%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
+  },
   center: {
     view: 'front',
     label: 'מרכזי',

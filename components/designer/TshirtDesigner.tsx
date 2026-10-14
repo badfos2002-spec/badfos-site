@@ -18,7 +18,7 @@ import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_COLORS } from '@/lib/constants'
+import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_AREA_FILTER, TSHIRT_COLORS } from '@/lib/constants'
 
 // The R3F Canvas cannot be server-rendered, so load the 3D stage client-side
 // only. A 3D failure never breaks the page — it's wrapped in an error boundary
@@ -143,14 +143,18 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const addItem = useCart((state) => state.addItem)
   const replaceItem = useCart((state) => state.replaceItem)
   const setEditingItem = useCart((state) => state.setEditingItem)
-  const editingItemId = useCart((state) => state.editingItemId)
+  const storeEditingItemId = useCart((state) => state.editingItemId)
 
   const totalSteps = 4
 
   // Read editing item synchronously from Zustand store (getState = no re-render needed)
-  const editingItem = editingItemId
-    ? useCart.getState().items.find((i) => i.id === editingItemId) ?? null
+  // Only a t-shirt is edited here — other designers set editingItemId too and
+  // don't clear it, so a stale sweatshirt id must not load into this designer.
+  const storeEditingItem = storeEditingItemId
+    ? useCart.getState().items.find((i) => i.id === storeEditingItemId) ?? null
     : null
+  const editingItem = storeEditingItem?.productType === 'tshirt' ? storeEditingItem : null
+  const editingItemId = editingItem ? storeEditingItemId : null
 
   const savedSession = useRef(editingItem ? null : loadDesignerSession())
 
@@ -213,6 +217,12 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
           next.color = ''
         }
       }
+      // Drop designs on areas the fabric doesn't offer (polo: no centre logo).
+      // Runs on every update — an upload landing after a fabric switch must not re-add one.
+      const allowedAreas = next.fabricType && TSHIRT_AREA_FILTER[next.fabricType]
+      if (allowedAreas && next.designs) {
+        next.designs = next.designs.filter(d => allowedAreas.includes(d.area))
+      }
       return next
     })
   }
@@ -273,6 +283,8 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
       try {
         // Designs are already permanent https Storage URLs from DesignStep
         const persistedConfig = { ...config } as ProductConfig
+        const allowedAreas = TSHIRT_AREA_FILTER[persistedConfig.fabricType || '']
+        if (allowedAreas) persistedConfig.designs = persistedConfig.designs.filter(d => allowedAreas.includes(d.area))
 
         if (editingItemId) {
           replaceItem(editingItemId, persistedConfig)
@@ -330,7 +342,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
       case 2:
         return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} fabricType={config.fabricType} />
       case 3:
-        return <DesignStep designs={config.designs || []} onUpdate={(designs) => updateConfig({ designs })} onBusyChange={setDesignUploading} onAreaFocus={(area) => {
+        return <DesignStep designs={config.designs || []} fabricType={config.fabricType} onUpdate={(designs) => updateConfig({ designs })} onBusyChange={setDesignUploading} onAreaFocus={(area) => {
           setActiveDesignArea(area)
           const overlay = DESIGN_AREA_OVERLAYS[area]
           if (overlay) setPreviewView(overlay.view as 'front' | 'back')
@@ -373,7 +385,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   }
 
   const mockupDesigns = config.designs || []
-  const tshirtAreaIds = ['front_full', 'back', 'chest_logo', 'chest_logo_right']
+  const tshirtAreaIds = TSHIRT_AREA_FILTER[config.fabricType || ''] ?? ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'chest_logo_center']
   const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
     if (!tshirtAreaIds.includes(areaId)) return false
     if (overlay.view !== previewView) return false

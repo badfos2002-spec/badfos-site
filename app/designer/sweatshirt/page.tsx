@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useSyncExternalStore } from 'react'
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
@@ -69,12 +69,18 @@ export default function SweatshirtDesignerPage() {
   const [selectedColor, setSelectedColor] = useState('')
   const availableColors = SWEATSHIRT_COLORS.filter(c => (SWEATSHIRT_COLOR_FILTER[selectedType] || []).includes(c.id))
   const availableAreas = SWEATSHIRT_DESIGN_AREAS.filter(a => !SWEATSHIRT_AREA_FILTER[selectedType] || SWEATSHIRT_AREA_FILTER[selectedType].includes(a.id))
+  // Current type for async callbacks — an upload that lands after a type switch
+  // must not re-add an area the new type doesn't offer (zip: no front/centre).
+  const selectedTypeRef = useRef(selectedType)
+  selectedTypeRef.current = selectedType
   const handleTypeSelect = (typeId: string) => {
+    selectedTypeRef.current = typeId
     setSelectedType(typeId)
     const allowed = SWEATSHIRT_COLOR_FILTER[typeId] || []
     if (selectedColor && !allowed.includes(selectedColor)) setSelectedColor('')
     const allowedAreas = SWEATSHIRT_AREA_FILTER[typeId]
     if (allowedAreas && !allowedAreas.includes(selectedAreaId)) setSelectedAreaId(allowedAreas[0])
+    if (allowedAreas) setDesigns(prev => prev.filter(d => allowedAreas.includes(d.area)))
   }
   const [designs, setDesigns] = useState<DesignArea[]>([])
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
@@ -122,6 +128,7 @@ export default function SweatshirtDesignerPage() {
       alert('העלאת קובץ העיצוב נכשלה. נסה/י שוב בעוד רגע.')
       return
     }
+    const allowedAreas = SWEATSHIRT_AREA_FILTER[selectedType]
     addItem({
       productType: 'sweatshirt',
       fabricType: selectedType,
@@ -129,7 +136,7 @@ export default function SweatshirtDesignerPage() {
       sizes: Object.entries(quantities)
         .filter(([, q]) => q > 0)
         .map(([size, quantity]) => ({ size, quantity })),
-      designs,
+      designs: allowedAreas ? designs.filter(d => allowedAreas.includes(d.area)) : designs,
     })
     router.push('/cart')
   }
@@ -179,6 +186,8 @@ export default function SweatshirtDesignerPage() {
         fileName: ready.name,
       }
       setDesigns(prev => {
+        const allowed = SWEATSHIRT_AREA_FILTER[selectedTypeRef.current]
+        if (allowed && !allowed.includes(areaId)) return prev
         const idx = prev.findIndex(d => d.area === areaId)
         if (idx >= 0) { const u = [...prev]; u[idx] = newDesign; return u }
         return [...prev, newDesign]

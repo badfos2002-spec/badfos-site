@@ -39,6 +39,7 @@ const CATALOG: {
       { id: 'back', label: 'גב' },
       { id: 'chest_logo', label: 'סמל כיס ימין' },
       { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
+      { id: 'chest_logo_center', label: 'סמל כיס אמצע' },
     ],
   },
   {
@@ -53,6 +54,7 @@ const CATALOG: {
       { id: 'back', label: 'גב' },
       { id: 'chest_logo', label: 'סמל כיס ימין' },
       { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
+      { id: 'chest_logo_center', label: 'סמל כיס אמצע' },
     ],
   },
   {
@@ -109,8 +111,8 @@ const GLOBAL_DEFAULTS = {
 /** Code-default products pricing (used when nothing is saved yet). */
 function codeDefaults(): Record<string, ProductPricing> {
   return {
-    tshirt: { base: { cotton: 37, 'dri-fit': 37, polo: 47, oversized: 47 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5 } },
-    sweatshirt: { base: { kangaroo: 53, putter: 53, zip: 53 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5 } },
+    tshirt: { base: { cotton: 37, 'dri-fit': 37, polo: 47, oversized: 47 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, chest_logo_center: 5 } },
+    sweatshirt: { base: { kangaroo: 53, putter: 53, zip: 53 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, chest_logo_center: 5 } },
     cap: { base: { tembel: 30, mesh: 30 }, areas: { center: 5, center_wide: 5 } },
     tote: { base: { volume: 35, drawstring: 35 }, areas: { front_full: 5, back: 5 } },
     vest: { base: { default: 30 }, areas: { back: 10, chest_logo: 5, chest_logo_right: 5 } },
@@ -156,6 +158,7 @@ function migrateLegacy(legacy: LegacyDoc): Record<string, ProductPricing> {
     back: da.back ?? 10,
     chest_logo: da.chest_logo ?? 5,
     chest_logo_right: da.chest_logo_right ?? 5,
+    chest_logo_center: da.chest_logo_center ?? 5,
   }
   d.tshirt.areas = { ...shirtAreas }
   const sBase = bp.sweatshirt ?? 53

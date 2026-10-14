@@ -34,6 +34,8 @@ const TSHIRT_AREAS: Record<string, Placement> = {
   back: { position: [0, 0.14, -0.3], rotation: [0, Math.PI, 0], size: 0.92, depth: 0.55 },
   chest_logo: { position: [-0.27, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.27, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  // Same row as the side logos (matches the 2D overlay); centre neckline is at y≈0.84, well clear.
+  chest_logo_center: { position: [0, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   center: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
   center_wide: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
 };
@@ -42,6 +44,7 @@ const TSHIRT_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.72, h: 0.92, label: 'גב' },
   chest_logo: { w: 0.17, h: 0.17, label: 'סמל ימין' },
   chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
+  chest_logo_center: { w: 0.17, h: 0.17, label: 'סמל אמצע' },
 };
 
 // POLO — separate front panel (local z ∈ [-0.15,0.46]) and back panel
@@ -65,8 +68,10 @@ const POLO_GUIDES: Record<string, GuideBox> = {
 const OVERSIZED_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.66, depth: 0.55 },
   back: { position: [0, 0.11, -0.3], rotation: [0, Math.PI, 0], size: 0.74, depth: 0.55 },
-  chest_logo: { position: [-0.3, 0.52, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
-  chest_logo_right: { position: [0.3, 0.52, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
+  // Chest row at 0.55 so its bottom edge (guide h 0.18 → 0.46) clears front_full's top (0.13 + 0.64/2 = 0.45).
+  chest_logo: { position: [-0.3, 0.55, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
+  chest_logo_right: { position: [0.3, 0.55, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
+  chest_logo_center: { position: [0, 0.55, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
   center: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.66, depth: 0.55 },
   center_wide: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.78, depth: 0.55 },
 };
@@ -75,6 +80,7 @@ const OVERSIZED_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.6, h: 0.74, label: 'גב' },
   chest_logo: { w: 0.18, h: 0.18, label: 'סמל ימין' },
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
+  chest_logo_center: { w: 0.18, h: 0.18, label: 'סמל אמצע' },
 };
 
 // CAP (bucket hat) — one low-poly mesh. Y is up, the round brim is in the XZ
@@ -96,6 +102,8 @@ const HOODIE_AREAS: Record<string, Placement> = {
   back: { position: [0, 0.01, -0.33], rotation: [0, Math.PI, 0], size: 0.64, depth: 0.55 },
   chest_logo: { position: [-0.22, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.22, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  // Same row as the side logos (matches the 2D overlay).
+  chest_logo_center: { position: [0, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   center: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.56, depth: 0.55 },
   center_wide: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.68, depth: 0.55 },
 };
@@ -104,6 +112,7 @@ const HOODIE_GUIDES: Record<string, GuideBox> = {
   back: { w: 0.55, h: 0.66, label: 'גב' },
   chest_logo: { w: 0.18, h: 0.18, label: 'סמל ימין' },
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
+  chest_logo_center: { w: 0.18, h: 0.18, label: 'סמל אמצע' },
 };
 
 // Crewneck (פוטר) — same body as the hoodie but no hood, so the back print

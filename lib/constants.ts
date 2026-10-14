@@ -157,6 +157,12 @@ export const SWEATSHIRT_AREA_FILTER: Record<string, string[]> = {
   zip: ['back', 'chest_logo', 'chest_logo_right'],
 }
 
+// Print areas per t-shirt fabric (undefined = all areas). The polo has no
+// centre-chest logo — the button placket runs down the centre.
+export const TSHIRT_AREA_FILTER: Record<string, string[]> = {
+  polo: ['front_full', 'back', 'chest_logo', 'chest_logo_right'],
+}
+
 export const BUFF_COLORS = [
   { id: 'red', name: 'אדום', hex: '#8A0303' },
   { id: 'blue', name: 'כחול', hex: '#3B82F6' },
@@ -250,6 +256,12 @@ export const TSHIRT_DESIGN_AREAS = [
     description: 'סמל קטן בגובה הכיס צד שמאל',
     price: 5,
   },
+  {
+    id: 'chest_logo_center' as DesignAreaType,
+    name: 'סמל כיס אמצע',
+    description: 'סמל קטן בגובה הכיס במרכז החזה',
+    price: 5,
+  },
 ] as const
 
 export const SWEATSHIRT_DESIGN_AREAS = [
@@ -275,6 +287,12 @@ export const SWEATSHIRT_DESIGN_AREAS = [
     id: 'chest_logo_right' as DesignAreaType,
     name: 'סמל כיס שמאל',
     description: 'סמל קטן בגובה הכיס צד שמאל',
+    price: 5,
+  },
+  {
+    id: 'chest_logo_center' as DesignAreaType,
+    name: 'סמל כיס אמצע',
+    description: 'סמל קטן בגובה הכיס במרכז החזה',
     price: 5,
   },
 ] as const
