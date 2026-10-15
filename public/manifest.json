@@ -19,7 +19,7 @@
       "purpose": "any"
     },
     {
-      "src": "/_next/static/media/icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     }
