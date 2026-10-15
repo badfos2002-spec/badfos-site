@@ -276,15 +276,14 @@ export default function RootLayout({
         </noscript>
 
         {/* Meta Pixel NoScript */}
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: 'none' }}
-            src="https://www.facebook.com/tr?id=877576361459806&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
+        {/* Raw string, not a JSX <img>: React would emit a <link rel="preload">
+            for it in the SSR HTML, firing a PageView on every load. */}
+        <noscript
+          dangerouslySetInnerHTML={{
+            __html:
+              '<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=877576361459806&ev=PageView&noscript=1" alt="" />',
+          }}
+        />
 
         <TrackingScripts />
         <PricingLoader />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 
 declare global {
   interface Window {
@@ -12,7 +13,15 @@ declare global {
   }
 }
 
+// Module-level so the Meta Pixel / AdSense load (fbq init + PageView) happens
+// at most once per page load, even when the marketing effect re-runs on an
+// admin↔public navigation.
+let marketingLoaded = false
+
 export default function TrackingScripts() {
+  // Owner's /admin visits must not hit the Meta Pixel (or show AdSense).
+  const isAdmin = usePathname()?.startsWith('/admin') ?? false
+
   // Capture GCLID from URL and save to localStorage + cookie (90 day expiry)
   useEffect(() => {
     try {
@@ -58,9 +67,7 @@ export default function TrackingScripts() {
   //    no authority over them.
   useEffect(() => {
     let googleLoaded = false
-    let marketingLoaded = false
     let googleTimer: ReturnType<typeof setTimeout> | null = null
-    let marketingTimer: ReturnType<typeof setTimeout> | null = null
 
     const loadGoogleScripts = () => {
       if (googleLoaded) return
@@ -119,6 +126,26 @@ export default function TrackingScripts() {
       }
     }
 
+    // Google: always load. The small delay is for performance only — it is NOT
+    // a consent gate. Consent Mode v2 governs whether cookies are written.
+    googleTimer = setTimeout(loadGoogleScripts, 500)
+
+    return () => {
+      if (googleTimer) clearTimeout(googleTimer)
+    }
+  }, [])
+
+  // Meta Pixel + AdSense: consent-gated, and skipped entirely on /admin.
+  // Re-runs only when isAdmin flips, so admin→public still loads normally;
+  // the module-level flag prevents a second init/PageView.
+  // Known limitation: once loaded on a public page, fbevents auto-tracks
+  // history changes, so a client-side nav into /admin can still send a
+  // PageView (no public→admin links exist, so rare).
+  useEffect(() => {
+    if (isAdmin) return
+
+    let marketingTimer: ReturnType<typeof setTimeout> | null = null
+
     const loadMarketingScripts = () => {
       if (marketingLoaded) return
       marketingLoaded = true
@@ -167,10 +194,6 @@ export default function TrackingScripts() {
       document.head.appendChild(adsenseScript)
     }
 
-    // Google: always load. The small delay is for performance only — it is NOT
-    // a consent gate. Consent Mode v2 governs whether cookies are written.
-    googleTimer = setTimeout(loadGoogleScripts, 500)
-
     // Meta Pixel + AdSense: consent-gated (unchanged behaviour)
     const checkConsentAndLoad = () => {
       let storedConsent: string | null = null
@@ -195,11 +218,10 @@ export default function TrackingScripts() {
     window.addEventListener('cookieConsentAccepted', handleConsent)
 
     return () => {
-      if (googleTimer) clearTimeout(googleTimer)
       if (marketingTimer) clearTimeout(marketingTimer)
       window.removeEventListener('cookieConsentAccepted', handleConsent)
     }
-  }, [])
+  }, [isAdmin])
 
   return null
 }
