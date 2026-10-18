@@ -139,11 +139,25 @@ export interface CostSettings {
 
 // ── תאריכים בזמן ישראל ───────────────────────────────────────────────────
 
-/** היסט אזור-הזמן במילישניות עבור רגע נתון (מטפל בשעון קיץ). */
+/**
+ * היסט אזור-הזמן במילישניות עבור רגע נתון (מטפל בשעון קיץ).
+ * בלתי-תלוי באזור הזמן של המכונה (Vercel רץ ב-UTC, מחשב פיתוח בישראל):
+ * מפרקים את שעון-הקיר באזור המבוקש עם formatToParts ובונים אותו מחדש עם Date.UTC.
+ */
 function tzOffsetMs(date: Date, timeZone: string): number {
-  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }))
-  const local = new Date(date.toLocaleString('en-US', { timeZone }))
-  return local.getTime() - utc.getTime()
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(date)
+  const get = (type: string) => Number(parts.find(p => p.type === type)?.value)
+  const wallAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'))
+  return wallAsUtc - Math.floor(date.getTime() / 1000) * 1000
 }
 
 /** מפתח יום YYYY-MM-DD לפי שעון ישראל. */
@@ -159,9 +173,13 @@ export function jerusalemDateKey(date: Date = new Date()): string {
 
 /** חצות (00:00) בשעון ישראל של מפתח היום הנתון, כ-Date ב-UTC. */
 export function jerusalemMidnight(dateKey: string): Date {
-  const asUtc = new Date(`${dateKey}T00:00:00Z`)
-  // מעברי שעון בישראל קורים ב-02:00, אז חצות אף פעם לא נופל על המעבר עצמו
-  return new Date(asUtc.getTime() - tzOffsetMs(asUtc, JERUSALEM_TZ))
+  const asUtc = new Date(`${dateKey}T00:00:00Z`).getTime()
+  // שני מעברים: ההיסט ב-00:00Z של אותו תאריך יכול להיות שונה מההיסט בחצות
+  // ישראל עצמה (שקודמת לו ב-2–3 שעות) — ביום המעבר לשעון חורף/קיץ, המעבר
+  // ב-02:00 נופל ביניהם. לכן מחשבים ניחוש ראשון, ואז את ההיסט בניחוש עצמו.
+  // חצות אף פעם לא נופל בתוך מעבר (המעברים ב-02:00), אז ההיסט השני מדויק.
+  const guess = asUtc - tzOffsetMs(new Date(asUtc), JERUSALEM_TZ)
+  return new Date(asUtc - tzOffsetMs(new Date(guess), JERUSALEM_TZ))
 }
 
 /** הזזת מפתח יום ב-n ימים (קדימה או אחורה). */

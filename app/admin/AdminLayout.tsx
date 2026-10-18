@@ -18,6 +18,7 @@ import {
   BarChart3,
   Wallet,
   Paintbrush,
+  CalendarDays,
   Menu,
   X,
   LogOut,
@@ -29,6 +30,7 @@ import type { User } from 'firebase/auth'
 const menuItems = [
   { icon: LayoutDashboard, label: 'לוח בקרה', href: '/admin' },
   { icon: ShoppingBag, label: 'הזמנות', href: '/admin/orders' },
+  { icon: CalendarDays, label: 'הזמנות יומיות', href: '/admin/daily' },
   { icon: Paintbrush, label: 'מייצר סקיצות', href: '/admin/sketches' },
   { icon: Users, label: 'לידים', href: '/admin/leads' },
   { icon: FileText, label: 'הצעות מחיר', href: '/admin/quotes' },
