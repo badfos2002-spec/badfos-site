@@ -12,6 +12,8 @@ import DailySummaryView, { type SavedVoiceOrder } from '@/components/admin/Daily
 export default function AdminDailyOrdersPage() {
   const [date, setDate] = useState(() => jerusalemDateKey())
   const [summary, setSummary] = useState<DailySummary | null>(null)
+  // היום שאליו שייך ה-summary שנטען (date מתחלף לפני שהנתונים מגיעים)
+  const [summaryDate, setSummaryDate] = useState(date)
   const [voiceOrders, setVoiceOrders] = useState<SavedVoiceOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -28,6 +30,7 @@ export default function AdminDailyOrdersPage() {
       if (seq !== seqRef.current) return
       if (!res.ok) throw new Error(data?.error || 'load_failed')
       setSummary(data.summary)
+      setSummaryDate(date)
       setVoiceOrders(data.voiceOrders ?? [])
     } catch (e) {
       if (seq !== seqRef.current) return
@@ -95,7 +98,7 @@ export default function AdminDailyOrdersPage() {
       ) : error ? (
         <p className="text-red-600 bg-red-50 rounded-xl p-4">{error}</p>
       ) : summary ? (
-        <DailySummaryView summary={summary} voiceOrders={voiceOrders} onDelete={deleteVoiceOrder} />
+        <DailySummaryView summary={summary} date={summaryDate} voiceOrders={voiceOrders} onDelete={deleteVoiceOrder} />
       ) : null}
     </div>
   )

@@ -373,6 +373,22 @@ export function aggregateDaily(siteOrders: SiteOrderLike[], voiceOrders: { items
   }
 }
 
+/**
+ * טקסט לספק: לכל קבוצה שורת "מוצר · צבע — סה״כ" ושורת מידות, שורה ריקה בין
+ * קבוצות. מידה בפורמט "M – 4 יח׳" (מסתיים בעברית, כדי ש"ילדים 12 ×5" לא ייקרא
+ * "5×12" ב-RTL), מופרד ב-" | ". בלי מקור/מחירים/לקוחות. כל שורה מתחילה ב-RLM (U+200F) כדי שוואטסאפ
+ * יציג אותה מימין לשמאל גם כשהיא מתחילה באות לטינית ("M ×4, L ×6").
+ */
+export function supplierText(summary: DailySummary, date: string): string {
+  const RLM = '\u200F'
+  const [y, m, d] = date.split('-')
+  const lines = [`הזמנה ליום ${d}.${m}.${y}`]
+  for (const g of summary.groups) {
+    lines.push('', `${g.label} — ${g.total}`, g.sizes.map(s => `${s.label} – ${s.quantity} יח׳`).join(' | '))
+  }
+  return lines.map(l => (l ? RLM + l : l)).join('\n').replace(/\n{3,}/g, '\n\n')
+}
+
 /** YYYY-MM-DD תקין. */
 export function isDateKey(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false

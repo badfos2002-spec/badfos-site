@@ -1,8 +1,10 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { getColorLabel } from '@/lib/constants'
-import { productTypeLabel, sizeLabel, type DailySummary, type VoiceItem } from '@/lib/daily-orders'
+import { productTypeLabel, sizeLabel, supplierText, type DailySummary, type VoiceItem } from '@/lib/daily-orders'
 
 export interface SavedVoiceOrder {
   id: string
@@ -15,13 +17,52 @@ const timeFmt = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', h
 
 export default function DailySummaryView({
   summary,
+  date,
   voiceOrders,
   onDelete,
 }: {
   summary: DailySummary
+  date: string
   voiceOrders: SavedVoiceOrder[]
   onDelete: (id: string) => void
 }) {
+  const [supplierOpen, setSupplierOpen] = useState(false)
+  const [text, setText] = useState('')
+  // מאיזה summary+יום נוצר הטקסט — כדי לא לדרוס עריכות ברענון של אותו יום
+  const [base, setBase] = useState<{ summary: DailySummary; date: string } | null>(null)
+  const [copied, setCopied] = useState<'' | 'ok' | 'manual'>('')
+  const textRef = useRef<HTMLTextAreaElement>(null)
+
+  const regenerate = () => {
+    setText(supplierText(summary, date))
+    setBase({ summary, date })
+  }
+  // יום חדש — הטקסט מתאפס והפאנל נסגר; נתונים חדשים לאותו יום — העריכות נשמרות ומוצג קישור לטעינה מחדש
+  useEffect(() => {
+    if (base?.date === date) return
+    regenerate()
+    setSupplierOpen(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- רץ רק כשהיום משתנה (summary מגיע יחד איתו); base/regenerate בכוונה לא תלויות
+  }, [date])
+  const stale = base !== null && supplierText(base.summary, base.date) !== supplierText(summary, date)
+
+  const copy = async () => {
+    let ok = true
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const el = textRef.current
+      ok = false
+      if (el) {
+        el.focus()
+        el.setSelectionRange(0, el.value.length)
+        ok = document.execCommand('copy')
+      }
+    }
+    setCopied(ok ? 'ok' : 'manual')
+    setTimeout(() => setCopied(''), 2000)
+  }
+
   return (
     <div className="space-y-6">
       {/* סה"כ */}
@@ -39,6 +80,31 @@ export default function DailySummaryView({
       {summary.groups.length === 0 ? (
         <p className="text-gray-500 text-center py-6 bg-white rounded-2xl border border-gray-200">אין הזמנות ביום הזה</p>
       ) : (
+        <>
+        {supplierOpen ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+            <p className="text-sm text-gray-600">אפשר למחוק או לערוך שורות לפני ההעתקה</p>
+            <textarea
+              ref={textRef}
+              dir="rtl"
+              value={text}
+              onChange={e => setText(e.target.value)}
+              rows={Math.max(6, text.split('\n').length)}
+              className="w-full border border-gray-300 rounded-xl p-3 text-base leading-relaxed"
+            />
+            {stale && (
+              <button type="button" onClick={regenerate} className="text-sm text-blue-700 underline">
+                הנתונים עודכנו — טען טקסט מחדש
+              </button>
+            )}
+            <div className="flex gap-2">
+              <Button onClick={copy}>{copied === 'ok' ? 'הועתק ✓' : copied === 'manual' ? 'סמנו והעתיקו ידנית' : 'העתק'}</Button>
+              <Button variant="ghost" onClick={() => setSupplierOpen(false)}>סגור</Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={() => { regenerate(); setSupplierOpen(true) }}>טקסט לספק</Button>
+        )}
         <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-100">
           {summary.groups.map(g => (
             <div key={g.key} className="p-4">
@@ -59,6 +125,7 @@ export default function DailySummaryView({
             </div>
           ))}
         </div>
+        </>
       )}
 
       {/* הזמנות קוליות שנשמרו ליום */}
