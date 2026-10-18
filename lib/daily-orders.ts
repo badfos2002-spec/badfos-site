@@ -29,6 +29,7 @@ import {
   BABY_SIZES,
   getColorLabel,
   getTypeLabel,
+  getProductLabel,
 } from './constants'
 
 /** אותה הגדרת "שולם" כמו בדוח השבועי ובמסך מצב המערכת. */
@@ -334,7 +335,9 @@ export function aggregateDaily(siteOrders: SiteOrderLike[], voiceOrders: { items
     }
     g.total += quantity
     g[source] += quantity
-    g.sizeMap.set(size, (g.sizeMap.get(size) ?? 0) + quantity)
+    // 'one-size' (ישן) ו-ONE_SIZE הם אותה מידה — שורה אחת
+    const sz = size === 'one-size' ? ONE_SIZE : size
+    g.sizeMap.set(sz, (g.sizeMap.get(sz) ?? 0) + quantity)
   }
 
   const paid = siteOrders.filter(o => PAID_STATUSES.includes(o.status))
@@ -373,20 +376,49 @@ export function aggregateDaily(siteOrders: SiteOrderLike[], voiceOrders: { items
   }
 }
 
+const SUPPLIER_NAMES: Record<string, string> = {
+  buff: 'באפים',
+  apron: 'סינרים',
+  baby: 'בגדי גוף',
+  vest: 'וסטים',
+}
+
+/** שם קצר לספק: "חולצות כותנה", "קפוצון קנגרו", "פוטר", "כובעי טמבל", "באפים". */
+function supplierName(productType: string, fabricType: string): string {
+  const type = fabricType ? getTypeLabel(fabricType) : ''
+  if (productType === 'tshirt' && type) return `חולצות ${type}`
+  if (productType === 'sweatshirt' && type) return type.replace(/׳/g, '')
+  if (productType === 'cap' && type) return type.replace(/^כובע /, 'כובעי ')
+  if (productType === 'tote' && type) return type.replace(/^תיק /, 'תיקי ')
+  return SUPPLIER_NAMES[productType] ?? getProductLabel(productType)
+}
+
+/** "S- 10", "מידה אחת- 35"; ילדים ותינוקות: "מידה (14) - 4 יחידות", "מידה (3-6 חודשים) - 2 יחידות". */
+function supplierSizeLine(s: { size: string; label: string; quantity: number }): string {
+  const kids = KIDS_SIZES.find(k => k.id === s.size)
+  const baby = BABY_SIZES.find(b => b.id === s.size)
+  if (kids || baby) return `מידה (${(kids ?? baby)!.name}) - ${s.quantity === 1 ? 'יחידה אחת' : `${s.quantity} יחידות`}`
+  return `${s.label}- ${s.quantity}`
+}
+
 /**
- * טקסט לספק: לכל קבוצה שורת "מוצר · צבע — סה״כ" ושורת מידות, שורה ריקה בין
- * קבוצות. מידה בפורמט "M – 4 יח׳" (מסתיים בעברית, כדי ש"ילדים 12 ×5" לא ייקרא
- * "5×12" ב-RTL), מופרד ב-" | ". בלי מקור/מחירים/לקוחות. כל שורה מתחילה ב-RLM (U+200F) כדי שוואטסאפ
- * יציג אותה מימין לשמאל גם כשהיא מתחילה באות לטינית ("M ×4, L ×6").
+ * טקסט לספק: לכל קבוצה שורת "שם צבע" ואחריה שורה לכל מידה (supplierSizeLine), שורה
+ * ריקה בין קבוצות. בלי תאריך/סיכומים/מקור/מחירים/לקוחות. כל שורה מתחילה ב-RLM
+ * (U+200F) כדי שוואטסאפ יציג גם שורה שמתחילה באות לטינית ("S- 10") מימין לשמאל,
+ * מיושרת לימין כמו שאר השורות.
  */
-export function supplierText(summary: DailySummary, date: string): string {
+export function supplierText(summary: DailySummary): string {
   const RLM = '\u200F'
-  const [y, m, d] = date.split('-')
-  const lines = [`הזמנה ליום ${d}.${m}.${y}`]
-  for (const g of summary.groups) {
-    lines.push('', `${g.label} — ${g.total}`, g.sizes.map(s => `${s.label} – ${s.quantity} יח׳`).join(' | '))
-  }
-  return lines.map(l => (l ? RLM + l : l)).join('\n').replace(/\n{3,}/g, '\n\n')
+  return summary.groups
+    .map(g => {
+      const [productType, fabricType, color, ...rest] = g.key.split('|')
+      const special = rest.join('|')
+      const head = productType === 'package'
+        ? special
+        : `${special || supplierName(productType, fabricType)} ${getColorLabel(color, productType)}`
+      return [head, ...g.sizes.map(supplierSizeLine)].map(l => RLM + l).join('\n')
+    })
+    .join('\n\n')
 }
 
 /** YYYY-MM-DD תקין. */

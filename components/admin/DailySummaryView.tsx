@@ -34,7 +34,7 @@ export default function DailySummaryView({
   const textRef = useRef<HTMLTextAreaElement>(null)
 
   const regenerate = () => {
-    setText(supplierText(summary, date))
+    setText(supplierText(summary))
     setBase({ summary, date })
   }
   // יום חדש — הטקסט מתאפס והפאנל נסגר; נתונים חדשים לאותו יום — העריכות נשמרות ומוצג קישור לטעינה מחדש
@@ -44,7 +44,7 @@ export default function DailySummaryView({
     setSupplierOpen(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps -- רץ רק כשהיום משתנה (summary מגיע יחד איתו); base/regenerate בכוונה לא תלויות
   }, [date])
-  const stale = base !== null && supplierText(base.summary, base.date) !== supplierText(summary, date)
+  const stale = base !== null && supplierText(base.summary) !== supplierText(summary)
 
   const copy = async () => {
     let ok = true
