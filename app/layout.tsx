@@ -229,7 +229,7 @@ export default function RootLayout({
                 ] as const).map(([name, id]) => ({
                   '@type': 'Offer',
                   url: `https://badfos.co.il/designer/${id}`,
-                  itemOffered: { '@type': 'Product', name },
+                  itemOffered: { '@type': 'Service', name },
                   priceSpecification: {
                     '@type': 'PriceSpecification',
                     minPrice: getBasePrice(id),
