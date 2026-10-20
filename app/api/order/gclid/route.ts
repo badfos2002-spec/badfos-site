@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
+import { isManualOrder } from '@/lib/manual-order'
 
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
 
@@ -43,11 +44,15 @@ export async function POST(request: NextRequest) {
         const snapshot = await adminDb
           .collection('orders')
           .where('customer.phone', '==', phone)
-          .limit(5)
+          // 25 (was 5): manual orders are filtered out below, after the limit —
+          // leave room so they can't push the site order out of the window.
+          .limit(25)
           .get()
-        // Find most recent order (paid or pending)
+        // Find most recent order (paid or pending). Manual orders (sold outside
+        // the site) never came from an ad click — never let one shadow a site order.
         const sorted = snapshot.docs
           .map(d => ({ id: d.id, data: d.data() }))
+          .filter(o => !isManualOrder(o.data))
           .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
         if (sorted.length > 0) {
           order = sorted[0].data
@@ -61,10 +66,11 @@ export async function POST(request: NextRequest) {
       const snapshot = await adminDb
         .collection('orders')
         .where('customer.email', '==', payerEmail.toLowerCase())
-        .limit(5)
+        .limit(25) // room for manual orders filtered below (see phone query)
         .get()
       const sorted = snapshot.docs
         .map(d => ({ id: d.id, data: d.data() }))
+        .filter(o => !isManualOrder(o.data))
         .sort((a, b) => (b.data.createdAt?.toMillis?.() || 0) - (a.data.createdAt?.toMillis?.() || 0))
       if (sorted.length > 0) {
         order = sorted[0].data

@@ -58,7 +58,7 @@ export default function AdminDailyOrdersPage() {
     <div dir="rtl" className="max-w-3xl mx-auto">
       <div className="mb-5">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1">הזמנות יומיות</h1>
-        <p className="text-gray-600 text-sm">סיכום יומי של כל מה שהוזמן ושולם באתר</p>
+        <p className="text-gray-600 text-sm">סיכום יומי של כל מה שהוזמן ושולם — באתר ובהזמנות ידניות</p>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap mb-4">

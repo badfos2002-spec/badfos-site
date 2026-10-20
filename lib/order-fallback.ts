@@ -9,6 +9,7 @@ import {
   type OrderCandidate,
 } from '@/lib/payment-matching'
 import { recordUsage } from '@/lib/usage-tracking'
+import { isManualOrder } from '@/lib/manual-order'
 
 /**
  * Server-side fallback order lookup shared by /api/webhooks and
@@ -66,7 +67,9 @@ export async function findOrderByFallback(opts: {
       const snapshot = await adminDb
         .collection('orders')
         .where('customer.phone', '==', phone)
-        .limit(10)
+        // 25 (was 10): resolveSnapshot drops manual orders after the limit —
+        // leave room so they can't push the real site order out of the window.
+        .limit(25)
         .get()
       const res = await resolveSnapshot(snapshot, paymentSum, opts, `phone ${phone}`)
       if (res) return res
@@ -77,7 +80,7 @@ export async function findOrderByFallback(opts: {
     const snapshot = await adminDb
       .collection('orders')
       .where('customer.email', '==', opts.payerEmail.toLowerCase())
-      .limit(10)
+      .limit(25) // room for manual orders dropped in resolveSnapshot
       .get()
     const res = await resolveSnapshot(snapshot, paymentSum, opts, `email ${opts.payerEmail}`)
     if (res) return res
@@ -93,7 +96,12 @@ async function resolveSnapshot(
   identifier: string
 ): Promise<FallbackOutcome | null> {
   if (snapshot.empty) return null
-  const candidates = snapshot.docs.map((d) => orderToCandidate(d.id, d.data()))
+  // A manual order (paid outside the site) is never the target of a site
+  // payment, and must not count as a "paid sibling" that blocks one.
+  const candidates = snapshot.docs
+    .filter((d) => !isManualOrder(d.data()))
+    .map((d) => orderToCandidate(d.id, d.data()))
+  if (candidates.length === 0) return null
   const result = pickFallbackOrder(candidates, {
     paymentSum,
     transactionPaymentId: opts.transactionPaymentId,

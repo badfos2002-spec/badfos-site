@@ -13,6 +13,7 @@ import { sweepOldSketches, SketchSweepSummary } from '@/lib/sketch-sweep'
 import { Resend } from 'resend'
 import { escapeHtml } from '@/lib/utils'
 import { recordUsage } from '@/lib/usage-tracking'
+import { isManualOrder } from '@/lib/manual-order'
 
 const CRON_SECRET = process.env.CRON_SECRET
 const CLEANUP_DAYS = 30
@@ -130,6 +131,8 @@ export async function GET(req: NextRequest) {
       for (const doc of recentSnap.docs) {
         const order = doc.data()
         if (!UPSCALABLE_STATUSES.includes(order.status)) continue
+        // הזמנה ידנית — בלי הגדלה אוטומטית (החלטת הבעלים)
+        if (isManualOrder(order)) continue
         const upscales = order.upscales || {}
         // Heal when EITHER:
         //  (a) an existing entry is retryable — failed, a pixel-limit gave_up

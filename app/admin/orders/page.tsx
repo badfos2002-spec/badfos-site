@@ -10,6 +10,8 @@ import { deleteFile } from '@/lib/storage'
 import { buildWazeLink } from '@/lib/url-validation'
 import { auth } from '@/lib/firebase'
 import type { Order, DesignUpscale } from '@/lib/types'
+import ManualOrderForm from '@/components/admin/ManualOrderForm'
+import { isManualOrder, paymentMethodLabel } from '@/lib/manual-order'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-800' },
@@ -84,6 +86,7 @@ export default function AdminOrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null)
   const [retryingUpscaleOrderId, setRetryingUpscaleOrderId] = useState<string | null>(null)
+  const [showManualForm, setShowManualForm] = useState(false)
 
   // Real-time listener — orders update automatically when payment confirmed
   useEffect(() => {
@@ -100,6 +103,13 @@ export default function AdminOrdersPage() {
     try {
       await updateOrderStatus(orderId, newStatus)
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o))
+
+      // הזמנה ידנית: השותף מול הלקוח — בלי קופון, מיילים או וואטסאפ אוטומטי.
+      // (הורדת מלאי בייצור נשארת — הסחורה יוצאת מהמלאי בדיוק כמו בהזמנת אתר.)
+      if (isManualOrder(order)) {
+        if (newStatus === 'in_production') deductInventory(order.items).catch(console.error)
+        return
+      }
 
       if (newStatus === 'paid') {
         const couponCode = await createCoupon(orderId)
@@ -379,10 +389,25 @@ export default function AdminOrdersPage() {
 
   return (
     <div dir="rtl">
-      <div className="mb-8">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">ניהול הזמנות</h1>
-        <p className="text-gray-600">צפייה וניהול כל ההזמנות במערכת</p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">ניהול הזמנות</h1>
+          <p className="text-gray-600">צפייה וניהול כל ההזמנות במערכת</p>
+        </div>
+        <Button className="bg-gray-900 hover:bg-gray-800 text-white min-h-[44px]" onClick={() => setShowManualForm(true)}>
+          + הזמנה ידנית חדשה
+        </Button>
       </div>
+
+      {showManualForm && (
+        <ManualOrderForm
+          onClose={() => setShowManualForm(false)}
+          onCreated={(orderNumber) => {
+            setShowManualForm(false)
+            alert(`הזמנה ידנית #${orderNumber} נשמרה`)
+          }}
+        />
+      )}
 
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -480,6 +505,11 @@ export default function AdminOrdersPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-base sm:text-lg flex items-center gap-2 flex-wrap">
                         הזמנה #{order.orderNumber}
+                        {isManualOrder(order) && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gray-900 text-white text-xs font-bold px-2.5 py-0.5 whitespace-nowrap">
+                            ✍️ ידנית · {paymentMethodLabel((order as any).paymentMethod)}
+                          </span>
+                        )}
                         {order.shipping?.express && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-orange-500 text-white text-xs font-bold px-2.5 py-0.5 ring-2 ring-orange-300 shadow-sm whitespace-nowrap">⚡ אקספרס</span>
                         )}
@@ -779,10 +809,10 @@ export default function AdminOrdersPage() {
                                 {/* Item Header */}
                                 <div className="flex justify-between items-start mb-3">
                                   <h4 className="font-medium">{productName}</h4>
-                                  <div className="text-left">
+                                  {!isManualOrder(order) && <div className="text-left">
                                     <div className="font-bold">₪{Math.round((item.totalPrice ?? 0) * 100) / 100}</div>
                                     <div className="text-sm text-gray-500">{item.totalQuantity} יח&apos; &times; ₪{Math.round((item.pricePerUnit ?? 0) * 100) / 100}</div>
-                                  </div>
+                                  </div>}
                                 </div>
 
                                 {/* Item Details Grid */}
@@ -807,7 +837,7 @@ export default function AdminOrdersPage() {
                                           <span className="text-xs text-amber-600">⚠️ קבצים נמחקו — 30+ יום</span>
                                         )
                                       )}
-                                      <button
+                                      {!isManualOrder(order) && <button
                                         type="button"
                                         onClick={() => retryUpscale(order.id)}
                                         disabled={retryingUpscaleOrderId === order.id}
@@ -816,7 +846,7 @@ export default function AdminOrdersPage() {
                                         {retryingUpscaleOrderId === order.id
                                           ? <span className="inline-flex items-center"><Loader2 className="w-3 h-3 ml-1 animate-spin" />מגדיל…</span>
                                           : '🔄 נסה שוב הגדלה'}
-                                      </button>
+                                      </button>}
                                     </div>
                                     <div className="grid grid-cols-1 gap-2">
                                       {item.designs.map((d, di) => {
@@ -831,7 +861,7 @@ export default function AdminOrdersPage() {
                                             <div>
                                               <span className="text-sm font-medium">{d.areaName ?? d.area}</span>
                                               {(() => {
-                                                const info = upscaleStatusInfo(upscale)
+                                                const info = isManualOrder(order) ? null : upscaleStatusInfo(upscale)
                                                 if (!info) return null
                                                 const toneClass = info.tone === 'error' ? 'text-red-600' : info.tone === 'warn' ? 'text-amber-600' : 'text-gray-500'
                                                 return <div className={`text-xs mt-0.5 ${toneClass}`}>{info.text}</div>
@@ -908,10 +938,17 @@ export default function AdminOrdersPage() {
                                 </span>
                               </div>
                             )}
+                            {isManualOrder(order) ? (
+                              <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                                <span>הזמנה ידנית · אמצעי תשלום</span>
+                                <span className="font-semibold text-gray-900">{paymentMethodLabel((order as any).paymentMethod)}</span>
+                              </div>
+                            ) : (
                             <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
                               <span>{order.shipping?.method === 'pickup' ? 'איסוף עצמי' : 'משלוח'}</span>
                               <span>{order.shipping?.method === 'pickup' ? 'חינם' : `₪${order.shipping?.cost ?? 35}`}</span>
                             </div>
+                            )}
                             {order.shipping?.express && (
                               <div className="flex justify-between items-center text-sm font-bold text-orange-600 mb-2">
                                 <span>אקספרס ⚡</span>

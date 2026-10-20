@@ -29,6 +29,7 @@ import {
   type UsageDoc,
 } from '@/lib/cost-digest'
 import { USAGE_COLLECTION } from '@/lib/usage-tracking'
+import { isManualOrder } from '@/lib/manual-order'
 import {
   buildCards,
   buildTotals,
@@ -169,7 +170,8 @@ async function countPaidOrders(from: string, to: string): Promise<number> {
       .where('createdAt', '<', Timestamp.fromDate(end))
       .get()
     // סינון סטטוס בזיכרון — בדיוק כמו בדוח השבועי, כדי לא לדרוש אינדקס מורכב.
-    return snap.docs.filter((d) => PAID_STATUSES.includes(d.data().status)).length
+    // בלי הזמנות ידניות — כמו בדוח השבועי (עלות האתר להזמנת אתר)
+    return snap.docs.filter((d) => PAID_STATUSES.includes(d.data().status) && !isManualOrder(d.data())).length
   } catch (e) {
     console.error('system-status: orders read failed:', e)
     return 0

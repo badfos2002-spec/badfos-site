@@ -19,6 +19,7 @@ import {
 } from '@/lib/cost-digest'
 import { USAGE_COLLECTION, recordUsage } from '@/lib/usage-tracking'
 import { CostDigestEmail, costDigestSubject } from '@/lib/email-templates/cost-digest'
+import { isManualOrder } from '@/lib/manual-order'
 
 const CRON_SECRET = process.env.CRON_SECRET
 
@@ -117,6 +118,8 @@ export async function GET(req: NextRequest) {
     for (const doc of ordersSnap.docs) {
       const data = doc.data()
       if (!PAID_STATUSES.includes(data.status)) continue
+      // עלות-להזמנה מודדת את עלויות האתר מול הזמנות האתר — הזמנה ידנית לא עברה באתר
+      if (isManualOrder(data)) continue
       const createdAt: Date | null = data.createdAt?.toDate?.() ?? null
       if (!createdAt) continue
       if (createdAt >= currentStart) currentOrders++

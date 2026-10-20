@@ -84,6 +84,8 @@ export interface SiteOrderItemLike {
 
 export interface SiteOrderLike {
   status: string
+  /** 'manual' = הזמנה ידנית מהאדמין (lib/manual-order.ts) — נספרת כמקור "ידני" */
+  source?: string
   items?: SiteOrderItemLike[]
   /** חבילות שנקנו באותה הזמנה (order.packages) — נספרות לצד הפריטים */
   packages?: { packageName?: string; quantity?: number }[]
@@ -107,6 +109,7 @@ export interface DailyGroup {
   label: string // "חולצה כותנה · שחור"
   total: number
   site: number
+  manual: number
   voice: number
   sizes: { size: string; label: string; quantity: number }[]
 }
@@ -114,8 +117,10 @@ export interface DailyGroup {
 export interface DailySummary {
   total: number
   site: number
+  manual: number
   voice: number
   siteOrders: number
+  manualOrders: number
   voiceOrders: number
   groups: DailyGroup[]
 }
@@ -129,7 +134,7 @@ export function aggregateDaily(siteOrders: SiteOrderLike[], voiceOrders: { items
   const groups = new Map<string, DailyGroup & { sizeMap: Map<string, number> }>()
 
   const add = (
-    source: 'site' | 'voice',
+    source: 'site' | 'manual' | 'voice',
     productType: string,
     fabricType: string,
     color: string,
@@ -145,7 +150,7 @@ export function aggregateDaily(siteOrders: SiteOrderLike[], voiceOrders: { items
       g = {
         key,
         label: productType === 'package' ? name : `${name} · ${getColorLabel(color, productType)}`,
-        total: 0, site: 0, voice: 0, sizes: [], sizeMap: new Map(),
+        total: 0, site: 0, manual: 0, voice: 0, sizes: [], sizeMap: new Map(),
       }
       groups.set(key, g)
     }
@@ -158,14 +163,15 @@ export function aggregateDaily(siteOrders: SiteOrderLike[], voiceOrders: { items
 
   const paid = siteOrders.filter(o => PAID_STATUSES.includes(o.status))
   for (const order of paid) {
+    const source = order.source === 'manual' ? 'manual' : 'site'
     for (const item of order.items ?? []) {
       for (const s of item.sizes ?? []) {
-        add('site', item.productType, item.fabricType ?? '', item.color, s.size, Number(s.quantity), item.specialProductName)
+        add(source, item.productType, item.fabricType ?? '', item.color, s.size, Number(s.quantity), item.specialProductName)
       }
     }
     for (const pkg of order.packages ?? []) {
       const name = pkg.packageName || 'חבילה'
-      add('site', 'package', '', '', ONE_SIZE, Number(pkg.quantity), `חבילה: ${name}`)
+      add(source, 'package', '', '', ONE_SIZE, Number(pkg.quantity), `חבילה: ${name}`)
     }
   }
   for (const vo of voiceOrders) {
@@ -185,8 +191,10 @@ export function aggregateDaily(siteOrders: SiteOrderLike[], voiceOrders: { items
   return {
     total: list.reduce((n, g) => n + g.total, 0),
     site: list.reduce((n, g) => n + g.site, 0),
+    manual: list.reduce((n, g) => n + g.manual, 0),
     voice: list.reduce((n, g) => n + g.voice, 0),
-    siteOrders: paid.length,
+    siteOrders: paid.filter(o => o.source !== 'manual').length,
+    manualOrders: paid.filter(o => o.source === 'manual').length,
     voiceOrders: voiceOrders.length,
     groups: list,
   }

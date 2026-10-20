@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { sendPickupReadyWhatsApp } from '@/lib/manychat'
+import { isManualOrder } from '@/lib/manual-order'
 
 /**
  * "Order ready for pickup" WhatsApp via ManyChat — triggered by the admin
@@ -27,6 +28,11 @@ export async function POST(req: NextRequest) {
     }
 
     const data = snap.data()!
+
+    // Manual order — the partner handles the customer himself, no WhatsApp.
+    if (isManualOrder(data)) {
+      return NextResponse.json({ success: true, skipped: 'manual_order' })
+    }
 
     if (data.shipping?.method !== 'pickup') {
       return NextResponse.json(

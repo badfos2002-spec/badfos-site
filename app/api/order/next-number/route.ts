@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { adminDb, adminSdkUnavailable } from '@/lib/firebase-admin'
+import { adminSdkUnavailable } from '@/lib/firebase-admin'
+import { allocateOrderNumber } from '@/lib/order-number'
 
 /**
  * Server-side order-number allocation (admin SDK).
@@ -58,18 +59,7 @@ export async function POST() {
   }
 
   try {
-    const ref = adminDb.collection('counters').doc('orders')
-
-    const orderNumber = await adminDb.runTransaction(async (tx) => {
-      const snap = await tx.get(ref)
-      if (!snap.exists) {
-        tx.set(ref, { current: 1001 })
-        return 1001
-      }
-      const current = snap.data()?.current || 1000
-      tx.update(ref, { current: current + 1 })
-      return current + 1
-    })
+    const orderNumber = await allocateOrderNumber()
 
     return NextResponse.json({ orderNumber })
   } catch (e) {

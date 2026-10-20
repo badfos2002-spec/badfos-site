@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminAuth, adminSdkUnavailable } from '@/lib/firebase-admin'
+import { adminAuth, adminDb, adminSdkUnavailable } from '@/lib/firebase-admin'
 import { runUpscaleForOrder } from '@/lib/upscale-order'
+import { isManualOrder } from '@/lib/manual-order'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -46,6 +47,12 @@ export async function POST(request: NextRequest) {
     const orderId = body?.orderId
     if (!orderId || typeof orderId !== 'string' || !/^[A-Za-z0-9_-]+$/.test(orderId)) {
       return NextResponse.json({ error: 'bad_params' }, { status: 400 })
+    }
+
+    // Manual orders never get an upscale job (owner decision) — not even on request.
+    const snap = await adminDb.collection('orders').doc(orderId).get()
+    if (snap.exists && isManualOrder(snap.data())) {
+      return NextResponse.json({ error: 'manual_order' }, { status: 400 })
     }
 
     const result = await runUpscaleForOrder(orderId, { retryStuckPending: true, force: true })

@@ -11,7 +11,9 @@ service cloud.firestore {
     // ── Orders ────────────────────────────────────────────────────────────────
     // Anyone can create (checkout flow); only admin can read/update/delete
     match /orders/{orderId} {
-      allow create: if true;
+      // source:'manual' is reserved for admin-recorded orders (written via the
+      // Admin SDK by /api/admin/manual-order, which bypasses these rules).
+      allow create: if request.resource.data.get('source', '') != 'manual';
       allow read, update, delete: if isAdmin();
     }
 

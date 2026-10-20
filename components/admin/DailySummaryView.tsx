@@ -72,8 +72,12 @@ export default function DailySummaryView({
           <span className="text-3xl font-bold tabular-nums">{summary.total}</span>
         </div>
         <p className="text-sm text-gray-300 mt-1">
-          {summary.voiceOrders > 0
-            ? `אתר ${summary.site} (${summary.siteOrders} הזמנות ששולמו) · קולי ${summary.voice} (${summary.voiceOrders} הזמנות)`
+          {summary.voiceOrders > 0 || summary.manualOrders > 0
+            ? [
+                `אתר ${summary.site} (${summary.siteOrders} הזמנות ששולמו)`,
+                summary.manualOrders > 0 ? `ידני ${summary.manual} (${summary.manualOrders} הזמנות)` : '',
+                summary.voiceOrders > 0 ? `קולי ${summary.voice} (${summary.voiceOrders} הזמנות)` : '',
+              ].filter(Boolean).join(' · ')
             : `${summary.siteOrders} הזמנות ששולמו`}
         </p>
       </div>
@@ -121,9 +125,9 @@ export default function DailySummaryView({
                   </span>
                 ))}
               </div>
-              {summary.voice > 0 && (
+              {(summary.voice > 0 || summary.manual > 0) && (
                 <p className="text-xs text-gray-500 mt-1">
-                  {[g.site ? `אתר ${g.site}` : '', g.voice ? `קולי ${g.voice}` : ''].filter(Boolean).join(' · ')}
+                  {[g.site ? `אתר ${g.site}` : '', g.manual ? `ידני ${g.manual}` : '', g.voice ? `קולי ${g.voice}` : ''].filter(Boolean).join(' · ')}
                 </p>
               )}
             </div>
