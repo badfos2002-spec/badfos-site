@@ -151,15 +151,6 @@ const nextConfig = {
         headers: securityHeaders,
       },
       {
-        // Admin only: the daily-orders screen records voice orders from the
-        // mic. Must stay AFTER the global rule — the later rule overrides
-        // this one key; every other security header is inherited unchanged.
-        source: '/admin/:path*',
-        headers: [
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' },
-        ],
-      },
-      {
         // 3D models + their textures are content-stable: when a model is
         // replaced, its FILE NAME must change (e.g. -v2), otherwise browsers
         // keep the old one for a year. Long cache = instant repeat loads.

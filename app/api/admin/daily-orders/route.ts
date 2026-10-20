@@ -2,14 +2,13 @@
  * /api/admin/daily-orders — הזמנות יומיות. אדמין בלבד (Bearer ID token).
  *
  *   GET    ?date=YYYY-MM-DD → סיכום היום (אתר ששולם + קולי) + רשימת ההזמנות הקוליות
- *   POST   { date, items, transcript } → שמירת הזמנה קולית
  *   DELETE ?id=…             → מחיקת הזמנה קולית
  *
  * הכול דרך Admin SDK. אוסף voiceOrders לא נפתח לקליינט כלל — כלל ה-deny
  * הכללי ב-firestore.rules חוסם אותו מכל קריאה/כתיבה מהדפדפן.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { Timestamp, FieldValue } from 'firebase-admin/firestore'
+import { Timestamp } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/firebase-admin'
 import { rejectUnlessAdmin } from '@/lib/admin-request-auth'
 import { jerusalemMidnight, shiftDateKey } from '@/lib/cost-digest'
@@ -18,8 +17,6 @@ import {
   isDateKey,
   isOrderInDay,
   PAID_LOOKBACK_DAYS,
-  itemProblem,
-  normalizeItem,
   VOICE_ORDERS_COLLECTION,
   type SiteOrderLike,
   type VoiceItem,
@@ -28,9 +25,6 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MAX_ITEMS = 200
-const MAX_TRANSCRIPT = 20_000
 
 export async function GET(request: NextRequest) {
   const rejected = await rejectUnlessAdmin(request, 'daily-orders')
@@ -75,37 +69,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ date, summary: aggregateDaily(siteOrders, voiceOrders), voiceOrders })
   } catch (e) {
     console.error('daily-orders GET error:', e)
-    return NextResponse.json({ error: 'server_error' }, { status: 500 })
-  }
-}
-
-export async function POST(request: NextRequest) {
-  const rejected = await rejectUnlessAdmin(request, 'daily-orders')
-  if (rejected) return rejected
-
-  const body = await request.json().catch(() => null)
-  const date = body?.date
-  if (!isDateKey(date)) return NextResponse.json({ error: 'bad_date' }, { status: 400 })
-  if (!Array.isArray(body?.items) || body.items.length === 0 || body.items.length > MAX_ITEMS) {
-    return NextResponse.json({ error: 'bad_items' }, { status: 400 })
-  }
-  const items = body.items.map(normalizeItem)
-  const badIndex = items.findIndex((i: VoiceItem) => itemProblem(i) !== null)
-  if (badIndex !== -1) {
-    return NextResponse.json({ error: 'invalid_item', index: badIndex, problem: itemProblem(items[badIndex]) }, { status: 400 })
-  }
-  const transcript = typeof body.transcript === 'string' ? body.transcript.slice(0, MAX_TRANSCRIPT) : ''
-
-  try {
-    const ref = await adminDb.collection(VOICE_ORDERS_COLLECTION).add({
-      date,
-      items,
-      transcript,
-      createdAt: FieldValue.serverTimestamp(),
-    })
-    return NextResponse.json({ id: ref.id })
-  } catch (e) {
-    console.error('daily-orders POST error:', e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }

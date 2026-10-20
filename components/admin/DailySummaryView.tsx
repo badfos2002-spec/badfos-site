@@ -72,7 +72,9 @@ export default function DailySummaryView({
           <span className="text-3xl font-bold tabular-nums">{summary.total}</span>
         </div>
         <p className="text-sm text-gray-300 mt-1">
-          אתר {summary.site} ({summary.siteOrders} הזמנות ששולמו) · קולי {summary.voice} ({summary.voiceOrders} הזמנות)
+          {summary.voiceOrders > 0
+            ? `אתר ${summary.site} (${summary.siteOrders} הזמנות ששולמו) · קולי ${summary.voice} (${summary.voiceOrders} הזמנות)`
+            : `${summary.siteOrders} הזמנות ששולמו`}
         </p>
       </div>
 
@@ -119,21 +121,21 @@ export default function DailySummaryView({
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {[g.site ? `אתר ${g.site}` : '', g.voice ? `קולי ${g.voice}` : ''].filter(Boolean).join(' · ')}
-              </p>
+              {summary.voice > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {[g.site ? `אתר ${g.site}` : '', g.voice ? `קולי ${g.voice}` : ''].filter(Boolean).join(' · ')}
+                </p>
+              )}
             </div>
           ))}
         </div>
         </>
       )}
 
-      {/* הזמנות קוליות שנשמרו ליום */}
-      <div>
-        <h2 className="font-bold text-gray-900 mb-2">הזמנות קוליות שנשמרו ({voiceOrders.length})</h2>
-        {voiceOrders.length === 0 ? (
-          <p className="text-sm text-gray-500">אין הזמנות קוליות ביום הזה</p>
-        ) : (
+      {/* הזמנות קוליות ישנות שנשמרו ליום (ההקלטה הוסרה; מוצג רק כשיש) */}
+      {voiceOrders.length > 0 && (
+        <div>
+          <h2 className="font-bold text-gray-900 mb-2">הזמנות קוליות שנשמרו ({voiceOrders.length})</h2>
           <ul className="space-y-2">
             {voiceOrders.map(vo => (
               <li key={vo.id} className="bg-white rounded-xl border border-gray-200 p-3 flex gap-3 items-start">
@@ -158,8 +160,8 @@ export default function DailySummaryView({
               </li>
             ))}
           </ul>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

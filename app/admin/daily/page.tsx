@@ -5,8 +5,7 @@ import { Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { adminFetch } from '@/lib/admin-fetch'
 import { jerusalemDateKey } from '@/lib/cost-digest'
-import type { DailySummary, VoiceItem } from '@/lib/daily-orders'
-import VoiceOrderPanel from '@/components/admin/VoiceOrderPanel'
+import type { DailySummary } from '@/lib/daily-orders'
 import DailySummaryView, { type SavedVoiceOrder } from '@/components/admin/DailySummaryView'
 
 export default function AdminDailyOrdersPage() {
@@ -55,30 +54,14 @@ export default function AdminDailyOrdersPage() {
     }
   }
 
-  const saveVoiceOrder = async (saveDate: string, items: VoiceItem[], transcript: string) => {
-    const res = await adminFetch('/api/admin/daily-orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: saveDate, items, transcript }),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      throw new Error(data?.problem ? `שורה ${Number(data.index) + 1}: ${data.problem}` : 'השמירה נכשלה, נסו שוב')
-    }
-    if (saveDate === date) await load()
-    else setDate(saveDate)
-  }
-
   return (
     <div dir="rtl" className="max-w-3xl mx-auto">
       <div className="mb-5">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1">הזמנות יומיות</h1>
-        <p className="text-gray-600 text-sm">הזמנות קוליות + סיכום יומי של כל מה שהוזמן (אתר ששולם + קולי)</p>
+        <p className="text-gray-600 text-sm">סיכום יומי של כל מה שהוזמן ושולם באתר</p>
       </div>
 
-      <VoiceOrderPanel onSave={saveVoiceOrder} />
-
-      <div className="flex items-center gap-2 flex-wrap mt-8 mb-4">
+      <div className="flex items-center gap-2 flex-wrap mb-4">
         <label htmlFor="daily-date" className="font-bold text-gray-900">סיכום ליום</label>
         <input
           id="daily-date"
