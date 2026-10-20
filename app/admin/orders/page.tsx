@@ -12,6 +12,7 @@ import { auth } from '@/lib/firebase'
 import type { Order, DesignUpscale } from '@/lib/types'
 import ManualOrderForm from '@/components/admin/ManualOrderForm'
 import { isManualOrder, paymentMethodLabel } from '@/lib/manual-order'
+import { adminFetch } from '@/lib/admin-fetch'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-800' },
@@ -104,12 +105,8 @@ export default function AdminOrdersPage() {
       await updateOrderStatus(orderId, newStatus)
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o))
 
-      // הזמנה ידנית: השותף מול הלקוח — בלי קופון, מיילים או וואטסאפ אוטומטי.
-      // (הורדת מלאי בייצור נשארת — הסחורה יוצאת מהמלאי בדיוק כמו בהזמנת אתר.)
-      if (isManualOrder(order)) {
-        if (newStatus === 'in_production') deductInventory(order.items).catch(console.error)
-        return
-      }
+      // הזמנה ידנית: השותף מול הלקוח — בלי קופון, מיילים, וואטסאפ אוטומטי או הורדת מלאי.
+      if (isManualOrder(order)) return
 
       if (newStatus === 'paid') {
         const couponCode = await createCoupon(orderId)
@@ -140,7 +137,7 @@ export default function AdminOrdersPage() {
       // Pickup order completed → auto WhatsApp "ready for pickup" (once per order)
       if (newStatus === 'completed' && order.shipping?.method === 'pickup' && !(order as any).pickupReadySentAt) {
         try {
-          const res = await fetch('/api/pickup-ready', {
+          const res = await adminFetch('/api/pickup-ready', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId }),

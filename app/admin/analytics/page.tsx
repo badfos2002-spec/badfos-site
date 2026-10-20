@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase'
 import { getAllOrders, getAllLeads } from '@/lib/db'
 import { AdsReportSection, type AdsMonthRow } from '@/components/admin/AdsReportSection'
 import type { Order, Lead } from '@/lib/types'
+import { isManualOrder } from '@/lib/manual-order'
 
 const PAID_STATUSES = ['paid', 'in_production', 'shipped', 'completed']
 const MONTH_NAMES = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר']
@@ -38,7 +39,8 @@ export default function AdminAnalyticsPage() {
 
     Promise.all([getAllOrders(), getAllLeads(), spendPromise])
       .then(([o, l, spend]) => {
-        setOrders(o)
+        // הזמנות ידניות (נסגרו מחוץ לאתר) לא נספרות באנליטיקס — לא בהכנסות, לא בספירות ולא בהמרה.
+        setOrders(o.filter(x => !isManualOrder(x)))
         setLeads(l)
         setAdsSpend(spend)
         setSpendDraft(Object.fromEntries(Object.entries(spend).map(([k, v]) => [k, String(v)])))

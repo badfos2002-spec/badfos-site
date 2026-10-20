@@ -3,16 +3,22 @@ import { adminDb } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { sendPickupReadyWhatsApp } from '@/lib/manychat'
 import { isManualOrder } from '@/lib/manual-order'
+import { rejectUnlessAdmin } from '@/lib/admin-request-auth'
 
 /**
  * "Order ready for pickup" WhatsApp via ManyChat — triggered by the admin
  * when a pickup order's status is set to 'completed'.
  *
  * Self-protecting:
+ * - Admin only (Bearer Firebase ID token) — otherwise anyone with an orderId
+ *   could trigger the customer WhatsApp.
  * - Only acts on pickup orders (shipping.method === 'pickup').
  * - Never sends twice per order (pickupReadySentAt stamp).
  */
 export async function POST(req: NextRequest) {
+  const rejected = await rejectUnlessAdmin(req, 'pickup-ready')
+  if (rejected) return rejected
+
   try {
     const body = await req.json().catch(() => null)
     const orderId = body?.orderId

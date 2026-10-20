@@ -2,15 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { sendLeadNoAnswerWhatsApp } from '@/lib/manychat'
+import { rejectUnlessAdmin } from '@/lib/admin-request-auth'
 
 /**
  * "We called but you didn't answer" WhatsApp via ManyChat — triggered by the
  * admin when a lead's status is set to 'called_no_answer'.
  *
  * Self-protecting:
+ * - Admin only (Bearer Firebase ID token) — otherwise anyone with a leadId
+ *   could trigger the customer WhatsApp.
  * - Never sends twice per lead (noAnswerSentAt stamp).
  */
 export async function POST(req: NextRequest) {
+  const rejected = await rejectUnlessAdmin(req, 'lead-no-answer')
+  if (rejected) return rejected
+
   try {
     const body = await req.json().catch(() => null)
     const leadId = body?.leadId

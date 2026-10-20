@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { getAllLeads, updateLeadStatus, deleteDocument } from '@/lib/db'
 import { isLeadStale } from '@/lib/utils'
 import type { Lead } from '@/lib/types'
+import { adminFetch } from '@/lib/admin-fetch'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   new: { label: 'חדש', color: 'bg-blue-100 text-blue-700' },
@@ -45,7 +46,7 @@ export default function AdminLeadsPage() {
       // Lead marked as "called - no answer" → auto WhatsApp (once per lead)
       if (newStatus === 'called_no_answer' && lead && !(lead as any).noAnswerSentAt) {
         try {
-          const res = await fetch('/api/lead-no-answer', {
+          const res = await adminFetch('/api/lead-no-answer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ leadId }),
