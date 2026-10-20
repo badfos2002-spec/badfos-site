@@ -49,7 +49,7 @@ const categoryDetails: Record<string, { title: string; description: string; imag
   tote: {
     title: 'תיקים',
     description: 'תיקי בד קנבס איכותיים עם הדפסה בעיצוב אישי',
-    image: '/assets/tote-category.jpg',
+    image: '/assets/tote-floral.webp',
   },
   vest: {
     title: 'וסטים זוהרים',
