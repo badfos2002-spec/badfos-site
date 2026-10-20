@@ -18,9 +18,22 @@ import {
 } from 'lucide-react'
 import { getSeoPage } from '@/lib/seo-pages'
 import LiveBasePrice from '@/components/seo/LiveBasePrice'
+import type { ProductType } from '@/lib/types'
 import type { SeoLayoutProps } from './types'
 
 const BENEFIT_ICONS = [BadgePercent, Palette, Sparkles, Truck]
+
+/** Product noun for the final CTA line (audience pages fall back to t-shirts) */
+const PRINTED_NOUN: Record<ProductType, string> = {
+  tshirt: 'חולצות מודפסות',
+  tote: 'תיקים מודפסים',
+  cap: 'כובעים מודפסים',
+  sweatshirt: 'סווטשרטים מודפסים',
+  apron: 'סינרים מודפסים',
+  buff: 'באפים מודפסים',
+  baby: 'בגדי גוף מודפסים',
+  vest: 'וסטים מודפסים',
+}
 
 export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
   // Product pages send visitors straight to their designer; audience pages keep
@@ -149,7 +162,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
               >
                 <Image
                   src={src}
-                  alt={`${page.h1} — דוגמה ${index + 1} מלקוחות בדפוס`}
+                  alt={page.galleryAlts?.[index] ?? `${page.h1} — דוגמה ${index + 1} מלקוחות בדפוס`}
                   fill
                   sizes="(max-width: 768px) 50vw, 25vw"
                   className="object-cover"
@@ -157,6 +170,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
               </div>
             ))}
           </div>
+          {page.galleryNote && <p className="mt-2 text-xs text-gray-500">{page.galleryNote}</p>}
         </section>
 
         {/* Ideas chips — playful print-slogan / use-case inspiration */}
@@ -267,7 +281,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
             מוכנים להתחיל לעצב?
           </h2>
           <p className="text-white/90 text-lg font-semibold mb-6">
-            מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים חולצות מודפסות תוך ימים ספורים.
+            מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים {page.productType ? PRINTED_NOUN[page.productType] : 'חולצות מודפסות'} תוך ימים ספורים.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
