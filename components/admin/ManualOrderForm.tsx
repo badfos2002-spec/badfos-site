@@ -9,7 +9,7 @@
  * (https). אף פעם לא blob:/data: — ראו design-file-persistence.
  */
 import { useState } from 'react'
-import { Loader2, Plus, Trash2, X, ChevronDown } from 'lucide-react'
+import { Loader2, Plus, Minus, Trash2, X, ChevronDown } from 'lucide-react'
 import {
   MANUAL_PAYMENT_METHODS,
   PRODUCT_OPTIONS,
@@ -18,11 +18,13 @@ import {
   sizeOptions,
   areaOptions,
   validateManualOrder,
+  MAX_QUANTITY,
   type ManualOrderInput,
 } from '@/lib/manual-order'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { adminFetch } from '@/lib/admin-fetch'
+import { STANDARD_SIZES, KIDS_SIZES } from '@/lib/constants'
 
 interface Row {
   key: number
@@ -32,6 +34,8 @@ interface Row {
   qty: Record<string, string>
   designs: Record<string, { imageUrl: string; fileName: string }>
   showDesigns: boolean
+  /** מידות ילדים פתוחות; undefined = פתוח רק אם כבר יש בהן כמות */
+  showKids?: boolean
 }
 
 const emptyRow = (key: number): Row => ({ key, productType: '', fabricType: '', color: '', qty: {}, designs: {}, showDesigns: false })
@@ -39,6 +43,14 @@ const emptyRow = (key: number): Row => ({ key, productType: '', fabricType: '', 
 const inputCls =
   'w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base focus:border-yellow-500 focus:outline-none focus:ring-1 focus:ring-yellow-400'
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
+
+const STANDARD_IDS = new Set<string>(STANDARD_SIZES.map(s => s.id))
+const KIDS_IDS = new Set<string>(KIDS_SIZES.map(s => s.id))
+/** כמות כמספר שלם חיובי לתצוגה/סטפר; כל ערך לא תקין = 0 (הוולידציה עצמה לא השתנתה). */
+const qtyNum = (q: string | undefined) => {
+  const n = Number(q)
+  return Number.isInteger(n) && n > 0 ? n : 0
+}
 
 /** שורה אחרי שינוי מוצר/סוג/צבע: מנקה כל בחירה שכבר לא חוקית. */
 function prune(row: Row): Row {
@@ -308,29 +320,95 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
                     )}
                   </div>
 
-                  {sizes.length > 0 && (
-                    <div>
-                      <span className={labelCls}>כמות לפי מידה *</span>
-                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                        {sizes.map(s => (
-                          <label key={s.id} className="flex flex-col rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5">
-                            <span className="text-xs font-semibold text-gray-600">{s.name}</span>
+                  {sizes.length > 0 && (() => {
+                    const adult = sizes.filter(s => STANDARD_IDS.has(s.id))
+                    const kids = sizes.filter(s => KIDS_IDS.has(s.id))
+                    const other = sizes.filter(s => !STANDARD_IDS.has(s.id) && !KIDS_IDS.has(s.id))
+                    const sumOf = (list: { id: string }[]) => list.reduce((n, s) => n + qtyNum(row.qty[s.id]), 0)
+                    const kidsQty = sumOf(kids)
+                    const kidsOpen = row.showKids ?? kids.some(s => (row.qty[s.id] ?? '').trim() !== '')
+                    const totalQty = sumOf(sizes)
+                    const setQty = (sizeId: string, value: string) =>
+                      setRows(prev => prev.map(r => (r.key === row.key ? { ...r, qty: { ...r.qty, [sizeId]: value } } : r)))
+                    const stepper = (s: { id: string; name: string }, label: string) => {
+                      const raw = row.qty[s.id] ?? ''
+                      const n = qtyNum(raw)
+                      return (
+                        <div key={s.id} className={`flex items-center justify-between gap-0.5 rounded-lg border p-1 ${n > 0 ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-gray-50'}`}>
+                          <span className="min-w-0 pr-0.5 text-sm font-bold leading-tight text-gray-900">{label}</span>
+                          <div className="flex shrink-0 items-center" dir="ltr">
+                            <button
+                              type="button"
+                              aria-label={`הפחתה ${s.name}`}
+                              disabled={n <= 0}
+                              onClick={() => setQty(s.id, n - 1 > 0 ? String(n - 1) : '')}
+                              className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 active:bg-gray-100 disabled:opacity-30"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </button>
                             <input
                               type="number"
                               inputMode="numeric"
                               min={0}
                               max={10000}
-                              dir="ltr"
+                              aria-label={`כמות ${s.name}`}
                               placeholder="0"
-                              className="w-full bg-transparent text-right text-base font-bold focus:outline-none"
-                              value={row.qty[s.id] ?? ''}
-                              onChange={e => setRows(prev => prev.map(r => (r.key === row.key ? { ...r, qty: { ...r.qty, [s.id]: e.target.value } } : r)))}
+                              className="h-10 w-9 bg-transparent px-0 text-center text-base font-bold [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                              value={raw}
+                              onFocus={e => e.target.select()}
+                              onChange={e => setQty(s.id, e.target.value)}
                             />
-                          </label>
-                        ))}
+                            <button
+                              type="button"
+                              aria-label={`הוספה ${s.name}`}
+                              disabled={n >= MAX_QUANTITY}
+                              onClick={() => setQty(s.id, String(n + 1))}
+                              className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 active:bg-gray-100 disabled:opacity-30"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    }
+                    const gridCls = 'grid grid-cols-2 gap-1.5 sm:grid-cols-3'
+                    return (
+                      <div className="space-y-2">
+                        <span className={labelCls}>כמות לפי מידה *</span>
+                        {adult.length > 0 && (
+                          <div>
+                            <p className="mb-1 text-xs font-semibold text-gray-500">מבוגרים</p>
+                            <div className={gridCls}>{adult.map(s => stepper(s, s.name))}</div>
+                          </div>
+                        )}
+                        {other.length > 0 && (
+                          <div className={other.length === 1 ? 'grid grid-cols-1' : 'grid grid-cols-1 gap-1.5 sm:grid-cols-2'}>
+                            {other.map(s => stepper(s, s.name))}
+                          </div>
+                        )}
+                        {kids.length > 0 && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => setRows(prev => prev.map(r => (r.key === row.key ? { ...r, showKids: !kidsOpen } : r)))}
+                              className="flex min-h-[40px] items-center gap-1 text-sm font-medium text-blue-700"
+                              aria-expanded={kidsOpen}
+                            >
+                              מידות ילדים{kidsQty > 0 ? ` · ${kidsQty} יח׳` : ''}
+                              <ChevronDown className={`h-4 w-4 transition-transform ${kidsOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {kidsOpen && (
+                              <div>
+                                <p className="mb-1 text-xs font-semibold text-gray-500">ילדים</p>
+                                <div className={gridCls}>{kids.map(s => stepper(s, s.id))}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-sm font-semibold text-gray-700">סה״כ: {totalQty} יח׳</p>
                       </div>
-                    </div>
-                  )}
+                    )
+                  })()}
 
                   {areas.length > 0 && (
                     <div>
