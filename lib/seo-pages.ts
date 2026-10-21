@@ -1021,16 +1021,16 @@ export const SEO_PAGES: SeoPage[] = [
     ],
     galleryImages: [
       '/assets/tote-floral.webp',
+      '/assets/tote-drawstring-surf.webp',
       '/assets/blog/totes/natural-canvas-tote-held-green-wall.webp',
       '/assets/blog/totes/black-canvas-tote-on-coat-rack.webp',
-      '/assets/blog/totes/white-canvas-tote-held-up.webp',
     ],
     galleryNote: 'תמונות להמחשה',
     galleryAlts: [
       'תיק בד קנבס בז׳ מודפס בפרחים ובמסר מעודד',
+      'תיק שרוכים בז׳ מודפס בנוף חוף וגלישה',
       'תיק קנבס בצבע בז׳ טבעי',
       'תיק קנבס שחור תלוי על מתלה',
-      'תיק קנבס לבן',
     ],
     ogImage: '/og/home.jpg',
     ctaText: 'מעצבים תיק בד עכשיו',
