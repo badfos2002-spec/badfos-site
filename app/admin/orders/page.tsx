@@ -922,8 +922,8 @@ export default function AdminOrdersPage() {
                                     </div>
                                   </div>
                                 )}
-                                {/* קבצי הזמנה ישנה נמחקו בניקוי — אין ממה לבנות סקיצה */}
-                                {!(order as any).designsDeleted && (
+                                {/* רק בהזמנות ידניות — לקוחות האתר עיצבו בעצמם. קבצי הזמנה ישנה נמחקו בניקוי — אין ממה לבנות סקיצה */}
+                                {isManualOrder(order) && !(order as any).designsDeleted && (
                                   <SketchLinkButton
                                     className="mt-3"
                                     item={item}
