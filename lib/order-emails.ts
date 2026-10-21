@@ -165,6 +165,25 @@ export async function sendOrderConfirmationOnce(ref: FirebaseFirestore.DocumentR
   )
 }
 
+/**
+ * Admin "paid" send (/api/send-email, not deduped): record it as the
+ * order_confirmation claim so a later payment-verified path (e.g. a Grow
+ * webhook hitting alreadyProcessed) doesn't send a second confirmation.
+ * Never throws — a failed write is only logged.
+ */
+export async function recordAdminOrderConfirmationSent(orderId: unknown): Promise<void> {
+  if (typeof orderId !== 'string' || !orderId.trim() || orderId.length > 200 || orderId.includes('/')) return
+  try {
+    const unavailable = adminSdkUnavailable()
+    if (unavailable) throw unavailable
+    const now = Timestamp.now()
+    await adminDb.collection('orders').doc(orderId).update({ 'emailsSent.order_confirmation': { claimedAt: now, sentAt: now } })
+    console.log(`[email-once] order_confirmation order ${orderId}: admin send recorded`)
+  } catch (e) {
+    console.error(`[email-once] order_confirmation order ${orderId}: admin send not recorded`, e)
+  }
+}
+
 // ── design_mockup ───────────────────────────────────────────────────────────
 
 const MAX_ITEMS = 20

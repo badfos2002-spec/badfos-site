@@ -5,7 +5,7 @@ import { OrderShippedEmail } from '@/lib/email-templates/order-shipped'
 import { NewLeadEmail } from '@/lib/email-templates/new-lead'
 import { OrderConfirmationEmail } from '@/lib/email-templates/order-confirmation'
 import { rejectUnlessAdmin } from '@/lib/admin-request-auth'
-import { isSingleEmail, ownerRecipients, resendConfigured, sendEmail, sendNewOrderOwnerEmail, sendOwnerEmail } from '@/lib/order-emails'
+import { isSingleEmail, ownerRecipients, recordAdminOrderConfirmationSent, resendConfigured, sendEmail, sendNewOrderOwnerEmail, sendOwnerEmail } from '@/lib/order-emails'
 
 /**
  * Who may send what (this route is public):
@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const emailId = ownerBound ? await sendOwnerEmail(subject, emailHtml) : await sendEmail(to, subject, emailHtml)
+      if (type === 'order_confirmation') await recordAdminOrderConfirmationSent((data as Order).id)
       return NextResponse.json({ success: true, emailId }, { status: 200 })
     } catch (emailError) {
       console.error('Resend error:', emailError)

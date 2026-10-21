@@ -264,9 +264,10 @@ export async function getAllOrders(): Promise<Order[]> {
  */
 export async function updateOrderStatus(
   orderId: string,
-  status: string
+  status: string,
+  extra?: Record<string, unknown>
 ): Promise<void> {
-  await updateDocument<Order>('orders', orderId, { status } as any)
+  await updateDocument<Order>('orders', orderId, { status, ...extra } as any)
 }
 
 /**

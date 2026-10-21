@@ -103,7 +103,9 @@ export default function AdminOrdersPage() {
     const order = orders.find(o => o.id === orderId)
     if (!order) return
     try {
-      await updateOrderStatus(orderId, newStatus)
+      // →paid by admin: stamp paidAt if missing (24h webhook catch-up window and daily report key off it)
+      const paidAtPatch = newStatus === 'paid' && !(order as any).paidAt ? { paidAt: new Date() } : undefined
+      await updateOrderStatus(orderId, newStatus, paidAtPatch)
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o))
 
       // הזמנה ידנית: השותף מול הלקוח — בלי קופון, מיילים, וואטסאפ אוטומטי או הורדת מלאי.
