@@ -19,6 +19,11 @@ import {
   areaOptions,
   validateManualOrder,
   MAX_QUANTITY,
+  OTHER_PRODUCT,
+  OTHER_PRODUCT_OPTION,
+  OTHER_NAME_MAX,
+  OTHER_DETAILS_MAX,
+  OTHER_SIZE_MAX,
   type ManualOrderInput,
 } from '@/lib/manual-order'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
@@ -36,9 +41,17 @@ interface Row {
   showDesigns: boolean
   /** מידות ילדים פתוחות; undefined = פתוח רק אם כבר יש בהן כמות */
   showKids?: boolean
+  /** מוצר "אחר" (OTHER_PRODUCT) בלבד */
+  otherName: string
+  otherDetails: string
+  otherSize: string
+  otherQty: string
 }
 
-const emptyRow = (key: number): Row => ({ key, productType: '', fabricType: '', color: '', qty: {}, designs: {}, showDesigns: false })
+const emptyRow = (key: number): Row => ({
+  key, productType: '', fabricType: '', color: '', qty: {}, designs: {}, showDesigns: false,
+  otherName: '', otherDetails: '', otherSize: '', otherQty: '',
+})
 
 const inputCls =
   'w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base focus:border-yellow-500 focus:outline-none focus:ring-1 focus:ring-yellow-400'
@@ -92,7 +105,8 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
   const isDirty = () =>
     !!(firstName || lastName || phone || email || notes || method || total || paymentMethod ||
       Object.values(address).some(Boolean) || additionalPhone ||
-      rows.some(r => r.productType || Object.keys(r.designs).length || Object.values(r.qty).some(q => q.trim())))
+      rows.some(r => r.productType || Object.keys(r.designs).length || Object.values(r.qty).some(q => q.trim()) ||
+        r.otherName || r.otherDetails || r.otherSize || r.otherQty))
 
   const requestClose = () => {
     if (saving) return
@@ -136,7 +150,13 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
   const buildPayload = (): ManualOrderInput => ({
     customer: { firstName, lastName, phone, email, notes },
     shipping: method === 'delivery' ? { method, address, additionalPhone } : { method: method as 'pickup' },
-    items: rows.map(r => ({
+    items: rows.map(r => r.productType === OTHER_PRODUCT ? {
+      productType: r.productType,
+      specialProductName: r.otherName,
+      color: r.otherDetails,
+      sizes: [{ size: r.otherSize, quantity: r.otherQty.trim() === '' ? NaN : Number(r.otherQty) }],
+      designs: Object.entries(r.designs).map(([area, d]) => ({ area, ...d })),
+    } : {
       productType: r.productType,
       fabricType: r.fabricType,
       color: r.color,
@@ -144,7 +164,7 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
         .filter(([, q]) => q.trim() !== '')
         .map(([size, q]) => ({ size, quantity: Number(q) })),
       designs: Object.entries(r.designs).map(([area, d]) => ({ area, ...d })),
-    })),
+    }),
     total: total.trim() === '' ? NaN : Number(total),
     paymentMethod,
   })
@@ -278,10 +298,12 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
           <section id="mo-sec-items" className="space-y-3">
             <h3 className="px-1 font-semibold text-gray-900">מוצרים</h3>
             {rows.map((row, idx) => {
+              const isOther = row.productType === OTHER_PRODUCT
               const types = typeOptions(row.productType)
               const colors = row.productType && (!types.length || row.fabricType) ? colorOptions(row.productType, row.fabricType) : []
               const sizes = row.color ? sizeOptions(row.productType, row.fabricType, row.color) : []
-              const areas = row.color ? areaOptions(row.productType, row.fabricType) : []
+              const areas = row.color || isOther ? areaOptions(row.productType, row.fabricType) : []
+              const setOther = (patch: Partial<Row>) => setRows(prev => prev.map(r => (r.key === row.key ? { ...r, ...patch } : r)))
               return (
                 <div key={row.key} id={`mo-row-${idx + 1}`} className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
                   <div className="flex items-center justify-between">
@@ -298,8 +320,19 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
                       <select className={inputCls} value={row.productType} onChange={e => updateRow(row.key, { productType: e.target.value })}>
                         <option value="">בחרו…</option>
                         {PRODUCT_OPTIONS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        <option value={OTHER_PRODUCT_OPTION.id}>{OTHER_PRODUCT_OPTION.name}</option>
                       </select>
                     </div>
+                    {isOther && (<>
+                      <div>
+                        <label className={labelCls} htmlFor={`mo-other-name-${row.key}`}>שם המוצר *</label>
+                        <input id={`mo-other-name-${row.key}`} className={inputCls} maxLength={OTHER_NAME_MAX} placeholder="למשל: כוס קרמיקה" value={row.otherName} onChange={e => setOther({ otherName: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className={labelCls} htmlFor={`mo-other-details-${row.key}`}>צבע/פרטים</label>
+                        <input id={`mo-other-details-${row.key}`} className={inputCls} maxLength={OTHER_DETAILS_MAX} value={row.otherDetails} onChange={e => setOther({ otherDetails: e.target.value })} />
+                      </div>
+                    </>)}
                     {types.length > 0 && (
                       <div>
                         <label className={labelCls}>סוג *</label>
@@ -320,7 +353,20 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
                     )}
                   </div>
 
-                  {sizes.length > 0 && (() => {
+                  {isOther && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls} htmlFor={`mo-other-qty-${row.key}`}>כמות *</label>
+                        <input id={`mo-other-qty-${row.key}`} type="number" inputMode="numeric" min={1} max={MAX_QUANTITY} dir="ltr" className={`${inputCls} text-right`} value={row.otherQty} onChange={e => setOther({ otherQty: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className={labelCls} htmlFor={`mo-other-size-${row.key}`}>מידה (לא חובה)</label>
+                        <input id={`mo-other-size-${row.key}`} className={inputCls} maxLength={OTHER_SIZE_MAX} value={row.otherSize} onChange={e => setOther({ otherSize: e.target.value })} />
+                      </div>
+                    </div>
+                  )}
+
+                  {!isOther && sizes.length > 0 && (() => {
                     const adult = sizes.filter(s => STANDARD_IDS.has(s.id))
                     const kids = sizes.filter(s => KIDS_IDS.has(s.id))
                     const other = sizes.filter(s => !STANDARD_IDS.has(s.id) && !KIDS_IDS.has(s.id))

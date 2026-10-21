@@ -75,6 +75,23 @@ export interface Option {
 
 export const PRODUCT_OPTIONS: Option[] = PRODUCT_CATEGORIES.map(p => ({ id: p.id, name: p.name }))
 
+/**
+ * "אחר" — מוצר שלא בקטלוג (כוס, מחזיק מפתחות...). נשמר בשורה כ-productType:'other'
+ * עם specialProductName (אותו שדה שהצבירה היומית כבר מקבצת לפיו), color = צבע/פרטים
+ * חופשי ('' כשאין), ומידה אחת בלבד: מידה חופשית או ONE_SIZE.
+ */
+export const OTHER_PRODUCT = 'other'
+export const OTHER_PRODUCT_OPTION: Option = { id: OTHER_PRODUCT, name: 'אחר (מוצר שלא באתר)' }
+export const OTHER_NAME_MAX = 80
+export const OTHER_DETAILS_MAX = 80
+export const OTHER_SIZE_MAX = 30
+/** משבצות עיצוב למוצר "אחר" — בלי אזורי הדפסה; מזהים שה-download-design proxy מקבל ([A-Za-z0-9_]). */
+const OTHER_DESIGN_AREAS: readonly Option[] = [
+  { id: 'other', name: 'עיצוב' },
+  { id: 'other_2', name: 'עיצוב 2' },
+  { id: 'other_3', name: 'עיצוב 3' },
+]
+
 const TYPES_BY_PRODUCT: Record<string, readonly Option[]> = {
   tshirt: FABRIC_TYPES,
   sweatshirt: SWEATSHIRT_TYPES,
@@ -140,6 +157,7 @@ const AREAS_BY_PRODUCT: Record<string, readonly Option[]> = {
   baby: BABY_DESIGN_AREAS,
   tote: TOTE_DESIGN_AREAS,
   vest: VEST_DESIGN_AREAS,
+  [OTHER_PRODUCT]: OTHER_DESIGN_AREAS,
 }
 
 const AREA_FILTER_BY_PRODUCT: Record<string, Record<string, string[]>> = {
@@ -173,7 +191,11 @@ export interface ManualOrderInput {
   items: {
     productType: string
     fabricType?: string
+    /** מוצר "אחר" בלבד: שם המוצר */
+    specialProductName?: string
+    /** במוצר "אחר": צבע/פרטים חופשי ('' כשאין) */
     color: string
+    /** במוצר "אחר": שורה אחת, size = מידה חופשית ('' = מידה אחת) */
     sizes: { size: string; quantity: number }[]
     designs?: { area: string; imageUrl: string; fileName?: string }[]
   }[]
@@ -228,12 +250,22 @@ export function isOwnDesignUrl(value: unknown, bucket: string | undefined): bool
 type Str = (v: unknown, max: number) => string
 const str: Str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 
+/**
+ * טקסט חופשי של מוצר "אחר": תווי כיווניות (bidi) מוסרים, רווחים מכווצים (גם ירידות שורה) ו-'|' → '/',
+ * כי '|' הוא המפריד במפתח הקבוצה של הסיכום היומי. לא נחתך — האורך נבדק אחר כך.
+ */
+const freeText = (v: unknown): string =>
+  typeof v === 'string'
+    ? v.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').replace(/\s+/g, ' ').replace(/\|/g, '/').trim()
+    : ''
+
 export interface ValidatedManualOrder {
   customer: Record<string, string>
   shipping: Record<string, unknown>
   items: {
     productType: string
     fabricType?: string
+    specialProductName?: string
     color: string
     sizes: { size: string; quantity: number }[]
     designs: { area: string; areaName: string; imageUrl: string; fileName: string }[]
@@ -306,29 +338,51 @@ export function validateManualOrder(
     const it = (r.items[i] && typeof r.items[i] === 'object' ? r.items[i] : {}) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
     const row = `שורה ${i + 1}: `
     const productType = str(it.productType, 30)
-    if (!PRODUCT_OPTIONS.some(p => p.id === productType)) return fail(`${row}בחרו מוצר`)
+    const isOther = productType === OTHER_PRODUCT
+    if (!isOther && !PRODUCT_OPTIONS.some(p => p.id === productType)) return fail(`${row}בחרו מוצר`)
     const types = typeOptions(productType)
     const fabricType = types.length ? str(it.fabricType, 30) : ''
     if (types.length && !types.some(t => t.id === fabricType)) return fail(`${row}בחרו סוג`)
-    const color = str(it.color, 30)
-    if (!colorOptions(productType, fabricType).some(o => o.id === color)) return fail(`${row}בחרו צבע`)
 
-    const validSizes = sizeOptions(productType, fabricType, color)
-    const seen = new Set<string>()
+    let color: string
+    let specialProductName = ''
     const sizes: { size: string; quantity: number }[] = []
-    for (const sq of Array.isArray(it.sizes) ? it.sizes : []) {
-      const size = str(sq?.size, 20)
-      const quantity = sq?.quantity
-      if (quantity === 0) continue
-      if (!validSizes.some(v => v.id === size)) return fail(`${row}מידה ${size || '?'} לא קיימת למוצר/סוג/צבע הזה`)
-      if (seen.has(size)) return fail(`${row}מידה ${size} מופיעה פעמיים`)
+    if (isOther) {
+      // מוצר שלא בקטלוג: בלי בדיקות קטלוג — שם חובה, פרטים ומידה חופשיים, כמות אחת
+      specialProductName = freeText(it.specialProductName)
+      if (!specialProductName) return fail(`${row}הזינו שם מוצר`)
+      if (specialProductName.length > OTHER_NAME_MAX) return fail(`${row}שם המוצר ארוך מדי (עד ${OTHER_NAME_MAX} תווים)`)
+      color = freeText(it.color)
+      if (color.length > OTHER_DETAILS_MAX) return fail(`${row}צבע/פרטים ארוך מדי (עד ${OTHER_DETAILS_MAX} תווים)`)
+      const list = Array.isArray(it.sizes) ? it.sizes : []
+      if (list.length !== 1) return fail(`${row}הזינו כמות`)
+      const size = freeText(list[0]?.size)
+      if (size.length > OTHER_SIZE_MAX) return fail(`${row}מידה ארוכה מדי (עד ${OTHER_SIZE_MAX} תווים)`)
+      const quantity = list[0]?.quantity
       if (typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) {
-        return fail(`${row}כמות לא תקינה במידה ${sizeLabel(size)} (1 עד ${MAX_QUANTITY})`)
+        return fail(`${row}כמות לא תקינה (1 עד ${MAX_QUANTITY})`)
       }
-      seen.add(size)
-      sizes.push({ size, quantity })
+      sizes.push({ size: size || ONE_SIZE, quantity })
+    } else {
+      color = str(it.color, 30)
+      if (!colorOptions(productType, fabricType).some(o => o.id === color)) return fail(`${row}בחרו צבע`)
+
+      const validSizes = sizeOptions(productType, fabricType, color)
+      const seen = new Set<string>()
+      for (const sq of Array.isArray(it.sizes) ? it.sizes : []) {
+        const size = str(sq?.size, 20)
+        const quantity = sq?.quantity
+        if (quantity === 0) continue
+        if (!validSizes.some(v => v.id === size)) return fail(`${row}מידה ${size || '?'} לא קיימת למוצר/סוג/צבע הזה`)
+        if (seen.has(size)) return fail(`${row}מידה ${size} מופיעה פעמיים`)
+        if (typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) {
+          return fail(`${row}כמות לא תקינה במידה ${sizeLabel(size)} (1 עד ${MAX_QUANTITY})`)
+        }
+        seen.add(size)
+        sizes.push({ size, quantity })
+      }
+      if (sizes.length === 0) return fail(`${row}הזינו כמות לפחות במידה אחת`)
     }
-    if (sizes.length === 0) return fail(`${row}הזינו כמות לפחות במידה אחת`)
 
     const validAreas = areaOptions(productType, fabricType)
     const areasSeen = new Set<string>()
@@ -346,6 +400,7 @@ export function validateManualOrder(
     items.push({
       productType,
       ...(fabricType ? { fabricType } : {}),
+      ...(specialProductName ? { specialProductName } : {}),
       color,
       sizes,
       designs,

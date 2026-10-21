@@ -149,7 +149,8 @@ export function aggregateDaily(siteOrders: SiteOrderLike[], voiceOrders: { items
       const name = special || productTypeLabel(productType, fabricType)
       g = {
         key,
-        label: productType === 'package' ? name : `${name} · ${getColorLabel(color, productType)}`,
+        // color ריק = מוצר "אחר" בלי צבע/פרטים (lib/manual-order.ts)
+        label: productType === 'package' || !color ? name : `${name} · ${getColorLabel(color, productType)}`,
         total: 0, site: 0, manual: 0, voice: 0, sizes: [], sizeMap: new Map(),
       }
       groups.set(key, g)
@@ -237,9 +238,8 @@ export function supplierText(summary: DailySummary): string {
     .map(g => {
       const [productType, fabricType, color, ...rest] = g.key.split('|')
       const special = rest.join('|')
-      const head = productType === 'package'
-        ? special
-        : `${special || supplierName(productType, fabricType)} ${getColorLabel(color, productType)}`
+      const name = special || supplierName(productType, fabricType)
+      const head = productType === 'package' || !color ? name : `${name} ${getColorLabel(color, productType)}`
       return [head, ...g.sizes.map(supplierSizeLine)].map(l => RLM + l).join('\n')
     })
     .join('\n\n')

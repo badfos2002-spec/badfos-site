@@ -12,6 +12,7 @@ import { auth } from '@/lib/firebase'
 import type { Order, DesignUpscale } from '@/lib/types'
 import ManualOrderForm from '@/components/admin/ManualOrderForm'
 import { isManualOrder, paymentMethodLabel } from '@/lib/manual-order'
+import { sizeLabel } from '@/lib/daily-orders'
 import { adminFetch } from '@/lib/admin-fetch'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -799,7 +800,9 @@ export default function AdminOrdersPage() {
                         <div className="space-y-4">
                           {order.items.map((item, idx) => {
                             const fabricName = item.fabricType ? (fabricLabels[item.fabricType] ?? item.fabricType) : ''
-                            const productName = `${productLabels[item.productType] ?? item.productType}${fabricName ? ` ${fabricName}` : ''} ${item.productType === 'tshirt' ? 'מעוצבת' : 'מעוצב'}`
+                            // מוצר "אחר" מהזמנה ידנית (productType:'other', lib/manual-order.ts): שם חופשי — מוצג כמו שהוא
+                            const isOther = (item.productType as string) === 'other'
+                            const productName = isOther ? (item.specialProductName ?? '') : `${productLabels[item.productType] ?? item.productType}${fabricName ? ` ${fabricName}` : ''} ${item.productType === 'tshirt' ? 'מעוצבת' : 'מעוצב'}`
 
                             return (
                               <div key={idx} className="bg-white border rounded-lg p-4">
@@ -815,9 +818,11 @@ export default function AdminOrdersPage() {
                                 {/* Item Details Grid */}
                                 <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                                   {item.fabricType && <div><strong>סוג:</strong> {fabricName}</div>}
-                                  <div><strong>צבע:</strong> {colorLabels[item.color] ?? item.color}</div>
+                                  {isOther
+                                    ? item.color && <div><strong>צבע/פרטים:</strong> {item.color}</div>
+                                    : <div><strong>צבע:</strong> {colorLabels[item.color] ?? item.color}</div>}
                                   {item.sizes && item.sizes.length > 0 && (
-                                    <div><strong>מידה:</strong> {item.sizes.map(s => `${s.size}(${s.quantity})`).join(', ')}</div>
+                                    <div><strong>מידה:</strong> {item.sizes.map(s => `${isOther ? sizeLabel(s.size) : s.size}(${s.quantity})`).join(', ')}</div>
                                   )}
                                   <div><strong>כמות:</strong> {item.totalQuantity}</div>
                                 </div>

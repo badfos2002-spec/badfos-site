@@ -102,6 +102,8 @@ export interface Shipping {
 export interface OrderItem {
   productType: ProductType
   fabricType?: string
+  /** מוצר שלא בקטלוג — הזמנה ידנית "אחר" (productType:'other', ראו lib/manual-order.ts) */
+  specialProductName?: string
   color: string
   sizes: SizeQuantity[]
   designs: DesignArea[]
