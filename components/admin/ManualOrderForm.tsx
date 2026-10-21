@@ -30,6 +30,7 @@ import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { adminFetch } from '@/lib/admin-fetch'
 import { STANDARD_SIZES, KIDS_SIZES } from '@/lib/constants'
+import SketchLinkButton from '@/components/admin/SketchLinkButton'
 
 interface Row {
   key: number
@@ -93,6 +94,7 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
   const [email, setEmail] = useState('')
   const [notes, setNotes] = useState('')
   const [method, setMethod] = useState<'' | 'delivery' | 'pickup'>('')
+  const [express, setExpress] = useState(false)
   const [address, setAddress] = useState({ street: '', number: '', city: '', apartment: '', floor: '', entrance: '' })
   const [additionalPhone, setAdditionalPhone] = useState('')
   const [rows, setRows] = useState<Row[]>([emptyRow(1)])
@@ -103,7 +105,7 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
   const [error, setError] = useState('')
 
   const isDirty = () =>
-    !!(firstName || lastName || phone || email || notes || method || total || paymentMethod ||
+    !!(firstName || lastName || phone || email || notes || method || express || total || paymentMethod ||
       Object.values(address).some(Boolean) || additionalPhone ||
       rows.some(r => r.productType || Object.keys(r.designs).length || Object.values(r.qty).some(q => q.trim()) ||
         r.otherName || r.otherDetails || r.otherSize || r.otherQty))
@@ -149,7 +151,7 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
 
   const buildPayload = (): ManualOrderInput => ({
     customer: { firstName, lastName, phone, email, notes },
-    shipping: method === 'delivery' ? { method, address, additionalPhone } : { method: method as 'pickup' },
+    shipping: method === 'delivery' ? { method, address, additionalPhone, express } : { method: method as 'pickup', express },
     items: rows.map(r => r.productType === OTHER_PRODUCT ? {
       productType: r.productType,
       specialProductName: r.otherName,
@@ -249,6 +251,20 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
                 </button>
               ))}
             </div>
+            {method && (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={express}
+                onClick={() => setExpress(v => !v)}
+                className={`flex min-h-[44px] w-full items-center justify-between rounded-lg border-2 px-3 text-base font-semibold ${express ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 bg-white text-gray-700'}`}
+              >
+                <span>אקספרס ⚡</span>
+                <span className={`relative inline-block h-6 w-11 rounded-full transition-colors ${express ? 'bg-orange-500' : 'bg-gray-300'}`}>
+                  <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${express ? 'left-0.5' : 'left-[22px]'}`} />
+                </span>
+              </button>
+            )}
             {method === 'delivery' && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
@@ -510,6 +526,20 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
                         })}
                       </div>}
                     </div>
+                  )}
+
+                  {!isOther && Object.keys(row.designs).length > 0 && (
+                    <SketchLinkButton
+                      fullWidth
+                      item={{
+                        productType: row.productType,
+                        fabricType: row.fabricType,
+                        color: row.color,
+                        designs: Object.entries(row.designs).map(([area, d]) => ({ area, imageUrl: d.imageUrl })),
+                      }}
+                      phone={phone}
+                      label={`הזמנה ידנית · ${`${firstName} ${lastName}`.trim()}`}
+                    />
                   )}
                 </div>
               )

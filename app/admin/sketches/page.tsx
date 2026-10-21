@@ -9,15 +9,10 @@ import { compressSketchImage, sketchUploadErrorMessage } from '@/lib/sketch-imag
 import { useCoarsePointer } from '@/hooks/useCoarsePointer'
 import { createSharedDesign, updateSharedDesign, getRecentSharedDesigns, deleteDocument, type SharedDesignData, type SharedDesignHistoryItem } from '@/lib/db'
 import { captureSketchPreview } from '@/lib/sketch-preview'
+import { SKETCH_PRODUCTS, sketchWhatsAppUrl } from '@/lib/sketch-products'
 import { isSketchPreviewUrl, timestampMillis, storagePathFromUrl } from '@/lib/sketch-retention'
 import type { Timestamp } from 'firebase/firestore'
 import {
-  FABRIC_TYPES, TSHIRT_COLORS, FABRIC_COLOR_FILTER, TSHIRT_DESIGN_AREAS, TSHIRT_AREA_FILTER,
-  SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_AREA_FILTER,
-  CAP_TYPES, CAP_COLORS, CAP_COLOR_FILTER, CAP_DESIGN_AREAS, CAP_AREA_FILTER,
-  TOTE_TYPES, TOTE_COLORS, TOTE_COLOR_FILTER, TOTE_DESIGN_AREAS, TOTE_AREA_FILTER,
-  BUFF_COLORS, BUFF_DESIGN_AREAS, APRON_COLORS, APRON_DESIGN_AREAS, BABY_COLORS, BABY_DESIGN_AREAS,
-  VEST_COLORS, VEST_DESIGN_AREAS,
   getModel3D, getColorLabel, getProductLabel, getTypeLabel, isHexColor,
 } from '@/lib/constants'
 import nextDynamic from 'next/dynamic'
@@ -31,30 +26,7 @@ const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Pre
   loading: () => <Preview3DLoading />,
 })
 
-type ColorDef = { id: string; name: string; hex: string; border?: boolean }
-type TypeDef = { id: string; name: string }
-type AreaDef = { id: string; name: string }
-
-interface ProductDef {
-  id: string
-  name: string
-  types: readonly TypeDef[] | null
-  colors: readonly ColorDef[]
-  colorFilter?: Record<string, string[]>
-  areas: readonly AreaDef[]
-  areaFilter?: Record<string, string[]>
-}
-
-const PRODUCTS: ProductDef[] = [
-  { id: 'tshirt', name: 'חולצה', types: FABRIC_TYPES, colors: TSHIRT_COLORS as unknown as ColorDef[], colorFilter: FABRIC_COLOR_FILTER, areas: TSHIRT_DESIGN_AREAS as unknown as AreaDef[], areaFilter: TSHIRT_AREA_FILTER },
-  { id: 'sweatshirt', name: 'סווטשירט', types: SWEATSHIRT_TYPES, colors: SWEATSHIRT_COLORS as unknown as ColorDef[], colorFilter: SWEATSHIRT_COLOR_FILTER, areas: SWEATSHIRT_DESIGN_AREAS as unknown as AreaDef[], areaFilter: SWEATSHIRT_AREA_FILTER },
-  { id: 'cap', name: 'כובע', types: CAP_TYPES, colors: CAP_COLORS as unknown as ColorDef[], colorFilter: CAP_COLOR_FILTER, areas: CAP_DESIGN_AREAS as unknown as AreaDef[], areaFilter: CAP_AREA_FILTER },
-  { id: 'tote', name: 'תיק', types: TOTE_TYPES, colors: TOTE_COLORS as unknown as ColorDef[], colorFilter: TOTE_COLOR_FILTER, areas: TOTE_DESIGN_AREAS as unknown as AreaDef[], areaFilter: TOTE_AREA_FILTER },
-  { id: 'vest', name: 'וסט זוהר', types: null, colors: VEST_COLORS as unknown as ColorDef[], areas: VEST_DESIGN_AREAS as unknown as AreaDef[] },
-  { id: 'buff', name: 'באף', types: null, colors: BUFF_COLORS as unknown as ColorDef[], areas: BUFF_DESIGN_AREAS as unknown as AreaDef[] },
-  { id: 'apron', name: 'סינר', types: null, colors: APRON_COLORS as unknown as ColorDef[], areas: APRON_DESIGN_AREAS as unknown as AreaDef[] },
-  { id: 'baby', name: 'בגד גוף', types: null, colors: BABY_COLORS as unknown as ColorDef[], areas: BABY_DESIGN_AREAS as unknown as AreaDef[] },
-]
+const PRODUCTS = SKETCH_PRODUCTS
 
 /**
  * Client-side background removal for solid-background artwork (the typical
@@ -158,13 +130,6 @@ const NUDGE = 0.01
  *  land exactly on 0. */
 const round3 = (v: number) => Math.round(v * 1000) / 1000
 
-/** 05X-XXXXXXX / 972... → wa.me digits (972…) */
-function waPhone(raw: string): string {
-  const d = raw.replace(/\D/g, '')
-  if (d.startsWith('972')) return d
-  if (d.startsWith('0')) return '972' + d.slice(1)
-  return d
-}
 
 /** '#8a4fff' → itself, '#f0c' → '#ff00cc' — <input type="color"> only accepts
  *  a 7-char lowercase hex as its value. */
@@ -321,6 +286,10 @@ export default function AdminSketchesPage() {
   // Honest outcome of the last bulk run ("נמחקו 2 מתוך 3") — cleared as soon
   // as the selection changes, so it never describes a different set of rows.
   const [bulkResult, setBulkResult] = useState<string | null>(null)
+  // Sketches made by the one-click "סקיצה ללקוח" button whose WhatsApp still
+  // could not be made (previewMissing) — they never expire (no preview = the
+  // retention sweep keeps them), so the owner fixes ("עדכן סקיצה") or deletes them.
+  const [onlyNoPreview, setOnlyNoPreview] = useState(false)
 
   const loadHistory = async (cursor: Timestamp | null) => {
     setHistoryLoading(true)
@@ -706,9 +675,7 @@ export default function AdminSketchesPage() {
 
   const waLink = useMemo(() => {
     if (!shareUrl) return '#'
-    const text = encodeURIComponent(`היי! הכנו עבורך סקיצה 🎨\nאפשר לצפות בה כאן:\n${shareUrl}`)
-    const p = waPhone(phone)
-    return p.length >= 11 ? `https://wa.me/${p}?text=${text}` : `https://wa.me/?text=${text}`
+    return sketchWhatsAppUrl(shareUrl, phone)
   }, [shareUrl, phone])
 
   const copyLink = async () => {
@@ -726,10 +693,7 @@ export default function AdminSketchesPage() {
 
   // Built on click, not in render: window is not there during SSR.
   const openRowWhatsApp = (item: SharedDesignHistoryItem) => {
-    const url = shareUrlFor(item.id, item.updatedAt)
-    const text = encodeURIComponent(`היי! הכנו עבורך סקיצה 🎨\nאפשר לצפות בה כאן:\n${url}`)
-    const p = waPhone(item.phone ?? '')
-    window.open(p.length >= 11 ? `https://wa.me/${p}?text=${text}` : `https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer')
+    window.open(sketchWhatsAppUrl(shareUrlFor(item.id, item.updatedAt), item.phone ?? ''), '_blank', 'noopener,noreferrer')
   }
 
   // Transforms go too — otherwise the previous customer's adjustment silently
@@ -803,9 +767,18 @@ export default function AdminSketchesPage() {
    * stays in the list untouched, and the outcome message says exactly how
    * many actually went.
    */
+  // What the list shows — selection and bulk delete act on THIS, never on rows the filter hides.
+  const visibleHistory = onlyNoPreview ? history.filter(x => x.previewMissing) : history
+  const toggleNoPreviewFilter = () => {
+    setOnlyNoPreview(v => !v)
+    setSelected(new Set())
+    setConfirmBulk(false)
+    setBulkResult(null)
+  }
+
   const handleBulkDelete = async () => {
     if (bulkDeleting || deletingRow) return
-    const items = history.filter(x => selected.has(x.id))
+    const items = visibleHistory.filter(x => selected.has(x.id))
     if (items.length === 0) return
     setBulkDeleting(true)
     let ok = 0
@@ -833,11 +806,11 @@ export default function AdminSketchesPage() {
       return next
     })
   }
-  const allSelected = history.length > 0 && history.every(x => selected.has(x.id))
+  const allSelected = visibleHistory.length > 0 && visibleHistory.every(x => selected.has(x.id))
   const toggleSelectAll = () => {
     setBulkResult(null)
     setConfirmBulk(false)
-    setSelected(allSelected ? new Set() : new Set(history.map(x => x.id)))
+    setSelected(allSelected ? new Set() : new Set(visibleHistory.map(x => x.id)))
   }
 
   // ── Preview ──
@@ -1260,6 +1233,13 @@ export default function AdminSketchesPage() {
                 </>
               )}
               {bulkResult && <span className="text-xs font-bold text-amber-700">{bulkResult}</span>}
+              {(onlyNoPreview || history.some(x => x.previewMissing)) && (
+                <label className="flex items-center gap-2 cursor-pointer select-none py-1.5 text-xs font-medium text-amber-800">
+                  <input type="checkbox" checked={onlyNoPreview} onChange={toggleNoPreviewFilter}
+                    className="w-[18px] h-[18px] accent-amber-600" />
+                  רק בלי תמונה לוואטסאפ ({history.filter(x => x.previewMissing).length} מתוך הטעונים)
+                </label>
+              )}
             </div>
             {confirmBulk && selected.size > 0 && (
               <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5">
@@ -1291,7 +1271,7 @@ export default function AdminSketchesPage() {
           <p className="text-sm text-gray-400">עוד אין סקיצות — הראשונה שתיצרו תופיע כאן</p>
         ) : (
           <div className="divide-y divide-gray-100">
-            {history.map(item => {
+            {visibleHistory.map(item => {
               const swept = item.designsDeleted === true
               const when = formatWhen(item.updatedAt ?? item.createdAt)
               const details = [
@@ -1321,6 +1301,12 @@ export default function AdminSketchesPage() {
                       {when && <span>{when}{item.updatedAt ? ' (עודכן)' : ''}</span>}
                       {item.phone && <span dir="ltr">{item.phone}</span>}
                     </div>
+                    {item.previewMissing && (
+                      <div className="mt-1 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700">
+                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        בלי תמונה לוואטסאפ — לעדכן או למחוק
+                      </div>
+                    )}
                     {swept && (
                       <div className="mt-1 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700">
                         <AlertTriangle className="w-3 h-3 shrink-0" />

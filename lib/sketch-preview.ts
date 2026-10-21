@@ -299,3 +299,18 @@ export async function captureSketchPreview(
     return null
   }
 }
+
+/**
+ * Preview for a sketch made WITHOUT a 3D stage on the page (the one-click
+ * "סקיצה" button in the manual-order form and the order cards): the artwork
+ * card on the branded backdrop — the same fallback captureSketchPreview uses.
+ * Never throws; null means the link previews with the logo.
+ */
+export async function composeArtworkPreview(artworkUrls: string[]): Promise<Blob | null> {
+  try {
+    return await composeArtworkFallback(await decodeArtwork(artworkUrls))
+  } catch (err) {
+    console.error('[SKETCH_PREVIEW_CAPTURE_ERROR] artwork preview failed:', err)
+    return null
+  }
+}

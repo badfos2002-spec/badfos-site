@@ -805,6 +805,11 @@ export interface SharedDesignData {
    *  still of the sketch instead of the interactive 3D stage.
    *  See lib/sketch-retention.ts. */
   designsDeleted?: boolean
+  /** Set by the one-click order sketch (lib/sketch-create.ts) when no WhatsApp
+   *  preview could be made even after a retry. Such a sketch is never swept
+   *  (no preview = keep), so /admin/sketches flags it for an update or delete.
+   *  Cleared by updateSharedDesign once an update brings a preview. */
+  previewMissing?: boolean
   // `transform` is optional and written only when non-default — documents
   // created before this field exist without it and render exactly as before.
   designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[]
@@ -863,6 +868,7 @@ export async function updateSharedDesign(id: string, data: SharedDesignData): Pr
     ...(data.fabricType ? {} : { fabricType: deleteField() }),
     ...(data.phone ? {} : { phone: deleteField() }),
     ...(data.label ? {} : { label: deleteField() }),
+    ...(data.previewUrl ? { previewMissing: deleteField() } : {}),
     updatedAt,
     designsDeleted: deleteField(),
     designsDeletedAt: deleteField(),

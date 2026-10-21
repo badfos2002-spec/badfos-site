@@ -12,6 +12,7 @@ import { auth } from '@/lib/firebase'
 import type { Order, DesignUpscale } from '@/lib/types'
 import ManualOrderForm from '@/components/admin/ManualOrderForm'
 import { isManualOrder, paymentMethodLabel } from '@/lib/manual-order'
+import SketchLinkButton from '@/components/admin/SketchLinkButton'
 import { sizeLabel } from '@/lib/daily-orders'
 import { adminFetch } from '@/lib/admin-fetch'
 
@@ -606,7 +607,11 @@ export default function AdminOrdersPage() {
                     {order.shipping?.express && (
                       <div className="mt-4 sm:mt-6 mb-2 rounded-xl border-2 border-orange-500 bg-orange-50 px-4 py-3 shadow-lg shadow-orange-200/60">
                         <span className="text-orange-700 font-extrabold text-base sm:text-lg">⚡ אקספרס — 1-2 ימי עסקים!</span>
-                        <span className="mr-2 text-sm font-bold text-red-600">(+₪{order.shipping.expressCost ?? 50} • איסוף עצמי בתיאום מראש)</span>
+                        <span className="mr-2 text-sm font-bold text-red-600">
+                          {isManualOrder(order)
+                            ? `(הזמנה ידנית • ${order.shipping.method === 'pickup' ? 'איסוף עצמי' : 'משלוח'})`
+                            : `(+₪${order.shipping.expressCost ?? 50} • איסוף עצמי בתיאום מראש)`}
+                        </span>
                       </div>
                     )}
                     {order.customer.notes && (
@@ -716,6 +721,10 @@ export default function AdminOrdersPage() {
                             ) : order.shipping?.address ? (
                               <div className="space-y-2">
                                 <div className="font-medium text-blue-600 mb-2">משלוח עד הבית</div>
+                                {/* אקספרס במשלוח — רק בהזמנה ידנית (באתר אקספרס הוא לאיסוף בלבד) */}
+                                {order.shipping.express && (
+                                  <div className="font-bold text-orange-600">⚡ אקספרס</div>
+                                )}
                                 {(() => {
                                   const addr = order.shipping.address as any
                                   // For old orders: if `number` contains "/" (e.g. "1/59"), split into building/apartment
@@ -913,6 +922,15 @@ export default function AdminOrdersPage() {
                                     </div>
                                   </div>
                                 )}
+                                {/* קבצי הזמנה ישנה נמחקו בניקוי — אין ממה לבנות סקיצה */}
+                                {!(order as any).designsDeleted && (
+                                  <SketchLinkButton
+                                    className="mt-3"
+                                    item={item}
+                                    phone={order.customer.phone}
+                                    label={`הזמנה #${order.orderNumber} · ${customerName}`}
+                                  />
+                                )}
                               </div>
                             )
                           })}
@@ -956,7 +974,7 @@ export default function AdminOrdersPage() {
                             {order.shipping?.express && (
                               <div className="flex justify-between items-center text-sm font-bold text-orange-600 mb-2">
                                 <span>אקספרס ⚡</span>
-                                <span>₪{order.shipping.expressCost ?? 50}</span>
+                                <span>{isManualOrder(order) ? 'כלול בסכום' : `₪${order.shipping.expressCost ?? 50}`}</span>
                               </div>
                             )}
                             {(order as any).paymentSum && (order as any).paymentSum !== order.total && (

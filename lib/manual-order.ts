@@ -187,6 +187,8 @@ export interface ManualOrderInput {
     method: 'delivery' | 'pickup'
     address?: { street: string; number: string; city: string; apartment?: string; floor?: string; entrance?: string }
     additionalPhone?: string
+    /** אקספרס ⚡ — מותר גם במשלוח וגם באיסוף; בלי תוספת מחיר (הסכום מוזן ידנית) */
+    express?: boolean
   }
   items: {
     productType: string
@@ -312,7 +314,10 @@ export function validateManualOrder(
   // משלוח
   const s = (r.shipping && typeof r.shipping === 'object' ? r.shipping : {}) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
   if (s.method !== 'delivery' && s.method !== 'pickup') return fail('בחרו משלוח או איסוף עצמי')
+  if (s.express !== undefined && typeof s.express !== 'boolean') return fail('אקספרס לא תקין')
   const shipping: Record<string, unknown> = { method: s.method, cost: 0 }
+  // אותו שדה כמו בהזמנות מהאתר (Shipping.express). expressCost 0: התוספת כבר בסכום שהוזן.
+  if (s.express === true) Object.assign(shipping, { express: true, expressCost: 0 })
   if (s.method === 'delivery') {
     const a = (s.address && typeof s.address === 'object' ? s.address : {}) as Record<string, unknown>
     const address = {
