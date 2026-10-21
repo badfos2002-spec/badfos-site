@@ -111,7 +111,7 @@ export default function AdminOrdersPage() {
 
       if (newStatus === 'paid') {
         const couponCode = await createCoupon(orderId)
-        fetch('/api/send-email', {
+        adminFetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'order_confirmation', data: order, couponCode }),
@@ -120,7 +120,7 @@ export default function AdminOrdersPage() {
 
       if (newStatus === 'in_production') {
         deductInventory(order.items).catch(console.error)
-        fetch('/api/send-email', {
+        adminFetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'order_in_production', data: order }),
@@ -128,7 +128,7 @@ export default function AdminOrdersPage() {
       }
 
       if (newStatus === 'shipped') {
-        fetch('/api/send-email', {
+        adminFetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'order_shipped', data: order }),

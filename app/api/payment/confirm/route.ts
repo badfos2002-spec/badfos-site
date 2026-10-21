@@ -4,6 +4,7 @@ import { adminDb } from '@/lib/firebase-admin'
 import { sendServerConversions } from '@/lib/server-tracking'
 import { findOrderByFallback } from '@/lib/order-fallback'
 import { notifyOwnerNewOrder } from '@/lib/telegram'
+import { PAID_OR_LATER, paidRecently, sendPaidOrderEmails } from '@/lib/order-emails'
 
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
 
@@ -126,12 +127,16 @@ export async function POST(request: NextRequest) {
     // Atomic transaction — prevents race condition
     const orderRef = adminDb.collection('orders').doc(orderDoc.id)
     let alreadyProcessed = false
+    let freshStatus: string | undefined
+    let freshRecent = false
 
     await adminDb.runTransaction(async (transaction) => {
       const freshDoc = await transaction.get(orderRef)
       const freshData = freshDoc.data()
       if (!freshData) throw new Error('Order disappeared')
 
+      freshStatus = freshData.status
+      freshRecent = paidRecently(freshData)
       if (freshData.status !== 'pending_payment' && freshData.status !== 'cart_abandoned') {
         alreadyProcessed = true
         return
@@ -161,6 +166,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (alreadyProcessed) {
+      // Paid earlier (e.g. via client-confirm, which sends no emails) — make sure
+      // the customer emails went out; the once-claims make this a no-op otherwise.
+      if (freshStatus && PAID_OR_LATER.includes(freshStatus) && freshRecent) {
+        waitUntil(sendPaidOrderEmails(orderRef).catch(err => console.error('Failed to send paid-order emails:', err)))
+      }
       return NextResponse.json({
         success: true,
         message: `Order already processed`,
@@ -181,18 +191,8 @@ export async function POST(request: NextRequest) {
     // Notify the owner on Telegram about the new paid order (reliable via waitUntil)
     waitUntil(notifyOwnerNewOrder(order).catch(err => console.error('Failed to notify owner on Telegram:', err)))
 
-    // Send confirmation email
-    const email = order.customer?.email
-    if (email) {
-      fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'}/api/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'order_confirmation',
-          data: { id: orderDoc.id, ...order, status: 'paid' },
-        }),
-      }).catch(err => console.error('Failed to send confirmation email:', err))
-    }
+    // Send confirmation + design mockup emails (direct call, each once per order)
+    waitUntil(sendPaidOrderEmails(orderRef).catch(err => console.error('Failed to send paid-order emails:', err)))
 
     // Server-side conversion tracking (backup for when client doesn't fire)
     // GA4 Measurement Protocol + Meta Conversions API

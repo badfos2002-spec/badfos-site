@@ -1,4 +1,5 @@
 import { Order } from '../types'
+import { escapeHtml } from '../utils'
 
 interface OrderInProductionEmailProps {
   order: Order
@@ -124,11 +125,11 @@ export function OrderInProductionEmail({ order }: OrderInProductionEmailProps) {
       <div class="icon">🖨️</div>
 
       <div class="order-number">
-        הזמנה מספר: #${order.orderNumber}
+        הזמנה מספר: #${escapeHtml(String(order.orderNumber ?? ''))}
       </div>
 
       <div class="message">
-        <p><strong>שלום ${order.customer.firstName},</strong></p>
+        <p><strong>שלום ${escapeHtml(String(order.customer.firstName ?? ''))},</strong></p>
         <p>ההזמנה שלך נמצאת כרגע בתהליך הדפסה!</p>
         <p>אנחנו משתמשים בטכנולוגיית DTF המתקדמת ביותר כדי להבטיח איכות מעולה.</p>
       </div>

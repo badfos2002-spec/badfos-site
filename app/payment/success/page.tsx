@@ -31,7 +31,7 @@ export default function PaymentSuccessPage() {
     }
     if (orderDataStr) {
       try {
-        const { orderId, customer, items, total, subtotal, discount, couponCode, express } = JSON.parse(orderDataStr)
+        const { orderId, customer, items, total, subtotal, discount, couponCode } = JSON.parse(orderDataStr)
 
         // Fallback: update to 'paid' via server API (in case webhook hasn't arrived yet)
         if (orderId && customer?.phone) {
@@ -66,50 +66,20 @@ export default function PaymentSuccessPage() {
           })
         }
 
-        // Send admin notification email
-        if (customer) {
+        // Owner notification email — fires immediately; the server builds it
+        // from the stored order (only orderId travels). The design mockup email
+        // is sent server-side on payment confirmation (webhook / payment/confirm).
+        if (orderId) {
           fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'new_order',
-              data: {
-                orderId,
-                customer,
-                itemsCount: items?.length ?? 0,
-                total,
-                express: express === true,
-              },
-            }),
-          }).catch(console.error)
-        }
-
-        // Send design mockup email if items have designs
-        const itemsWithDesigns = (items || []).filter(
-          (item: any) => item.designs && item.designs.length > 0
-        )
-        if (itemsWithDesigns.length > 0 && customer) {
-          fetch('/api/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'design_mockup',
-              data: {
-                customer,
-                items: itemsWithDesigns.map((item: any) => ({
-                  productType: item.productType,
-                  color: item.color,
-                  fabricType: item.fabricType,
-                  designs: item.designs,
-                  totalQuantity: item.totalQuantity,
-                })),
-              },
-            }),
+            body: JSON.stringify({ type: 'new_order', orderId }),
+            keepalive: true,
           }).catch(console.error)
         }
 
         // Runtime consistency guard: verify the Firestore order matches this
-        // snapshot (the exact items the design_mockup email was built from).
+        // snapshot (the exact items the customer paid for).
         // The server self-heals + alerts the admin on mismatch. Fire-and-forget:
         // must never block or break the success page.
         try {

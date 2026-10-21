@@ -1,4 +1,5 @@
 import { Order } from '../types'
+import { escapeHtml } from '../utils'
 
 interface OrderShippedEmailProps {
   order: Order
@@ -150,11 +151,11 @@ export function OrderShippedEmail({
       <div class="icon">🚚</div>
 
       <div class="order-number">
-        הזמנה מספר: #${order.orderNumber}
+        הזמנה מספר: #${escapeHtml(String(order.orderNumber ?? ''))}
       </div>
 
       <div class="message">
-        <p><strong>שלום ${order.customer.firstName},</strong></p>
+        <p><strong>שלום ${escapeHtml(String(order.customer.firstName ?? ''))},</strong></p>
         <p>שמחים לעדכן שההזמנה שלך יצאה למשלוח!</p>
         <p>החולצות שלך בדרך אליך ויגיעו בקרוב.</p>
       </div>
@@ -164,7 +165,7 @@ export function OrderShippedEmail({
           ? `
       <div class="tracking-box">
         <h3 style="margin-top: 0; color: #059669;">מספר מעקב</h3>
-        <div class="tracking-number">${trackingNumber}</div>
+        <div class="tracking-number">${escapeHtml(String(trackingNumber ?? ''))}</div>
         <p style="margin-bottom: 0; font-size: 14px; color: #6B7280;">
           ניתן לעקוב אחר המשלוח באתר חברת השילוח
         </p>
@@ -179,8 +180,8 @@ export function OrderShippedEmail({
       <div class="address-box">
         <h3>כתובת למשלוח</h3>
         <p style="margin: 5px 0; color: #1A1A2E;">
-          ${order.shipping.address?.street} ${order.shipping.address?.number}<br>
-          ${order.shipping.address?.city}${order.shipping.address?.floor ? `, קומה ${order.shipping.address.floor}` : ''}
+          ${escapeHtml(String(order.shipping.address?.street ?? ''))} ${escapeHtml(String(order.shipping.address?.number ?? ''))}<br>
+          ${escapeHtml(String(order.shipping.address?.city ?? ''))}${order.shipping.address?.floor ? `, קומה ${escapeHtml(String(order.shipping.address.floor))}` : ''}
         </p>
       </div>
       `

@@ -127,7 +127,7 @@ export function OrderConfirmationEmail({
 
     <div class="content">
       <div class="order-number">
-        הזמנה מספר: #${order.orderNumber}
+        הזמנה מספר: #${escapeHtml(String(order.orderNumber ?? ''))}
       </div>
 
       <div class="info-section">
@@ -154,8 +154,8 @@ export function OrderConfirmationEmail({
           <div class="item">
             <strong>${escapeHtml(getProductLabel(item.productType))}${item.fabricType ? ' - ' + escapeHtml(getTypeLabel(item.fabricType)) : ''}</strong><br>
             צבע: ${escapeHtml(getColorLabel(item.color, item.productType))}<br>
-            כמות: ${item.totalQuantity} יחידות<br>
-            מחיר: ₪${item.totalPrice}
+            כמות: ${escapeHtml(String(Number(item.totalQuantity) || 0))} יחידות<br>
+            מחיר: ₪${Number(item.totalPrice) || 0}
           </div>
         `
           )
@@ -166,14 +166,14 @@ export function OrderConfirmationEmail({
         <h2>סיכום הזמנה</h2>
         <div class="info-row">
           <span class="info-label">סה"כ מוצרים:</span>
-          <span class="info-value">₪${order.subtotal}</span>
+          <span class="info-value">₪${Number(order.subtotal) || 0}</span>
         </div>
         ${
           order.discount > 0
             ? `
         <div class="info-row">
           <span class="info-label">הנחה:</span>
-          <span class="info-value">-₪${order.discount}</span>
+          <span class="info-value">-₪${Number(order.discount) || 0}</span>
         </div>
         `
             : ''
@@ -187,14 +187,14 @@ export function OrderConfirmationEmail({
             ? `
         <div class="info-row">
           <span class="info-label">אקספרס ⚡:</span>
-          <span class="info-value">₪${order.shipping.expressCost ?? 50}</span>
+          <span class="info-value">₪${Number(order.shipping.expressCost ?? 50) || 0}</span>
         </div>
         `
             : ''
         }
         <div class="info-row" style="border-top: 2px solid #FDB913; margin-top: 10px; padding-top: 10px;">
           <span class="info-label"><strong>סה"כ לתשלום:</strong></span>
-          <span class="info-value"><strong>₪${order.total}</strong></span>
+          <span class="info-value"><strong>₪${Number(order.total) || 0}</strong></span>
         </div>
       </div>
 
