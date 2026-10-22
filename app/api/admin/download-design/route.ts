@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb, adminAuth, adminSdkUnavailable } from '@/lib/firebase-admin'
+import { buildDesignDownloadNames, contentDisposition, extFor } from '@/lib/design-download-name'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -100,24 +101,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'file_missing' }, { status: 404 })
     }
 
-    // --- Build the download filename (Hebrew) ---
-    const areaLabel = design?.areaName || area
-    const orderNo = order?.orderNumber ?? orderId
-    const baseName =
-      variant === 'upscale'
-        ? `עיצוב-לדפוס-${areaLabel}-${orderNo}`
-        : `עיצוב-${areaLabel}-${orderNo}`
-
     // --- Download headers for a given contentType (+ length when known) ---
+    // File name: "{first} {last} {areaName}.{ext}" (lib/design-download-name.ts);
     // Content-Disposition: ASCII fallback + RFC 5987 UTF-8 (Hebrew is non-ASCII)
     const headersFor = (contentType: string, contentLength?: string | null) => {
-      const ext =
-        contentType === 'image/jpeg' ? 'jpg' : contentType === 'image/webp' ? 'webp' : 'png'
-      const fname = `${baseName}.${ext}`
-      const asciiFallback = `design.${ext}`
+      const ext = extFor(contentType, url)
+      const names = buildDesignDownloadNames(order, orderId, itemIdx, area, variant, ext)
       const headers: Record<string, string> = {
         'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(fname)}`,
+        'Content-Disposition': contentDisposition(names),
         'Cache-Control': 'private, no-store',
       }
       if (contentLength) headers['Content-Length'] = contentLength

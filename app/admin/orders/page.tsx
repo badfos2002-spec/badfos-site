@@ -15,6 +15,7 @@ import { isManualOrder, paymentMethodLabel } from '@/lib/manual-order'
 import SketchLinkButton from '@/components/admin/SketchLinkButton'
 import { sizeLabel } from '@/lib/daily-orders'
 import { adminFetch } from '@/lib/admin-fetch'
+import { buildDesignDownloadNames, extFor, filenameFromContentDisposition } from '@/lib/design-download-name'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-800' },
@@ -251,7 +252,7 @@ export default function AdminOrdersPage() {
     itemIdx: number,
     area: string,
     variant: 'source' | 'upscale',
-    baseName: string,
+    order: Order,
   ) => {
     const key = `${orderId}_${itemIdx}_${area}_${variant}`
     if (downloadingKey) return
@@ -277,11 +278,15 @@ export default function AdminOrdersPage() {
         return
       }
       const blob = await res.blob()
-      const ext = blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'image/webp' ? 'webp' : 'png'
+      // blob downloads ignore the response's Content-Disposition — take the
+      // server-built name ("{first} {last} {areaName}.{ext}") from the header.
+      const filename =
+        filenameFromContentDisposition(res.headers.get('content-disposition')) ??
+        buildDesignDownloadNames(order, orderId, itemIdx, area, variant, extFor(blob.type)).filename
       const objectUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = objectUrl
-      a.download = `${baseName}.${ext}`
+      a.download = filename
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -885,7 +890,7 @@ export default function AdminOrdersPage() {
                                             <div className="flex items-center gap-3">
                                               <button
                                                 type="button"
-                                                onClick={() => downloadDesign(order.id, idx, d.area, 'upscale', `עיצוב-לדפוס-${d.areaName ?? d.area}-${order.orderNumber}`)}
+                                                onClick={() => downloadDesign(order.id, idx, d.area, 'upscale', order)}
                                                 disabled={downloadingKey === `${order.id}_${idx}_${d.area}_upscale`}
                                                 className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium min-h-[44px] rounded-md px-3 transition-colors disabled:opacity-60"
                                               >
@@ -896,7 +901,7 @@ export default function AdminOrdersPage() {
                                               </button>
                                               <button
                                                 type="button"
-                                                onClick={() => downloadDesign(order.id, idx, d.area, 'source', `עיצוב-${d.areaName ?? d.area}-${order.orderNumber}`)}
+                                                onClick={() => downloadDesign(order.id, idx, d.area, 'source', order)}
                                                 disabled={downloadingKey === `${order.id}_${idx}_${d.area}_source`}
                                                 className="text-xs text-blue-600 hover:text-blue-800 underline py-3 disabled:opacity-60"
                                               >
@@ -906,7 +911,7 @@ export default function AdminOrdersPage() {
                                           ) : (
                                             <button
                                               type="button"
-                                              onClick={() => downloadDesign(order.id, idx, d.area, 'source', `עיצוב-${d.areaName ?? d.area}-${order.orderNumber}`)}
+                                              onClick={() => downloadDesign(order.id, idx, d.area, 'source', order)}
                                               disabled={downloadingKey === `${order.id}_${idx}_${d.area}_source`}
                                               className="inline-flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium h-8 rounded-md px-3 transition-colors disabled:opacity-60"
                                             >
