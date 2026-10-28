@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote, MessageCircle, Star, Navigation } from 'lucide-react'
+import { Search, Download, Trash2, Package, Loader2, MapPin, Phone, Mail, User, ChevronUp, ChevronDown, StickyNote, MessageCircle, Star, Navigation, Pencil } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
@@ -91,6 +91,7 @@ export default function AdminOrdersPage() {
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null)
   const [retryingUpscaleOrderId, setRetryingUpscaleOrderId] = useState<string | null>(null)
   const [showManualForm, setShowManualForm] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
 
   // Real-time listener — orders update automatically when payment confirmed
   useEffect(() => {
@@ -415,6 +416,19 @@ export default function AdminOrdersPage() {
         />
       )}
 
+      {/* עריכת הזמנה ידנית — הכרטיס מתעדכן לבד מה-onSnapshot */}
+      {editingOrder && (
+        <ManualOrderForm
+          key={editingOrder.id}
+          order={editingOrder}
+          onClose={() => setEditingOrder(null)}
+          onCreated={(orderNumber) => {
+            setEditingOrder(null)
+            alert(`הזמנה #${orderNumber} עודכנה`)
+          }}
+        />
+      )}
+
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
@@ -571,6 +585,17 @@ export default function AdminOrdersPage() {
                           {(order as any).reviewRequestSentAt && (
                             <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-amber-300 ring-2 ring-white" />
                           )}
+                        </button>
+                      )}
+                      {isManualOrder(order) && (
+                        <button
+                          className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8 px-2.5 shadow-sm inline-flex items-center gap-1"
+                          title="עריכת ההזמנה הידנית"
+                          aria-label="עריכת ההזמנה הידנית"
+                          onClick={(e) => { e.stopPropagation(); setEditingOrder(order) }}
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">ערוך</span>
                         </button>
                       )}
                       <div className="relative" onClick={(e) => e.stopPropagation()}>

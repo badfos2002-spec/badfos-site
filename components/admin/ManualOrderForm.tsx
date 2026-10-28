@@ -5,6 +5,9 @@
  * כל הבחירות (סוג/צבע/מידה/אזור) מגיעות מ-lib/manual-order.ts — אותם כללים
  * כמו במעצבים, ואותה ולידציה שהשרת מריץ לפני הכתיבה.
  *
+ * מצב עריכה (order): אותו טופס, ממולא מההזמנה השמורה; נשמר ב-PATCH לאותו
+ * endpoint. "יציאה בלי לשמור" נבדקת מול הערכים שנטענו, לא מול טופס ריק.
+ *
  * עיצובים: הקובץ עולה ל-Storage ברגע הבחירה (כמו בכל המעצבים) ונשמר רק ה-URL
  * (https). אף פעם לא blob:/data: — ראו design-file-persistence.
  */
@@ -31,6 +34,8 @@ import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { adminFetch } from '@/lib/admin-fetch'
 import { STANDARD_SIZES, KIDS_SIZES } from '@/lib/constants'
 import SketchLinkButton from '@/components/admin/SketchLinkButton'
+import { ONE_SIZE } from '@/lib/daily-orders'
+import type { Order } from '@/lib/types'
 
 interface Row {
   key: number
@@ -83,29 +88,99 @@ function prune(row: Row): Row {
   }
 }
 
-export default function ManualOrderForm({ onClose, onCreated }: { onClose: () => void; onCreated: (orderNumber: number) => void }) {
+/** ערכי הטופס ההתחלתיים מתוך הזמנה ידנית שמורה (מצב עריכה). */
+function initialFromOrder(order: Order) {
+  const s = order.shipping
+  const a = s?.address
+  const address = {
+    street: a?.street ?? '', number: a?.number ?? '', city: a?.city ?? '',
+    apartment: a?.apartment ?? '', floor: a?.floor ?? '', entrance: a?.entrance ?? '',
+  }
+  const additionalPhone = s?.additionalPhone ?? ''
+  const rows: Row[] = (order.items ?? []).map((it, i) => {
+    const designs = Object.fromEntries((it.designs ?? []).map(d => [d.area, { imageUrl: d.imageUrl, fileName: d.fileName ?? 'design' }]))
+    const base = { ...emptyRow(i + 1), designs, showDesigns: Object.keys(designs).length > 0 }
+    if ((it.productType as string) === OTHER_PRODUCT) {
+      const sq = it.sizes?.[0]
+      return {
+        ...base,
+        productType: OTHER_PRODUCT,
+        otherName: it.specialProductName ?? '',
+        otherDetails: it.color ?? '',
+        otherSize: !sq || sq.size === ONE_SIZE ? '' : sq.size,
+        otherQty: sq ? String(sq.quantity) : '',
+      }
+    }
+    return {
+      ...base,
+      productType: it.productType ?? '',
+      fabricType: it.fabricType ?? '',
+      color: it.color ?? '',
+      qty: Object.fromEntries((it.sizes ?? []).map(sq => [sq.size, String(sq.quantity)])),
+    }
+  })
+  return {
+    firstName: order.customer?.firstName ?? '',
+    lastName: order.customer?.lastName ?? '',
+    phone: order.customer?.phone ?? '',
+    email: order.customer?.email ?? '',
+    notes: order.customer?.notes ?? '',
+    method: (s?.method ?? '') as '' | 'delivery' | 'pickup',
+    express: !!s?.express,
+    address,
+    additionalPhone,
+    moreAddress: !!(address.apartment || address.floor || address.entrance || additionalPhone),
+    rows: rows.length ? rows : [emptyRow(1)],
+    total: typeof order.total === 'number' ? String(order.total) : '',
+    paymentMethod: String((order as Order & { paymentMethod?: string }).paymentMethod ?? ''),
+  }
+}
+
+export default function ManualOrderForm({ onClose, onCreated, order }: {
+  onClose: () => void
+  /** נקרא אחרי שמירה מוצלחת — ביצירה וגם בעריכה */
+  onCreated: (orderNumber: number) => void
+  /** הזמנה ידנית קיימת לעריכה; בלי — הזמנה חדשה */
+  order?: Order
+}) {
+  const [init] = useState(() => (order ? initialFromOrder(order) : null))
   const [sessionId] = useState(() => `manual-${Date.now()}`)
   // מפתח אידמפוטנטיות — אחד לכל פתיחת טופס; השרת משתמש בו כמזהה המסמך
   const [requestId] = useState(() => crypto.randomUUID())
-  const [moreAddress, setMoreAddress] = useState(false)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-  const [notes, setNotes] = useState('')
-  const [method, setMethod] = useState<'' | 'delivery' | 'pickup'>('')
-  const [express, setExpress] = useState(false)
-  const [address, setAddress] = useState({ street: '', number: '', city: '', apartment: '', floor: '', entrance: '' })
-  const [additionalPhone, setAdditionalPhone] = useState('')
-  const [rows, setRows] = useState<Row[]>([emptyRow(1)])
-  const [total, setTotal] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('')
+  const [moreAddress, setMoreAddress] = useState(init?.moreAddress ?? false)
+  const [firstName, setFirstName] = useState(init?.firstName ?? '')
+  const [lastName, setLastName] = useState(init?.lastName ?? '')
+  const [phone, setPhone] = useState(init?.phone ?? '')
+  const [email, setEmail] = useState(init?.email ?? '')
+  const [notes, setNotes] = useState(init?.notes ?? '')
+  const [method, setMethod] = useState<'' | 'delivery' | 'pickup'>(init?.method ?? '')
+  const [express, setExpress] = useState(init?.express ?? false)
+  const [address, setAddress] = useState(init?.address ?? { street: '', number: '', city: '', apartment: '', floor: '', entrance: '' })
+  const [additionalPhone, setAdditionalPhone] = useState(init?.additionalPhone ?? '')
+  const [rows, setRows] = useState<Row[]>(init?.rows ?? [emptyRow(1)])
+  const [total, setTotal] = useState(init?.total ?? '')
+  const [paymentMethod, setPaymentMethod] = useState(init?.paymentMethod ?? '')
   const [uploading, setUploading] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const isDirty = () =>
-    !!(firstName || lastName || phone || email || notes || method || express || total || paymentMethod ||
+  /** תמונת מצב של הערכים (בלי מצבי תצוגה כמו פתיחת עיצובים/ילדים) — להשוואה בעריכה. */
+  const snapshot = (v: {
+    firstName: string; lastName: string; phone: string; email: string; notes: string; method: string; express: boolean
+    address: Record<string, string>; additionalPhone: string; rows: Row[]; total: string; paymentMethod: string
+  }) => JSON.stringify([
+    v.firstName, v.lastName, v.phone, v.email, v.notes, v.method, v.express, v.address, v.additionalPhone, v.total, v.paymentMethod,
+    v.rows.map(r => [
+      r.productType, r.fabricType, r.color, r.otherName, r.otherDetails, r.otherSize, r.otherQty,
+      Object.entries(r.qty).filter(([, q]) => q.trim() !== '').sort(([a], [b]) => a.localeCompare(b)),
+      Object.entries(r.designs).sort(([a], [b]) => a.localeCompare(b)).map(([a, d]) => [a, d.imageUrl]),
+    ]),
+  ])
+  const [initialSnapshot] = useState(() => (init ? snapshot(init) : ''))
+
+  const isDirty = () => init
+    ? snapshot({ firstName, lastName, phone, email, notes, method, express, address, additionalPhone, rows, total, paymentMethod }) !== initialSnapshot
+    : !!(firstName || lastName || phone || email || notes || method || express || total || paymentMethod ||
       Object.values(address).some(Boolean) || additionalPhone ||
       rows.some(r => r.productType || Object.keys(r.designs).length || Object.values(r.qty).some(q => q.trim()) ||
         r.otherName || r.otherDetails || r.otherSize || r.otherQty))
@@ -182,10 +257,11 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
     }
     setSaving(true)
     try {
+      // עריכה: PATCH לפי מזהה ההזמנה (אידמפוטנטי מטבעו); יצירה: POST עם requestId
       const res = await adminFetch('/api/admin/manual-order', {
-        method: 'POST',
+        method: order ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, requestId }),
+        body: JSON.stringify(order ? { ...payload, id: order.id } : { ...payload, requestId }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -204,7 +280,7 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
     <div className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center bg-black/50 sm:p-4" dir="rtl">
       <div className="flex w-full max-w-2xl flex-col bg-gray-50 sm:max-h-[92vh] sm:rounded-2xl shadow-xl">
         <div className="flex items-center justify-between border-b bg-white px-4 py-3 sm:rounded-t-2xl">
-          <h2 className="text-lg font-bold text-gray-900">הזמנה ידנית חדשה</h2>
+          <h2 className="text-lg font-bold text-gray-900">{order ? `עריכת הזמנה #${order.orderNumber}` : 'הזמנה ידנית חדשה'}</h2>
           <button type="button" onClick={requestClose} aria-label="סגירה" className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
             <X className="h-5 w-5" />
           </button>
@@ -592,7 +668,7 @@ export default function ManualOrderForm({ onClose, onCreated }: { onClose: () =>
               className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl bg-yellow-500 text-base font-bold text-white hover:bg-yellow-600 disabled:opacity-60"
             >
               {saving && <Loader2 className="h-5 w-5 animate-spin" />}
-              שמירת הזמנה (שולם)
+              {order ? 'שמירת שינויים' : 'שמירת הזמנה (שולם)'}
             </button>
             <button type="button" onClick={requestClose} className="min-h-[48px] rounded-xl border border-gray-300 px-5 text-base font-medium text-gray-700">
               ביטול
