@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server'
 
+// Dynamic so a fixed key/outage recovers without redeploy; success is cached (memory + CDN), fallback only 60s
+export const dynamic = 'force-dynamic'
+const CDN_CACHE = { 'Cache-Control': 's-maxage=21600, stale-while-revalidate=86400' }
+
 const PLACE_ID = 'ChIJdWBwSp2984gRNGbFgb-Kykc'
 const API_KEY = process.env.GOOGLE_PLACES_API_KEY || ''
 
@@ -30,6 +34,7 @@ function mapReviews(reviews: any[]): ReviewData[] {
 async function fetchPlace(fieldMask: string) {
   const url = `https://places.googleapis.com/v1/places/${PLACE_ID}?languageCode=he`
   return fetch(url, {
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': API_KEY,
@@ -40,7 +45,7 @@ async function fetchPlace(fieldMask: string) {
 
 export async function GET() {
   if (cache && Date.now() - cache.ts < CACHE_TTL) {
-    return NextResponse.json(cache.data)
+    return NextResponse.json(cache.data, { headers: CDN_CACHE })
   }
 
   if (!API_KEY) {
@@ -67,41 +72,13 @@ export async function GET() {
         openingHours: [],
         isOpenNow: false,
         reviews: [],
-      })
+      }, { headers: { 'Cache-Control': 'public, s-maxage=60' } })
     }
 
     const raw = await mainRes.json()
 
-    // Fetch newest reviews separately to get more unique reviews
-    let newestReviews: ReviewData[] = []
-    try {
-      const newestRes = await fetch(
-        `https://places.googleapis.com/v1/places/${PLACE_ID}?languageCode=he`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Goog-Api-Key': API_KEY,
-            'X-Goog-FieldMask': 'reviews',
-          },
-        }
-      )
-      if (newestRes.ok) {
-        const newestRaw = await newestRes.json()
-        newestReviews = mapReviews(newestRaw.reviews)
-      }
-    } catch { /* ignore secondary fetch failure */ }
-
-    // Merge and deduplicate
-    const mainReviews = mapReviews(raw.reviews)
-    const seen = new Set<string>()
-    const allReviews: ReviewData[] = []
-    for (const r of [...mainReviews, ...newestReviews]) {
-      const key = r.author + r.text.slice(0, 30)
-      if (!seen.has(key)) {
-        seen.add(key)
-        allReviews.push(r)
-      }
-    }
+    // Places API (New) Place Details has no reviews sort param, so one call returns all available reviews
+    const allReviews = mapReviews(raw.reviews)
 
     const data = {
       name: raw.displayName?.text || 'בדפוס הדפסת חולצות',
@@ -121,9 +98,9 @@ export async function GET() {
     }
 
     cache = { data, ts: Date.now() }
-    return NextResponse.json(data)
+    return NextResponse.json(data, { headers: CDN_CACHE })
   } catch (err) {
     console.error('Google Places fetch error:', err)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal error' }, { status: 500, headers: { 'Cache-Control': 'public, s-maxage=60' } })
   }
 }
