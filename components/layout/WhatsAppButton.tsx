@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
 import { MessageCircle, Accessibility, X, Type, Contrast, MousePointer, Underline, Space, Eye, Palette } from 'lucide-react'
 import { CONTACT_INFO } from '@/lib/constants'
 import { trackWhatsAppClick } from '@/lib/tracking'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
+import { subscribeWaCta, getWaCtaVisible, getWaCtaVisibleServer } from '@/lib/wa-cta-visibility'
 
 const A11Y_KEY = 'badfos-a11y'
 /** Read persisted accessibility settings (client only) */
@@ -26,6 +27,11 @@ export default function WhatsAppButton() {
   const [bigCursor, setBigCursor] = useState<boolean>(() => (loadA11y()?.bigCursor as boolean) ?? false)
   const [stopAnimations, setStopAnimations] = useState<boolean>(() => (loadA11y()?.stopAnimations as boolean) ?? false)
   const panelRef = useRef<HTMLDivElement>(null)
+  // Hide the floating WhatsApp bubble while an in-page WhatsApp CTA (SEO pages,
+  // components/seo/WhatsAppCta) is on screen — it's redundant there and overlaps it on mobile.
+  // Its slot collapses too, so the accessibility button (always visible) drops to the
+  // lowest corner position and clears the hero CTA row.
+  const inlineCtaVisible = useSyncExternalStore(subscribeWaCta, getWaCtaVisible, getWaCtaVisibleServer)
 
   useFocusTrap(panelRef, showAccessibility, () => setShowAccessibility(false))
 
@@ -249,7 +255,11 @@ export default function WhatsAppButton() {
           target="_blank"
           rel="noopener noreferrer"
           onClick={handleWhatsAppClick}
-          className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-accent-whatsapp text-white shadow-lg hover:scale-110 transition-transform pulse-green"
+          aria-hidden={inlineCtaVisible || undefined}
+          tabIndex={inlineCtaVisible ? -1 : undefined}
+          className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-accent-whatsapp text-white shadow-lg hover:scale-110 transition-[transform,opacity,visibility,height,margin] duration-300 motion-reduce:transition-none ${
+            inlineCtaVisible ? 'invisible opacity-0 pointer-events-none !h-0 -mt-2 sm:-mt-3' : 'pulse-green'
+          }`}
           aria-label="פתח WhatsApp"
         >
           <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
