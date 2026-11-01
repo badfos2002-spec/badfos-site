@@ -170,7 +170,7 @@ export default function EndOfYearLayout({ page, waUrl }: SeoLayoutProps) {
         bandClass="bg-gradient-to-l from-emerald-600 to-teal-600"
         stats={[
           { value: 'אפס טעויות', label: 'סקיצה לאישור לפני ההדפסה — כל שם, כל גרש' },
-          { value: 'ימים ספורים', label: 'ייצור מהיר — מוכנים לפני מסיבת הסיום' },
+          { value: 'עד 7 ימי עסקים', label: 'זמן אספקה משוער מתחילת הייצור' },
           { value: 'XS–4XL', label: 'מידות ילדים ומבוגרים באותה הזמנה' },
         ]}
         valueClass="text-white"

@@ -242,7 +242,7 @@ export default function NewContactFormSection() {
               {/* Description */}
               <p className="text-lg text-gray-300/90 leading-relaxed max-w-xl mx-auto lg:mx-0">
                 רוצים לעשות כמו אלפי הלקוחות המרוצים שלנו? צרו קשר עכשיו והצוות
-                שלנו יחזור אליכם בתוך דקות ספורות. נשמח לשמוע מה אתם מחפשים
+                שלנו יחזור אליכם בהקדם. נשמח לשמוע מה אתם מחפשים
                 ולהציע לכם הצעת מחיר מותאמת אישית.
               </p>
 
@@ -252,7 +252,7 @@ export default function NewContactFormSection() {
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400/15 ring-1 ring-yellow-400/30">
                     <Clock className="w-4 h-4 text-yellow-400" />
                   </span>
-                  <span className="text-sm font-semibold">מענה תוך דקות</span>
+                  <span className="text-sm font-semibold">מענה מהיר</span>
                 </div>
                 <div className="inline-flex items-center gap-2 text-gray-200">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400/15 ring-1 ring-yellow-400/30">

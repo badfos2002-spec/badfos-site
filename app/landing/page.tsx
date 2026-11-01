@@ -333,7 +333,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { icon: <Users className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: '500+ לקוחות מרוצים', desc: 'עסקים, אירועים, קבוצות ספורט — כולם חוזרים' },
-            { icon: <Clock className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: 'אספקה עד 7 ימי עסקים', desc: 'מהאישור עד אליכם — מהיר ואמין' },
+            { icon: <Clock className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: 'אספקה עד 7 ימי עסקים', desc: 'זמן משוער מתחילת הייצור, אחרי אישור הסקיצה' },
             { icon: <Shield className="w-7 h-7 text-[#d4940a]" aria-hidden="true" />, title: 'פגם ייצור? מדפיסים מחדש', desc: 'הדפסה חוזרת או החזר כספי — דיווח תוך 7 ימים' },
           ].map((card, i) => (
             <div key={i} className={`bg-white rounded-2xl border border-[#ffc32e]/10 shadow-sm hover:shadow-lg hover:-translate-y-2 transition-all duration-500 ease-out p-5 sm:p-6 text-center ${trustReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: `${i * 150}ms` }}>

@@ -163,7 +163,7 @@ export default function FamilyLayout({ page, waUrl }: SeoLayoutProps) {
         stats={[
           { value: 'עיצוב אונליין', label: 'תצוגה מקדימה חיה לפני שמזמינים' },
           { value: 'XS–4XL', label: 'מידה לכל אחד — מסבא ועד הנכד הקטן' },
-          { value: 'DTF', label: 'הדפסה עמידה שמחזיקה טיולים וכביסות' },
+          { value: 'DTF', label: 'הדפסה עמידה לטיולים ולכביסות רבות' },
         ]}
         valueClass="text-orange-600"
         labelClass="text-[#64748b]"

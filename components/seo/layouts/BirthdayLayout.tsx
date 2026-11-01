@@ -173,7 +173,7 @@ export default function BirthdayLayout({ page, waUrl }: SeoLayoutProps) {
             },
             {
               title: 'ההפתעה מוכנה',
-              text: 'ייצור תוך ימים ספורים — משלוח עד הבית או איסוף עצמי מראשון לציון',
+              text: 'אספקה משוערת עד 7 ימי עסקים מתחילת הייצור — משלוח עד הבית או איסוף עצמי מראשון לציון',
             },
           ]}
         />
@@ -203,7 +203,7 @@ export default function BirthdayLayout({ page, waUrl }: SeoLayoutProps) {
         bandClass="bg-purple-50"
         stats={[
           { value: 'עיצוב אונליין', label: 'מעלים תמונה ורואים תצוגה מקדימה חיה' },
-          { value: 'ימים ספורים', label: 'ייצור מהיר — מוכן לפני המסיבה' },
+          { value: 'עד 7 ימי עסקים', label: 'זמן אספקה משוער מתחילת הייצור' },
           { value: 'DTF', label: 'הדפסה חדה ועמידה — התמונה יוצאת מושלמת' },
         ]}
         valueClass="text-purple-700"

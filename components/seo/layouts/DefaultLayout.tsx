@@ -101,9 +101,9 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-14">
           {[
             { icon: Star, text: '4.8★ בגוגל' },
-            { icon: Truck, text: 'משלוח מהיר לכל הארץ' },
+            { icon: Truck, text: 'משלוח לכל הארץ' },
             { icon: Store, text: 'איסוף עצמי בראשון לציון' },
-            { icon: Clock, text: 'ייצור תוך ימים ספורים' },
+            { icon: Clock, text: 'אספקה משוערת עד 7 ימי עסקים' },
           ].map((item, i) => {
             const Icon = item.icon
             return (
@@ -315,7 +315,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
             מוכנים להתחיל לעצב?
           </h2>
           <p className="text-white/90 text-lg font-semibold mb-6">
-            מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים {page.productType ? PRINTED_NOUN[page.productType] : 'חולצות מודפסות'} תוך ימים ספורים.
+            מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים {page.productType ? PRINTED_NOUN[page.productType] : 'חולצות מודפסות'} עד הבית או באיסוף עצמי.
           </p>
           <div className="mx-auto flex max-w-sm sm:max-w-none flex-wrap items-center justify-center gap-3">
             <WhatsAppCta href={waUrl} slug={page.slug} />

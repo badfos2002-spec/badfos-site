@@ -93,7 +93,7 @@ export default function SoldiersLayout({ page, waUrl }: SeoLayoutProps) {
         bandClass="bg-[#f4f3ea]"
         stats={[
           { value: 'כל הפלוגה', label: 'כל אחד מוסיף מידה — הזמנה מרוכזת אחת' },
-          { value: 'מהיום למחר', label: 'בהזמנות דחופות — כשהטקס לא מחכה' },
+          { value: 'אקספרס', label: 'באיסוף עצמי, להזמנות קטנות' },
           { value: 'XS–4XL', label: 'חולצות, סווטשירטים ובאפים ליחידה' },
         ]}
         valueClass="text-[#4b5320]"
@@ -150,7 +150,7 @@ export default function SoldiersLayout({ page, waUrl }: SeoLayoutProps) {
             },
             {
               title: 'מקבלים לפני הטקס',
-              text: 'ייצור בימים ספורים, מהיום למחר כשצריך — משלוח מרוכז או איסוף מראשון לציון',
+              text: 'אספקה משוערת עד 7 ימי עסקים מתחילת הייצור — משלוח מרוכז או איסוף מראשון לציון',
             },
           ]}
         />
@@ -263,7 +263,7 @@ export default function SoldiersLayout({ page, waUrl }: SeoLayoutProps) {
         <CtaBanner
           bgClass="bg-gradient-to-br from-[#4b5320] to-[#2c3418]"
           headline="הפלוגה מחכה לחולצות?"
-          sub="כל אחד זורק מידה בקבוצה, אנחנו מדפיסים — ובהזמנות דחופות נעשה הכול כדי שיהיה מוכן מהיום למחר."
+          sub="כל אחד זורק מידה בקבוצה, אנחנו מדפיסים — וצריכים מהר? כתבו לנו בוואטסאפ ונבדוק מה אפשר."
         >
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>

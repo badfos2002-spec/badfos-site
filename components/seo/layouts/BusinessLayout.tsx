@@ -78,7 +78,7 @@ export default function BusinessLayout({ page, waUrl }: SeoLayoutProps) {
           { value: 'DTF', label: 'הדפסה חדה ועמידה — גם אחרי שנה של משמרות' },
           { value: 'לכל הארץ', label: 'משלוח עד דלת העסק או איסוף עצמי מראשון לציון' },
           { value: '0 ₪', label: 'דמי הקמה — ליווי גרפיקאי כלול במחיר' },
-          { value: 'נשמר', label: 'הקובץ שלכם אצלנו — הזמנה חוזרת בדקות' },
+          { value: 'נשמר', label: 'הקובץ שלכם אצלנו — הזמנה חוזרת בלי לשלוח מחדש' },
         ]}
         valueClass="text-blue-800"
         labelClass="text-slate-500"
@@ -106,7 +106,7 @@ export default function BusinessLayout({ page, waUrl }: SeoLayoutProps) {
             },
             {
               title: 'ייצור ואספקה',
-              text: 'תוך ימים ספורים: משלוח עד דלת העסק לכל הארץ או איסוף עצמי חינם מראשון לציון',
+              text: 'אספקה משוערת עד 7 ימי עסקים מתחילת הייצור: משלוח עד דלת העסק לכל הארץ או איסוף עצמי חינם מראשון לציון',
             },
           ]}
         />
@@ -229,7 +229,7 @@ export default function BusinessLayout({ page, waUrl }: SeoLayoutProps) {
         <CtaBanner
           bgClass="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800"
           headline="מוכנים למתג את הצוות?"
-          sub="שולחים לוגו, מקבלים סקיצה לאישור ותוך ימים ספורים החולצות בעסק — משלוח לכל הארץ או איסוף עצמי מראשון לציון."
+          sub="שולחים לוגו, מקבלים סקיצה לאישור, ואנחנו מדפיסים — משלוח עד דלת העסק לכל הארץ או איסוף עצמי מראשון לציון."
         >
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>

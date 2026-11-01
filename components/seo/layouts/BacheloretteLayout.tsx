@@ -86,7 +86,7 @@ export default function BacheloretteLayout({ page, waUrl }: SeoLayoutProps) {
         stats={[
           { value: 'עיצוב אונליין', label: 'תצוגה מקדימה חיה לכל חולצה' },
           { value: 'DTF', label: 'הדפסה עמידה שנשארת הרבה אחרי המסיבה' },
-          { value: 'ימים ספורים', label: 'מהעיצוב ועד שהחולצות אצלכן' },
+          { value: 'עד 7 ימי עסקים', label: 'זמן אספקה משוער מתחילת הייצור' },
         ]}
         valueClass="text-pink-600"
         labelClass="text-[#64748b]"
