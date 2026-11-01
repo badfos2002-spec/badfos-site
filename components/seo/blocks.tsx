@@ -108,7 +108,7 @@ export function HeroBand({
             </p>
           )}
           {cta && (
-            <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
+            <div className="mx-auto flex max-w-sm flex-wrap items-center justify-center gap-3 sm:max-w-none md:justify-start">
               {cta}
             </div>
           )}
@@ -584,7 +584,7 @@ export function CtaBanner({
           {sub}
         </p>
       )}
-      <div className="relative flex flex-wrap items-center justify-center gap-3">{children}</div>
+      <div className="relative mx-auto flex max-w-sm flex-wrap items-center justify-center gap-3 sm:max-w-none">{children}</div>
     </section>
   )
 }

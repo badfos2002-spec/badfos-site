@@ -14,10 +14,13 @@ import {
   ChevronLeft,
   ArrowLeft,
   ChevronDown,
-  MessageCircle,
 } from 'lucide-react'
 import { getSeoPage } from '@/lib/seo-pages'
 import LiveBasePrice from '@/components/seo/LiveBasePrice'
+import LivePriceExample from '@/components/seo/LivePriceExample'
+import WhatsAppCta from '@/components/seo/WhatsAppCta'
+import PriceText from '@/components/seo/PriceText'
+import { StepsTimeline, ChecklistCard } from '@/components/seo/blocks'
 import type { ProductType } from '@/lib/types'
 import type { SeoLayoutProps } from './types'
 
@@ -80,25 +83,17 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
             </p>
           )}
           <p className="text-lg md:text-xl text-[#475569] leading-relaxed max-w-3xl md:ml-auto mb-7">
-            {page.heroText}
+            <PriceText text={page.heroText} />
           </p>
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+          <div className="mx-auto md:mx-0 flex max-w-sm sm:max-w-none flex-wrap items-center justify-center md:justify-start gap-3">
+            <WhatsAppCta href={waUrl} slug={page.slug} />
             <Link
               href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] px-8 py-4 text-lg font-extrabold text-white shadow-[0_15px_35px_-10px_rgba(245,158,11,0.6)] hover:from-[#e6ac28] hover:to-[#d97706] transition-colors"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border-2 border-[#f59e0b] px-7 py-3.5 text-lg font-extrabold text-[#b45309] hover:bg-[#b45309] hover:border-[#b45309] hover:text-white transition-colors"
             >
               {page.ctaText}
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1fb455] px-8 py-4 text-lg font-extrabold text-white shadow-lg transition-colors"
-            >
-              <MessageCircle className="w-5 h-5" />
-              דברו איתנו בוואטסאפ
-            </a>
           </div>
         </header>
 
@@ -144,7 +139,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
                   </div>
                   <div>
                     <h3 className="font-extrabold text-lg text-[#1e293b] mb-1">{benefit.title}</h3>
-                    <p className="text-[#64748b] text-sm leading-relaxed">{benefit.text}</p>
+                    <p className="text-[#64748b] text-sm leading-relaxed"><PriceText text={benefit.text} /></p>
                   </div>
                 </div>
               )
@@ -207,10 +202,46 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
               <h2 className="text-2xl md:text-3xl font-extrabold text-[#1e293b] mb-3">
                 {paragraph.title}
               </h2>
-              <p className="text-[#475569] leading-relaxed text-base md:text-lg">{paragraph.text}</p>
+              <p className="text-[#475569] leading-relaxed text-base md:text-lg"><PriceText text={paragraph.text} /></p>
             </div>
           ))}
         </section>
+
+        {/* Optional article blocks — each renders only when the page defines it */}
+        {page.steps?.length ? (
+          <section className="mb-14">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-[#1e293b] mb-8">איך זה עובד — שלב אחר שלב</h2>
+            <StepsTimeline
+              steps={page.steps}
+              numberClass="bg-gradient-to-br from-[#ffc32e] to-[#f59e0b] text-white"
+              lineClass="bg-[#ffc32e]/40"
+            />
+          </section>
+        ) : null}
+
+        {page.priceExamples?.length ? (
+          <section className="mb-14">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-[#1e293b] mb-2">כמה זה עולה? דוגמאות מחיר</h2>
+            <p className="text-[#64748b] font-semibold mb-6">
+              המחירים מתעדכנים אוטומטית לפי המחירון באתר. לא כולל משלוח.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {page.priceExamples.map((example) => (
+                <LivePriceExample key={example.label} example={example} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {page.checklist?.length ? (
+          <section className="mb-14">
+            <ChecklistCard
+              title="צ׳קליסט לפני שמזמינים"
+              items={page.checklist}
+              cardClass="border-[#ffc32e]/40 bg-white"
+            />
+          </section>
+        ) : null}
 
         {/* Pricing highlight strip */}
         <section className="mb-14 rounded-3xl bg-gradient-to-l from-[#ffc32e]/20 via-[#fff6e6] to-white border border-[#ffc32e]/40 p-6 md:p-8">
@@ -251,7 +282,10 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
                   <span>{item.q}</span>
                   <ChevronDown className="w-5 h-5 text-[#f59e0b] shrink-0 transition-transform group-open:rotate-180" />
                 </summary>
-                <p className="px-5 pb-5 text-[#475569] leading-relaxed">{item.a}</p>
+                <p className="px-5 pb-5 text-[#475569] leading-relaxed">
+                  {item.a}
+                  {item.aLive && <> <PriceText text={item.aLive} /></>}
+                </p>
               </details>
             ))}
           </div>
@@ -283,23 +317,15 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
           <p className="text-white/90 text-lg font-semibold mb-6">
             מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים {page.productType ? PRINTED_NOUN[page.productType] : 'חולצות מודפסות'} תוך ימים ספורים.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="mx-auto flex max-w-sm sm:max-w-none flex-wrap items-center justify-center gap-3">
+            <WhatsAppCta href={waUrl} slug={page.slug} />
             <Link
               href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-extrabold text-[#b45309] shadow-lg hover:bg-[#fffdf5] transition-colors"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border-2 border-[#7c2d12] px-7 py-3.5 text-lg font-extrabold text-[#7c2d12] hover:bg-[#7c2d12] hover:text-white transition-colors"
             >
               {page.ctaText}
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1fb455] px-8 py-4 text-lg font-extrabold text-white shadow-lg transition-colors"
-            >
-              <MessageCircle className="w-5 h-5" />
-              דברו איתנו בוואטסאפ
-            </a>
           </div>
         </section>
       </div>

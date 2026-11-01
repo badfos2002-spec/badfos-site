@@ -2,8 +2,9 @@
 // composition built from the shared blocks. All copy comes from lib/seo-pages.ts.
 
 import Link from 'next/link'
-import { ArrowLeft, ChevronLeft, MessageCircle } from 'lucide-react'
+import { ArrowLeft, ChevronLeft } from 'lucide-react'
 import { getSeoPage } from '@/lib/seo-pages'
+import WhatsAppCta from '@/components/seo/WhatsAppCta'
 import type { SeoLayoutProps } from './types'
 import {
   DISPLAY_FONT,
@@ -16,33 +17,26 @@ import {
 } from '../blocks'
 
 /**
- * CTA pair. On the yellow hero the homepage button is dark slate (yellow-on-yellow
- * has no contrast); on the dark closing band it flips to the brand yellow gradient.
+ * CTA pair: primary WhatsApp (tracked) + secondary outline homepage link. On the
+ * yellow hero the outline is dark slate (white-on-yellow has no contrast); on the
+ * dark closing band it flips to white.
  * Both variants are complete static literals.
  */
 function CtaButtons({ page, waUrl, onDark }: SeoLayoutProps & { onDark?: boolean }) {
   return (
     <>
+      <WhatsAppCta href={waUrl} slug={page.slug} />
       <Link
         href="/"
         className={
           onDark
-            ? 'inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ffc32e] to-[#f59e0b] px-8 py-4 text-lg font-extrabold text-white shadow-[0_15px_35px_-10px_rgba(245,158,11,0.6)] hover:from-[#e6ac28] hover:to-[#d97706] transition-colors'
-            : 'inline-flex items-center gap-2 rounded-full bg-[#1e293b] px-8 py-4 text-lg font-extrabold text-white shadow-[0_15px_35px_-10px_rgba(30,41,59,0.55)] hover:bg-[#0f172a] transition-colors'
+            ? 'inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border-2 border-white/80 bg-white/10 px-7 py-3.5 text-lg font-extrabold text-white hover:bg-white/20 transition-colors'
+            : 'inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border-2 border-[#1e293b] px-7 py-3.5 text-lg font-extrabold text-[#1e293b] hover:bg-[#1e293b] hover:text-white transition-colors'
         }
       >
         {page.ctaText}
         <ArrowLeft className="w-5 h-5" />
       </Link>
-      <a
-        href={waUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1fb455] px-8 py-4 text-lg font-extrabold text-white shadow-lg transition-colors"
-      >
-        <MessageCircle className="w-5 h-5" />
-        דברו איתנו בוואטסאפ
-      </a>
     </>
   )
 }
@@ -195,7 +189,7 @@ export default function RishonLayout({ page, waUrl }: SeoLayoutProps) {
           <h2 className="relative mb-7 text-3xl text-[#ffc32e] md:text-5xl" style={DISPLAY_FONT}>
             {page.h1}
           </h2>
-          <div className="relative flex flex-wrap items-center justify-center gap-3">
+          <div className="relative mx-auto flex max-w-sm flex-wrap items-center justify-center gap-3 sm:max-w-none">
             <CtaButtons page={page} waUrl={waUrl} onDark />
           </div>
         </section>

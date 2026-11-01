@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { SEO_PAGES, getSeoPage } from '@/lib/seo-pages'
 import { CONTACT_INFO } from '@/lib/constants'
 import { LAYOUTS, DefaultLayout } from '@/components/seo/layouts'
+import { validateSeoPage } from '@/lib/seo-price-tokens'
 
 const BASE_URL = 'https://badfos.co.il'
 
@@ -10,6 +11,9 @@ const BASE_URL = 'https://badfos.co.il'
 export const dynamicParams = false
 
 export function generateStaticParams() {
+  // Build-time contract check: price {{tokens}} valid and only where DefaultLayout
+  // renders them live; metadata + FAQ answers (JSON-LD) stay number-free.
+  SEO_PAGES.forEach((page) => validateSeoPage(page, !LAYOUTS[page.slug]))
   return SEO_PAGES.map((page) => ({ slug: page.slug }))
 }
 
@@ -46,7 +50,7 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
   if (!page) notFound()
 
   const pageUrl = `${BASE_URL}/${encodeURIComponent(page.slug)}`
-  const waUrl = `https://wa.me/${CONTACT_INFO.whatsapp}?text=${encodeURIComponent(`היי! הגעתי מהאתר ואני מתעניין ב${page.h1} 🙂`)}`
+  const waUrl = `https://wa.me/${CONTACT_INFO.whatsapp}?text=${encodeURIComponent(page.waMessage ?? `היי! הגעתי מהאתר ואני מתעניין ב${page.h1} 🙂`)}`
 
   const faqJsonLd = {
     '@context': 'https://schema.org',
