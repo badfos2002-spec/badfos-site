@@ -19,7 +19,8 @@
  *
  * אפס תופעות לוואי, בכוונה: אין מייל ללקוח/לבעלים, אין המרת Google Ads/Meta,
  * אין Make, אין ManyChat, אין טלגרם ואין הגדלת עיצובים. מסלולים אוטומטיים
- * שסורקים הזמנות מדלגים על source:'manual' (ראו isManualOrder).
+ * שסורקים הזמנות מדלגים על source:'manual' (ראו isManualOrder). חריג יחיד (לא בנתיב הזה):
+ * הודעת "מוכן לאיסוף" כשהאדמין מסמן איסוף עצמי כ"הושלם" (/api/pickup-ready).
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { Timestamp } from 'firebase-admin/firestore'

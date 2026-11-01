@@ -169,7 +169,8 @@ async function findByNameMatchingWaId(fullName: string, waId: string): Promise<s
 export async function findOrCreateSubscriber(
   phone: string,
   firstName: string,
-  lastName: string
+  lastName: string,
+  consentPhrase = 'אישור תקנון בהזמנה באתר badfos.co.il'
 ): Promise<string> {
   const bare = phone.replace(/^\+/, '') // '972...' — ManyChat wa_id format
   const variants = [bare, `+${bare}`]
@@ -185,7 +186,7 @@ export async function findOrCreateSubscriber(
         first_name: firstName,
         last_name: lastName,
         has_opt_in_whatsapp: true,
-        consent_phrase: 'אישור תקנון בהזמנה באתר badfos.co.il',
+        consent_phrase: consentPhrase,
       }),
     })
     const id = created?.data?.id
@@ -288,6 +289,8 @@ export interface PickupReadySendInput {
   phone: string
   firstName: string
   lastName: string
+  /** נוסח ההסכמה ביצירת מנוי חדש (ברירת מחדל: תקנון האתר) — להזמנה ידנית נוסח אחר. */
+  consentPhrase?: string
 }
 
 /**
@@ -311,7 +314,7 @@ export async function sendPickupReadyWhatsApp(
       return { sent: false, reason: `unparseable IL phone: ${input.phone}` }
     }
 
-    const subscriberId = await findOrCreateSubscriber(phone, input.firstName, input.lastName)
+    const subscriberId = await findOrCreateSubscriber(phone, input.firstName, input.lastName, input.consentPhrase)
     await sendFlow(subscriberId, flowNs)
 
     console.log(`ManyChat pickup-ready WhatsApp sent to ${phone}`)

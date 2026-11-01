@@ -12,7 +12,8 @@ import { rejectUnlessAdmin } from '@/lib/admin-request-auth'
  * Self-protecting:
  * - Admin only (Bearer Firebase ID token) — otherwise anyone with an orderId
  *   could trigger the customer WhatsApp.
- * - Only acts on pickup orders (shipping.method === 'pickup').
+ * - Only acts on pickup orders (shipping.method === 'pickup') — site and manual
+ *   (source:'manual') orders alike; manual orders get nothing else automatic.
  * - Never sends twice per order (pickupReadySentAt stamp).
  */
 export async function POST(req: NextRequest) {
@@ -35,11 +36,6 @@ export async function POST(req: NextRequest) {
 
     const data = snap.data()!
 
-    // Manual order — the partner handles the customer himself, no WhatsApp.
-    if (isManualOrder(data)) {
-      return NextResponse.json({ success: true, skipped: 'manual_order' })
-    }
-
     if (data.shipping?.method !== 'pickup') {
       return NextResponse.json(
         { error: 'Order shipping method is not pickup' },
@@ -56,6 +52,10 @@ export async function POST(req: NextRequest) {
       phone: data.customer?.phone || '',
       firstName: data.customer?.firstName || '',
       lastName: data.customer?.lastName || '',
+      // הזמנה ידנית: הלקוח לא אישר תקנון באתר — מסר טלפון בהזמנה טלפונית/וואטסאפ.
+      ...(isManualOrder(data)
+        ? { consentPhrase: 'מסירת טלפון בהזמנה טלפונית/וואטסאפ — הודעות תפעוליות על ההזמנה (מדיניות פרטיות סעיף 2, תקנון 14.3)' }
+        : {}),
     })
 
     if (whatsapp.sent) {

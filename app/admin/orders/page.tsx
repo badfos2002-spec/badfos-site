@@ -111,7 +111,28 @@ export default function AdminOrdersPage() {
       await updateOrderStatus(orderId, newStatus, paidAtPatch)
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o))
 
-      // הזמנה ידנית: השותף מול הלקוח — בלי קופון, מיילים, וואטסאפ אוטומטי או הורדת מלאי.
+      // Pickup order completed → auto WhatsApp "ready for pickup" (once per order) — גם בהזמנה ידנית
+      if (newStatus === 'completed' && order.shipping?.method === 'pickup' && !(order as any).pickupReadySentAt) {
+        try {
+          const res = await adminFetch('/api/pickup-ready', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+          })
+          const result = await res.json().catch(() => null)
+          if (result?.whatsapp?.sent || result?.alreadySent) {
+            const pickupReadySentAt = Timestamp.now()
+            setOrders(prev => prev.map(o => o.id === orderId ? ({ ...o, pickupReadySentAt } as any) : o))
+          } else {
+            alert(`הודעת 'מוכן לאיסוף' לא נשלחה אוטומטית (${result?.whatsapp?.reason || result?.error || 'שגיאה לא ידועה'}) — שלחו ללקוח הודעה ידנית`)
+          }
+        } catch (err) {
+          console.error(err)
+          alert("הודעת 'מוכן לאיסוף' לא נשלחה אוטומטית — שלחו ללקוח הודעה ידנית")
+        }
+      }
+
+      // הזמנה ידנית: השותף מול הלקוח — בלי קופון, מיילים או הורדת מלאי (רק 'מוכן לאיסוף' למעלה).
       if (isManualOrder(order)) return
 
       if (newStatus === 'paid') {
@@ -138,27 +159,6 @@ export default function AdminOrdersPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'order_shipped', data: order }),
         }).catch(console.error)
-      }
-
-      // Pickup order completed → auto WhatsApp "ready for pickup" (once per order)
-      if (newStatus === 'completed' && order.shipping?.method === 'pickup' && !(order as any).pickupReadySentAt) {
-        try {
-          const res = await adminFetch('/api/pickup-ready', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId }),
-          })
-          const result = await res.json().catch(() => null)
-          if (result?.whatsapp?.sent || result?.alreadySent) {
-            const pickupReadySentAt = Timestamp.now()
-            setOrders(prev => prev.map(o => o.id === orderId ? ({ ...o, pickupReadySentAt } as any) : o))
-          } else {
-            alert(`הודעת 'מוכן לאיסוף' לא נשלחה אוטומטית (${result?.whatsapp?.reason || result?.error || 'שגיאה לא ידועה'}) — שלחו ללקוח הודעה ידנית`)
-          }
-        } catch (err) {
-          console.error(err)
-          alert("הודעת 'מוכן לאיסוף' לא נשלחה אוטומטית — שלחו ללקוח הודעה ידנית")
-        }
       }
     } catch (e) {
       console.error(e)
