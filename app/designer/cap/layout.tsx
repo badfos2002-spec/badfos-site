@@ -1,13 +1,16 @@
 import { Metadata } from 'next'
+import { CAP_COLOR_FILTER, CAP_MIN_QUANTITY } from '@/lib/constants'
+
+const CAP_DESCRIPTION = `עצבו כובע טמבל או כובע רשת בהדפסה אישית: מעלים לוגו או עיצוב, בוחרים צבע ורואים תצוגה מקדימה חיה. וואן סייז, ${CAP_COLOR_FILTER.tembel.length} צבעים בטמבל ו־${CAP_COLOR_FILTER.mesh.length} ברשת, מינימום הזמנה ${CAP_MIN_QUANTITY} כובעים.`
 
 export const metadata: Metadata = {
   alternates: { canonical: '/designer/cap' },
-  title: 'כובעים בעיצוב אישי | בדפוס',
-  description: 'עצבו כובע טמבל בהדפסה אישית. וואן סייז, 9 צבעים: לבן, שחור, אפור, בורדו, זית, חאקי, כחול רויל, כתום, צהוב. מינימום הזמנה 10 כובעים.',
-  keywords: 'כובע טמבל, כובעים בהדפסה, כובעים מודפסים, כובע בעיצוב אישי, כובעים ממותגים',
+  title: 'עיצוב כובע טמבל וכובע רשת בהדפסה אישית | בדפוס',
+  description: CAP_DESCRIPTION,
+  keywords: 'כובע טמבל, כובע רשת, כובעים בהדפסה, כובעים מודפסים, כובע בעיצוב אישי, כובעים ממותגים',
   openGraph: {
-    title: 'כובעים בעיצוב אישי | בדפוס',
-    description: 'עצבו כובע טמבל בהדפסה אישית — 9 צבעים, מינ׳ הזמנה 10',
+    title: 'עיצוב כובע טמבל וכובע רשת בהדפסה אישית | בדפוס',
+    description: 'עצבו כובע טמבל או כובע רשת בהדפסה אישית — מגוון צבעים, מינ׳ הזמנה 10',
     url: 'https://badfos.co.il/designer/cap',
     siteName: 'בדפוס',
     locale: 'he_IL',
@@ -16,8 +19,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'כובעים בעיצוב אישי | בדפוס',
-    description: 'עצבו כובע טמבל בהדפסה אישית',
+    title: 'עיצוב כובע טמבל וכובע רשת בהדפסה אישית | בדפוס',
+    description: 'עצבו כובע טמבל או כובע רשת בהדפסה אישית',
     images: ['https://badfos.co.il/assets/כובע טמבל שחור.png'],
   },
 }
@@ -31,8 +34,8 @@ export default function CapLayout({ children }: { children: React.ReactNode }) {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'Product',
-            name: 'כובע טמבל בעיצוב אישי',
-            description: 'כובע טמבל בהדפסה אישית — וואן סייז, 9 צבעים. מינימום הזמנה 10 כובעים.',
+            name: 'כובע טמבל או כובע רשת בעיצוב אישי',
+            description: CAP_DESCRIPTION,
             image: 'https://badfos.co.il/assets/כובע טמבל שחור.png',
             brand: { '@type': 'Brand', name: 'בדפוס' },
             offers: {

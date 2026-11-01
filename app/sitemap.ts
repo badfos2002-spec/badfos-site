@@ -56,6 +56,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/designer/cap`,
+      lastModified: '2026-11-01',
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/designer/tote`,
+      lastModified: '2026-11-01',
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/designer/vest`,
+      lastModified: '2026-11-01',
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
       url: `${baseUrl}/packages`,
       lastModified: '2026-04-02',
       changeFrequency: 'weekly',
