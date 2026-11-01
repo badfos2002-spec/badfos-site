@@ -38,8 +38,8 @@ async function fitForSketch(input: Buffer): Promise<{ buffer: Buffer; contentTyp
   })
   const { hasAlpha } = await img.metadata()
   return hasAlpha
-    ? { buffer: await img.png({ compressionLevel: 9 }).toBuffer(), contentType: 'image/png', ext: 'png' }
-    : { buffer: await img.jpeg({ quality: 85, mozjpeg: true }).toBuffer(), contentType: 'image/jpeg', ext: 'jpg' }
+    ? { buffer: await img.png({ compressionLevel: 6 }).toBuffer(), contentType: 'image/png', ext: 'png' }
+    : { buffer: await img.jpeg({ quality: 85 }).toBuffer(), contentType: 'image/jpeg', ext: 'jpg' }
 }
 
 export async function POST(request: NextRequest) {

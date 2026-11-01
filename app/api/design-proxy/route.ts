@@ -43,21 +43,24 @@ export async function GET(request: NextRequest) {
     }
 
     const upstream = await fetch(target.toString())
-    if (!upstream.ok) {
+    if (!upstream.ok || !upstream.body) {
       return NextResponse.json({ error: 'fetch_failed' }, { status: 502 })
     }
-    const buffer = Buffer.from(await upstream.arrayBuffer())
+    // Stream the body through (same pattern as admin/download-design) — no
+    // buffering, so less memory and CPU per request. Content-Length is forwarded
+    // only when undici did not transparently decompress the body.
     const contentType = upstream.headers.get('content-type') || 'image/png'
+    const contentLength = upstream.headers.get('content-encoding')
+      ? null
+      : upstream.headers.get('content-length')
+    const headers: Record<string, string> = {
+      'Content-Type': contentType,
+      // Design object names are unique + token-scoped, so the bytes never change.
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    }
+    if (contentLength) headers['Content-Length'] = contentLength
 
-    return new NextResponse(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        // Design object names are unique + token-scoped, so the bytes never change.
-        'Cache-Control': 'public, max-age=31536000, immutable',
-        'Content-Length': String(buffer.length),
-      },
-    })
+    return new NextResponse(upstream.body, { status: 200, headers })
   } catch (err) {
     console.error('design-proxy error:', err)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

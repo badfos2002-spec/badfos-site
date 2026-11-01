@@ -100,6 +100,15 @@ export function middleware(request: NextRequest) {
   return NextResponse.next()
 }
 
+// Static files never need middleware (no POST, no rate limit, and the uppercase
+// redirect is for page URLs) — skipping them saves an invocation per asset.
+// Public dirs use a trailing slash so a /[slug] page like /og-... still matches.
+// Note: an uppercase static path (/Renders/A.png) is no longer redirected to
+// lowercase; it 404s like any wrong file name. No public file relied on that.
 export const config = {
-  matcher: ['/api/send-email', '/api/generate-design', '/((?!_next|favicon|icon|assets|logo).*)'],
+  matcher: [
+    '/api/send-email',
+    '/api/generate-design',
+    '/((?!_next|favicon|icon|assets|logo|models/|renders/|images/|mockups/|og/|sitemap\\.xml|robots\\.txt|manifest\\.json|.*\\.(?:png|jpe?g|webp|gif|svg|ico|glb|gltf|bin|json|xml|txt|webmanifest|woff2?|mp4|webm|pdf|avif|css|js)$).*)',
+  ],
 }
