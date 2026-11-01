@@ -17,10 +17,10 @@ type ReviewData = {
 }
 
 function mapReviews(reviews: any[]): ReviewData[] {
-  return (reviews || []).map((r: any) => ({
+  return (reviews || []).filter((r: any) => typeof r.rating === 'number').map((r: any) => ({
     author: r.authorAttribution?.displayName || 'אנונימי',
     authorPhoto: r.authorAttribution?.photoUri || '',
-    rating: r.rating || 5,
+    rating: r.rating,
     text: r.text?.text || '',
     time: r.relativePublishTimeDescription || '',
     googleMapsUrl: r.authorAttribution?.uri || '',
@@ -60,8 +60,8 @@ export async function GET() {
         name: 'בדפוס הדפסת חולצות',
         address: 'דובנוב 10, ראשון לציון',
         phone: '055-988-5954',
-        rating: 5,
-        reviewCount: 30,
+        rating: null,
+        reviewCount: 0,
         googleMapsUrl: '',
         website: 'https://badfos.co.il',
         openingHours: [],
@@ -107,7 +107,7 @@ export async function GET() {
       name: raw.displayName?.text || 'בדפוס הדפסת חולצות',
       address: raw.formattedAddress || '',
       phone: raw.nationalPhoneNumber || '',
-      rating: raw.rating || 5,
+      rating: raw.rating ?? null,
       reviewCount: raw.userRatingCount || 0,
       googleMapsUrl: raw.googleMapsUri || '',
       website: raw.websiteUri || '',

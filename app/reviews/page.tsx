@@ -70,7 +70,7 @@ export default function ReviewsPage() {
     fetch('/api/google-business')
       .then(r => r.json())
       .then(data => {
-        if (data.reviews) {
+        if (data.reviews?.length > 0 && data.rating != null) {
           setGoogleReviews(data.reviews)
           setGoogleRating(data.rating)
           setGoogleReviewCount(data.reviewCount)
