@@ -246,12 +246,6 @@ export default function RootLayout({
                 'https://www.instagram.com/badfos.co.il',
                 'https://www.facebook.com/profile.php?id=61575195215091',
               ],
-              aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: '5.0',
-                reviewCount: '30',
-                bestRating: '5',
-              },
             }),
           }}
         />

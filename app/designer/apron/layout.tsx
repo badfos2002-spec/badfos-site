@@ -58,12 +58,6 @@ export default function ApronLayout({ children }: { children: React.ReactNode })
                 merchantReturnDays: 0,
               },
             },
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: '5.0',
-              reviewCount: '30',
-              bestRating: '5',
-            },
           }),
         }}
       />

@@ -58,26 +58,6 @@ export default function TshirtLayout({ children }: { children: React.ReactNode }
                 merchantReturnDays: 0,
               },
             },
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: '5.0',
-              reviewCount: '30',
-              bestRating: '5',
-            },
-            review: [
-              {
-                '@type': 'Review',
-                author: { '@type': 'Person', name: 'תומר ישראלי' },
-                reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
-                reviewBody: 'שירות ברמה גבוהה, הכי טובים בתחום! מקצוענים והכי מהירים שיש.',
-              },
-              {
-                '@type': 'Review',
-                author: { '@type': 'Person', name: 'הדר פדידה' },
-                reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
-                reviewBody: 'שירות מושלם! יחס אישי ומקצועי! ממליצה בחום.',
-              },
-            ],
           }),
         }}
       />

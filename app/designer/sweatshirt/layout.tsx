@@ -57,12 +57,6 @@ export default function SweatshirtLayout({ children }: { children: React.ReactNo
                 merchantReturnDays: 0,
               },
             },
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: '5.0',
-              reviewCount: '30',
-              bestRating: '5',
-            },
           }),
         }}
       />
