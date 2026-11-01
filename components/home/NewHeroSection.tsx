@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import GoogleRatingBadge from '@/components/common/GoogleRatingBadge'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { Button } from '@/components/ui/button'
-import { Sparkles, ShieldCheck, Truck, Star } from 'lucide-react'
+import { Sparkles, ShieldCheck, Truck } from 'lucide-react'
 import HeroCarousel from './HeroCarousel'
 import RevealText from '@/components/common/RevealText'
 import { useTilt } from '@/components/common/useTilt'
@@ -18,7 +19,7 @@ const D = {
   hero_title2: 'לבגדים מדהימים',
   hero_subtitle: 'דיוק • איכות • מיתוג',
   hero_desc1: 'חולצות, קפוצ׳ונים, כובעים, סינרים, תיקים ועוד —',
-  hero_desc2: 'הדפסה אישית על הכל, עם שירות שמדורג 5 כוכבים בגוגל.',
+  hero_desc2: 'הדפסה אישית על הכל, עם שירות שהלקוחות ממליצים עליו בגוגל.',
   hero_ctaText: 'התחילו לעצב',
 }
 
@@ -140,10 +141,6 @@ export default function NewHeroSection() {
                 <Truck className="w-4 h-4 text-[#f59e0b]" />
                 משלוח מהיר
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/70 backdrop-blur-sm rounded-full border border-[#fde047]/70 shadow-sm">
-                <Star className="w-4 h-4 text-[#f59e0b] fill-[#f59e0b]" />
-                דירוג 5
-              </span>
             </div>
 
             {/* Rating row — always visible, never JS-dependent */}
@@ -155,7 +152,7 @@ export default function NewHeroSection() {
                   </div>
                 ))}
               </div>
-              <span>5 מתוך 5 | 30+ ביקורות מאומתות בגוגל</span>
+              <GoogleRatingBadge />
             </div>
           </div>
 

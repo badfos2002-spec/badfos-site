@@ -3,6 +3,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import GoogleRatingBadge from '@/components/common/GoogleRatingBadge'
 import {
   Star,
   Truck,
@@ -100,7 +101,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
         {/* Trust row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-14">
           {[
-            { icon: Star, text: '4.8★ בגוגל' },
+            { icon: Star, text: <GoogleRatingBadge variant="short" /> },
             { icon: Truck, text: 'משלוח לכל הארץ' },
             { icon: Store, text: 'איסוף עצמי בראשון לציון' },
             { icon: Clock, text: 'אספקה משוערת עד 7 ימי עסקים' },

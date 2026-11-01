@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { sendLeadWebhook, getGclid } from '@/lib/tracking'
 import { User, Phone, ArrowLeft, Clock, Star, ShieldCheck, Sparkles } from 'lucide-react'
 import Reveal from '@/components/common/Reveal'
+import GoogleRatingBadge from '@/components/common/GoogleRatingBadge'
 import RevealText from '@/components/common/RevealText'
 
 export default function NewContactFormSection() {
@@ -258,7 +259,7 @@ export default function NewContactFormSection() {
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400/15 ring-1 ring-yellow-400/30">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                   </span>
-                  <span className="text-sm font-semibold">דירוג 5 כוכבים</span>
+                  <GoogleRatingBadge variant="short" className="text-sm font-semibold" />
                 </div>
                 <div className="inline-flex items-center gap-2 text-gray-200">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-400/15 ring-1 ring-yellow-400/30">

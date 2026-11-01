@@ -3,11 +3,11 @@ import { Metadata } from 'next'
 export const metadata: Metadata = {
   alternates: { canonical: '/reviews' },
   title: 'ביקורות לקוחות | בדפוס',
-  description: 'קראו ביקורות אמיתיות מלקוחות מרוצים של בדפוס. דירוג 5 כוכבים בגוגל. איכות הדפסה מעולה ושירות מהיר.',
+  description: 'קראו ביקורות אמיתיות של לקוחות בדפוס בגוגל — איכות ההדפסה, השירות והזמנים, מפי הלקוחות עצמם.',
   keywords: 'ביקורות בדפוס, חוות דעת לקוחות, דירוג בדפוס, המלצות הדפסת חולצות',
   openGraph: {
     title: 'ביקורות לקוחות | בדפוס',
-    description: 'דירוג 5 כוכבים בגוגל - קראו מה הלקוחות שלנו אומרים',
+    description: 'קראו ביקורות אמיתיות של לקוחות בדפוס בגוגל',
     url: 'https://badfos.co.il/reviews',
     siteName: 'בדפוס',
     locale: 'he_IL',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'ביקורות לקוחות | בדפוס',
-    description: 'דירוג 5 כוכבים בגוגל - קראו מה הלקוחות שלנו אומרים',
+    description: 'קראו ביקורות אמיתיות של לקוחות בדפוס בגוגל',
     images: ['https://badfos.co.il/logo.png'],
   },
 }
