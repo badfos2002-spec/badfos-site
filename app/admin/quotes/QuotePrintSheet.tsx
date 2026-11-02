@@ -156,6 +156,9 @@ export default function QuotePrintSheet({ quote }: { quote: QuotePrintData }) {
               <span className="font-bold">סה&quot;כ לתשלום</span>
               <span className="text-lg font-extrabold">{fmt(quote.total)}</span>
             </div>
+            {quote.quoteDate >= OSEK_MURSHE_SINCE && (
+              <div className="mt-1.5 text-xs text-gray-500">המחירים כוללים מע&quot;מ</div>
+            )}
           </div>
         </div>
 

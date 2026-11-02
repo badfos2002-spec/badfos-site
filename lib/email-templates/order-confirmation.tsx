@@ -2,7 +2,7 @@ import { Order } from '../types'
 import { escapeHtml } from '../utils'
 import { getColorLabel, getTypeLabel, getProductLabel, BUSINESS_LEGAL } from '../constants'
 
-const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.tradeName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
+const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.siteName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
 
 interface OrderConfirmationEmailProps {
   order: Order

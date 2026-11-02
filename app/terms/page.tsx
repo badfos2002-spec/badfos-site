@@ -21,8 +21,8 @@ export default function TermsPage() {
     {
       title: '1. פרטי העסק',
       items: [
-        `האתר ושירותי ההזמנה מופעלים על ידי "${BUSINESS_LEGAL.tradeName}" — שותפות (${BUSINESS_LEGAL.legalName}), ${BUSINESS_LEGAL.vatStatus} מס' ${BUSINESS_LEGAL.vatNumber} (להלן: "העסק").`,
-        // TODO(owner): VAT wording pending decision Q32
+        `האתר ושירותי ההזמנה מופעלים על ידי "${BUSINESS_LEGAL.siteName}" — שותפות (${BUSINESS_LEGAL.legalName}), ${BUSINESS_LEGAL.vatStatus} מס' ${BUSINESS_LEGAL.vatNumber} (להלן: "העסק").`,
+        'המחירים המוצגים באתר כוללים מע"מ כחוק.',
         `פרטי יצירת קשר:\nאימייל: badfos2002@gmail.com\nטלפון / וואטסאפ: 055-9885954\nכתובת: ${CONTACT_INFO.address}`,
         'תקנון זה מסדיר את תנאי השימוש באתר ובשירותי ההזמנה של העסק.',
         'אישור התקנון לפני ביצוע ההזמנה מהווה הצהרה של הלקוח כי קרא את תנאי התקנון, הבין אותם והסכים להם במלואם.',

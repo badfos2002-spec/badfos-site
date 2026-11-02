@@ -923,8 +923,7 @@ export default function AdminQuotesPage() {
                 <span className="font-bold text-gray-900">סה&quot;כ לתשלום</span>
                 <span className="text-2xl font-extrabold text-yellow-600">{fmt(totals.total)}</span>
               </div>
-              {/* TODO(owner): VAT wording pending decision Q32 */}
-              <p className="text-xs text-gray-400 pt-1">{BUSINESS_LEGAL.vatStatus} {BUSINESS_LEGAL.vatNumber}</p>
+              <p className="text-xs text-gray-400 pt-1">המחירים כוללים מע&quot;מ · {BUSINESS_LEGAL.vatStatus} {BUSINESS_LEGAL.vatNumber}</p>
             </div>
           </div>
         </div>
