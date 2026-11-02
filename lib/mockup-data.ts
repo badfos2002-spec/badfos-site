@@ -67,13 +67,13 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   },
   chest_logo: {
     view: 'front',
-    label: 'סמל שמאל',
-    style: { width: '12%', aspectRatio: '1', top: '30%', right: '30%', borderRadius: '6px' },
+    label: 'סמל ימין',
+    style: { width: '12%', aspectRatio: '1', top: '30%', left: '30%', borderRadius: '6px' },
   },
   chest_logo_right: {
     view: 'front',
-    label: 'סמל ימין',
-    style: { width: '12%', aspectRatio: '1', top: '30%', left: '30%', borderRadius: '6px' },
+    label: 'סמל שמאל',
+    style: { width: '12%', aspectRatio: '1', top: '30%', right: '30%', borderRadius: '6px' },
   },
   chest_logo_center: {
     view: 'front',
