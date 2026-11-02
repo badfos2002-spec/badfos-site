@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { BUSINESS_LEGAL } from '@/lib/constants'
 
 export const metadata: Metadata = {
   alternates: { canonical: '/contact' },
@@ -34,6 +35,8 @@ export default function ContactLayout({ children }: { children: React.ReactNode 
             mainEntity: {
               '@type': 'LocalBusiness',
               name: 'בדפוס',
+              vatID: BUSINESS_LEGAL.vatNumber,
+              taxID: BUSINESS_LEGAL.vatNumber,
               telephone: '+972559885954',
               email: 'badfos2002@gmail.com',
               url: 'https://badfos.co.il',

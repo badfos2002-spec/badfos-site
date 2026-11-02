@@ -1,7 +1,9 @@
 import type { CustomerInfo, DesignArea } from '../types'
 import { escapeHtml } from '../utils'
-import { getColorLabel, getTypeLabel, getProductLabel } from '../constants'
+import { getColorLabel, getTypeLabel, getProductLabel, BUSINESS_LEGAL } from '../constants'
 import { capMockups } from '../mockup-data'
+
+const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.tradeName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
 
 interface DesignMockupEmailProps {
   customer: CustomerInfo
@@ -262,6 +264,7 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
       </p>
       <p style="margin-top: 15px; font-size: 12px; color: #9CA3AF;">
         בדפוס - הדפסת חולצות בעיצוב אישי<br>
+        ${BUSINESS_LEGAL_LINE}<br>
         badfos.co.il
       </p>
     </div>

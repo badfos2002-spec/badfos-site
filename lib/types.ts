@@ -390,7 +390,7 @@ export interface Quote {
   discountType: QuoteDiscountType
   discountValue: number
   shippingPrice: number
-  businessNumber?: string // עוסק פטור מס׳ — מוצג ב-PDF אם מולא
+  businessNumber?: string // @deprecated — מוצג רק בהצעות מתאריך שלפני 01.11.2026 (עוסק פטור); מאז ה-PDF מציג BUSINESS_LEGAL. אין שדה קלט בטופס
   quoteDate: Timestamp // תאריך ההצעה — נקבע ידנית ע"י בעל העסק
   validUntil: Timestamp
   notes?: string

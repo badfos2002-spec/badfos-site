@@ -1,6 +1,8 @@
 import { Order } from '../types'
 import { escapeHtml } from '../utils'
-import { getColorLabel, getTypeLabel, getProductLabel } from '../constants'
+import { getColorLabel, getTypeLabel, getProductLabel, BUSINESS_LEGAL } from '../constants'
+
+const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.tradeName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
 
 interface OrderConfirmationEmailProps {
   order: Order
@@ -226,6 +228,7 @@ export function OrderConfirmationEmail({
       </p>
       <p style="margin-top: 15px; font-size: 12px; color: #9CA3AF;">
         בדפוס - הדפסת חולצות בעיצוב אישי<br>
+        ${BUSINESS_LEGAL_LINE}<br>
         badfos.co.il
       </p>
     </div>

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Phone, Mail, MapPin, Instagram, Facebook } from 'lucide-react'
-import { CONTACT_INFO } from '@/lib/constants'
+import { CONTACT_INFO, BUSINESS_LEGAL } from '@/lib/constants'
 import { SEO_PAGES } from '@/lib/seo-pages'
 
 export default function Footer() {
@@ -178,7 +178,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-8 pt-8 text-center space-y-3">
           <p className="text-sm text-gray-500">
-            © {currentYear} בדפוס. כל הזכויות שמורות.
+            © {currentYear} {BUSINESS_LEGAL.tradeName} · {BUSINESS_LEGAL.vatStatus} {BUSINESS_LEGAL.vatNumber}. כל הזכויות שמורות.
           </p>
           <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400">
             <Link href="/terms" className="hover:text-yellow-400 transition-colors">

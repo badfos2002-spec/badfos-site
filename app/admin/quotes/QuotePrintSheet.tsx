@@ -1,6 +1,7 @@
 'use client'
 
 import { LOGO_DATA_URL } from './logoData'
+import { BUSINESS_LEGAL } from '@/lib/constants'
 
 export interface QuotePrintData {
   quoteNumber: number | null
@@ -22,6 +23,18 @@ export interface QuotePrintData {
 
 function fmt(n: number): string {
   return `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 2 })}`
+}
+
+// Registered as עוסק מורשה from this date; earlier quotes keep their historical identity line
+const OSEK_MURSHE_SINCE = new Date(2026, 10, 1)
+
+function businessIdLine(quote: QuotePrintData): string {
+  if (quote.quoteDate < OSEK_MURSHE_SINCE) {
+    return quote.businessNumber?.trim()
+      ? `עוסק פטור מס׳ ${quote.businessNumber.trim()}`
+      : 'עוסק פטור'
+  }
+  return `${BUSINESS_LEGAL.tradeName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`
 }
 
 function fmtDate(d: Date): string {
@@ -62,9 +75,7 @@ export default function QuotePrintSheet({ quote }: { quote: QuotePrintData }) {
                 <br />
                 badfos2002@gmail.com · badfos.co.il
                 <br />
-                {quote.businessNumber?.trim()
-                  ? `עוסק פטור מס׳ ${quote.businessNumber.trim()}`
-                  : 'עוסק פטור'}
+                {businessIdLine(quote)}
               </div>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { Rubik, Secular_One } from 'next/font/google'
 import './globals.css'
 import TrackingScripts from '@/components/common/TrackingScripts'
 import PricingLoader from '@/components/common/PricingLoader'
-import { getBasePrice } from '@/lib/constants'
+import { getBasePrice, BUSINESS_LEGAL } from '@/lib/constants'
 
 const rubik = Rubik({
   subsets: ['hebrew', 'latin'],
@@ -194,6 +194,8 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'LocalBusiness',
               name: 'בדפוס',
+              vatID: BUSINESS_LEGAL.vatNumber,
+              taxID: BUSINESS_LEGAL.vatNumber,
               image: 'https://badfos.co.il/og/home.jpg',
               url: 'https://badfos.co.il',
               telephone: '+972559885954',

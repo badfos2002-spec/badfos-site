@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { getAllQuotes, createQuote, updateQuote, deleteQuote } from '@/lib/db'
 import { Timestamp } from 'firebase/firestore'
 import type { Quote, QuoteStatus, QuoteDiscountType } from '@/lib/types'
+import { BUSINESS_LEGAL } from '@/lib/constants'
 import QuotePrintSheet, { type QuotePrintData } from './QuotePrintSheet'
 
 const statusLabels: Record<QuoteStatus, { label: string; color: string }> = {
@@ -781,10 +782,6 @@ export default function AdminQuotesPage() {
                 <label className="text-sm text-gray-600 mb-1 block">בתוקף עד</label>
                 <Input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} />
               </div>
-              <div className="md:col-span-2">
-                <label className="text-sm text-gray-600 mb-1 block">עוסק פטור מס׳ (יוצג ב-PDF אם מולא)</label>
-                <Input value={businessNumber} onChange={e => setBusinessNumber(e.target.value)} dir="ltr" className="text-right" />
-              </div>
             </div>
           </div>
 
@@ -926,7 +923,8 @@ export default function AdminQuotesPage() {
                 <span className="font-bold text-gray-900">סה&quot;כ לתשלום</span>
                 <span className="text-2xl font-extrabold text-yellow-600">{fmt(totals.total)}</span>
               </div>
-              <p className="text-xs text-gray-400 pt-1">עוסק פטור — המחירים ללא מע&quot;מ</p>
+              {/* TODO(owner): VAT wording pending decision Q32 */}
+              <p className="text-xs text-gray-400 pt-1">{BUSINESS_LEGAL.vatStatus} {BUSINESS_LEGAL.vatNumber}</p>
             </div>
           </div>
         </div>

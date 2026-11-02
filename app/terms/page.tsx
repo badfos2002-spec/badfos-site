@@ -1,4 +1,5 @@
 import { FileText, Shield, AlertCircle } from 'lucide-react'
+import { BUSINESS_LEGAL, CONTACT_INFO } from '@/lib/constants'
 
 export const metadata = {
   alternates: { canonical: '/terms' },
@@ -20,9 +21,9 @@ export default function TermsPage() {
     {
       title: '1. פרטי העסק',
       items: [
-        'האתר ושירותי ההזמנה מופעלים על ידי עסק ההדפסות בדפוס הדפסת חולצות (להלן: "העסק").',
-        'העסק פועל כעוסק פטור בהתאם לחוק מס ערך מוסף. לפיכך המחירים המוצגים באתר אינם כוללים מע"מ ואין חיוב במע"מ על העסקאות.',
-        'פרטי יצירת קשר:\nאימייל: badfos2002@gmail.com\nטלפון / וואטסאפ: 055-9885954',
+        `האתר ושירותי ההזמנה מופעלים על ידי "${BUSINESS_LEGAL.tradeName}" — שותפות (${BUSINESS_LEGAL.legalName}), ${BUSINESS_LEGAL.vatStatus} מס' ${BUSINESS_LEGAL.vatNumber} (להלן: "העסק").`,
+        // TODO(owner): VAT wording pending decision Q32
+        `פרטי יצירת קשר:\nאימייל: badfos2002@gmail.com\nטלפון / וואטסאפ: 055-9885954\nכתובת: ${CONTACT_INFO.address}`,
         'תקנון זה מסדיר את תנאי השימוש באתר ובשירותי ההזמנה של העסק.',
         'אישור התקנון לפני ביצוע ההזמנה מהווה הצהרה של הלקוח כי קרא את תנאי התקנון, הבין אותם והסכים להם במלואם.',
         'סימון תיבת "קראתי ואני מסכים לתקנון" באתר, או אישור הזמנה באמצעות וואטסאפ, מהווים הסכמה מלאה ומחייבת לכל תנאי התקנון.',
@@ -232,7 +233,7 @@ export default function TermsPage() {
                   </h3>
                   <p className="text-yellow-800 text-sm leading-relaxed">
                     התקנון מנוסח בלשון זכר מטעמי נוחות בלבד ומתייחס לכלל המגדרים.
-                    תקנון זה עודכן לאחרונה ביוני 2026.
+                    תקנון זה עודכן לאחרונה בנובמבר 2026.
                   </p>
                 </div>
               </div>

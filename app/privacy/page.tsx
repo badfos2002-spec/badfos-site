@@ -1,4 +1,5 @@
 import { ShieldCheck, Lock, Eye, Database, Mail, Cookie, Server, UserCheck } from 'lucide-react'
+import { BUSINESS_LEGAL } from '@/lib/constants'
 
 export const metadata = {
   title: 'מדיניות פרטיות - בדפוס',
@@ -128,7 +129,7 @@ export default function PrivacyPage() {
             בדפוס הדפסת חולצות
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            בהתאם לחוק הגנת הפרטיות, התשמ&quot;א-1981 | עדכון אחרון: מרץ 2026
+            בהתאם לחוק הגנת הפרטיות, התשמ&quot;א-1981 | עדכון אחרון: נובמבר 2026
           </p>
         </div>
 
@@ -182,6 +183,7 @@ export default function PrivacyPage() {
           <div className="mt-12 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-3xl p-10 text-white shadow-2xl" dir="rtl">
             <h2 className="text-2xl font-bold mb-4">9. פרטי התקשרות</h2>
             <div className="space-y-2 text-emerald-50">
+              <p>בעל השליטה במאגר: {BUSINESS_LEGAL.tradeName} — שותפות ({BUSINESS_LEGAL.legalName}), {BUSINESS_LEGAL.vatStatus} {BUSINESS_LEGAL.vatNumber}</p>
               <p>אימייל: badfos2002@gmail.com</p>
               <p>טלפון / וואטסאפ: 055-9885954</p>
               <p className="mt-4 text-sm opacity-90">
@@ -192,7 +194,7 @@ export default function PrivacyPage() {
 
           {/* Last Updated */}
           <p className="text-center text-gray-500 text-sm mt-8">
-            מדיניות זו עודכנה לאחרונה: מרץ 2026
+            מדיניות זו עודכנה לאחרונה: נובמבר 2026
           </p>
         </div>
       </div>
