@@ -159,7 +159,7 @@ export function printUploadErrorMessage(err: unknown): string {
     case 'storage/unknown':
       return `ההעלאה נקטעה — נראה שהחיבור לאינטרנט אינו יציב. בדקו את החיבור ונסו שוב, ואם זה חוזר שלחו לנו את העיצוב ${whatsapp}.`
     case 'storage/quota-exceeded':
-      return `לא הצלחנו לשמור את הקובץ כרגע — זו תקלה אצלנו ולא אצלכם. שלחו לנו את העיצוב ${whatsapp} ונשלים את ההזמנה.`
+      return `ההעלאה לא זמינה כרגע, נסו שוב מאוחר יותר או כתבו לנו ${whatsapp}.`
   }
 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {

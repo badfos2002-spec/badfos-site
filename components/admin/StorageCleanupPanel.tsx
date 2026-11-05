@@ -24,12 +24,25 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { auth } from '@/lib/firebase'
-import { formatBytes, type CleanupMode } from '@/lib/storage-cleanup'
+import { formatBytes, FILE_LEVEL_MODES, type CleanupMode } from '@/lib/storage-cleanup'
+
+/**
+ * "1.18 GB" inside a Hebrew sentence gets its pieces reordered by the BiDi
+ * algorithm ("שוחררו GB · 454 1.18"). Wrapping the run in LEFT-TO-RIGHT ISOLATE
+ * … POP DIRECTIONAL ISOLATE keeps number and unit together, in plain strings
+ * and in JSX alike.
+ */
+const ltr = (text: string | number) => `\u2066${text}\u2069`
+const fmtBytes = (bytes: number) => ltr(formatBytes(bytes))
 
 const CONFIRM_PHRASE = 'מחק לצמיתות'
 
 interface PrefixGroup {
   prefix: string
+  /** old-orders: `#1234` (prefix then holds `orders/<id>`) */
+  label?: string
+  /** old-orders: the order's status, shown in Hebrew */
+  status?: string
   files: number
   bytes: number
   oldestAgeDays: number | null
@@ -60,6 +73,15 @@ interface PreviewPayload {
   totalBytes: number
   groups: PrefixGroup[]
   candidates: { path: string; sizeBytes: number; ageDays: number | null }[]
+  fileLevel?: {
+    byGroup: Record<string, { owners: number; files: number; bytes: number }>
+    remaining: { owners: number; files: number; bytes: number }
+    oversized: { label: string; status?: string; files: number; bytes: number }[]
+    eligibleOrders: number
+    ordersInBatch: number
+    stamps: number
+    sharesToStamp: number
+  }
 }
 
 interface AuditRow {
@@ -71,6 +93,7 @@ interface AuditRow {
   filesDeleted?: number
   bytesFreed?: number
   docsDeleted?: number
+  docsStamped?: number
   collection?: string
   errors: number
 }
@@ -78,7 +101,27 @@ interface AuditRow {
 const MODE_LABEL: Record<CleanupMode, string> = {
   orphans: 'קבצים יתומים',
   'test-junk': 'שאריות בדיקות',
+  'old-orders': 'עיצובים של הזמנות סגורות מעל 30 יום',
+  'sketch-orphans': 'קבצי סקיצות שנמחקו',
 }
+
+const GROUP_LABEL: Record<string, string> = {
+  completed: 'הושלמו',
+  shipped: 'נשלחו',
+  cancelled: 'בוטלו',
+  cart_abandoned: 'עגלות נטושות (מעל 90 יום)',
+  sketch: 'תיקיות סקיצה',
+}
+
+/** סטטוס של הזמנה בודדת ברשימה */
+const STATUS_LABEL: Record<string, string> = {
+  completed: 'הושלמה',
+  shipped: 'נשלחה',
+  cancelled: 'בוטלה',
+  cart_abandoned: 'עגלה נטושה',
+}
+
+const isFileLevel = (m: CleanupMode) => FILE_LEVEL_MODES.includes(m)
 
 async function callApi(body: Record<string, unknown>) {
   const token = await auth?.currentUser?.getIdToken()
@@ -110,13 +153,18 @@ export default function StorageCleanupPanel() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
-  const [outcome, setOutcome] = useState<string | null>(null)
+  // `clean: false` = something did not go through (a failed mark, files held
+  // back, a failed or refused delete) — shown amber, never as a green success.
+  const [outcome, setOutcome] = useState<{ text: string; clean: boolean } | null>(null)
   const [log, setLog] = useState<AuditRow[]>([])
+  // שער הריצה הראשונה: null = עוד לא ידוע; false = הניקוי הלילי עדיין לא מוחק
+  const [cronArmed, setCronArmed] = useState<boolean | null>(null)
 
   const loadLog = useCallback(async () => {
     try {
       const json = await callApi({ action: 'log' })
       setLog(json.entries || [])
+      setCronArmed(typeof json.cronArmed === 'boolean' ? json.cronArmed : null)
     } catch {
       /* היומן הוא נתון משני — כישלון בקריאתו לא מפיל את המסך */
     }
@@ -136,8 +184,11 @@ export default function StorageCleanupPanel() {
         // הבדיקות. תבנית ששמה זהה לשמות שהאתר החי מייצר ללקוחות אמיתיים
         // נשארת לא מסומנת עד שאדם מסמן אותה בעצמו.
         const auto = new Set<string>()
+        // במצבי הקבצים (הזמנות סגורות / סקיצות) הסבב הוא הכל-או-כלום: השרת
+        // מסמן את ההזמנות לפי הסבב המלא, ובחירה חלקית הייתה מסמנת הזמנה
+        // שהקבצים שלה נשארו.
         for (const g of json.groups) {
-          if (nextMode === 'orphans' || !g.ambiguous) auto.add(g.prefix)
+          if (nextMode === 'orphans' || isFileLevel(nextMode) || !g.ambiguous) auto.add(g.prefix)
         }
         setSelected(auto)
       } catch (e) {
@@ -169,7 +220,9 @@ export default function StorageCleanupPanel() {
     })
 
   const selectedPaths = data
-    ? data.candidates.filter((c) => {
+    ? isFileLevel(data.mode)
+      ? data.candidates
+      : data.candidates.filter((c) => {
         const prefix = c.path.slice(0, c.path.lastIndexOf('/') + 1)
         return selected.has(prefix)
       })
@@ -188,12 +241,21 @@ export default function StorageCleanupPanel() {
         paths: selectedPaths.map((c) => c.path),
         confirm: CONFIRM_PHRASE,
       })
-      setOutcome(
-        `נמחקו ${json.deleted} קבצים · שוחררו ${formatBytes(json.bytesFreed)}` +
-          (json.rejected?.length ? ` · ${json.rejected.length} נדחו ולא נמחקו` : '') +
-          (json.errors ? ` · ${json.errors} שגיאות` : '') +
-          (json.logged === false ? ' · רישום ביומן נכשל' : '')
-      )
+      const clean =
+        !json.stampErrors && !json.heldBack && !json.errors && !json.rejected?.length && json.logged !== false
+      setOutcome({
+        clean,
+        text:
+          `נמחקו ${ltr(json.deleted)} קבצים · שוחררו ${fmtBytes(json.bytesFreed)}` +
+          (json.stamped ? ` · ${ltr(json.stamped)} הזמנות/קישורים סומנו "קבצים נמחקו"` : '') +
+          (json.stampErrors ? ` · ${ltr(json.stampErrors)} סימונים נכשלו` : '') +
+          (json.heldBack ? ` · ${ltr(json.heldBack)} קבצים לא נמחקו כי הסימון של ההזמנה שלהם נכשל` : '') +
+          (json.deferred ? ` · ${ltr(json.deferred)} קבצים נדחו לסבב הבא — לסרוק שוב` : '') +
+          (json.oversized ? ` · ${ltr(json.oversized)} הזמנות חריגות בגודלן דולגו` : '') +
+          (json.rejected?.length ? ` · ${ltr(json.rejected.length)} נדחו ולא נמחקו` : '') +
+          (json.errors ? ` · ${ltr(json.errors)} שגיאות` : '') +
+          (json.logged === false ? ' · רישום ביומן נכשל' : ''),
+      })
       setConfirmOpen(false)
       setConfirmText('')
       setData(null)
@@ -239,7 +301,22 @@ export default function StorageCleanupPanel() {
       </div>
 
       <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-        {mode === 'orphans' ? (
+        {mode === 'old-orders' ? (
+          <>
+            קבצי העיצוב של הזמנות ש<b>הושלמו, נשלחו או בוטלו</b> לפני יותר מ־30 יום, ושל{' '}
+            <b>עגלות נטושות רק אחרי 90 יום</b> (לקוח יכול לחזור לעגלה ולשלם עליה). הזמנות חדשות,
+            בתשלום, בייצור או ממתינות לתשלום לא נוגעים בהן, וגם לא בקובץ שהועלה לאחרונה. קובץ שהזמנה
+            אחרת, הצעת מחיר, מכירה ידנית או סקיצה עדיין מפנים אליו — נשאר. קישורי שיתוף של לקוחות
+            מעל 30 יום לא מגינים על הקבצים, ויציגו &quot;העיצוב כבר לא זמין&quot;. כל סבב עד 2,000
+            קבצים — להריץ שוב עד שלא נשאר כלום.
+          </>
+        ) : mode === 'sketch-orphans' ? (
+          <>
+            קבצים בתיקיות הסקיצות (<code className="text-[11px] bg-gray-100 px-1 rounded">designs/sketch-*</code>)
+            שאף מסמך כבר לא מפנה אליהם — שאריות של סקיצות שנמחקו או עודכנו — ושעברו יותר מיומיים.
+            סקיצה קיימת לא נפגעת.
+          </>
+        ) : mode === 'orphans' ? (
           <>
             קבצים תחת <code className="text-[11px] bg-gray-100 px-1 rounded">designs/</code> שאף הזמנה,
             סקיצה או עגלה משותפת לא מפנה אליהם, ושעברו יותר מ־90 יום. עגלה פתוחה של לקוח לא נוגעים
@@ -254,15 +331,37 @@ export default function StorageCleanupPanel() {
         )}
       </p>
 
+      {mode === 'old-orders' && cronArmed === false && (
+        <p className="text-xs sm:text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          הניקוי הלילי האוטומטי יופעל אחרי הריצה הידנית הראשונה
+        </p>
+      )}
+
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 text-sm">
-          {error}
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 text-sm break-words">
+          {/* הודעת עצירה כוללת קישור ישיר למסמך ב-Firebase Console — שיהיה לחיץ */}
+          {error.split(/(https:\/\/console\.firebase\.google\.com\/[^\s,]+)/).map((part, i) =>
+            i % 2 === 1 ? (
+              <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline font-medium" dir="ltr">
+                פתח את המסמך
+              </a>
+            ) : (
+              part
+            )
+          )}
         </div>
       )}
 
       {outcome && (
-        <div className="bg-green-50 border border-green-200 text-green-800 rounded-2xl p-4 text-sm font-medium">
-          {outcome}
+        <div
+          className={`rounded-2xl p-4 text-sm font-medium border ${
+            outcome.clean
+              ? 'bg-green-50 border-green-200 text-green-800'
+              : 'bg-amber-50 border-amber-300 text-amber-900'
+          }`}
+        >
+          {!outcome.clean && <AlertTriangle className="w-4 h-4 inline ml-1.5 -mt-0.5" />}
+          {outcome.text}
         </div>
       )}
 
@@ -279,7 +378,7 @@ export default function StorageCleanupPanel() {
             <Stat
               icon={<HardDrive className="w-4 h-4" />}
               label="סה״כ באחסון העיצובים"
-              value={formatBytes(data.scannedBytes)}
+              value={fmtBytes(data.scannedBytes)}
               sub={`${data.scanned.toLocaleString('he-IL')} קבצים`}
             />
             <Stat
@@ -292,16 +391,66 @@ export default function StorageCleanupPanel() {
               icon={<Trash2 className="w-4 h-4 text-red-600" />}
               label="מועמדים למחיקה"
               value={data.totalFiles.toLocaleString('he-IL')}
-              sub={formatBytes(data.totalBytes)}
+              sub={fmtBytes(data.totalBytes)}
             />
             <Stat
               icon={<Trash2 className="w-4 h-4" />}
               label="נבחרו כעת"
               value={selectedPaths.length.toLocaleString('he-IL')}
-              sub={formatBytes(selectedBytes)}
+              sub={fmtBytes(selectedBytes)}
               highlight
             />
           </div>
+
+          {/* ── פילוח לפי קבוצה (מצבי קבצים) ───────────────────────── */}
+          {data.fileLevel && (
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+              <h4 className="text-sm font-semibold text-gray-800">בסבב הזה</h4>
+              {Object.keys(data.fileLevel.byGroup).length === 0 ? (
+                <p className="text-xs text-gray-500">אין קבצים למחיקה.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  {Object.entries(data.fileLevel.byGroup).map(([k, g]) => (
+                    <div key={k} className="bg-gray-50 rounded-lg px-3 py-2">
+                      <div className="text-gray-500">{GROUP_LABEL[k] ?? k}</div>
+                      <div className="font-semibold text-gray-900 mt-0.5">
+                        {g.owners.toLocaleString('he-IL')} {k === 'sketch' ? 'תיקיות' : 'הזמנות'} ·{' '}
+                        {g.files.toLocaleString('he-IL')} קבצים
+                      </div>
+                      <div className="text-gray-500">{fmtBytes(g.bytes)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                {data.mode === 'old-orders' && (
+                  <>
+                    {data.fileLevel.eligibleOrders.toLocaleString('he-IL')} הזמנות סגורות שעבר זמנן (30 יום;
+                    עגלות נטושות 90) ·{' '}
+                    {data.fileLevel.stamps.toLocaleString('he-IL')} מסמכים יסומנו &quot;קבצים נמחקו&quot; (מתוכם{' '}
+                    {data.fileLevel.sharesToStamp.toLocaleString('he-IL')} קישורי שיתוף) ·{' '}
+                  </>
+                )}
+                {data.fileLevel.remaining.files > 0 ? (
+                  <b className="text-amber-700">
+                    נשארו לסבב הבא: {data.fileLevel.remaining.files.toLocaleString('he-IL')} קבצים (
+                    {fmtBytes(data.fileLevel.remaining.bytes)}) — אחרי המחיקה לסרוק שוב
+                  </b>
+                ) : (
+                  'אחרי הסבב הזה לא נשאר עוד מה לנקות במצב הזה'
+                )}
+              </p>
+              {data.fileLevel.oversized.length > 0 && (
+                <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 leading-relaxed">
+                  דולגו {data.fileLevel.oversized.length.toLocaleString('he-IL')} הזמנות שיש להן יותר קבצים
+                  ממה שסבב אחד מוחק — הכלי לא נוגע בהן, צריך לבדוק אותן ידנית:{' '}
+                  {data.fileLevel.oversized
+                    .map((o) => `${o.label} (${o.files.toLocaleString('he-IL')} קבצים, ${fmtBytes(o.bytes)})`)
+                    .join(' · ')}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* ── פילוח גילאים ───────────────────────────────────────── */}
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
@@ -332,7 +481,8 @@ export default function StorageCleanupPanel() {
           ) : (
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-100 text-sm font-semibold text-gray-800">
-                {data.groups.length.toLocaleString('he-IL')} תיקיות מועמדות
+                {data.groups.length.toLocaleString('he-IL')}{' '}
+                {data.mode === 'old-orders' ? 'הזמנות בסבב' : 'תיקיות מועמדות'}
               </div>
               <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-100">
                 {data.groups.map((g) => (
@@ -342,15 +492,19 @@ export default function StorageCleanupPanel() {
                   >
                     <input
                       type="checkbox"
-                      checked={selected.has(g.prefix)}
+                      checked={isFileLevel(data.mode) || selected.has(g.prefix)}
+                      disabled={isFileLevel(data.mode)}
                       onChange={() => toggleGroup(g.prefix)}
                       className="mt-1 w-4 h-4 accent-red-600 shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <code className="text-xs text-gray-900 break-all" dir="ltr">
-                          {g.prefix}
+                          {g.label ?? g.prefix}
                         </code>
+                        {g.status && (
+                          <span className="text-[11px] text-gray-600">{STATUS_LABEL[g.status] ?? g.status}</span>
+                        )}
                         {g.ambiguous && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
                             <AlertTriangle className="w-3 h-3" />
@@ -359,8 +513,9 @@ export default function StorageCleanupPanel() {
                         )}
                       </div>
                       <div className="text-[11px] text-gray-500 mt-1">
-                        {g.files} קבצים · {formatBytes(g.bytes)}
-                        {g.oldestAgeDays !== null && ` · עד ${g.oldestAgeDays} ימים`}
+                        {g.files} קבצים · {fmtBytes(g.bytes)}
+                        {g.oldestAgeDays !== null &&
+                          (g.status ? ` · נסגרה לפני ${g.oldestAgeDays} ימים` : ` · עד ${g.oldestAgeDays} ימים`)}
                         {g.matched && ` · תבנית ${g.matched}`}
                       </div>
                       <div className="text-[11px] text-gray-400 mt-0.5 break-all" dir="ltr">
@@ -379,7 +534,7 @@ export default function StorageCleanupPanel() {
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               <Trash2 className="w-4 h-4 ml-2" />
-              מחק {selectedPaths.length.toLocaleString('he-IL')} קבצים ({formatBytes(selectedBytes)})
+              מחק {selectedPaths.length.toLocaleString('he-IL')} קבצים ({fmtBytes(selectedBytes)})
             </Button>
           )}
         </>
@@ -395,7 +550,7 @@ export default function StorageCleanupPanel() {
             </div>
             <p className="text-sm text-gray-700 leading-relaxed">
               עומדים להימחק <strong>{selectedPaths.length.toLocaleString('he-IL')}</strong> קבצים
-              בנפח <strong>{formatBytes(selectedBytes)}</strong>. אין שחזור.
+              בנפח <strong>{fmtBytes(selectedBytes)}</strong>. אין שחזור.
             </p>
             {data.groups.some((g) => g.ambiguous && selected.has(g.prefix)) && (
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 leading-relaxed">
@@ -465,7 +620,8 @@ export default function StorageCleanupPanel() {
                 <span className="font-medium">
                   {row.action === 'delete-docs'
                     ? `${row.docsDeleted ?? 0} מסמכים · ${row.collection ?? ''}`
-                    : `${row.filesDeleted ?? 0} קבצים · ${formatBytes(row.bytesFreed ?? 0)}`}
+                    : `${row.filesDeleted ?? 0} קבצים · ${fmtBytes(row.bytesFreed ?? 0)}` +
+                      (row.docsStamped ? ` · ${row.docsStamped} סומנו` : '')}
                 </span>
                 {row.mode && <span className="text-gray-500">{MODE_LABEL[row.mode as CleanupMode]}</span>}
                 <span className="text-gray-400" dir="ltr">

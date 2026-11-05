@@ -174,7 +174,7 @@ const INITIAL_SHOW = 6
 export default function ShareCartPage() {
   const params = useParams()
   const id = params?.id as string
-  const [cart, setCart] = useState<{ id: string; items: SharedDesignData[] } | null>(null)
+  const [cart, setCart] = useState<{ id: string; items: SharedDesignData[]; designsDeleted?: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [lightbox, setLightbox] = useState<{ view: 'front' | 'back'; color: string; designs: SharedDesignData['designs'] } | null>(null)
@@ -234,6 +234,23 @@ export default function ShareCartPage() {
         <Image src="/logo.png" alt="בדפוס" width={80} height={80} className="mb-2" />
         <p className="text-2xl font-bold text-[#1e293b]">העיצובים לא נמצאו</p>
         <p className="text-[#94a3b8]">הקישור אינו תקין או שהעיצובים הוסרו</p>
+        <Link href="/designer">
+          <Button className="mt-2 bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold rounded-full px-8 shadow-lg">
+            התחל לעצב
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  // Artwork removed by the closed-order storage cleanup (30+ days): say so
+  // instead of rendering mockups with broken images.
+  if (cart.designsDeleted === true) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#fffdf5] text-center px-4" dir="rtl">
+        <Image src="/logo.png" alt="בדפוס" width={80} height={80} className="mb-2" />
+        <p className="text-2xl font-bold text-[#1e293b]">העיצובים כבר לא זמינים לצפייה</p>
+        <p className="text-[#94a3b8] max-w-md">קישורי שיתוף נשמרים לתקופה מוגבלת. נשמח לעזור לכם לעצב מחדש.</p>
         <Link href="/designer">
           <Button className="mt-2 bg-gradient-to-r from-[#ffc32e] to-[#ffd95c] hover:from-[#e6ac28] hover:to-[#ffc32e] text-white font-bold rounded-full px-8 shadow-lg">
             התחל לעצב

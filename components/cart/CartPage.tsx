@@ -637,10 +637,10 @@ export default function CartPage() {
             })
             if (sharedItems.length === 1) {
               const { createSharedDesign } = await import('@/lib/db')
-              const shareId = await createSharedDesign(sharedItems[0] as any)
+              const shareId = await createSharedDesign({ ...(sharedItems[0] as any), source: 'checkout' })
               sessionStorage.setItem('badfos_share_url', `${window.location.origin}/share/${shareId}`)
             } else {
-              const shareId = await createSharedCart({ items: sharedItems as any })
+              const shareId = await createSharedCart({ items: sharedItems as any, source: 'checkout' })
               sessionStorage.setItem('badfos_share_url', `${window.location.origin}/share/cart/${shareId}`)
             }
           } catch (e) {
@@ -794,7 +794,7 @@ export default function CartPage() {
         })
       )
 
-      const shareId = await createSharedCart({ items: sharedItems as any })
+      const shareId = await createSharedCart({ items: sharedItems as any, source: 'checkout' })
       const shareUrl = `${window.location.origin}/share/cart/${shareId}`
       const shareText = `ראו ${sharedItems.length} עיצובים שיצרתי ב-בדפוס!\n${shareUrl}`
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
@@ -820,7 +820,8 @@ export default function CartPage() {
       }
     } catch (err: any) {
       console.error('Share all failed:', err)
-      alert(`שגיאה בשיתוף: ${err?.message || err}`)
+      // The share may upload designs — a raw `storage/...` code must not reach the customer.
+      alert(isDesignUploadError(err) ? printUploadErrorMessage(err) : `שגיאה בשיתוף: ${err?.message || err}`)
     } finally {
       setSharingAll(false)
     }

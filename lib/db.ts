@@ -21,6 +21,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore'
 import { db, isFirebaseConfigured } from './firebase'
+import { isAdminSketch } from './sketch-retention'
 import type {
   Order,
   Lead,
@@ -810,6 +811,12 @@ export interface SharedDesignData {
    *  (no preview = keep), so /admin/sketches flags it for an update or delete.
    *  Cleared by updateSharedDesign once an update brings a preview. */
   previewMissing?: boolean
+  /** 'checkout' = a customer share made by the cart (CartPage auto-share at
+   *  checkout, CartItem share button). Such a doc points at the ORDER's own
+   *  Storage files, so it is never listed in /admin/sketches (whose trash
+   *  button deletes the files a doc names). Absent on admin sketches and on
+   *  docs older than the field — see isAdminSketch (lib/sketch-retention.ts). */
+  source?: 'checkout'
   // `transform` is optional and written only when non-default — documents
   // created before this field exist without it and render exactly as before.
   designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[]
@@ -905,9 +912,13 @@ export async function getRecentSharedDesigns(
   const snap = await getDocs(query(collection(db!, 'shared_designs'), ...constraints))
   const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }) as SharedDesignHistoryItem)
   const hasMore = docs.length > pageSize
-  const items = hasMore ? docs.slice(0, pageSize) : docs
-  const nextCursor = hasMore ? (items[items.length - 1].createdAt ?? null) : null
-  return { items, nextCursor }
+  const page = hasMore ? docs.slice(0, pageSize) : docs
+  // Cursor from the RAW page, filter after — otherwise a page of only
+  // checkout shares would end pagination.
+  const nextCursor = hasMore ? (page[page.length - 1].createdAt ?? null) : null
+  // Customer shares made at checkout name a paid order's print files; listing
+  // them here put those files one trash click away.
+  return { items: page.filter(isAdminSketch), nextCursor }
 }
 
 // ============================================================================
@@ -916,6 +927,10 @@ export async function getRecentSharedDesigns(
 
 export interface SharedCartData {
   items: SharedDesignData[]
+  /** See SharedDesignData.source. */
+  source?: 'checkout'
+  /** Set by the closed-order storage cleanup once artwork it shows was deleted. */
+  designsDeleted?: boolean
 }
 
 export async function createSharedCart(data: SharedCartData): Promise<string> {

@@ -69,10 +69,12 @@ export async function GET(request: NextRequest) {
     }
     const order = snap.data()
 
-    // Design files of 30+ day old orders are swept from Storage by the nightly
-    // cleanup cron, which stamps designsDeleted on the order doc. When that
-    // flag is set, a missing or unfetchable file has one real explanation —
-    // answer 410 file_swept instead of a misleading generic failure.
+    // Design files of closed, old orders are removed from Storage by the
+    // storage cleanup, which stamps designsDeleted on the order doc. The stamp
+    // never blocks a download: it can sit on an order that still has files
+    // (one shared with another order, one uploaded too recently). Every file
+    // that EXISTS is served; only when the object is really gone (404) does a
+    // stamped order answer 410 file_swept instead of a generic failure.
     const designsSwept = order?.designsDeleted === true
     const sweptResponse = () => {
       const deletedAt = order?.designsDeletedAt?.toDate?.()?.toISOString?.()
@@ -135,7 +137,9 @@ export async function GET(request: NextRequest) {
     if (url.startsWith('https://firebasestorage.googleapis.com/')) {
       const r = await fetch(url)
       if (!r.ok || !r.body) {
-        if (designsSwept) return sweptResponse()
+        // 410 only for a file that is actually gone — any other failure (a
+        // hiccup, a permissions problem) is not "your files were deleted".
+        if (designsSwept && r.status === 404) return sweptResponse()
         return NextResponse.json({ error: 'fetch_failed' }, { status: 502 })
       }
       // Upscaled files are 4x of sources that can reach 30MB — hundreds of MB.

@@ -153,7 +153,12 @@ export interface Order {
   /** Set by the nightly cleanup cron after the order's design files were deleted from Storage (30-day policy) */
   designsDeleted?: boolean
   designsDeletedAt?: Timestamp
-  /** 'storage_limit' = deleted by the emergency storage sweep (Layer 2). Absent = the regular 30-day policy. */
+  /** 'closed_order' = the closed-order cleanup (cron Layer 1/2 and the admin
+   *  'old-orders' mode) removed at least one of the order's files — originals
+   *  and upscales alike, except any file another live document still uses or
+   *  that was uploaded too recently. 'storage_limit' =
+   *  LEGACY, written by the old emergency sweep that removed only the upscale
+   *  folder (recoverable via retry-upscale). Absent = the old 30-day cron. */
   designsDeletedReason?: string
   createdAt: Timestamp
   updatedAt: Timestamp

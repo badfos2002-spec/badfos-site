@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { createUpscalePrediction, SKIP_UPSCALE_PIXELS, PIXEL_LIMIT_ERROR } from '@/lib/upscale'
 import { readImagePixels } from '@/lib/image-dims'
 import { recordUsage } from '@/lib/usage-tracking'
+import { storableErrorText } from '@/lib/storage-cleanup'
 import { randomUUID } from 'crypto'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://badfos.co.il'
@@ -151,6 +152,14 @@ export interface UpscaleRunResult {
   skipped: number
   /** Existing pixel-limit failures/gave_ups converted in-place to done+original */
   healed: number
+  /**
+   * The closed-order storage cleanup removed this order's design files
+   * (designsDeletedReason 'closed_order') — nothing was done: there is no
+   * source left to upscale from.
+   */
+  designsCleaned?: boolean
+  /** Designs whose source file no longer exists in Storage (gave up, not sent). */
+  sourceMissing?: number
 }
 
 /**
@@ -182,6 +191,7 @@ export async function runUpscaleForOrder(
   let gaveUp = 0
   let healed = 0
   let hadSweptFlag = false
+  let designsCleaned = false
 
   // True when a 'done' entry's print file lived under designs/<orderId>/ —
   // the exact prefix the storage sweeps delete — or when its url is unknown.
@@ -200,6 +210,7 @@ export async function runUpscaleForOrder(
     gaveUp = 0
     healed = 0
     hadSweptFlag = false
+    designsCleaned = false
 
     const snap = await tx.get(orderRef)
     if (!snap.exists) {
@@ -210,6 +221,14 @@ export async function runUpscaleForOrder(
 
     if (!UPSCALABLE_STATUSES.includes(order.status)) {
       wrongStatus = order.status
+      return
+    }
+
+    // The closed-order storage cleanup deletes the ORIGINALS too. There is
+    // nothing to regenerate from, and a prediction would only hand Replicate
+    // dead URLs and burn attempts — refuse, whoever asks.
+    if (order.designsDeleted === true && order.designsDeletedReason === 'closed_order') {
+      designsCleaned = true
       return
     }
 
@@ -324,11 +343,13 @@ export async function runUpscaleForOrder(
 
   if (notFound) return { notFound: true, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0 }
   if (wrongStatus) return { wrongStatus, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0 }
+  if (designsCleaned) return { designsCleaned: true, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0 }
 
   // Create Replicate predictions (completion webhook — we don't wait).
   // Network I/O only — never inside the claim transaction above.
   let created = 0
   let skipped = 0
+  let sourceMissing = 0
   for (const { key, itemIdx, area, imageUrl, prevSourceUrl } of claimed) {
     let sourceUrl = imageUrl
 
@@ -361,13 +382,14 @@ export async function runUpscaleForOrder(
       await orderRef.update({ [`upscales.${key}.sourceUrl`]: uploadedUrl }).catch(() => {})
     }
 
-    // Sweep healing: a source under designs/<orderId>/ (e.g. a materialized
-    // <key>-src.png) may have been deleted by the storage cleanup. Sending a
-    // dead URL to Replicate burns an attempt on a guaranteed failure — verify
-    // it still exists first, and fall back to a live source when there is one.
+    // Sweep healing: a source in our Storage — under designs/<orderId>/ (e.g.
+    // a materialized <key>-src.png) or the customer's original under a session
+    // folder — may have been deleted by the storage cleanup. Sending a dead URL
+    // to Replicate burns an attempt on a guaranteed failure — verify it still
+    // exists first, and fall back to a live source when there is one.
     if (isHttpsUrl(sourceUrl)) {
       const path = storagePathFromUrl(sourceUrl)
-      if (path && path.startsWith(`designs/${orderRef.id}/`) && !(await storageFileExists(path))) {
+      if (path && !(await storageFileExists(path))) {
         const fallback = await resolveLiveFallbackSource(orderRef, key, itemIdx, area, prevSourceUrl)
         if (!fallback) {
           // The source file is gone and nothing live replaces it — permanent,
@@ -377,6 +399,7 @@ export async function runUpscaleForOrder(
             [`upscales.${key}.error`]: 'source_file_deleted',
           }).catch(() => {})
           gaveUp++
+          sourceMissing++
           console.error(`Upscale designs: order ${orderRef.id} [${key}] source ${path} was deleted and no live fallback exists — gave up`)
           continue
         }
@@ -415,7 +438,10 @@ export async function runUpscaleForOrder(
       console.error(`Upscale designs: failed to create prediction for ${orderRef.id} [${key}]:`, err)
       await orderRef.update({
         [`upscales.${key}.status`]: 'failed',
-        [`upscales.${key}.error`]: err instanceof Error ? err.message.slice(0, 300) : 'prediction creation failed',
+        // Replicate's error quotes the image URL (possibly cut mid-way) — stored
+        // raw, that text reads as an unreadable Storage reference and stops the
+        // storage cleanup for every order. Redact before storing.
+        [`upscales.${key}.error`]: err instanceof Error ? storableErrorText(err.message) : 'prediction creation failed',
       }).catch(() => {})
     }
   }
@@ -428,7 +454,7 @@ export async function runUpscaleForOrder(
     await clearSweptFlagsIfFullyUpscaled(orderRef.id)
   }
 
-  return { created, total: claimed.length, gaveUp, skipped, healed }
+  return { created, total: claimed.length, gaveUp, skipped, healed, ...(sourceMissing > 0 && { sourceMissing }) }
 }
 
 /**
@@ -491,6 +517,9 @@ export async function clearSweptFlagsIfFullyUpscaled(orderId: string): Promise<b
     if (!snap.exists) return false
     const order = snap.data()!
     if (order.designsDeleted !== true) return false
+    // A 'closed_order' stamp says the ORIGINALS were removed for good. A full
+    // set of 'done' upscale entries does not bring them back — the stamp stays.
+    if (order.designsDeletedReason === 'closed_order') return false
 
     const upscales = order.upscales || {}
     const items = Array.isArray(order.items) ? order.items : []

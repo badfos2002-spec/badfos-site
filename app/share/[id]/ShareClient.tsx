@@ -10,7 +10,7 @@ import { Loader2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import { getColorHex, getModel3D } from '@/lib/constants'
-import { isSketchPreviewUrl } from '@/lib/sketch-retention'
+import { isSketchPreviewUrl, isAdminSketch } from '@/lib/sketch-retention'
 
 const Preview3DStage = dynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
 
@@ -160,6 +160,21 @@ function SweptSketchView({ src }: { src: string | null }) {
   )
 }
 
+/**
+ * A customer's OWN share link (made by the cart, not a sketch we prepared)
+ * whose artwork was removed by the closed-order storage cleanup. Not a sketch,
+ * so not the sketch wording — and never mockups with broken images.
+ */
+function RemovedDesignView() {
+  return (
+    <PageShell>
+      <p className="text-2xl font-bold text-gray-700">העיצוב כבר לא זמין לצפייה</p>
+      <p className="text-gray-500 max-w-md">קישורי שיתוף נשמרים לתקופה מוגבלת. אפשר לעצב מחדש בכל רגע.</p>
+      <DesignerButton label="לעיצוב חדש" />
+    </PageShell>
+  )
+}
+
 export default function ShareClient() {
   const params = useParams()
   const id = params?.id as string
@@ -204,6 +219,7 @@ export default function ShareClient() {
   // the page shows the captured still instead. Deliberately an early return —
   // every branch below assumes the artwork is still fetchable.
   if (design.designsDeleted === true) {
+    if (!isAdminSketch(design)) return <RemovedDesignView />
     return <SweptSketchView src={isSketchPreviewUrl(design.previewUrl) ? design.previewUrl : null} />
   }
 

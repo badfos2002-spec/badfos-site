@@ -92,6 +92,7 @@ export async function sweepOldSketches(
       'within-retention': 0,
       'no-preview': 0,
       'no-storage-files': 0,
+      'not-admin-sketch': 0,
     },
   }
   if (!apply) summary.wouldDelete = []

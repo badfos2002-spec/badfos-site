@@ -16,6 +16,7 @@
  *   4. Absent updatedAt behaves exactly as before the field existed.
  *   5. Regression: already-swept, malformed createdAt, missing/foreign
  *      preview, no Storage files, preview path never on the delete list.
+ *      Only designs/sketch-* paths are ever named; cart shares are never swept.
  */
 import {
   planSketchSweep,
@@ -169,6 +170,37 @@ console.log('\n5. Regression: the existing fail-closed gates still hold')
     !previewAsDesign.deletePaths.includes('designs/sketch-1755000000000/preview.jpg') &&
     previewAsDesign.deletePaths.length === 1,
     'preview path never lands on the delete list', previewAsDesign)
+
+  // Only the sketch maker's own folders, and only admin sketches (review fix).
+  const orderFile = url('designs/order-1755000000001/print.png')
+  const preCopy = planSketchSweep(doc({
+    label: 'דני',
+    designs: [{ area: 'front_full', areaName: 'קדמי', imageBase64: orderFile }],
+  }), NOW)
+  assert(preCopy.action === 'keep' && preCopy.reason === 'no-storage-files',
+    'a sketch that only points at an ORDER file → keep (never names the order path)', preCopy)
+
+  const mixed = planSketchSweep(doc({
+    label: 'דני',
+    designs: [
+      { area: 'front_full', areaName: 'קדמי', imageBase64: orderFile },
+      { area: 'back', areaName: 'גב', imageBase64: url('designs/sketch-1755000000000/back.png') },
+    ],
+  }), NOW)
+  assert(mixed.action === 'sweep' && mixed.deletePaths.length === 1 &&
+    mixed.deletePaths[0] === 'designs/sketch-1755000000000/back.png',
+    'a mixed sketch → only its designs/sketch-* file is on the delete list', mixed)
+
+  const cartShare = planSketchSweep(doc({
+    previewUrl: undefined,
+    designs: [{ area: 'front_full', areaName: 'קדמי', imageBase64: url('designs/tshirt-1755000000002/a.png') }],
+  }), NOW)
+  assert(cartShare.action === 'keep' && cartShare.reason === 'not-admin-sketch',
+    'a cart share (order files, no sketch-maker field) → keep not-admin-sketch', cartShare)
+
+  const tagged = planSketchSweep(doc({ source: 'checkout' }), NOW)
+  assert(tagged.action === 'keep' && tagged.reason === 'not-admin-sketch',
+    "source:'checkout' → keep not-admin-sketch, even with a preview and sketch-* files", tagged)
 
   assert(timestampMillis(new Date(NOW)) === NOW, 'timestampMillis accepts Date')
   assert(timestampMillis(NOW) === null, 'timestampMillis rejects bare numbers')

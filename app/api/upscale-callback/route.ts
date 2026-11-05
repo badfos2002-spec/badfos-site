@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminDb, adminStorage } from '@/lib/firebase-admin'
 import { PIXEL_LIMIT_ERROR } from '@/lib/upscale'
 import { clearSweptFlagsIfFullyUpscaled } from '@/lib/upscale-order'
+import { storableErrorText } from '@/lib/storage-cleanup'
 import { randomUUID } from 'crypto'
 
 // Downloading a 4x image (can be several MB) + re-uploading to Storage
@@ -60,7 +61,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (status !== 'succeeded') {
-      const reason = typeof body?.error === 'string' ? body.error.slice(0, 300) : `prediction ${status}`
+      // Redacted BEFORE it is cut and stored: Replicate's error can quote the
+      // image URL, and a (half) URL in an order document stops the storage
+      // cleanup scan for everyone (lib/storage-cleanup.ts docStorageRefs).
+      const reason = typeof body?.error === 'string' ? storableErrorText(body.error) : `prediction ${status}`
       // Safety net: an oversized input isn't a real failure — the original is
       // already high-res, so fall back to it as the print file (not "failed").
       if (PIXEL_LIMIT_ERROR.test(reason) && typeof entry.sourceUrl === 'string' && entry.sourceUrl) {

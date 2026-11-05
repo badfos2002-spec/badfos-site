@@ -63,6 +63,11 @@ export async function POST(request: NextRequest) {
     if (result.wrongStatus) {
       return NextResponse.json({ error: 'order_not_paid', status: result.wrongStatus }, { status: 400 })
     }
+    if (result.designsCleaned) {
+      // The storage cleanup removed this closed order's design files, originals
+      // included — nothing was sent to Replicate.
+      return NextResponse.json({ error: 'designs_deleted' }, { status: 409 })
+    }
 
     return NextResponse.json({
       success: true,
@@ -71,6 +76,7 @@ export async function POST(request: NextRequest) {
       gaveUp: result.gaveUp ?? 0,
       healed: result.healed ?? 0,
       skipped: result.skipped ?? 0,
+      sourceMissing: result.sourceMissing ?? 0,
     })
   } catch (err) {
     console.error('retry-upscale error:', err)

@@ -3,9 +3,9 @@
  *
  * WHY THIS EXISTS
  * A sketch link is sent to one customer over WhatsApp and looked at within a
- * day or two, but its uploaded artwork sits in Storage forever — the bucket is
- * on the 5000MB Spark tier and sketches are the only thing in it nobody ever
- * comes back to. The heavy originals therefore expire; the LINK MUST NOT.
+ * day or two, but its uploaded artwork sits in Storage forever — the project
+ * is on the Blaze plan, so every stored megabyte is billed, and sketches are
+ * the only thing in the bucket nobody ever comes back to. The heavy originals therefore expire; the LINK MUST NOT.
  *
  * WHAT MAKES THAT POSSIBLE
  * Every sketch created since 58f4681 also uploads `preview.jpg` — a ~17KB
@@ -30,10 +30,15 @@
  *   4. it has a preview whose Storage path we can name — no preview means the
  *      link would be left with nothing to show, which is the one outcome this
  *      whole mechanism exists to prevent,
- *   5. at least one design file resolves to a path under `designs/`.
+ *   5. it is an ADMIN SKETCH (isAdminSketch) — a customer share made by the
+ *      cart is never swept here; its files belong to an order,
+ *   6. at least one design file resolves to a path under `designs/sketch-*`.
  *
  * Only the exact object paths named by the document are deleted — never a
- * prefix. `preview.jpg` lives under the SAME `designs/sketch-<ts>/` prefix as
+ * prefix — and only inside the sketch maker's own `designs/sketch-*` folders.
+ * A sketch made before /api/admin/sketch-copy existed points straight at an
+ * ORDER's files (`designs/tshirt-<ts>/…`); those are the print masters of a
+ * paid order and are never this policy's to delete. `preview.jpg` lives under the SAME `designs/sketch-<ts>/` prefix as
  * the artwork it survives, so a prefix delete would take the preview with it.
  * ─────────────────────────────────────────────────────────────────────────
  */
@@ -48,6 +53,10 @@ export const SKETCH_RETENTION_MS = SKETCH_RETENTION_DAYS * 24 * 60 * 60 * 1000
 
 /** The only Storage prefix this policy may ever delete from. */
 const DELETABLE_PREFIX = 'designs/'
+
+/** Every admin sketch stores its artwork under `designs/sketch-<ts>[-<id>]/`
+ *  (app/admin/sketches sessionId, /api/admin/sketch-copy). Nothing else does. */
+export const SKETCH_SESSION_RE = /^designs\/sketch-[^/]+\//
 
 /**
  * A Firebase download URL: https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<url-encoded path>?alt=media&token=…
@@ -140,8 +149,11 @@ export type SketchKeepReason =
   | 'within-retention'
   /** No usable preview — sweeping would leave the link with nothing to show. */
   | 'no-preview'
-  /** Nothing addressable in Storage (legacy base64 sketches, or already empty). */
+  /** Nothing of the sketch maker's own in Storage (legacy base64 sketches,
+   *  sketches that only point at an order's files, or already empty). */
   | 'no-storage-files'
+  /** A customer share made by the cart, not a sketch — never swept here. */
+  | 'not-admin-sketch'
 
 export type SketchSweepPlan =
   | { action: 'keep'; reason: SketchKeepReason; ageMs: number | null }
@@ -160,6 +172,7 @@ export function planSketchSweep(data: unknown, nowMs: number): SketchSweepPlan {
   const doc = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>
 
   if (doc.designsDeleted === true) return { action: 'keep', reason: 'already-swept', ageMs: null }
+  if (!isAdminSketch(doc)) return { action: 'keep', reason: 'not-admin-sketch', ageMs: null }
 
   const createdMs = timestampMillis(doc.createdAt)
   if (createdMs === null) return { action: 'keep', reason: 'invalid-timestamp', ageMs: null }
@@ -198,10 +211,56 @@ export function planSketchSweep(data: unknown, nowMs: number): SketchSweepPlan {
     const url = d && typeof d === 'object' ? (d as { imageBase64?: unknown }).imageBase64 : null
     const path = storagePathFromUrl(url)
     if (!path) continue // base64 payloads, blob: URLs, foreign hosts — not ours to delete
+    if (!SKETCH_SESSION_RE.test(path)) continue // an order's own file — never this policy's
     if (path === previewPath) continue // never the survivor
     if (!deletePaths.includes(path)) deletePaths.push(path)
   }
 
   if (deletePaths.length === 0) return { action: 'keep', reason: 'no-storage-files', ageMs }
   return { action: 'sweep', ageMs, deletePaths, previewPath }
+}
+
+/**
+ * Was this `shared_designs` document made by the admin sketch maker — as
+ * opposed to a customer share auto-created at checkout (components/cart/
+ * CartPage.tsx) or from the cart's share button (components/cart/CartItem.tsx)?
+ *
+ * WHY IT MATTERS: a checkout share points at the SAME Storage files as the paid
+ * order (`designs/tshirt-<ts>/…`, `designs/order-<ts>/…`). Listing it in
+ * /admin/sketches, or sweeping it like a sketch, is how a paid order loses its
+ * print files. And the other way round: an admin sketch that is mistaken for a
+ * customer share stops protecting the files it shows.
+ *
+ * In this order:
+ *   (a) `source: 'checkout'` — written by every cart share since the field
+ *       exists — is never a sketch.
+ *   (b) A field ONLY the sketch maker writes (previewUrl / previewMissing /
+ *       phone / label) makes it a sketch, WHEREVER its artwork lives: sketches
+ *       made before sketch-copy point straight at an order's files. The cart
+ *       writes none of these four (CartPage sharedItems, CartItem handleShare).
+ *   (c) Only then, for documents with neither: judged by where the artwork
+ *       lives. Any design file outside `designs/sketch-*` means a cart share;
+ *       all under it means a sketch; no Storage artwork at all (bare base64
+ *       from the cart's share button) is not a sketch.
+ */
+export function isAdminSketch(data: unknown): boolean {
+  const doc = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>
+  if (doc.source === 'checkout') return false
+  if (
+    (typeof doc.previewUrl === 'string' && doc.previewUrl !== '') ||
+    doc.previewMissing === true ||
+    typeof doc.phone === 'string' ||
+    typeof doc.label === 'string'
+  ) {
+    return true
+  }
+  let sawSketchFile = false
+  for (const d of Array.isArray(doc.designs) ? doc.designs : []) {
+    const url = d && typeof d === 'object' ? (d as { imageBase64?: unknown }).imageBase64 : null
+    const path = storagePathFromUrl(url)
+    if (!path) continue
+    if (!SKETCH_SESSION_RE.test(path)) return false
+    sawSketchFile = true
+  }
+  return sawSketchFile
 }

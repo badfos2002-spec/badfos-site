@@ -3,6 +3,7 @@
   "compilerOptions": {
     "paths": {
       "@/lib/firebase-admin": ["./scripts/stubs/storage-cleanup-admin"],
+      "resend": ["./scripts/stubs/fake-resend"],
       "@/*": ["./*"]
     }
   }

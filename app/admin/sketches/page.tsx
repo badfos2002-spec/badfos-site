@@ -10,7 +10,7 @@ import { useCoarsePointer } from '@/hooks/useCoarsePointer'
 import { createSharedDesign, updateSharedDesign, getRecentSharedDesigns, deleteDocument, type SharedDesignData, type SharedDesignHistoryItem } from '@/lib/db'
 import { captureSketchPreview } from '@/lib/sketch-preview'
 import { SKETCH_PRODUCTS, sketchWhatsAppUrl } from '@/lib/sketch-products'
-import { isSketchPreviewUrl, timestampMillis, storagePathFromUrl } from '@/lib/sketch-retention'
+import { isSketchPreviewUrl, timestampMillis, storagePathFromUrl, SKETCH_SESSION_RE } from '@/lib/sketch-retention'
 import type { Timestamp } from 'firebase/firestore'
 import {
   getModel3D, getColorLabel, getProductLabel, getTypeLabel, isHexColor,
@@ -295,9 +295,21 @@ export default function AdminSketchesPage() {
     setHistoryLoading(true)
     setHistoryError(false)
     try {
-      const { items, nextCursor } = await getRecentSharedDesigns(HISTORY_PAGE, cursor ?? undefined)
+      // getRecentSharedDesigns hides the cart's customer shares, and most raw
+      // documents ARE those (one per checkout) — a single page can come back
+      // nearly empty. Keep paging until a full page of real sketches is in
+      // hand or the collection ends. Later rounds read bigger raw pages; the
+      // round cap bounds one click, and the "load more" button continues.
+      const items: SharedDesignHistoryItem[] = []
+      let next: Timestamp | null = cursor
+      for (let round = 0; round < 15; round++) {
+        const page = await getRecentSharedDesigns(round === 0 ? HISTORY_PAGE : 100, next ?? undefined)
+        items.push(...page.items)
+        next = page.nextCursor
+        if (!next || items.length >= HISTORY_PAGE) break
+      }
       setHistory(prev => (cursor ? [...prev, ...items] : items))
-      setHistoryCursor(nextCursor)
+      setHistoryCursor(next)
     } catch (err) {
       console.error('Sketch history fetch failed:', err)
       setHistoryError(true)
@@ -721,12 +733,15 @@ export default function AdminSketchesPage() {
       return false
     }
     const paths: string[] = []
+    // Only the sketch maker's own folders, ever: a checkout share names the
+    // paid order's print files, and must not be able to take them along even
+    // if one ever reaches this list (getRecentSharedDesigns filters them out).
     for (const d of item.designs ?? []) {
       const p = storagePathFromUrl(d?.imageBase64)
-      if (p && !paths.includes(p)) paths.push(p)
+      if (p && SKETCH_SESSION_RE.test(p) && !paths.includes(p)) paths.push(p)
     }
     const previewPath = storagePathFromUrl(item.previewUrl)
-    if (previewPath && !paths.includes(previewPath)) paths.push(previewPath)
+    if (previewPath && SKETCH_SESSION_RE.test(previewPath) && !paths.includes(previewPath)) paths.push(previewPath)
     for (const path of paths) {
       try { await deleteFile(path) } catch (err) { console.error(`[SKETCH_DELETE_FILE_FAILED] ${path}:`, err) }
     }

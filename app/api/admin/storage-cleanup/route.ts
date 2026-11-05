@@ -11,13 +11,15 @@
  * `action: 'preview'` is read-only and is what the UI calls on load. Deleting
  * requires a *different* action, an explicit confirmation phrase, an explicit
  * list of paths, and a `planToken` proving those paths came from a preview of
- * the world as it is right now. There is no age parameter — the 90-day
- * threshold lives in lib/storage-cleanup.ts and nothing here can shorten it.
+ * the world as it is right now. There is no age parameter — every threshold
+ * (90 days orphans, 30 days closed orders / 90 abandoned carts, 2 days sketch debris) lives in
+ * lib/storage-cleanup.ts and nothing here can shorten it.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { adminAuth, adminDb, adminStorage } from '@/lib/firebase-admin'
 import {
   buildPlan,
+  cronDeletionArmed,
   deleteDocs,
   previewDocs,
   readAuditLog,
@@ -36,7 +38,7 @@ export const dynamic = 'force-dynamic'
 /** Typed by the owner before anything is deleted. Deliberately not a click. */
 const CONFIRM_PHRASE = 'מחק לצמיתות'
 
-const MODES: CleanupMode[] = ['orphans', 'test-junk']
+const MODES: CleanupMode[] = ['orphans', 'test-junk', 'old-orders', 'sketch-orphans']
 
 /** Max document IDs accepted in one docs request. */
 const MAX_DOC_IDS = 50
@@ -73,8 +75,26 @@ export async function POST(request: NextRequest) {
       const mode = parseMode(body?.mode)
       if (!mode) return NextResponse.json({ error: 'bad_params' }, { status: 400 })
 
-      const { plan, scan, planToken } = await buildPlan(adminDb, bucket, mode)
+      const { plan, scan, planToken, fileLevel } = await buildPlan(adminDb, bucket, mode)
       return NextResponse.json({
+        // File-level modes: per-group counts, what gets stamped, what is left
+        // for the next run. Absent for orphans / test-junk.
+        ...(fileLevel && {
+          fileLevel: {
+            byGroup: fileLevel.byGroup,
+            remaining: fileLevel.remaining,
+            oversized: fileLevel.oversized.map((o) => ({
+              label: o.label,
+              status: o.status,
+              files: o.files,
+              bytes: o.bytes,
+            })),
+            eligibleOrders: fileLevel.eligibleOrders,
+            ordersInBatch: fileLevel.owners.length,
+            stamps: fileLevel.stamps.length,
+            sharesToStamp: fileLevel.sharesToStamp,
+          },
+        }),
         ok: true,
         mode,
         planToken,
@@ -86,7 +106,18 @@ export async function POST(request: NextRequest) {
         ageBuckets: plan.ageBuckets,
         totalFiles: plan.candidates.length,
         totalBytes: plan.totalBytes,
-        groups: groupByPrefix(plan.candidates),
+        groups:
+          fileLevel && mode === 'old-orders'
+            ? fileLevel.owners.map((o) => ({
+                prefix: o.key,
+                label: o.label,
+                status: o.status,
+                files: o.files,
+                bytes: o.bytes,
+                oldestAgeDays: o.ageDays,
+                sample: o.sample,
+              }))
+            : groupByPrefix(plan.candidates),
         candidates: plan.candidates,
       })
     }
@@ -106,17 +137,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'bad_params' }, { status: 400 })
       }
 
-      const { result } = await runStorageCleanup(adminDb, bucket, mode, paths, planToken)
+      const { result, plan } = await runStorageCleanup(adminDb, bucket, mode, paths, planToken)
       const logged = await writeAuditLog(adminDb, {
         by: actor,
         action: 'delete-files',
         mode,
         filesDeleted: result.deleted,
         bytesFreed: result.bytesFreed,
-        errors: result.errors,
+        ...(result.stamped !== undefined && { docsStamped: result.stamped }),
+        errors: result.errors + (result.stampErrors || 0),
         sample: paths.slice(0, 200),
       })
-      return NextResponse.json({ ok: true, ...result, logged })
+      return NextResponse.json({
+        ok: true,
+        ...result,
+        // File-level modes: what this run left for the next one.
+        ...(plan.fileLevel && {
+          deferred: plan.fileLevel.remaining.files,
+          oversized: plan.fileLevel.oversized.length,
+        }),
+        logged,
+      })
     }
 
     // ── Read-only: which test documents are actually there ────────────
@@ -149,7 +190,13 @@ export async function POST(request: NextRequest) {
 
     // ── Read-only: the audit trail ────────────────────────────────────
     if (action === 'log') {
-      return NextResponse.json({ ok: true, entries: await readAuditLog(adminDb) })
+      return NextResponse.json({
+        ok: true,
+        entries: await readAuditLog(adminDb),
+        // First-run gate: the nightly cron deletes closed orders' files only
+        // after one manual 'old-orders' run from this panel.
+        cronArmed: await cronDeletionArmed(adminDb),
+      })
     }
 
     return NextResponse.json({ error: 'bad_params' }, { status: 400 })

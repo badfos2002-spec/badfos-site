@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getAllOrders, updateOrderStatus, deleteDocument, createCoupon, createRecoveryCoupon, updateDocument, deductInventory, markAbandonedOrders, onOrdersSnapshot } from '@/lib/db'
 import { Timestamp } from 'firebase/firestore'
-import { deleteFile } from '@/lib/storage'
 import { buildWazeLink } from '@/lib/url-validation'
 import { auth } from '@/lib/firebase'
 import type { Order, DesignUpscale } from '@/lib/types'
@@ -313,10 +312,13 @@ export default function AdminOrdersPage() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         if (data?.error === 'order_not_paid') alert('אי אפשר להגדיל — ההזמנה לא שולמה')
+        else if (data?.error === 'designs_deleted') alert('אי אפשר להגדיל — קבצי העיצוב של ההזמנה הזו נמחקו בניקוי האחסון (הזמנה סגורה), ואין קובץ מקור להגדיל ממנו.')
         else alert('ההפעלה נכשלה, נסה/י שוב בעוד רגע')
         return
       }
-      if ((data.created ?? 0) > 0) {
+      if ((data.created ?? 0) === 0 && (data.sourceMissing ?? 0) > 0) {
+        alert('אי אפשר להגדיל — קובץ המקור של העיצוב כבר לא קיים באחסון.')
+      } else if ((data.created ?? 0) > 0) {
         alert(`הופעלו ${data.created} הגדלות. ייקח דקה־שתיים — רענן/י את העמוד ותראה/י "פי 4".`)
       } else if ((data.healed ?? 0) + (data.skipped ?? 0) > 0) {
         alert('העיצובים סומנו כמוכנים לדפוס (איכות מקורית גבוהה). רענן/י את העמוד.')
@@ -333,16 +335,12 @@ export default function AdminOrdersPage() {
   const handleDelete = async (orderId: string) => {
     if (!confirm('למחוק את ההזמנה?')) return
     try {
-      const order = orders.find(o => o.id === orderId)
-      if (order) {
-        const storageUrls = order.items
-          .flatMap(item => item.designs)
-          .map(d => d.imageUrl)
-          .filter(url => url.startsWith('https://firebasestorage.googleapis.com'))
-        if (storageUrls.length > 0) {
-          await Promise.allSettled(storageUrls.map(url => deleteFile(url)))
-        }
-      }
+      // Only the document goes. The design files are NOT deleted here: an
+      // abandoned duplicate and its paid sibling point at the same Storage
+      // URLs (re-checkout reuses them), so deleting them with the duplicate
+      // destroyed the paid order's print files. Files nothing references any
+      // more are collected by the storage cleanup (/admin/costs), which checks
+      // every reference first.
       await deleteDocument('orders', orderId)
       setOrders(prev => prev.filter(o => o.id !== orderId))
       if (expandedOrderId === orderId) setExpandedOrderId(null)

@@ -142,6 +142,8 @@ export default function CartItem({ item }: CartItemProps) {
         productType: item.productType,
         color: item.color,
         ...(item.fabricType ? { fabricType: item.fabricType } : {}),
+        // A customer share, never an admin sketch — see SharedDesignData.source
+        source: 'checkout',
         designs,
       })
 

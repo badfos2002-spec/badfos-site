@@ -106,7 +106,7 @@ export function sketchUploadErrorMessage(err: unknown): string {
     case 'storage/canceled':
       return 'ההעלאה נקטעה — נראה שהחיבור לאינטרנט אינו יציב. בדקו את החיבור ונסו שוב.'
     case 'storage/quota-exceeded':
-      return 'נגמר מקום האחסון ב-Firebase. יש לפנות מקום או לשדרג את החבילה.'
+      return 'האחסון ב-Firebase חוסם העלאות (חריגה ממכסה או בעיה בחשבון החיוב של Google Cloud). יש לבדוק את חשבון החיוב ב-Google Cloud.'
   }
 
   const detail = err instanceof Error && err.message ? ` (${err.message})` : ''

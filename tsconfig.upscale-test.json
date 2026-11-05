@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/lib/firebase-admin": ["./scripts/stubs/upscale-admin"],
+      "@/lib/image-dims": ["./scripts/stubs/upscale-image-dims"],
+      "@/lib/upscale": ["./scripts/stubs/upscale-replicate"],
+      "@/*": ["./*"]
+    }
+  }
+}
