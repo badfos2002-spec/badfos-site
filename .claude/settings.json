@@ -28,7 +28,8 @@
       "Bash(do)",
       "Bash(vercel env rm \"$var\" production --yes)",
       "Bash(vercel env rm NEXT_PUBLIC_ADMIN_EMAIL production --yes)",
-      "Bash(vercel env rm MAKE_WEBHOOK_URL production --yes)"
+      "Bash(vercel env rm MAKE_WEBHOOK_URL production --yes)",
+      "Bash(gh pr merge * -R badfos2002-spec/badfos-site)"
     ]
   }
 }
