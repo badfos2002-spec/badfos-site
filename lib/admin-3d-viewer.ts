@@ -10,6 +10,7 @@ import { angleForArea } from '@/components/designer/three/placements'
 import type { ShirtVariant } from '@/components/designer/three/placements'
 import type { ShirtDesign } from '@/components/designer/three/Tshirt3DModel'
 import { getModel3D } from '@/lib/constants'
+import { to3DDesigns } from '@/lib/enlarge'
 import type { OrderItem } from '@/lib/types'
 
 export interface ViewerAngle {
@@ -75,24 +76,21 @@ function sameOriginUrl(url: string): string {
 }
 
 /**
- * `enlarge` (1-3) is TICKET-005's field and `enlargeScale` there owns the
- * canonical formula — this is the ONLY place TICKET-006 reads it, so the two
- * collapse into one when 005 merges. Absent (every order today) or junk → 1.
+ * The order's stored designs, as the 3D stage wants them.
+ *
+ * The enlargement is NOT computed here: `to3DDesigns` (lib/enlarge.ts) is the
+ * mapping every other Preview3DStage caller goes through, and it carries both
+ * halves of the rule this viewer must not be alone in disagreeing with — the
+ * 3-step ceiling (`enlarge: 7` is 1.3, never 1.7) and the product AND area gate
+ * (only `front_full` / `back` of t-shirts and sweatshirts). The admin sees the
+ * print at the size the customer paid for, or it is a bug.
  */
-function enlargeScale(enlarge: unknown): number {
-  return typeof enlarge === 'number' && Number.isFinite(enlarge) && enlarge > 0
-    ? 1 + 0.1 * enlarge
-    : 1
-}
-
-/** The order's stored designs, as the 3D stage wants them. */
 export function viewerDesignsFor(item: OrderItem): ShirtDesign[] {
   const designs = Array.isArray(item.designs) ? item.designs : []
-  return designs
-    .filter(d => d?.imageUrl)
-    .map(d => ({
-      area: d.area,
-      url: sameOriginUrl(d.imageUrl),
-      transform: { dx: 0, dy: 0, scale: enlargeScale((d as { enlarge?: unknown }).enlarge) },
-    }))
+  return to3DDesigns(
+    item.productType,
+    designs
+      .filter(d => d?.imageUrl)
+      .map(d => ({ area: d.area, url: sameOriginUrl(d.imageUrl), enlarge: d.enlarge }))
+  )
 }
