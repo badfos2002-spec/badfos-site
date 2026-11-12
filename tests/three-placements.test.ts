@@ -80,11 +80,18 @@ describe('shoulder projectors face sideways and mirror each other', () => {
       expect(areas(variant).shoulder_left!.rotation[1]).toBe(Math.PI / 2)
     })
 
-    it(`${variant}: no tilt — rotation x and z are 0`, () => {
-      for (const id of SHOULDERS) {
-        const p = areas(variant)[id]!
-        expect(p.rotation[0]).toBe(0)
-        expect(p.rotation[2]).toBe(0)
+    // TICKET-008: no pitch on any shoulder; a slight roll about the projector's
+    // own axis on every variant but the oversized one, mirrored left/right.
+    it(`${variant}: no pitch — rotation x is 0; roll z is 0 on oversized, mirrored elsewhere`, () => {
+      for (const id of SHOULDERS) expect(areas(variant)[id]!.rotation[0]).toBe(0)
+      const right = areas(variant).shoulder_right!.rotation[2]
+      const left = areas(variant).shoulder_left!.rotation[2]
+      if (variant === 'oversized') {
+        expect(right).toBe(0)
+        expect(left).toBe(0)
+      } else {
+        expect(right).not.toBe(0)
+        expect(left).toBe(-right)
       }
     })
 

@@ -31,8 +31,12 @@ export type GuideBox = { w: number; h: number; label: string };
  * at x = −0.27) and pinned by PR A's tests: the WEARER's right is at NEGATIVE
  * local x = the viewer's left on a front view. A projector facing outward along
  * −x therefore has rotation [0, −π/2, 0] (R_y(−π/2) maps +z → −x), and the left
- * shoulder is its exact mirror. The rotation stays an axis-aligned quarter turn
- * with NO tilt: `previewMath` is only diagonal there.
+ * shoulder is its exact mirror. The yaw stays an exact quarter turn with NO
+ * pitch (rotation x = 0): `previewMath` is only diagonal there. TICKET-008 adds
+ * a slight ROLL (rotation z) about the projector's own axis, so the square's
+ * bottom edge runs more parallel to the sleeve hem; the left shoulder's roll is
+ * the exact negative of the right's. A roll commutes with the in-plane scale,
+ * so the preview stays diagonal. The oversized sleeve does not roll.
  *
  * Every y/z below STARTED as the median of the sideways-facing surface patch
  * (normal.x > 0.75) of the real GLB in the upper-sleeve band, with x the middle
@@ -40,6 +44,17 @@ export type GuideBox = { w: number; h: number; label: string };
  * nudged where the box did not sit square on the sleeve. `depth` is kept well
  * below the chest-logo depth: the sleeve is a thin tube, and a deep projector
  * would also paint the far wall. */
+
+// Shoulder roll (TICKET-008): `rotation[2]` of shoulder_right in radians; the
+// left shoulder uses the negative. Positive turns the right square
+// counter-clockwise as seen from outside the sleeve (the turntable's shoulder
+// view, wearer's front on screen right). Tuned by eye in that view so the
+// square's bottom edge follows the sleeve: the tee hem dips toward the front
+// (clockwise), the polo hem rises toward the front and the long sleeves lean
+// forward down the arm (counter-clockwise).
+const ROLL_TSHIRT = -0.17;
+const ROLL_POLO = 0.1;
+const ROLL_HOODIE = 0.17; // shared by hoodie, crewneck and zip hoodie
 
 // TSHIRT — a single body mesh (front +z / back −z live on the same mesh).
 const TSHIRT_AREAS: Record<string, Placement> = {
@@ -56,8 +71,8 @@ const TSHIRT_AREAS: Record<string, Placement> = {
   // down (outermost x −0.80 at y 0.36), so x moved out with y to keep the
   // projector box over the sleeve's outer wall — otherwise the box foreshortens
   // off the leading edge. Nudged on screen until the print sat square.
-  shoulder_right: { position: [-0.73, 0.36, -0.09], rotation: [0, -Math.PI / 2, 0], size: 0.16, depth: 0.22 },
-  shoulder_left: { position: [0.73, 0.36, -0.09], rotation: [0, Math.PI / 2, 0], size: 0.16, depth: 0.22 },
+  shoulder_right: { position: [-0.73, 0.36, -0.09], rotation: [0, -Math.PI / 2, ROLL_TSHIRT], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.73, 0.36, -0.09], rotation: [0, Math.PI / 2, -ROLL_TSHIRT], size: 0.16, depth: 0.22 },
 };
 const TSHIRT_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.62, h: 0.68, label: 'קדמי מלא' },
@@ -81,8 +96,8 @@ const POLO_AREAS: Record<string, Placement> = {
   // names its sleeve — the panel scoring would otherwise send it to the chest.
   // Lowered to just above the sleeve hem (TICKET-007; was y 0.52), checked on
   // screen.
-  shoulder_right: { position: [-0.66, 0.24, -0.17], rotation: [0, -Math.PI / 2, 0], size: 0.2, depth: 0.22, panel: 'sleeveRight' },
-  shoulder_left: { position: [0.66, 0.24, -0.17], rotation: [0, Math.PI / 2, 0], size: 0.2, depth: 0.22, panel: 'sleeveLeft' },
+  shoulder_right: { position: [-0.66, 0.24, -0.17], rotation: [0, -Math.PI / 2, ROLL_POLO], size: 0.2, depth: 0.22, panel: 'sleeveRight' },
+  shoulder_left: { position: [0.66, 0.24, -0.17], rotation: [0, Math.PI / 2, -ROLL_POLO], size: 0.2, depth: 0.22, panel: 'sleeveLeft' },
 };
 const POLO_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.4, h: 0.5, label: 'קדמי מלא' },
@@ -151,8 +166,8 @@ const HOODIE_AREAS: Record<string, Placement> = {
   // the garment is 1.7 tall, so ~0.18. The outer wall there is x −0.73..−0.76
   // across hoodie/crewneck/zip, so x −0.67 with depth 0.22 covers all three;
   // z 0 sits between the crewneck's patch (z≈−0.07) and the zip's (z≈0.10).
-  shoulder_right: { position: [-0.67, 0.18, 0], rotation: [0, -Math.PI / 2, 0], size: 0.16, depth: 0.22 },
-  shoulder_left: { position: [0.67, 0.18, 0], rotation: [0, Math.PI / 2, 0], size: 0.16, depth: 0.22 },
+  shoulder_right: { position: [-0.67, 0.18, 0], rotation: [0, -Math.PI / 2, ROLL_HOODIE], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.67, 0.18, 0], rotation: [0, Math.PI / 2, -ROLL_HOODIE], size: 0.16, depth: 0.22 },
 };
 const HOODIE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.48, h: 0.58, label: 'קדמי מלא' },
