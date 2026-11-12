@@ -114,6 +114,12 @@ export default function OrderItem3DViewer({ item, orderNumber, index }: OrderIte
               {a.label}
             </button>
           ))}
+        </div>
+
+        {/* Its own line, deliberately: at 390 px the four angles already fill
+            the row above, and a save button inside it scrolls off the edge
+            where nobody finds it. */}
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={save}
@@ -123,9 +129,8 @@ export default function OrderItem3DViewer({ item, orderNumber, index }: OrderIte
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             שמור תמונה
           </button>
+          <p className="text-xs text-gray-500">גררו לסיבוב חופשי, או בחרו זווית</p>
         </div>
-
-        <p className="text-xs text-gray-500">גררו לסיבוב חופשי, או בחרו זווית</p>
 
         {error && <p role="alert" className="text-sm font-semibold text-red-600">{error}</p>}
         {manual && (
