@@ -154,13 +154,13 @@ export const SWEATSHIRT_COLOR_FILTER: Record<string, string[]> = {
 // Print areas per sweatshirt type (undefined = all areas). The zip has no
 // full-front print — the zipper runs down the centre.
 export const SWEATSHIRT_AREA_FILTER: Record<string, string[]> = {
-  zip: ['back', 'chest_logo', 'chest_logo_right'],
+  zip: ['back', 'chest_logo', 'chest_logo_right', 'shoulder_right', 'shoulder_left'],
 }
 
 // Print areas per t-shirt fabric (undefined = all areas). The polo has no
 // centre-chest logo — the button placket runs down the centre.
 export const TSHIRT_AREA_FILTER: Record<string, string[]> = {
-  polo: ['front_full', 'back', 'chest_logo', 'chest_logo_right'],
+  polo: ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'shoulder_right', 'shoulder_left'],
 }
 
 export const BUFF_COLORS = [
@@ -262,6 +262,18 @@ export const TSHIRT_DESIGN_AREAS = [
     description: 'סמל קטן בגובה הכיס במרכז החזה',
     price: 5,
   },
+  {
+    id: 'shoulder_right' as DesignAreaType,
+    name: 'כתף ימין',
+    description: 'הדפסה קטנה על השרוול, כתף ימין',
+    price: 5,
+  },
+  {
+    id: 'shoulder_left' as DesignAreaType,
+    name: 'כתף שמאל',
+    description: 'הדפסה קטנה על השרוול, כתף שמאל',
+    price: 5,
+  },
 ] as const
 
 export const SWEATSHIRT_DESIGN_AREAS = [
@@ -293,6 +305,18 @@ export const SWEATSHIRT_DESIGN_AREAS = [
     id: 'chest_logo_center' as DesignAreaType,
     name: 'סמל אמצעי',
     description: 'סמל קטן בגובה הכיס במרכז החזה',
+    price: 5,
+  },
+  {
+    id: 'shoulder_right' as DesignAreaType,
+    name: 'כתף ימין',
+    description: 'הדפסה קטנה על השרוול, כתף ימין',
+    price: 5,
+  },
+  {
+    id: 'shoulder_left' as DesignAreaType,
+    name: 'כתף שמאל',
+    description: 'הדפסה קטנה על השרוול, כתף שמאל',
     price: 5,
   },
 ] as const

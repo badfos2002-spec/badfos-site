@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Palette, ImagePlus, Package, Eye, Check, CheckCircle, X, Plus, Minus, Loader2 } from 'lucide-react'
-import AreaIcon, { areaRows, isChestArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
+import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
 import { useCart } from '@/hooks/useCart'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
@@ -184,7 +184,7 @@ export default function VestDesignerPage() {
               {areaRows(VEST_DESIGN_AREAS).map(row => (
               <div key={row[0].id} className={`grid gap-2 ${AREA_ROW_COLS[row.length]}`}>
                 {row.map(area => {
-                  const compact = isChestArea(area.id)
+                  const compact = isCompactArea(area.id)
                   const isSelected = selectedArea === area.id
                   const hasFile = !!designFiles[area.id]
                   return (
