@@ -87,15 +87,17 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   // and the armhole seam, clear of front_full (30%–70%) and the chest logos.
 // TICKET-007: lowered so the box's bottom edge sits just above the diagonal
 // sleeve hem (it used to hug the shoulder seam at 36%).
+// TICKET-008: rolled (rotate only) so the bottom edge runs more parallel to
+// that hem — clockwise on the viewer's left, mirrored on the right.
   shoulder_right: {
     view: 'front',
     label: 'כתף ימין',
-    style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '14.25%', borderRadius: '4px' },
+    style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '14.25%', borderRadius: '4px', transform: 'rotate(20deg)' },
   },
   shoulder_left: {
     view: 'front',
     label: 'כתף שמאל',
-    style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '79.25%', borderRadius: '4px' },
+    style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '79.25%', borderRadius: '4px', transform: 'rotate(-20deg)' },
   },
   center: {
     view: 'front',
@@ -136,6 +138,6 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
 // lowered t-shirt box.
 export const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
   back: { width: '36%', aspectRatio: '180 / 200', top: '33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
-  shoulder_right: { width: '5%', aspectRatio: '1', top: '42%', left: '16.7%', borderRadius: '4px' },
-  shoulder_left: { width: '5%', aspectRatio: '1', top: '42%', left: '78.3%', borderRadius: '4px' },
+  shoulder_right: { width: '5%', aspectRatio: '1', top: '42%', left: '16.7%', borderRadius: '4px', transform: 'rotate(8deg)' },
+  shoulder_left: { width: '5%', aspectRatio: '1', top: '42%', left: '78.3%', borderRadius: '4px', transform: 'rotate(-8deg)' },
 }

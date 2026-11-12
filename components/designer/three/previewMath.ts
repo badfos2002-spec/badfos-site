@@ -10,10 +10,13 @@ export function normalizeAngle(a: number): number {
   return x > Math.PI ? x - twoPi : x;
 }
 
-/** A projector turned a quarter turn about Y and not tilted: its decal plane is
- *  the local y–z plane, so the scaling happens in y and z. */
+/** A projector turned a quarter turn about Y and not pitched: its decal plane is
+ *  the local y–z plane, so the scaling happens in y and z. A roll (rotation z,
+ *  applied first in Euler XYZ) spins the decal inside its own plane and commutes
+ *  with the isotropic in-plane scale — R_y·R_z·diag(s,s,1)·R_zᵀ·R_yᵀ =
+ *  R_y·diag(s,s,1)·R_yᵀ — so it is ignored here (TICKET-008). */
 function isSideways(rotation: [number, number, number]): boolean {
-  if (rotation[0] !== 0 || rotation[2] !== 0) return false;
+  if (rotation[0] !== 0) return false;
   return Math.abs(Math.abs(normalizeAngle(rotation[1])) - Math.PI / 2) < 1e-9;
 }
 
