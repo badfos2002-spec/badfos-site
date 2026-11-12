@@ -120,7 +120,8 @@ async function removeBackgroundFile(file: File): Promise<File> {
   return new File([blob], `${base}-nobg.png`, { type: 'image/png' })
 }
 
-/** One arrow tap. Local model units — see decalTransform.MAX_OFFSET (0.35). */
+/** One arrow tap. Local model units — see decalTransform.maxOffsetForArea
+ *  (0.35, or 0.04 on a shoulder: four taps from the centre either way). */
 const NUDGE = 0.01
 
 /** Binary floats do not sum back to zero: ten "up" taps then ten "down" taps
@@ -455,7 +456,7 @@ export default function AdminSketchesPage() {
   const nudge = (ddx: number, ddy: number) => {
     if (!editArea) return
     const cur = transforms[editArea] ?? DEFAULT_TRANSFORM
-    commitTransform(editArea, clampTransform({ dx: round3(cur.dx + ddx), dy: round3(cur.dy + ddy), scale: cur.scale }))
+    commitTransform(editArea, clampTransform({ dx: round3(cur.dx + ddx), dy: round3(cur.dy + ddy), scale: cur.scale }, editArea))
   }
 
   /** Called on pointerup/keyup only — never from `onChange`. */
@@ -463,7 +464,7 @@ export default function AdminSketchesPage() {
     if (!editArea) return
     const cur = transforms[editArea] ?? DEFAULT_TRANSFORM
     if (cur.scale === v) return // a click that moved nothing must not reproject
-    commitTransform(editArea, clampTransform({ ...cur, scale: v }))
+    commitTransform(editArea, clampTransform({ ...cur, scale: v }, editArea))
   }
 
   const resetArea = () => {
@@ -658,7 +659,7 @@ export default function AdminSketchesPage() {
         t && Number.isFinite(t.dx) && Number.isFinite(t.dy) && Number.isFinite(t.scale) &&
         !isDefaultTransform(t)
       ) {
-        tr[d.area] = clampTransform(t)
+        tr[d.area] = clampTransform(t, d.area)
       }
     }
     setProductId(item.productType)

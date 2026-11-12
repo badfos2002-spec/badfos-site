@@ -16,15 +16,27 @@ export const DEFAULT_TRANSFORM: DesignTransform = { dx: 0, dy: 0, scale: 1 };
  *  artwork being dragged clear of the mesh (where the decal silently vanishes),
  *  but it does not keep the print inside the garment. */
 export const MAX_OFFSET = 0.35;
+/** The same rail for a SHOULDER (TICKET-004). A sleeve is a thin tube, so its
+ *  surface leaves the projector's shallow window after a small move around the
+ *  curve — long before 0.35. Measured on the t-shirt: a committed offset of
+ *  ~0.13 lost about half the artwork, ~0.045 landed complete. */
+export const SHOULDER_MAX_OFFSET = 0.04;
 export const MIN_SCALE = 0.3;
 export const MAX_SCALE = 2.0;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-export function clampTransform(t: DesignTransform): DesignTransform {
+/** How far this area may be nudged. Unknown areas — and callers that pass none —
+ *  keep the original rail. */
+export function maxOffsetForArea(area?: string): number {
+  return area?.startsWith('shoulder_') ? SHOULDER_MAX_OFFSET : MAX_OFFSET;
+}
+
+export function clampTransform(t: DesignTransform, area?: string): DesignTransform {
+  const maxOffset = maxOffsetForArea(area);
   return {
-    dx: clamp(t.dx, -MAX_OFFSET, MAX_OFFSET),
-    dy: clamp(t.dy, -MAX_OFFSET, MAX_OFFSET),
+    dx: clamp(t.dx, -maxOffset, maxOffset),
+    dy: clamp(t.dy, -maxOffset, maxOffset),
     scale: clamp(t.scale, MIN_SCALE, MAX_SCALE),
   };
 }
