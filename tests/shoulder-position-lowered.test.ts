@@ -41,9 +41,13 @@ describe('3D — the shoulder print is lower on every shirt variant', () => {
     })
   }
 
-  it('the three long-sleeve variants share ONE shoulder position', () => {
+  // TICKET-009: same x and y across the family; z follows each model's sleeve
+  // (crewneck a bit back, zip hoodie a bit forward of the kangaroo hoodie).
+  it('the three long-sleeve variants share one shoulder height and x; z per model', () => {
     const ref = areas('hoodie').shoulder_right!.position
-    for (const v of LONG) expect(areas(v).shoulder_right!.position).toEqual(ref)
+    for (const v of LONG) expect(areas(v).shoulder_right!.position.slice(0, 2)).toEqual(ref.slice(0, 2))
+    expect(areas('sweatshirt').shoulder_right!.position[2]).toBeLessThan(ref[2])
+    expect(areas('ziphoodie').shoulder_right!.position[2]).toBeGreaterThan(ref[2])
   })
 
   it('the hoodie family drops by at least as much as the tee — same arm height, not the old seam spot', () => {
