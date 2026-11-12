@@ -51,12 +51,13 @@ const TSHIRT_AREAS: Record<string, Placement> = {
   chest_logo_center: { position: [0, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   center: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
   center_wide: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
-  // Upper sleeve, just below the shoulder seam. The sideways-facing patch spans
-  // x 0.66–0.75 around here; y/z were then nudged on screen until the box sat
-  // square on the sleeve — higher than y 0.6 and its top edge rides over the
-  // sleeve's upper seam, lower and it foreshortens off the leading edge.
-  shoulder_right: { position: [-0.69, 0.59, -0.03], rotation: [0, -Math.PI / 2, 0], size: 0.16, depth: 0.22 },
-  shoulder_left: { position: [0.69, 0.59, -0.03], rotation: [0, Math.PI / 2, 0], size: 0.16, depth: 0.22 },
+  // Lower sleeve, just above the hem (TICKET-007 — it used to hug the shoulder
+  // seam at y 0.59). The hem ring is at y≈0.27; the sleeve flares outward going
+  // down (outermost x −0.80 at y 0.36), so x moved out with y to keep the
+  // projector box over the sleeve's outer wall — otherwise the box foreshortens
+  // off the leading edge. Nudged on screen until the print sat square.
+  shoulder_right: { position: [-0.73, 0.36, -0.09], rotation: [0, -Math.PI / 2, 0], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.73, 0.36, -0.09], rotation: [0, Math.PI / 2, 0], size: 0.16, depth: 0.22 },
 };
 const TSHIRT_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.62, h: 0.68, label: 'קדמי מלא' },
@@ -78,9 +79,10 @@ const POLO_AREAS: Record<string, Placement> = {
   chest_logo_right: { position: [0.24, 0.44, 0.34], rotation: [0, 0, 0], size: 0.22, depth: 0.4, panel: 'front' },
   // The polo's sleeves are their OWN primitives (xc ≈ ∓0.59), so each shoulder
   // names its sleeve — the panel scoring would otherwise send it to the chest.
-  // Sideways-facing patch there: x 0.58–0.70 at y≈0.52, z≈−0.16.
-  shoulder_right: { position: [-0.64, 0.52, -0.16], rotation: [0, -Math.PI / 2, 0], size: 0.2, depth: 0.22, panel: 'sleeveRight' },
-  shoulder_left: { position: [0.64, 0.52, -0.16], rotation: [0, Math.PI / 2, 0], size: 0.2, depth: 0.22, panel: 'sleeveLeft' },
+  // Lowered to just above the sleeve hem (TICKET-007; was y 0.52), checked on
+  // screen.
+  shoulder_right: { position: [-0.66, 0.24, -0.17], rotation: [0, -Math.PI / 2, 0], size: 0.2, depth: 0.22, panel: 'sleeveRight' },
+  shoulder_left: { position: [0.66, 0.24, -0.17], rotation: [0, Math.PI / 2, 0], size: 0.2, depth: 0.22, panel: 'sleeveLeft' },
 };
 const POLO_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.4, h: 0.5, label: 'קדמי מלא' },
@@ -102,10 +104,12 @@ const OVERSIZED_AREAS: Record<string, Placement> = {
   chest_logo_center: { position: [0, 0.55, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
   center: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.66, depth: 0.55 },
   center_wide: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.78, depth: 0.55 },
-  // The baggy sleeve's sideways patch spans x 0.61–0.77; same screen-tuning as
-  // the tee, one notch lower because the oversized shoulder drops further.
-  shoulder_right: { position: [-0.67, 0.58, -0.035], rotation: [0, -Math.PI / 2, 0], size: 0.17, depth: 0.24 },
-  shoulder_left: { position: [0.67, 0.58, -0.035], rotation: [0, Math.PI / 2, 0], size: 0.17, depth: 0.24 },
+  // Lower sleeve, just above the hem (TICKET-007; was y 0.58). The baggy sleeve
+  // slopes out ~0.05 in x per 0.1 in y (outer wall x −0.83 at y 0.40, −0.89 at
+  // 0.30), so the box is centred on that wall; any lower and the wall bulges past
+  // the projector depth, any further out and the top corner misses the sleeve.
+  shoulder_right: { position: [-0.8, 0.32, -0.03], rotation: [0, -Math.PI / 2, 0], size: 0.17, depth: 0.24 },
+  shoulder_left: { position: [0.8, 0.32, -0.03], rotation: [0, Math.PI / 2, 0], size: 0.17, depth: 0.24 },
 };
 const OVERSIZED_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.54, h: 0.64, label: 'קדמי מלא' },
@@ -140,11 +144,15 @@ const HOODIE_AREAS: Record<string, Placement> = {
   chest_logo_center: { position: [0, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   center: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.56, depth: 0.55 },
   center_wide: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.68, depth: 0.55 },
-  // Long sleeves: the hood occupies the top, so the print sits lower than on a
-  // tee. Sideways patch: x 0.45–0.62 at y≈0.50, z≈0.03 (the crewneck and the
-  // zip hoodie measure the same patch to within 0.03 — one table for all three).
-  shoulder_right: { position: [-0.55, 0.5, 0.03], rotation: [0, -Math.PI / 2, 0], size: 0.16, depth: 0.22 },
-  shoulder_left: { position: [0.55, 0.5, 0.03], rotation: [0, Math.PI / 2, 0], size: 0.16, depth: 0.22 },
+  // Long sleeves (TICKET-007; was y 0.5): the SAME spot on the arm as the
+  // lowered tee print — bicep level, where a t-shirt sleeve ends, not the cuff.
+  // Measured from the top of the sleeve, the tee print sits ~22% of the garment's
+  // height down (0.80 → 0.36 of 2.0); here the sleeve starts at y≈0.50–0.55 and
+  // the garment is 1.7 tall, so ~0.18. The outer wall there is x −0.73..−0.76
+  // across hoodie/crewneck/zip, so x −0.67 with depth 0.22 covers all three;
+  // z 0 sits between the crewneck's patch (z≈−0.07) and the zip's (z≈0.10).
+  shoulder_right: { position: [-0.67, 0.18, 0], rotation: [0, -Math.PI / 2, 0], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.67, 0.18, 0], rotation: [0, Math.PI / 2, 0], size: 0.16, depth: 0.22 },
 };
 const HOODIE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.48, h: 0.58, label: 'קדמי מלא' },
