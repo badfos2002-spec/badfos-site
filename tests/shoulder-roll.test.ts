@@ -14,14 +14,16 @@ const SHIRTS = [...ROLLED, 'oversized'] as const
 const LONG = ['hoodie', 'sweatshirt', 'ziphoodie'] as const
 const deg = (d: number) => (d * Math.PI) / 180
 
-// The TICKET-007 positions — the roll must not move the square.
+// The TICKET-007 positions — the roll must not move the square (TICKET-009
+// later moves the crewneck and zip hoodie in z only).
 const POSITION: Record<(typeof SHIRTS)[number], [number, number, number]> = {
-  tshirt: [-0.73, 0.36, -0.09],
+  tshirt: [-0.73, 0.36, NaN], // TICKET-009b nudges z (shoulder-followup.test.ts)
   polo: [-0.66, 0.24, -0.17],
   oversized: [-0.8, 0.32, -0.03],
-  hoodie: [-0.67, 0.18, 0],
-  sweatshirt: [-0.67, 0.18, 0],
-  ziphoodie: [-0.67, 0.18, 0],
+  hoodie: [-0.67, 0.18, NaN], // TICKET-009b nudges z (shoulder-followup.test.ts)
+  // TICKET-009 moves these two in z only (pinned in shoulder-followup.test.ts).
+  sweatshirt: [-0.67, 0.18, NaN],
+  ziphoodie: [-0.67, 0.18, NaN],
 }
 
 describe('3D — a slight, mirrored roll on the five rolled variants', () => {
@@ -63,8 +65,11 @@ describe('3D — everything else about the shoulders is unchanged', () => {
 
     it(`${v}: positions are the TICKET-007 ones (rotate only, do not move)`, () => {
       const p = POSITION[v]
-      expect(areas(v).shoulder_right!.position).toEqual(p)
-      expect(areas(v).shoulder_left!.position).toEqual([-p[0], p[1], p[2]])
+      const r = areas(v).shoulder_right!.position
+      const l = areas(v).shoulder_left!.position
+      expect(r.slice(0, 2)).toEqual(p.slice(0, 2))
+      expect(l).toEqual([-r[0], r[1], r[2]])
+      if (!Number.isNaN(p[2])) expect(r[2]).toBe(p[2])
     })
   }
 })
