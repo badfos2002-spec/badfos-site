@@ -183,6 +183,52 @@ describe('viewerDesignsFor — the order designs as the 3D stage wants them', ()
     for (const d of bad) expect(d.transform?.scale).toBe(1)
   })
 
+  // TICKET-005 landed `lib/enlarge.ts`, which owns the step→scale rule for every
+  // consumer: the price, the sanitiser, the 2D overlays and every other
+  // Preview3DStage caller. The viewer's own copy of `1 + 0.1*n` had neither the
+  // ceiling nor the product/area gate, so it was the one place that could
+  // disagree with what the customer paid for and what the sketch shows.
+  it('a crafted enlarge 7 is clamped to the ceiling — 1.3, not 1.7', () => {
+    const [d] = viewerDesignsFor(item([design('front_full', { enlarge: 7 })]))
+
+    expect(d.transform?.scale).toBeCloseTo(1.3, 10)
+  })
+
+  it('a fractional step floors, like every other consumer', () => {
+    const [d] = viewerDesignsFor(item([design('front_full', { enlarge: 2.5 })]))
+
+    expect(d.transform?.scale).toBeCloseTo(1.2, 10)
+  })
+
+  it('a stale enlarge on an area that cannot be enlarged is ignored', () => {
+    // Only front_full and back enlarge. A chest logo or a shoulder carrying the
+    // field (hand-edited doc, future area rename) must render at its real size.
+    const designs = viewerDesignsFor(
+      item([
+        design('chest_logo', { enlarge: 2 }),
+        design('shoulder_right', { enlarge: 3 }),
+      ])
+    )
+
+    expect(designs.map(d => d.transform?.scale)).toEqual([1, 1])
+  })
+
+  it('the gate is product AND area — a product without the feature never scales', () => {
+    const [d] = viewerDesignsFor(
+      item([design('front_full', { enlarge: 3 })], { productType: 'cap' })
+    )
+
+    expect(d.transform?.scale).toBe(1)
+  })
+
+  it('a sweatshirt back still enlarges all the way to 1.3', () => {
+    const [d] = viewerDesignsFor(
+      item([design('back', { enlarge: 3 })], { productType: 'sweatshirt', fabricType: 'kangaroo' })
+    )
+
+    expect(d.transform?.scale).toBeCloseTo(1.3, 10)
+  })
+
   it('a design with no image url is dropped rather than rendered as a blank decal', () => {
     const designs = viewerDesignsFor(
       item([design('front_full', { imageUrl: '' }), design('back')])
