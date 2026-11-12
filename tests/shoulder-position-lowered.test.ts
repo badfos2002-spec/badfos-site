@@ -30,8 +30,10 @@ describe('3D — the shoulder print is lower on every shirt variant', () => {
       expect(l.position[2]).toBe(r.position[2])
       expect(l.size).toBe(r.size)
       expect(l.depth).toBe(r.depth)
-      expect(r.rotation).toEqual([0, -Math.PI / 2, 0])
-      expect(l.rotation).toEqual([0, Math.PI / 2, 0])
+      // TICKET-008 adds a mirrored roll in rotation[2]; x/y stay as they were.
+      expect(r.rotation.slice(0, 2)).toEqual([0, -Math.PI / 2])
+      expect(l.rotation.slice(0, 2)).toEqual([0, Math.PI / 2])
+      expect(l.rotation[2] + r.rotation[2]).toBe(0) // mirrored (and 0 + 0 on oversized, no −0 trap)
     })
 
     it(`${v}: the shoulder print no longer sits above the chest-logo row`, () => {
