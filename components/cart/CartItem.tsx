@@ -11,6 +11,8 @@ import { formatPrice } from '@/lib/pricing'
 import { getColorLabel, getTypeLabel } from '@/lib/constants'
 import { tshirtMockups, tshirtMockupsBack, capMockups, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { createSharedDesign } from '@/lib/db'
+import DesignAreaLines from './DesignAreaLines'
+import { enlargeScale, normalizeEnlarge } from '@/lib/enlarge'
 
 interface CartItemProps {
   item: CartItemType
@@ -70,10 +72,11 @@ function MockupView({ view, color, designs, productType, fabricType }: {
       {viewDesigns.map((design) => {
         const overlay = DESIGN_AREA_OVERLAYS[design.area]
         if (!overlay) return null
+        const scale = enlargeScale(normalizeEnlarge(productType, design.area, design.enlarge))
         return (
           <div
             key={design.area}
-            className="absolute overflow-hidden"
+            className={scale === 1 ? 'absolute overflow-hidden' : 'absolute'}
             style={{ ...overlay.style, position: 'absolute' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -81,6 +84,7 @@ function MockupView({ view, color, designs, productType, fabricType }: {
               src={design.imageUrl}
               alt={design.areaName}
               className="w-full h-full object-contain"
+              style={scale === 1 ? undefined : { transform: `scale(${scale})` }}
             />
           </div>
         )
@@ -130,11 +134,17 @@ export default function CartItem({ item }: CartItemProps) {
     try {
       // Convert blob URLs to base64
       const designs = await Promise.all(
-        item.designs.map(async (d) => ({
-          area: d.area,
-          areaName: d.areaName,
-          imageBase64: await blobToBase64(d.imageUrl),
-        }))
+        item.designs.map(async (d) => {
+          // Carried so the share page shows the print at the ordered size.
+          // Only above 0 step — addDoc throws on an explicit undefined.
+          const steps = normalizeEnlarge(item.productType, d.area, d.enlarge)
+          return {
+            area: d.area,
+            areaName: d.areaName,
+            imageBase64: await blobToBase64(d.imageUrl),
+            ...(steps > 0 ? { enlarge: steps } : {}),
+          }
+        })
       )
 
       // Save to Firestore
@@ -270,14 +280,7 @@ export default function CartItem({ item }: CartItemProps) {
             </div>
 
             {/* Design Areas */}
-            {item.designs.length > 0 && (
-              <div className="mb-2">
-                <p className="text-sm font-medium">עיצובים:</p>
-                <p className="text-sm text-text-gray">
-                  {item.designs.map(d => d.areaName).join(', ')}
-                </p>
-              </div>
-            )}
+            <DesignAreaLines productType={item.productType} designs={item.designs} />
 
             {/* Sizes & Quantities + Share */}
             <div className="flex items-start justify-between mb-3">

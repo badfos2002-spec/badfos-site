@@ -819,7 +819,15 @@ export interface SharedDesignData {
   source?: 'checkout'
   // `transform` is optional and written only when non-default — documents
   // created before this field exist without it and render exactly as before.
-  designs: { area: string; areaName: string; imageBase64: string; transform?: DesignTransform }[]
+  designs: {
+    area: string
+    areaName: string
+    imageBase64: string
+    transform?: DesignTransform
+    /** Print enlargement in 10% steps, as ordered (lib/enlarge.ts). Absent
+     *  means 0 — it is never written as 0 or undefined. */
+    enlarge?: number
+  }[]
 }
 
 /**

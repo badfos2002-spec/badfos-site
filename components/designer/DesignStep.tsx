@@ -42,6 +42,8 @@ import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { failImageFit } from '@/lib/image-fit'
 import { ImagePlus, CheckCircle, X } from 'lucide-react'
 import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
+import EnlargeControl from '@/components/designer/EnlargeControl'
+import { canEnlarge, withEnlarge } from '@/lib/enlarge'
 
 interface DesignStepProps {
   designs: DesignArea[]
@@ -310,6 +312,14 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
     onUpdate(next)
   }
 
+  /** Print enlargement for one area. Merges into the LATEST array for the same
+   *  reason putDesign does — an upload may land between two presses. */
+  const setEnlarge = (areaId: string, steps: number) => {
+    const next = withEnlarge(designsRef.current, 'tshirt', areaId, steps)
+    designsRef.current = next
+    onUpdate(next)
+  }
+
   const handleFileSelectForArea = async (areaId: string, file: File) => {
     const area = TSHIRT_DESIGN_AREAS.find(a => a.id === areaId)!
 
@@ -337,12 +347,27 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
         areaName: area.name,
         imageUrl: preview,
         fileName: ready.name,
+        // Replacing the file KEEPS the area's enlargement: the customer chose
+        // it for this area and the chip stays on screen, so silently resetting
+        // it would quietly lower the price they were just shown.
+        ...(previous?.enlarge ? { enlarge: previous.enlarge } : {}),
       }
       putDesign(entry)
 
       const permanentUrl = await uploadDesignFile(ready, sessionId, generateUniqueFileName(ready.name))
       await warmCache(permanentUrl)
-      putDesign({ ...entry, imageUrl: permanentUrl })
+      // `entry` was captured before the upload started, and the upload takes
+      // real seconds on mobile data — the whole point of the optimistic preview
+      // is that the customer carries on, "+" included. Re-read the area's
+      // enlargement from the LATEST array instead of restoring the snapshot.
+      const live = designsRef.current.find(d => d.area === areaId)
+      const landed: DesignArea = { ...entry, imageUrl: permanentUrl }
+      // `live` is the ONLY authority on the enlargement here: a "+" and a reset
+      // pressed during the upload must both survive, so never fall back to the
+      // captured snapshot in either direction.
+      if (live?.enlarge) landed.enlarge = live.enlarge
+      else delete landed.enlarge
+      putDesign(landed)
     } catch (err) {
       console.error('Design upload failed:', err)
       // Never leave a blob: preview behind — it dies with the tab and the owner
@@ -433,6 +458,23 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
           })}
         </div>
         ))}
+
+        {/* Enlargement, inline with the cards above and thumb-reachable — one
+            row per uploaded area that offers it, so it is never below the fold. */}
+        {availableAreas
+          .filter(area => canEnlarge('tshirt', area.id) && hasDesign(area.id))
+          .map(area => (
+            <div key={area.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-yellow-200 bg-yellow-50/60 px-3 py-1.5">
+              <span className="text-xs font-medium text-gray-700">{area.name}</span>
+              <EnlargeControl
+                productType="tshirt"
+                area={area.id}
+                hasDesign
+                enlarge={getDesign(area.id)?.enlarge}
+                onChange={steps => setEnlarge(area.id, steps)}
+              />
+            </div>
+          ))}
       </div>
 
       {/* ── DESKTOP: original area selector + upload area ── */}
@@ -495,6 +537,17 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={currentDesign.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
               </div>
+              {canEnlarge('tshirt', selectedAreaId) && (
+                <div className="mb-3">
+                  <EnlargeControl
+                    productType="tshirt"
+                    area={selectedAreaId}
+                    hasDesign
+                    enlarge={currentDesign.enlarge}
+                    onChange={steps => setEnlarge(selectedAreaId, steps)}
+                  />
+                </div>
+              )}
               <label
                 role="button"
                 tabIndex={0}

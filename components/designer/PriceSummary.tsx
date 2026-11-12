@@ -54,6 +54,12 @@ export default function PriceSummary({ config }: PriceSummaryProps) {
               <span className="font-medium">+{formatPrice(breakdown.designAreaPrices)}</span>
             </div>
           )}
+          {breakdown.enlargePrice > 0 && (
+            <div className="flex justify-between text-gray-600">
+              <span>הגדלת הדפס</span>
+              <span className="font-medium">+{formatPrice(breakdown.enlargePrice)}</span>
+            </div>
+          )}
           {breakdown.sizeSurcharge > 0 && (
             <div className="flex justify-between text-gray-600">
               <span>תוספת מידה</span>

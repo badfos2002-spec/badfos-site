@@ -1,11 +1,30 @@
-import type { ProductConfig, CartItem, SizeQuantity } from './types'
+import type { ProductConfig, CartItem, DesignArea, SizeQuantity } from './types'
 import {
   getBasePrice,
   getDesignAreasByProductType,
   getSizeSurcharge,
   getLiveShippingCost,
   getLiveQuantityDiscount,
+  getLiveEnlargeStepPrice,
 } from './constants'
+import { normalizeEnlarge } from './enlarge'
+
+/**
+ * What the print enlargements on this item add per unit.
+ *
+ * Priced per step per unit at the admin's live rate, and gated through
+ * normalizeEnlarge — so a stale or crafted `enlarge` on an area or product
+ * without the feature (a chest logo, a tote's front) costs exactly nothing,
+ * and a value above the ceiling is charged as the ceiling, which is also what
+ * gets stored. See lib/enlarge.ts.
+ */
+function enlargementPrice(productType: string | undefined, designs: DesignArea[]): number {
+  const stepPrice = getLiveEnlargeStepPrice()
+  return designs.reduce(
+    (total, design) => total + normalizeEnlarge(productType, design.area, design.enlarge) * stepPrice,
+    0
+  )
+}
 
 // ============================================================================
 // Price Calculation Functions
@@ -54,8 +73,11 @@ export function calculateItemPrice(config: ProductConfig): number {
     sizeSurcharge = totalQuantity > 0 ? weightedSurcharge / totalQuantity : 0
   }
 
+  // 5. Print enlargement, on top of the area price — not instead of it
+  const enlargePrice = enlargementPrice(productType, designs)
+
   // Final price per unit
-  return basePrice + fabricSurcharge + designAreaPrices + sizeSurcharge
+  return basePrice + fabricSurcharge + designAreaPrices + sizeSurcharge + enlargePrice
 }
 
 /**
@@ -163,10 +185,30 @@ export function calculateOrderTotal(
 }
 
 /**
+ * A price as text, without a currency sign.
+ *
+ * One decimal when the amount is not a whole shekel, none when it is. The
+ * enlargement step is ₪1.5, so a real per-unit price can land on a half
+ * shekel; this used to be toFixed(0), which showed ₪38.5 as "₪38" while Grow
+ * charged 38.5. A value that rounds to a whole shekel at one decimal still
+ * prints without one, so "₪38.0" never appears and every whole price is
+ * byte-identical to what it was.
+ *
+ * (This also stops rounding the fractional prices that already existed: a
+ * weighted size surcharge — 7 shirts with one 3XL is 38.714 per unit — and a
+ * discounted total. Those used to display rounded and now display the number
+ * actually charged.)
+ */
+export function formatAmount(price: number): string {
+  const oneDecimal = price.toFixed(1)
+  return oneDecimal.endsWith('.0') ? price.toFixed(0) : oneDecimal
+}
+
+/**
  * Format price in ILS (Israeli Shekel)
  */
 export function formatPrice(price: number): string {
-  return `₪${price.toFixed(0)}`
+  return `₪${formatAmount(price)}`
 }
 
 /**
@@ -202,8 +244,15 @@ export function generateCartItemId(config: ProductConfig): string {
   // cart entry (that would silently drop the second design — critical for large orders
   // where many shirts share the same product/color but each has its own artwork).
   // Identical re-adds still yield the same id and merge quantities, as before.
+  //
+  // The enlargement joins the fingerprint — the same artwork at +0 and at +2
+  // costs more and looks different, so it is its own cart line. The marker is
+  // appended ONLY above 0 step, so every id that exists today is byte-identical.
   const designIds = designs
-    .map((d) => `${d.area}:${d.fileName || ''}:${hashString(d.imageUrl || '')}`)
+    .map((d) => {
+      const steps = normalizeEnlarge(productType, d.area, d.enlarge)
+      return `${d.area}:${d.fileName || ''}:${hashString(d.imageUrl || '')}${steps > 0 ? `:e${steps}` : ''}`
+    })
     .sort()
     .join('-')
 
@@ -233,10 +282,13 @@ export function getPriceBreakdown(config: ProductConfig): {
   fabricSurcharge: number
   designAreaPrices: number
   sizeSurcharge: number
+  /** Print enlargement — its OWN number, not folded into designAreaPrices,
+   *  because the summary shows it as a "הגדלה +n" row of its own. */
+  enlargePrice: number
   total: number
 } {
   if (config.fixedPrice !== undefined) {
-    return { basePrice: config.fixedPrice, fabricSurcharge: 0, designAreaPrices: 0, sizeSurcharge: 0, total: config.fixedPrice }
+    return { basePrice: config.fixedPrice, fabricSurcharge: 0, designAreaPrices: 0, sizeSurcharge: 0, enlargePrice: 0, total: config.fixedPrice }
   }
 
   const { productType, fabricType, designs, sizes } = config
@@ -260,11 +312,14 @@ export function getPriceBreakdown(config: ProductConfig): {
     sizeSurcharge = totalQuantity > 0 ? weightedSurcharge / totalQuantity : 0
   }
 
+  const enlargePrice = enlargementPrice(productType, designs)
+
   return {
     basePrice,
     fabricSurcharge,
     designAreaPrices,
     sizeSurcharge,
-    total: basePrice + fabricSurcharge + designAreaPrices + sizeSurcharge,
+    enlargePrice,
+    total: basePrice + fabricSurcharge + designAreaPrices + sizeSurcharge + enlargePrice,
   }
 }
