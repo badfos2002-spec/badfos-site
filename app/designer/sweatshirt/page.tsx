@@ -10,7 +10,7 @@ import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/d
 import EnlargeControl from '@/components/designer/EnlargeControl'
 import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 import { calculateItemPrice, applyQuantityDiscount, getPriceBreakdown, formatAmount } from '@/lib/pricing'
-import { canEnlarge, enlargeScale, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
+import { canEnlarge, enlargeOverlayStyle, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
 import type { DesignArea, ProductConfig } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS, SWEATSHIRT_AREA_OVERRIDES } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
@@ -606,8 +606,8 @@ export default function SweatshirtDesignerPage() {
           const design = designs.find(d => d.area === areaId)
           if (design) {
             // The print grows past its default box, centred — same scale the
-            // 3D decal gets, so both previews agree step for step.
-            const scale = enlargeScale(normalizeEnlarge('sweatshirt', areaId, design.enlarge))
+            // 3D decal gets, so both previews agree step for step. The helper
+            // APPENDS the scale so `back`'s translateX(-50%) centring survives.
             return (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -615,8 +615,7 @@ export default function SweatshirtDesignerPage() {
                 src={design.imageUrl}
                 alt={overlay.label}
                 className="absolute object-contain"
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                style={scale === 1 ? (areaStyle as any) : { ...(areaStyle as any), transform: `scale(${scale})` }}
+                style={enlargeOverlayStyle(areaStyle, normalizeEnlarge('sweatshirt', areaId, design.enlarge)) as React.CSSProperties}
               />
             )
           }

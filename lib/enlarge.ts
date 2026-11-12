@@ -84,6 +84,40 @@ export function enlargeLabel(steps: number): string {
   return `הגדלה +${steps}`
 }
 
+type OverlayStyle = { transform?: string; [key: string]: unknown }
+
+/**
+ * An overlay style with the enlargement applied, for the 2D views that put the
+ * overlay style on the artwork element ITSELF.
+ *
+ * THE SCALE IS APPENDED, NEVER ASSIGNED. `front_full` and `back` are centred by
+ * `left: '50%'` together with `transform: 'translateX(-50%)'` — that translate
+ * IS the centring. Writing `{ ...style, transform: 'scale(1.2)' }` drops it, and
+ * the print's left edge then pins to the middle of the garment: it jumps right
+ * by half its own width before it scales. Order matters too, because CSS applies
+ * these left to right — `scale(1.2) translateX(-50%)` would move by 1.2 × half
+ * the width instead of half, so the translate stays leftmost.
+ *
+ * Returns the ORIGINAL OBJECT when there is nothing to scale, so a plain design
+ * renders byte-identically to before this feature existed. (Same contract
+ * withTransform keeps in components/designer/three/decalTransform.ts.)
+ *
+ * Not for components/cart/CartItem.tsx or components/designer/TshirtDesigner.tsx:
+ * those put the overlay style on a wrapping div and the scale on the inner img,
+ * because they also need the box to stop clipping. Their centring lives on the
+ * wrapper and was never at risk.
+ */
+export function enlargeOverlayStyle<T extends OverlayStyle>(
+  style: T,
+  enlarge?: number
+): T & { transform?: string } {
+  const scale = enlargeScale(enlarge)
+  // The identical object, not a copy — see above.
+  if (scale === 1) return style as T & { transform?: string }
+  const existing = typeof style.transform === 'string' ? style.transform : ''
+  return { ...style, transform: `${existing} scale(${scale})`.trim() }
+}
+
 /**
  * Write a step count onto one area's design.
  *

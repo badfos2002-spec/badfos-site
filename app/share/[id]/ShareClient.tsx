@@ -10,7 +10,7 @@ import { Loader2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import { getColorHex, getModel3D } from '@/lib/constants'
-import { enlargeScale, to3DDesigns } from '@/lib/enlarge'
+import { enlargeOverlayStyle, to3DDesigns } from '@/lib/enlarge'
 import { isSketchPreviewUrl, isAdminSketch } from '@/lib/sketch-retention'
 
 const Preview3DStage = dynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
@@ -78,8 +78,8 @@ function MockupView({ view, color, designs, productType, fabricType }: {
         const overlay = DESIGN_AREA_OVERLAYS[design.area]
         if (!overlay) return null
         // Already gated by product and area when the share was written — see
-        // the same note in app/share/cart/[id]/page.tsx.
-        const scale = enlargeScale(design.enlarge)
+        // the same note in app/share/cart/[id]/page.tsx. enlargeOverlayStyle
+        // APPENDS the scale so the overlay's centring translate survives.
         return (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -87,11 +87,7 @@ function MockupView({ view, color, designs, productType, fabricType }: {
             src={design.imageBase64}
             alt={design.areaName}
             className="absolute object-contain"
-            style={
-              scale === 1
-                ? (overlay.style as React.CSSProperties)
-                : { ...(overlay.style as React.CSSProperties), transform: `scale(${scale})` }
-            }
+            style={enlargeOverlayStyle(overlay.style, design.enlarge) as React.CSSProperties}
           />
         )
       })}
