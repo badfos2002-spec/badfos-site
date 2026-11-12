@@ -6,10 +6,10 @@ import Image from 'next/image'
 import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
-import AreaIcon, { areaRows, isChestArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
+import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
 import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
-import { DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { DESIGN_AREA_OVERLAYS, SWEATSHIRT_AREA_OVERRIDES } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { useCart } from '@/hooks/useCart'
@@ -24,10 +24,6 @@ const Preview3DStage = nextDynamic(() => import('@/components/designer/three/Pre
   ssr: false,
   loading: () => <Preview3DLoading />,
 })
-
-const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
-  back: { width: '36%', aspectRatio: '180 / 200', top: '33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
-}
 
 const sweatshirtMockups: Record<string, string> = {
   white: '/assets/סווטשרט חזית לבן.webp',
@@ -301,7 +297,7 @@ export default function SweatshirtDesignerPage() {
               {areaRows(availableAreas).map(row => (
               <div key={row[0].id} className={`grid gap-2 ${AREA_ROW_COLS[row.length]}`}>
                 {row.map((area) => {
-                  const compact = isChestArea(area.id)
+                  const compact = isCompactArea(area.id)
                   const isActive = selectedAreaId === area.id
                   const uploaded = hasDesign(area.id)
                   return (

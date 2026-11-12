@@ -5,6 +5,7 @@ import { Save, Loader2, RefreshCw, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getDocument, setDocument } from '@/lib/db'
+import { codeDefaults, type ProductPricing } from './defaults'
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Pricing tab v2 — per-category structure:
@@ -12,7 +13,6 @@ import { getDocument, setDocument } from '@/lib/db'
  *   category only (no cross-product bleed like the old global area ids).
  * ──────────────────────────────────────────────────────────────────────────── */
 
-type ProductPricing = { base: Record<string, number>; areas: Record<string, number> }
 type PricingV2 = {
   products: Record<string, ProductPricing>
   sizeSurcharges: Record<string, number>
@@ -40,6 +40,8 @@ const CATALOG: {
       { id: 'chest_logo', label: 'סמל כיס ימין' },
       { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
       { id: 'chest_logo_center', label: 'סמל אמצעי' },
+      { id: 'shoulder_right', label: 'כתף ימין' },
+      { id: 'shoulder_left', label: 'כתף שמאל' },
     ],
   },
   {
@@ -55,6 +57,8 @@ const CATALOG: {
       { id: 'chest_logo', label: 'סמל כיס ימין' },
       { id: 'chest_logo_right', label: 'סמל כיס שמאל' },
       { id: 'chest_logo_center', label: 'סמל אמצעי' },
+      { id: 'shoulder_right', label: 'כתף ימין' },
+      { id: 'shoulder_left', label: 'כתף שמאל' },
     ],
   },
   {
@@ -108,20 +112,6 @@ const GLOBAL_DEFAULTS = {
   quantityDiscount: { minQuantity: 15, discountPercent: 5 },
 }
 
-/** Code-default products pricing (used when nothing is saved yet). */
-function codeDefaults(): Record<string, ProductPricing> {
-  return {
-    tshirt: { base: { cotton: 37, 'dri-fit': 37, polo: 47, oversized: 47 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, chest_logo_center: 5 } },
-    sweatshirt: { base: { kangaroo: 53, putter: 53, zip: 53 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, chest_logo_center: 5 } },
-    cap: { base: { tembel: 30, mesh: 30 }, areas: { center: 5, center_wide: 5 } },
-    tote: { base: { volume: 35, drawstring: 35 }, areas: { front_full: 5, back: 5 } },
-    vest: { base: { default: 30 }, areas: { back: 10, chest_logo: 5, chest_logo_right: 5 } },
-    buff: { base: { default: 8 }, areas: { center: 8 } },
-    apron: { base: { default: 29 }, areas: { center: 10 } },
-    baby: { base: { default: 35 }, areas: { front_full: 5, back: 5 } },
-  }
-}
-
 /* Legacy doc shape (pre-v2) — migrated once into the per-product structure. */
 type LegacyDoc = {
   basePrices?: Record<string, number>
@@ -159,6 +149,8 @@ function migrateLegacy(legacy: LegacyDoc): Record<string, ProductPricing> {
     chest_logo: da.chest_logo ?? 5,
     chest_logo_right: da.chest_logo_right ?? 5,
     chest_logo_center: da.chest_logo_center ?? 5,
+    shoulder_right: da.shoulder_right ?? 5,
+    shoulder_left: da.shoulder_left ?? 5,
   }
   d.tshirt.areas = { ...shirtAreas }
   const sBase = bp.sweatshirt ?? 53

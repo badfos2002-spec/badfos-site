@@ -41,7 +41,7 @@ import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { failImageFit } from '@/lib/image-fit'
 import { ImagePlus, CheckCircle, X } from 'lucide-react'
-import AreaIcon, { areaRows, isChestArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
+import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
 
 interface DesignStepProps {
   designs: DesignArea[]
@@ -373,7 +373,7 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
         {areaRows(availableAreas).map(row => (
         <div key={row[0].id} className={`grid gap-3 ${AREA_ROW_COLS[row.length]}`}>
           {row.map((area) => {
-            const compact = isChestArea(area.id)
+            const compact = isCompactArea(area.id)
             const uploaded = hasDesign(area.id)
             const processing = isBusy(area.id)
             return (
@@ -442,7 +442,7 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
           {areaRows(availableAreas).map(row => (
           <div key={row[0].id} className={`grid gap-2 ${AREA_ROW_COLS[row.length]}`}>
             {row.map((area) => {
-              const compact = isChestArea(area.id)
+              const compact = isCompactArea(area.id)
               const isActive = selectedAreaId === area.id
               const uploaded = hasDesign(area.id)
               return (

@@ -385,7 +385,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   }
 
   const mockupDesigns = config.designs || []
-  const tshirtAreaIds = TSHIRT_AREA_FILTER[config.fabricType || ''] ?? ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'chest_logo_center']
+  const tshirtAreaIds = TSHIRT_AREA_FILTER[config.fabricType || ''] ?? ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'chest_logo_center', 'shoulder_right', 'shoulder_left']
   const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
     if (!tshirtAreaIds.includes(areaId)) return false
     if (overlay.view !== previewView) return false

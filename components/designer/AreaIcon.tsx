@@ -52,14 +52,17 @@ const AREAS: Record<AreaIconProduct, Record<string, Rect>> = {
   tshirt: {
     front_full: [16, 17, 16, 17], back: [14, 13, 20, 22],
     chest_logo: [14, 13, 6.5, 6.5], chest_logo_right: [27.5, 13, 6.5, 6.5], chest_logo_center: [20.75, 13.5, 6.5, 6.5],
+    shoulder_right: [6, 14, 4.5, 4.5], shoulder_left: [37.5, 14, 4.5, 4.5],
   },
   sweatshirt: {
     front_full: [16, 19, 16, 16], back: [14, 15, 20, 21],
     chest_logo: [14, 15.5, 6.5, 6.5], chest_logo_right: [27.5, 15.5, 6.5, 6.5], chest_logo_center: [20.75, 16, 6.5, 6.5],
+    shoulder_right: [6, 20, 4.5, 4.5], shoulder_left: [37.5, 20, 4.5, 4.5],
   },
   hoodie: {
     front_full: [16, 19, 16, 16], back: [14, 15, 20, 21],
     chest_logo: [14, 15.5, 6.5, 6.5], chest_logo_right: [27.5, 15.5, 6.5, 6.5], chest_logo_center: [20.75, 17.5, 6.5, 6.5],
+    shoulder_right: [6, 20, 4.5, 4.5], shoulder_left: [37.5, 20, 4.5, 4.5],
   },
   vest: {
     back: [13, 14, 22, 22],
@@ -86,11 +89,18 @@ export default function AreaIcon({ area, product, className = 'w-10 h-10' }: { a
 }
 
 // Area-button layout: large areas (front/back) on the first row, chest logos
-// on one compact row in reading order ימין → אמצעי → שמאל (RTL puts ימין right).
+// on one compact row in reading order ימין → אמצעי → שמאל (RTL puts ימין right),
+// and the sleeve prints on a compact row of their own in the same order. A
+// product without shoulders simply yields an empty row, which is dropped.
 const CHEST_ORDER = ['chest_logo', 'chest_logo_center', 'chest_logo_right']
+const SHOULDER_ORDER = ['shoulder_right', 'shoulder_left']
 export const isChestArea = (id: string) => id.startsWith('chest_logo')
+export const isShoulderArea = (id: string) => id.startsWith('shoulder_')
+// Small prints (chest logos + sleeves) get the shorter button.
+export const isCompactArea = (id: string) => isChestArea(id) || isShoulderArea(id)
 export const AREA_ROW_COLS = ['', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3']
 export function areaRows<T extends { id: string }>(areas: readonly T[]): T[][] {
   const chest = areas.filter(a => isChestArea(a.id)).sort((a, b) => CHEST_ORDER.indexOf(a.id) - CHEST_ORDER.indexOf(b.id))
-  return [areas.filter(a => !isChestArea(a.id)), chest].filter(row => row.length > 0)
+  const shoulders = areas.filter(a => isShoulderArea(a.id)).sort((a, b) => SHOULDER_ORDER.indexOf(a.id) - SHOULDER_ORDER.indexOf(b.id))
+  return [areas.filter(a => !isCompactArea(a.id)), chest, shoulders].filter(row => row.length > 0)
 }

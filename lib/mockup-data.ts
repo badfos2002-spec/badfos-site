@@ -80,6 +80,21 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'סמל אמצעי',
     style: { width: '12%', aspectRatio: '1', top: '30%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
   },
+  // Sleeve prints. Right/left are the WEARER's side (like chest_logo), so on a
+  // front photo כתף ימין sits on the viewer's LEFT. Both are anchored with
+  // `left` and mirror exactly: left + width + left(other) = 100. Boxes measured
+  // against 'חולצה לבנה קדימה.webp' — they sit between the sleeve's outer edge
+  // and the armhole seam, clear of front_full (30%–70%) and the chest logos.
+  shoulder_right: {
+    view: 'front',
+    label: 'כתף ימין',
+    style: { width: '6.5%', aspectRatio: '1', top: '36%', left: '13.25%', borderRadius: '4px' },
+  },
+  shoulder_left: {
+    view: 'front',
+    label: 'כתף שמאל',
+    style: { width: '6.5%', aspectRatio: '1', top: '36%', left: '80.25%', borderRadius: '4px' },
+  },
   center: {
     view: 'front',
     label: 'מרכזי',
@@ -110,4 +125,13 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'עיצוב באף',
     style: { width: '31%', height: '10.8%', top: '68.2%', left: '53%', borderRadius: '4px', clipPath: 'polygon(25% 0%, 75% 0%, 85% 100%, 15% 100%)' },
   },
+}
+
+// Areas whose box differs on the sweatshirt photos: the hoodie's back print is
+// smaller, and its sleeves hang at the sides — much narrower and lower than a
+// t-shirt's. Measured against 'סווטשרט חזית לבן.webp'; same mirror invariant.
+export const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
+  back: { width: '36%', aspectRatio: '180 / 200', top: '33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
+  shoulder_right: { width: '5%', aspectRatio: '1', top: '40%', left: '16.7%', borderRadius: '4px' },
+  shoulder_left: { width: '5%', aspectRatio: '1', top: '40%', left: '78.3%', borderRadius: '4px' },
 }
