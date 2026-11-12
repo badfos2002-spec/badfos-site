@@ -109,6 +109,11 @@ interface Preview3DStageProps {
    *  fine pointer only — locks the turntable and turns drags into design moves
    *  instead of rotation. */
   editArea?: string;
+  /** Face THIS turntable angle instead of deriving one from an area — the admin
+   *  order viewer (TICKET-006), whose buttons hold angles, not areas. A merely
+   *  COTERMINAL value still counts as a change, so re-pressing the selected
+   *  angle button turns the garment back after a manual spin. */
+  focusAngle?: number;
   onCommit?: (area: string, t: DesignTransform) => void;
   /** Filled with the edited area's live-preview driver, so controls outside the
    *  canvas (the size slider) can preview without a 248 ms reprojection per step. */
@@ -132,12 +137,15 @@ function shortWayTo(angle: number, cur: number): number {
  */
 function Turntable({
   focusArea,
+  focusAngle,
   variant,
   locked,
   onFirstInteract,
   children,
 }: {
   focusArea?: string;
+  /** An angle handed in directly — wins over `focusArea` when present. */
+  focusAngle?: number;
   /** Needed to read the focused area's projector rotation — a shoulder faces
    *  sideways, so the angle is no longer "back or front". */
   variant?: ShirtVariant;
@@ -166,8 +174,8 @@ function Turntable({
   // = ±90°, everything else (and no area / non-design steps) = front. Rotate the
   // SHORT way around from wherever it currently is.
   useEffect(() => {
-    target.current = shortWayTo(angleForArea(variant, focusArea), target.current);
-  }, [focusArea, variant]);
+    target.current = shortWayTo(focusAngle ?? angleForArea(variant, focusArea), target.current);
+  }, [focusAngle, focusArea, variant]);
 
   // Entering edit mode SNAPS to the area's angle instead of lerping there: the
   // px→units mapping assumes the model faces the area square-on (0, π or ±π/2 —
@@ -240,7 +248,7 @@ function Turntable({
  * Reusable 3D shirt stage: transparent Canvas + procedural studio lighting,
  * turntable rotation, and the shirt model, over the branded background.
  */
-export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint, editArea, onCommit, previewRef }: Preview3DStageProps) {
+export default function Preview3DStage({ colorHex, designs, showGuides, activeArea, variant, modelUrl, warmAll, noHint, editArea, focusAngle, onCommit, previewRef }: Preview3DStageProps) {
   const [interacted, setInteracted] = useState(false);
   // Every edit-mode side effect exists to serve the canvas drag, and the drag is
   // off on a touch pointer (`DecalDragController` never attaches). So they are
@@ -301,7 +309,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
               `observe`: it must NOT re-fit on container resize between steps —
               the camera distance stays constant across all steps. */}
           <FitBounds refitKey={modelUrl ?? 'tshirt'} variant={variant} margin={fitMargin}>
-            <Turntable focusArea={editArea ?? activeArea} variant={variant} locked={dragEnabled} onFirstInteract={() => setInteracted(true)}>
+            <Turntable focusArea={editArea ?? activeArea} focusAngle={focusAngle} variant={variant} locked={dragEnabled} onFirstInteract={() => setInteracted(true)}>
               <Tshirt3DModel
                 color={colorHex}
                 designs={designs}

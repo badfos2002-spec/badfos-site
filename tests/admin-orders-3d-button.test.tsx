@@ -58,7 +58,8 @@ function item(productType: string, over: Partial<OrderItem> = {}): OrderItem {
 }
 
 beforeEach(() => {
-  dyn.opts.length = 0
+  // NOT dyn.opts: `nextDynamic(...)` runs once, when the component module is
+  // imported — clearing it here would erase the only record there is.
   dyn.imports.length = 0
   dyn.props.length = 0
 })

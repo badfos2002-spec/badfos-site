@@ -12,6 +12,7 @@ import type { Order, DesignUpscale } from '@/lib/types'
 import ManualOrderForm from '@/components/admin/ManualOrderForm'
 import { isManualOrder, paymentMethodLabel } from '@/lib/manual-order'
 import SketchLinkButton from '@/components/admin/SketchLinkButton'
+import OrderItem3DButton from '@/components/admin/OrderItem3DButton'
 import { sizeLabel } from '@/lib/daily-orders'
 import { adminFetch } from '@/lib/admin-fetch'
 import { buildDesignDownloadNames, extFor, filenameFromContentDisposition } from '@/lib/design-download-name'
@@ -950,6 +951,10 @@ export default function AdminOrdersPage() {
                                     </div>
                                   </div>
                                 )}
+                                {/* TICKET-006 — תצוגה תלת-ממדית חיה של הפריט מכל הזוויות (חולצה/סווטשרט בלבד).
+                                    נטענת רק בלחיצה, ולא מייצרת שום קובץ באחסון */}
+                                <OrderItem3DButton className="mt-3" item={item} orderNumber={order.orderNumber} index={idx} />
+
                                 {/* רק בהזמנות ידניות — לקוחות האתר עיצבו בעצמם. קבצי הזמנה ישנה נמחקו בניקוי — אין ממה לבנות סקיצה */}
                                 {isManualOrder(order) && !(order as any).designsDeleted && (
                                   <SketchLinkButton

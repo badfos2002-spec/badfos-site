@@ -249,6 +249,10 @@ describe('OrderItem3DViewer — no WebGL, and no network', () => {
   it('a stage that cannot start shows a plain Hebrew message instead of crashing', () => {
     stage.throws = true
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // React re-dispatches a boundary-caught error as a window error event; left
+    // alone, jsdom prints the (expected) stack and the run stops being pristine.
+    const swallow = (e: ErrorEvent) => e.preventDefault()
+    window.addEventListener('error', swallow)
 
     expect(() =>
       render(<OrderItem3DViewer item={item([design('front_full')])} orderNumber={1592} index={0} />)
@@ -256,6 +260,7 @@ describe('OrderItem3DViewer — no WebGL, and no network', () => {
 
     expect(screen.getByText('התצוגה התלת-ממדית אינה נתמכת בדפדפן הזה')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'שמור תמונה' })).toBeNull()
+    window.removeEventListener('error', swallow)
     errors.mockRestore()
   })
 
