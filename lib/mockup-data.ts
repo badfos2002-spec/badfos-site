@@ -85,15 +85,17 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   // `left` and mirror exactly: left + width + left(other) = 100. Boxes measured
   // against 'חולצה לבנה קדימה.webp' — they sit between the sleeve's outer edge
   // and the armhole seam, clear of front_full (30%–70%) and the chest logos.
+// TICKET-007: lowered so the box's bottom edge sits just above the diagonal
+// sleeve hem (it used to hug the shoulder seam at 36%).
   shoulder_right: {
     view: 'front',
     label: 'כתף ימין',
-    style: { width: '6.5%', aspectRatio: '1', top: '36%', left: '13.25%', borderRadius: '4px' },
+    style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '14.25%', borderRadius: '4px' },
   },
   shoulder_left: {
     view: 'front',
     label: 'כתף שמאל',
-    style: { width: '6.5%', aspectRatio: '1', top: '36%', left: '80.25%', borderRadius: '4px' },
+    style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '79.25%', borderRadius: '4px' },
   },
   center: {
     view: 'front',
@@ -130,8 +132,10 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
 // Areas whose box differs on the sweatshirt photos: the hoodie's back print is
 // smaller, and its sleeves hang at the sides — much narrower and lower than a
 // t-shirt's. Measured against 'סווטשרט חזית לבן.webp'; same mirror invariant.
+// TICKET-007: the sleeve box moved down (was 40%) to the same arm height as the
+// lowered t-shirt box.
 export const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
   back: { width: '36%', aspectRatio: '180 / 200', top: '33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
-  shoulder_right: { width: '5%', aspectRatio: '1', top: '40%', left: '16.7%', borderRadius: '4px' },
-  shoulder_left: { width: '5%', aspectRatio: '1', top: '40%', left: '78.3%', borderRadius: '4px' },
+  shoulder_right: { width: '5%', aspectRatio: '1', top: '42%', left: '16.7%', borderRadius: '4px' },
+  shoulder_left: { width: '5%', aspectRatio: '1', top: '42%', left: '78.3%', borderRadius: '4px' },
 }
