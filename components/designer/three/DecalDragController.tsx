@@ -146,7 +146,7 @@ export default function DecalDragController({
     if (!previewRef) return;
     previewRef.current = (live) => {
       const p = propsRef.current;
-      preview(p.transform, clampTransform(live), p.baked);
+      preview(p.transform, clampTransform(live, p.area), p.baked);
     };
     return () => {
       previewRef.current = null;
@@ -217,7 +217,7 @@ export default function DecalDragController({
         dx: committed.dx + mx * unitsPerPx,
         dy: committed.dy - my * unitsPerPx, // screen y grows downward
         scale: committed.scale,
-      });
+      }, propsRef.current.area);
       preview(committed, live, bakedAtDown);
     };
 
