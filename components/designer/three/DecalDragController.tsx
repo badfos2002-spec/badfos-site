@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useCoarsePointer } from '@/hooks/useCoarsePointer';
 import { DEFAULT_TRANSFORM, DesignTransform, clampTransform } from './decalTransform';
+import { previewScaleAndPosition } from './previewMath';
 
 /** The placement the CURRENT decal geometry was baked with: the area's base
  *  placement plus the offset that has ALREADY been committed. */
@@ -92,8 +93,11 @@ export default function DecalDragController({
 
   /**
    * Reproduce `v' = P + D + R·diag(sRel, sRel, 1)·Rᵀ·(v − P)` on the decal mesh.
-   * Every rotation in VARIANTS is I or R_y(π) (spec §4.1.1), so the conjugation
-   * collapses to `diag(sRel, sRel, 1)` — the mesh's own local scale.
+   * The conjugation `M = R·diag(sRel, sRel, 1)·Rᵀ` is NOT always
+   * `diag(sRel, sRel, 1)`: the shoulder projectors are quarter turns about Y
+   * (TICKET-004), where the decal's plane is the local y–z plane and the scale
+   * belongs on y and z instead. `previewScaleAndPosition` holds that table —
+   * front and back come out bit-identical to what this did before.
    *
    * `committed` is the state the geometry was baked with; `live` is the
    * in-flight value, ALREADY CLAMPED.
@@ -111,17 +115,13 @@ export default function DecalDragController({
       const D = scratch.offset
         .set(live.dx - committed.dx, live.dy - committed.dy, 0)
         // REQUIRED: without it, dragging right on `back` (R_y(π)) moves the
-        // design LEFT — the bug the whole design exists to prevent.
+        // design LEFT — the bug the whole design exists to prevent. It is also
+        // what keeps a rightward drag rightward on a shoulder, since the
+        // turntable faces the area at exactly `−rotation.y`.
         .applyEuler(scratch.euler.set(bakedNow.rotation[0], bakedNow.rotation[1], bakedNow.rotation[2]));
-      // NOT setScalar: diag(s,s,s) also displaces along the projector's z, and on
-      // the t-shirt `front_full` a flank vertex reaches z = −0.058 at s = 1.3 —
-      // inside the fabric, occluded by depthTest, so the artwork evaporates.
-      mesh.scale.set(sRel, sRel, 1);
-      mesh.position.set(
-        P[0] * (1 - sRel) + D.x,
-        P[1] * (1 - sRel) + D.y,
-        D.z, // z is not scaled → no (1 − sRel) term
-      );
+      const next = previewScaleAndPosition(P, bakedNow.rotation, sRel, [D.x, D.y, D.z]);
+      mesh.scale.set(next.scale[0], next.scale[1], next.scale[2]);
+      mesh.position.set(next.position[0], next.position[1], next.position[2]);
     },
     [meshRef, scratch],
   );

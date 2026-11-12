@@ -6,6 +6,7 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ContactShadows, Bounds, Environment, Lightformer } from '@react-three/drei';
 import { useCoarsePointer } from '@/hooks/useCoarsePointer';
 import Tshirt3DModel, { ShirtDesign, ShirtVariant, preloadAllModels } from './Tshirt3DModel';
+import { angleForArea } from './placements';
 import { DesignTransform } from './decalTransform';
 import type { DecalPreviewFn } from './DecalDragController';
 
@@ -131,11 +132,15 @@ function shortWayTo(angle: number, cur: number): number {
  */
 function Turntable({
   focusArea,
+  variant,
   locked,
   onFirstInteract,
   children,
 }: {
   focusArea?: string;
+  /** Needed to read the focused area's projector rotation — a shoulder faces
+   *  sideways, so the angle is no longer "back or front". */
+  variant?: ShirtVariant;
   /** Edit mode with the canvas drag actually enabled: drags belong to the
    *  design, not to the turntable. NEVER just "an area is being edited" — on a
    *  touch pointer nothing takes the drag over, so locking rotation and taking
@@ -157,27 +162,25 @@ function Turntable({
     lockedRef.current = !!locked;
   }, [locked]);
 
-  // Clicking a design area spins the shirt to face it (back = 180°, everything
-  // else = front). Rotate the SHORT way around from wherever it currently is.
+  // Clicking a design area spins the shirt to face it: back = 180°, a shoulder
+  // = ±90°, everything else (and no area / non-design steps) = front. Rotate the
+  // SHORT way around from wherever it currently is.
   useEffect(() => {
-    // 'back' faces the rear; every other area (and no area / non-design steps)
-    // faces the front. Rotate the SHORT way from wherever it is.
-    const angle = focusArea === 'back' ? Math.PI : 0;
-    target.current = shortWayTo(angle, target.current);
-  }, [focusArea]);
+    target.current = shortWayTo(angleForArea(variant, focusArea), target.current);
+  }, [focusArea, variant]);
 
   // Entering edit mode SNAPS to the area's angle instead of lerping there: the
-  // px→units mapping assumes the model faces exactly 0 or π. Driven by `locked`,
-  // not by `focusArea` — re-entering edit on the same area leaves `focusArea`
-  // unchanged while the user may have spun the model. Both values must be set:
-  // useFrame lerps `rotation.y` back toward `target.current` on the next frame.
+  // px→units mapping assumes the model faces the area square-on (0, π or ±π/2 —
+  // the same angle the focus effect above lerps to). Driven by `locked`, not by
+  // `focusArea` — re-entering edit on the same area leaves `focusArea` unchanged
+  // while the user may have spun the model. Both values must be set: useFrame
+  // lerps `rotation.y` back toward `target.current` on the next frame.
   useEffect(() => {
     if (!locked) return;
-    const angle = focusArea === 'back' ? Math.PI : 0;
-    target.current = shortWayTo(angle, target.current);
+    target.current = shortWayTo(angleForArea(variant, focusArea), target.current);
     const g = group.current;
     if (g) g.rotation.y = target.current;
-  }, [locked, focusArea]);
+  }, [locked, focusArea, variant]);
 
   // Own effect, so toggling the lock never re-runs the pointer effect.
   // `pan-y` is the right default for a stage sitting INSIDE a scrolling page.
@@ -298,7 +301,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
               `observe`: it must NOT re-fit on container resize between steps —
               the camera distance stays constant across all steps. */}
           <FitBounds refitKey={modelUrl ?? 'tshirt'} variant={variant} margin={fitMargin}>
-            <Turntable focusArea={editArea ?? activeArea} locked={dragEnabled} onFirstInteract={() => setInteracted(true)}>
+            <Turntable focusArea={editArea ?? activeArea} variant={variant} locked={dragEnabled} onFirstInteract={() => setInteracted(true)}>
               <Tshirt3DModel
                 color={colorHex}
                 designs={designs}
