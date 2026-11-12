@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ThreeErrorBoundary from '@/components/designer/three/ThreeErrorBoundary'
 import { getColorHex, getModel3D } from '@/lib/constants'
+import { enlargeScale, to3DDesigns } from '@/lib/enlarge'
 import { isSketchPreviewUrl, isAdminSketch } from '@/lib/sketch-retention'
 
 const Preview3DStage = dynamic(() => import('@/components/designer/three/Preview3DStage'), { ssr: false })
@@ -17,7 +18,7 @@ const Preview3DStage = dynamic(() => import('@/components/designer/three/Preview
 function MockupView({ view, color, designs, productType, fabricType }: {
   view: 'front' | 'back'
   color: string
-  designs: { area: string; areaName: string; imageBase64: string }[]
+  designs: SharedDesignData['designs']
   productType?: string
   fabricType?: string
 }) {
@@ -76,6 +77,9 @@ function MockupView({ view, color, designs, productType, fabricType }: {
       {viewDesigns.map((design) => {
         const overlay = DESIGN_AREA_OVERLAYS[design.area]
         if (!overlay) return null
+        // Already gated by product and area when the share was written — see
+        // the same note in app/share/cart/[id]/page.tsx.
+        const scale = enlargeScale(design.enlarge)
         return (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -83,7 +87,11 @@ function MockupView({ view, color, designs, productType, fabricType }: {
             src={design.imageBase64}
             alt={design.areaName}
             className="absolute object-contain"
-            style={overlay.style as React.CSSProperties}
+            style={
+              scale === 1
+                ? (overlay.style as React.CSSProperties)
+                : { ...(overlay.style as React.CSSProperties), transform: `scale(${scale})` }
+            }
           />
         )
       })}
@@ -255,7 +263,10 @@ export default function ShareClient() {
               <div className="share-stage-fullbleed relative w-full overflow-hidden sm:aspect-[3/4] sm:rounded-2xl sm:shadow-lg">
                 <Preview3DStage
                   colorHex={getColorHex(design.color, design.productType)}
-                  designs={design.designs.map(d => ({ area: d.area, url: d.imageBase64, transform: d.transform }))}
+                  designs={to3DDesigns(
+                    design.productType,
+                    design.designs.map(d => ({ area: d.area, url: d.imageBase64, enlarge: d.enlarge, transform: d.transform }))
+                  )}
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   variant={m3d.variant as any}
                   modelUrl={m3d.url}

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getDocument, setDocument } from '@/lib/db'
 import { codeDefaults, type ProductPricing } from './defaults'
+import { ENLARGE_STEP_PRICE } from '@/lib/constants'
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Pricing tab v2 — per-category structure:
@@ -18,6 +19,7 @@ type PricingV2 = {
   sizeSurcharges: Record<string, number>
   shipping: { delivery: number; pickup: number }
   quantityDiscount: { minQuantity: number; discountPercent: number }
+  enlargeStepPrice: number
 }
 
 const CATALOG: {
@@ -110,6 +112,9 @@ const GLOBAL_DEFAULTS = {
   sizeSurcharges: { '3XL': 12, '4XL': 12 },
   shipping: { delivery: 35, pickup: 0 },
   quantityDiscount: { minQuantity: 15, discountPercent: 5 },
+  // Read from lib/constants rather than written again here: it is the code
+  // default the whole app falls back to when this document has no value.
+  enlargeStepPrice: ENLARGE_STEP_PRICE,
 }
 
 /* Legacy doc shape (pre-v2) — migrated once into the per-product structure. */
@@ -120,6 +125,7 @@ type LegacyDoc = {
   sizeSurcharges?: Record<string, number>
   shipping?: { delivery?: number; pickup?: number }
   quantityDiscount?: { minQuantity?: number; discountPercent?: number }
+  enlargeStepPrice?: number
   products?: Record<string, ProductPricing>
 }
 
@@ -199,6 +205,7 @@ export default function AdminPricingPage() {
           sizeSurcharges: { ...GLOBAL_DEFAULTS.sizeSurcharges, ...(data.sizeSurcharges ?? {}) },
           shipping: { ...GLOBAL_DEFAULTS.shipping, ...(data.shipping ?? {}) },
           quantityDiscount: { ...GLOBAL_DEFAULTS.quantityDiscount, ...(data.quantityDiscount ?? {}) },
+          enlargeStepPrice: data.enlargeStepPrice ?? GLOBAL_DEFAULTS.enlargeStepPrice,
         })
       })
       .catch(console.error)
@@ -211,7 +218,8 @@ export default function AdminPricingPage() {
       nums.push(...Object.values(p.base), ...Object.values(p.areas))
     })
     nums.push(...Object.values(globals.sizeSurcharges), globals.shipping.delivery, globals.shipping.pickup,
-      globals.quantityDiscount.minQuantity, globals.quantityDiscount.discountPercent)
+      globals.quantityDiscount.minQuantity, globals.quantityDiscount.discountPercent,
+      globals.enlargeStepPrice)
     if (nums.some(v => typeof v !== 'number' || isNaN(v) || v < 0)) {
       alert('לא ניתן לשמור ערכים שליליים או ריקים')
       return
@@ -399,6 +407,17 @@ export default function AdminPricingPage() {
                   onChange={e => { const n = Number(e.target.value); if (!isNaN(n)) setGlobals(g => ({ ...g, quantityDiscount: { ...g.quantityDiscount, discountPercent: n } })) }} />
                 <span className="text-sm text-gray-400">%</span>
               </div>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-700 mb-2">הגדלת הדפס</h3>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-gray-600">לכל צעד, ליחידה</span>
+              {/* step 0.5 — the default is ₪1.5, and these inputs have no step
+                  of their own, so the browser arrows would refuse a half shekel. */}
+              <Input type="number" min={0} step="0.5" className="w-24 h-9 text-center"
+                value={globals.enlargeStepPrice}
+                onChange={e => { const n = Number(e.target.value); if (!isNaN(n)) setGlobals(g => ({ ...g, enlargeStepPrice: n })) }} />
             </div>
           </div>
         </div>

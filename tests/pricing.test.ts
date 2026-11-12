@@ -401,17 +401,22 @@ describe('isQuantityDiscountApplicable', () => {
   })
 })
 
+// TICKET-005 changed this deliberately. These two cases used to pin
+// toFixed(0) — "rounds down" / "rounds up" — which displayed ₪38.5 as "₪39"
+// while Grow charged 38.5. A fractional price now shows ONE decimal; a whole
+// one is byte-identical to before. tests/format-price.test.ts carries the full
+// rule, including that a price rounding to a whole shekel never prints "₪38.0".
 describe('formatPrice', () => {
   it('shows a whole number with a shekel sign', () => {
     expect(formatPrice(37)).toBe('₪37')
   })
 
-  it('rounds down', () => {
-    expect(formatPrice(36.4)).toBe('₪36')
+  it('shows one decimal rather than rounding down', () => {
+    expect(formatPrice(36.4)).toBe('₪36.4')
   })
 
-  it('rounds up', () => {
-    expect(formatPrice(36.6)).toBe('₪37')
+  it('shows one decimal rather than rounding up', () => {
+    expect(formatPrice(36.6)).toBe('₪36.6')
   })
 })
 

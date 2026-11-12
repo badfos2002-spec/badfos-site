@@ -15,6 +15,7 @@ import SketchLinkButton from '@/components/admin/SketchLinkButton'
 import { sizeLabel } from '@/lib/daily-orders'
 import { adminFetch } from '@/lib/admin-fetch'
 import { buildDesignDownloadNames, extFor, filenameFromContentDisposition } from '@/lib/design-download-name'
+import { enlargeLabel, normalizeEnlarge } from '@/lib/enlarge'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'ממתין לתשלום', color: 'bg-yellow-100 text-yellow-800' },
@@ -901,6 +902,13 @@ export default function AdminOrdersPage() {
                                             </div>
                                             <div>
                                               <span className="text-sm font-medium">{d.areaName ?? d.area}</span>
+                                              {/* How much bigger than default this print is — the owner
+                                                  sets the physical size from it. */}
+                                              {normalizeEnlarge(item.productType, d.area, d.enlarge) > 0 && (
+                                                <span className="mr-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">
+                                                  {enlargeLabel(normalizeEnlarge(item.productType, d.area, d.enlarge))}
+                                                </span>
+                                              )}
                                               {(() => {
                                                 const info = isManualOrder(order) ? null : upscaleStatusInfo(upscale)
                                                 if (!info) return null

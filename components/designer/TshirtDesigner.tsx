@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_AREA_FILTER, TSHIRT_COLORS } from '@/lib/constants'
+import { enlargeScale, normalizeEnlarge, to3DDesigns } from '@/lib/enlarge'
 
 // The R3F Canvas cannot be server-rendered, so load the 3D stage client-side
 // only. A 3D failure never breaks the page — it's wrapped in an error boundary
@@ -409,10 +410,14 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
       {visibleAreas.map(([areaId, overlay]) => {
         const design = mockupDesigns.find(d => d.area === areaId)
         if (design) {
+          // Print enlargement grows the artwork past its default box, centred —
+          // so the box must stop clipping at the same moment, or the extra 10%
+          // per step would be invisible here while the 3D model showed it.
+          const scale = enlargeScale(normalizeEnlarge(config.productType, areaId, design.enlarge))
           return (
             <div
               key={areaId}
-              className="absolute overflow-hidden"
+              className={`absolute${scale === 1 ? ' overflow-hidden' : ''}`}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               style={overlay.style as any}
             >
@@ -421,6 +426,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
                 src={design.imageUrl}
                 alt={overlay.label}
                 className="w-full h-full object-contain"
+                style={scale === 1 ? undefined : { transform: `scale(${scale})` }}
               />
             </div>
           )
@@ -454,9 +460,12 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
         <Preview3DStage
           warmAll
           colorHex={shirtHex}
-          designs={(config.designs || [])
-            .filter((d) => d.imageUrl)
-            .map((d) => ({ area: d.area, url: d.imageUrl }))}
+          designs={to3DDesigns(
+            config.productType,
+            (config.designs || [])
+              .filter((d) => d.imageUrl)
+              .map((d) => ({ area: d.area, url: d.imageUrl, enlarge: d.enlarge }))
+          )}
           showGuides={currentStep === 3}
           activeArea={currentStep === 3 ? activeDesignArea : undefined}
           variant={model3d.variant}

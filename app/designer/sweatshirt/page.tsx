@@ -7,8 +7,11 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
 import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
+import EnlargeControl from '@/components/designer/EnlargeControl'
 import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
-import type { DesignArea } from '@/lib/types'
+import { calculateItemPrice, applyQuantityDiscount, getPriceBreakdown, formatAmount } from '@/lib/pricing'
+import { canEnlarge, enlargeScale, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
+import type { DesignArea, ProductConfig } from '@/lib/types'
 import { DESIGN_AREA_OVERLAYS, SWEATSHIRT_AREA_OVERRIDES } from '@/lib/mockup-data'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
@@ -100,11 +103,29 @@ export default function SweatshirtDesignerPage() {
     const area = liveDesignAreas.find(a => a.id === d.area)
     return sum + (area?.price || 0)
   }, 0)
-  const pricePerUnit = BASE_PRICE + designCost
+  /**
+   * The panel prices through lib/pricing.ts, exactly like the cart and the
+   * server.
+   *
+   * It used to compute `BASE_PRICE + designCost` itself and ignore the size
+   * surcharge entirely, while STANDARD_SIZES charges +₪12 for 3XL and 4XL — so
+   * a sweatshirt order with a 3XL was QUOTED LESS here than the customer was
+   * charged at checkout. Routing it through calculateItemPrice never raises
+   * what anyone pays; it stops the designer under-quoting. XS–XXL is unchanged
+   * to the shekel (their surcharge is 0).
+   */
+  const priceConfig: ProductConfig = {
+    productType: 'sweatshirt',
+    fabricType: selectedType || undefined,
+    color: selectedColor,
+    designs,
+    sizes: Object.entries(quantities).filter(([, q]) => q > 0).map(([size, quantity]) => ({ size, quantity })),
+  }
+  const breakdown = getPriceBreakdown(priceConfig)
+  const pricePerUnit = calculateItemPrice(priceConfig)
   const subtotal = totalQuantity * pricePerUnit
-  const { minQuantity: MIN_DISCOUNT_QTY, discountPercent: DISCOUNT_PERCENT } = getLiveQuantityDiscount()
-  const hasDiscount = totalQuantity >= MIN_DISCOUNT_QTY
-  const discount = hasDiscount ? subtotal * (DISCOUNT_PERCENT / 100) : 0
+  const { discountPercent: DISCOUNT_PERCENT } = getLiveQuantityDiscount()
+  const discount = applyQuantityDiscount(totalQuantity, subtotal)
   const total = subtotal - discount
 
   const canProceed = () => {
@@ -347,6 +368,17 @@ export default function SweatshirtDesignerPage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={currentDesign.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
                   </div>
+                  {canEnlarge('sweatshirt', selectedAreaId) && (
+                    <div className="mb-3">
+                      <EnlargeControl
+                        productType="sweatshirt"
+                        area={selectedAreaId}
+                        hasDesign
+                        enlarge={currentDesign.enlarge}
+                        onChange={steps => setDesigns(prev => withEnlarge(prev, 'sweatshirt', selectedAreaId, steps))}
+                      />
+                    </div>
+                  )}
                   <label
                     role="button"
                     tabIndex={0}
@@ -512,10 +544,24 @@ export default function SweatshirtDesignerPage() {
                   <span className="font-medium">+{designCost}₪</span>
                 </div>
               )}
+              {breakdown.enlargePrice > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>הגדלת הדפס</span>
+                  <span className="font-medium">+{formatAmount(breakdown.enlargePrice)}₪</span>
+                </div>
+              )}
+              {/* Shown so the rows add up to the per-unit price: 3XL and 4XL
+                  carry a surcharge that this panel used to leave out entirely. */}
+              {breakdown.sizeSurcharge > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>תוספת מידה</span>
+                  <span className="font-medium">+{formatAmount(breakdown.sizeSurcharge)}₪</span>
+                </div>
+              )}
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">מחיר ליחידה</span>
-              <span className="font-bold text-[#f59e0b]">{pricePerUnit}₪</span>
+              <span className="font-bold text-[#f59e0b]">{formatAmount(pricePerUnit)}₪</span>
             </div>
             <div className="flex justify-between items-center text-sm text-gray-600">
               <span>כמות</span>
@@ -524,12 +570,14 @@ export default function SweatshirtDesignerPage() {
             {discount > 0 && (
               <div className="flex justify-between items-center text-sm text-green-600">
                 <span>הנחה ({DISCOUNT_PERCENT}%)</span>
-                <span className="font-medium">-{Math.round(discount)}₪</span>
+                <span className="font-medium">-{formatAmount(discount)}₪</span>
               </div>
             )}
+            {/* Not Math.round: an enlargement step is ₪1.5, so rounding here
+                would show ₪970 where the cart and Grow charge 969.5. */}
             <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
               <span className="font-bold text-[#1e293b]">סה&quot;כ</span>
-              <span className="text-2xl font-bold text-[#f59e0b]">{Math.round(total)}₪</span>
+              <span className="text-2xl font-bold text-[#f59e0b]">{formatAmount(total)}₪</span>
             </div>
             <p className="text-xs text-gray-400 text-center pt-1">* לא כולל משלוח</p>
           </>
@@ -557,6 +605,9 @@ export default function SweatshirtDesignerPage() {
           const areaStyle = SWEATSHIRT_AREA_OVERRIDES[areaId] ?? overlay.style
           const design = designs.find(d => d.area === areaId)
           if (design) {
+            // The print grows past its default box, centred — same scale the
+            // 3D decal gets, so both previews agree step for step.
+            const scale = enlargeScale(normalizeEnlarge('sweatshirt', areaId, design.enlarge))
             return (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -565,7 +616,7 @@ export default function SweatshirtDesignerPage() {
                 alt={overlay.label}
                 className="absolute object-contain"
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                style={areaStyle as any}
+                style={scale === 1 ? (areaStyle as any) : { ...(areaStyle as any), transform: `scale(${scale})` }}
               />
             )
           }
@@ -593,7 +644,10 @@ export default function SweatshirtDesignerPage() {
   // 3D preview: replaces the 2D mockup once a sweatshirt type is chosen.
   // Any 3D failure falls back to the 2D MockupImage.
   const sweatColorHex = SWEATSHIRT_COLORS.find(c => c.id === selectedColor)?.hex ?? '#000000'
-  const sweatDesigns = designs.filter(d => d.imageUrl).map(d => ({ area: d.area, url: d.imageUrl }))
+  const sweatDesigns = to3DDesigns(
+    'sweatshirt',
+    designs.filter(d => d.imageUrl).map(d => ({ area: d.area, url: d.imageUrl, enlarge: d.enlarge }))
+  )
   const sweatModel = ({
     kangaroo: { variant: 'hoodie', url: '/models/hoodie-web.glb' },
     putter: { variant: 'sweatshirt', url: '/models/sweatshirt-web.glb' },

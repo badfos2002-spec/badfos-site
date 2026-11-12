@@ -3,6 +3,8 @@
  * (/api/order-sync and /api/verify-order-sync).
  */
 
+import { normalizeEnlarge } from './enlarge'
+
 /** Cheap stable digest for design image strings (data URLs / storage URLs) —
  *  length + first/last 16 chars. Avoids hashing megabytes of base64. */
 export function imageDigest(s: unknown): string {
@@ -29,7 +31,13 @@ export function itemsSignature(items: any[]): string {
         .join(',')
       const designs = (Array.isArray(item?.designs) ? item.designs : [])
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((d: any) => `${d?.area || ''}~${imageDigest(d?.imageUrl)}`)
+        .map((d: any) => {
+          // The enlargement is part of the item's identity (it changes the
+          // price), so it has to change the signature. Appended only above 0
+          // step, so a plain item signs byte-identically to before.
+          const steps = normalizeEnlarge(item?.productType, d?.area, d?.enlarge)
+          return `${d?.area || ''}~${imageDigest(d?.imageUrl)}${steps > 0 ? `~e${steps}` : ''}`
+        })
         .sort()
         .join(',')
       return [
@@ -59,12 +67,20 @@ export function sanitizeItems(items: any[]): any[] {
       quantity: Number(s?.quantity) || 0,
     })),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    designs: (Array.isArray(item?.designs) ? item.designs : []).map((d: any) => ({
-      area: String(d?.area || ''),
-      areaName: String(d?.areaName || ''),
-      imageUrl: String(d?.imageUrl || ''),
-      fileName: String(d?.fileName || ''),
-    })),
+    designs: (Array.isArray(item?.designs) ? item.designs : []).map((d: any) => {
+      // Print enlargement: normalised (clamped into 0…3, and 0 on any product
+      // or area without the feature) and written ONLY above 0 — addDoc throws
+      // on an explicit undefined and there is no ignoreUndefinedProperties, so
+      // the key must be absent rather than 0 or undefined.
+      const steps = normalizeEnlarge(item?.productType, d?.area, d?.enlarge)
+      return {
+        area: String(d?.area || ''),
+        areaName: String(d?.areaName || ''),
+        imageUrl: String(d?.imageUrl || ''),
+        fileName: String(d?.fileName || ''),
+        ...(steps > 0 ? { enlarge: steps } : {}),
+      }
+    }),
     pricePerUnit: round2(item?.pricePerUnit),
     totalQuantity: Number(item?.totalQuantity) || 0,
     totalPrice: round2(item?.totalPrice),

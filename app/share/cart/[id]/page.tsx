@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { getSharedCart, SharedDesignData, createShareCoupon } from '@/lib/db'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { getColorLabel, getColorHex, getModel3D, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
+import { enlargeScale, to3DDesigns } from '@/lib/enlarge'
 import { Button } from '@/components/ui/button'
 import { Loader2, X, Copy, Check, ChevronDown } from 'lucide-react'
 import dynamic from 'next/dynamic'
@@ -29,7 +30,7 @@ function getFabricLabel(fabricType: string) {
 function Lightbox({ view, color, designs, onClose }: {
   view: 'front' | 'back'
   color: string
-  designs: { area: string; areaName: string; imageBase64: string }[]
+  designs: SharedDesignData['designs']
   onClose: () => void
 }) {
   const resolvedColor = colorFallback[color] || color
@@ -66,6 +67,11 @@ function Lightbox({ view, color, designs, onClose }: {
         {viewDesigns.map((design) => {
           const overlay = DESIGN_AREA_OVERLAYS[design.area]
           if (!overlay) return null
+          // The stored `enlarge` was already gated by product and area when the
+          // share was written (CartPage / CartItem run normalizeEnlarge before
+          // the Firestore write), so this read-only view scales straight from
+          // it. enlargeScale still clamps the step count.
+          const scale = enlargeScale(design.enlarge)
           return (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -73,7 +79,11 @@ function Lightbox({ view, color, designs, onClose }: {
               src={design.imageBase64}
               alt={design.areaName}
               className="absolute object-contain"
-              style={overlay.style as React.CSSProperties}
+              style={
+                scale === 1
+                  ? (overlay.style as React.CSSProperties)
+                  : { ...(overlay.style as React.CSSProperties), transform: `scale(${scale})` }
+              }
             />
           )
         })}
@@ -85,7 +95,7 @@ function Lightbox({ view, color, designs, onClose }: {
 function MockupView({ view, color, designs, onClick }: {
   view: 'front' | 'back'
   color: string
-  designs: { area: string; areaName: string; imageBase64: string }[]
+  designs: SharedDesignData['designs']
   onClick?: () => void
 }) {
   const resolvedColor = colorFallback[color] || color
@@ -105,6 +115,8 @@ function MockupView({ view, color, designs, onClick }: {
       {viewDesigns.map((design) => {
         const overlay = DESIGN_AREA_OVERLAYS[design.area]
         if (!overlay) return null
+        // See the note in Lightbox above — the stored step was gated on write.
+        const scale = enlargeScale(design.enlarge)
         return (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -112,7 +124,11 @@ function MockupView({ view, color, designs, onClick }: {
             src={design.imageBase64}
             alt={design.areaName}
             className="absolute object-contain"
-            style={overlay.style as React.CSSProperties}
+            style={
+              scale === 1
+                ? (overlay.style as React.CSSProperties)
+                : { ...(overlay.style as React.CSSProperties), transform: `scale(${scale})` }
+            }
           />
         )
       })}
@@ -138,7 +154,10 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
             <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
               <Preview3DStage
                 colorHex={getColorHex(item.color, item.productType)}
-                designs={item.designs.map(d => ({ area: d.area, url: d.imageBase64 }))}
+                designs={to3DDesigns(
+                  item.productType,
+                  item.designs.map(d => ({ area: d.area, url: d.imageBase64, enlarge: d.enlarge, transform: d.transform }))
+                )}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 variant={m3d.variant as any}
                 modelUrl={m3d.url}

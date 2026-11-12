@@ -2,6 +2,7 @@ import type { CustomerInfo, DesignArea } from '../types'
 import { escapeHtml } from '../utils'
 import { getColorLabel, getTypeLabel, getProductLabel, BUSINESS_LEGAL } from '../constants'
 import { capMockups } from '../mockup-data'
+import { enlargeLabel, normalizeEnlarge } from '../enlarge'
 
 const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.siteName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
 
@@ -242,7 +243,13 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
           ${item.designs.map(design => `
             <div class="design-item">
               <img src="${escapeHtml(design.imageUrl)}" alt="${escapeHtml(design.areaName)}" class="design-img" />
-              <div class="design-name">${escapeHtml(design.areaName)}</div>
+              <div class="design-name">${escapeHtml(design.areaName)}${
+                // The enlargement the customer ordered, so the print size on
+                // this sheet matches what the owner has to produce.
+                normalizeEnlarge(item.productType, design.area, design.enlarge) > 0
+                  ? ` — ${escapeHtml(enlargeLabel(normalizeEnlarge(item.productType, design.area, design.enlarge)))}`
+                  : ''
+              }</div>
             </div>
           `).join('')}
         </div>
