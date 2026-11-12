@@ -15,6 +15,11 @@ export interface DesignArea {
   areaName: string // Hebrew name: קידמי מלא, גב, סמל כיס, מרכזי
   imageUrl: string
   fileName: string
+  /** Print enlargement in 10% steps — front_full / back of t-shirts and
+   *  sweatshirts only. ABSENT MEANS 0, and the key is never written as 0 or
+   *  undefined: addDoc throws on undefined and an explicit 0 would split the
+   *  cart-item id away from the identical plain design. See lib/enlarge.ts. */
+  enlarge?: 1 | 2 | 3
 }
 
 export interface SizeQuantity {

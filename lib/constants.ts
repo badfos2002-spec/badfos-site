@@ -554,6 +554,15 @@ export const QUANTITY_DISCOUNT = {
 } as const
 
 // ============================================================================
+// Print Enlargement
+// ============================================================================
+
+/** What one 10% enlargement step costs per unit. The ONLY literal for this
+ *  price — every reader goes through getLiveEnlargeStepPrice so the admin's
+ *  value at /admin/pricing wins. The step count itself lives in lib/enlarge.ts. */
+export const ENLARGE_STEP_PRICE = 1.5
+
+// ============================================================================
 // Order Statuses (Hebrew)
 // ============================================================================
 
@@ -675,6 +684,8 @@ type PricingOverrides = {
   sizeSurcharges?: Record<string, number>
   shipping?: { delivery?: number; pickup?: number }
   quantityDiscount?: { minQuantity?: number; discountPercent?: number }
+  /** Price per 10% print-enlargement step, per unit. */
+  enlargeStepPrice?: number
 }
 
 let _pricingOverrides: PricingOverrides = {}
@@ -901,6 +912,10 @@ export function getSizeSurcharge(sizeId: string): number {
 
 export function getLiveShippingCost(method: 'delivery' | 'pickup'): number {
   return _pricingOverrides.shipping?.[method] ?? SHIPPING_COSTS[method]
+}
+
+export function getLiveEnlargeStepPrice(): number {
+  return _pricingOverrides.enlargeStepPrice ?? ENLARGE_STEP_PRICE
 }
 
 export function getLiveQuantityDiscount(): { minQuantity: number; discountPercent: number } {

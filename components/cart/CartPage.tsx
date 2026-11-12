@@ -14,6 +14,8 @@ import { createSharedCart, createOrder, getOrdersPaused } from '@/lib/db'
 import { uploadBase64Image, uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintDataUrl, printUploadErrorMessage, isDesignUploadError } from '@/lib/print-image'
 import { calculateOrderTotal } from '@/lib/pricing'
+import { buildPaymentItems } from '@/lib/payment-verify'
+import { normalizeEnlarge } from '@/lib/enlarge'
 import { EXPRESS_PICKUP, CONTACT_INFO, applyPricingOverrides } from '@/lib/constants'
 import type { CustomerInfo, Shipping } from '@/lib/types'
 import { isAuthorizedRedirect } from '@/lib/url-validation'
@@ -267,7 +269,7 @@ export default function CartPage() {
       // items are ALWAYS sent — server-side amount verification must run on
       // EVERY link request, prefetches included. (The old pre-fetch omitted
       // them and silently skipped verifyAmount — never again.)
-      items: liveItems.map(i => ({ productType: i.productType, fabricType: i.fabricType, designs: i.designs.map(d => ({ area: d.area })), sizes: i.sizes, fixedPrice: i.fixedPrice, totalQuantity: i.totalQuantity })),
+      items: buildPaymentItems(liveItems),
       couponDiscount: cDiscount,
       ...(expressCost > 0 && { express: true }),
       ...(getGclid() && { gclid: getGclid() }),
@@ -626,11 +628,18 @@ export default function CartPage() {
               const base: Record<string, unknown> = {
                 productType: item.productType,
                 color: item.color,
-                designs: item.designs.map((d) => ({
-                  area: d.area,
-                  areaName: d.areaName,
-                  imageBase64: d.imageUrl,
-                })),
+                designs: item.designs.map((d) => {
+                  // Carried so the share page draws the print at the size the
+                  // customer actually ordered. Only above 0 step — Firestore
+                  // addDoc throws on an explicit undefined.
+                  const steps = normalizeEnlarge(item.productType, d.area, d.enlarge)
+                  return {
+                    area: d.area,
+                    areaName: d.areaName,
+                    imageBase64: d.imageUrl,
+                    ...(steps > 0 ? { enlarge: steps } : {}),
+                  }
+                }),
               }
               if (item.fabricType) base.fabricType = item.fabricType
               return base
@@ -781,10 +790,12 @@ export default function CartPage() {
                       sharePrefix,
                       `item${itemIdx}-${d.area}-${dIdx}.png`
                     )
+                const steps = normalizeEnlarge(item.productType, d.area, d.enlarge)
                 return {
                   area: d.area,
                   areaName: d.areaName,
                   imageBase64: url, // Storage URL, not base64
+                  ...(steps > 0 ? { enlarge: steps } : {}),
                 }
               })
             ),
