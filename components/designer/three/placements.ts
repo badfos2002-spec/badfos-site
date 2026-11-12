@@ -52,8 +52,8 @@ export type GuideBox = { w: number; h: number; label: string };
 // square's bottom edge follows the sleeve: the polo hem rises toward the front
 // and the long sleeves lean forward down the arm (counter-clockwise). The tee
 // started clockwise; the user's review flipped it to the hoodie's sense
-// (TICKET-009).
-const ROLL_TSHIRT = 0.17;
+// (TICKET-009) and then asked for a gentler angle.
+const ROLL_TSHIRT = 0.12;
 const ROLL_POLO = 0.1;
 const ROLL_HOODIE = 0.17; // shared by hoodie, crewneck and zip hoodie
 
@@ -71,9 +71,10 @@ const TSHIRT_AREAS: Record<string, Placement> = {
   // seam at y 0.59). The hem ring is at y≈0.27; the sleeve flares outward going
   // down (outermost x −0.80 at y 0.36), so x moved out with y to keep the
   // projector box over the sleeve's outer wall — otherwise the box foreshortens
-  // off the leading edge. Nudged on screen until the print sat square.
-  shoulder_right: { position: [-0.73, 0.36, -0.09], rotation: [0, -Math.PI / 2, ROLL_TSHIRT], size: 0.16, depth: 0.22 },
-  shoulder_left: { position: [0.73, 0.36, -0.09], rotation: [0, Math.PI / 2, -ROLL_TSHIRT], size: 0.16, depth: 0.22 },
+  // off the leading edge. Nudged on screen until the print sat square; then a
+  // touch toward the front at the user's request (TICKET-009b, was z −0.09).
+  shoulder_right: { position: [-0.73, 0.36, -0.07], rotation: [0, -Math.PI / 2, ROLL_TSHIRT], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.73, 0.36, -0.07], rotation: [0, Math.PI / 2, -ROLL_TSHIRT], size: 0.16, depth: 0.22 },
 };
 const TSHIRT_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.62, h: 0.68, label: 'קדמי מלא' },
@@ -166,10 +167,11 @@ const HOODIE_AREAS: Record<string, Placement> = {
   // height down (0.80 → 0.36 of 2.0); here the sleeve starts at y≈0.50–0.55 and
   // the garment is 1.7 tall, so ~0.18. The outer wall there is x −0.73..−0.76
   // across hoodie/crewneck/zip, so x −0.67 with depth 0.22 covers all three;
-  // z 0 is the kangaroo hoodie's; the crewneck and zip hoodie sleeves sit
-  // further back / forward (patches z≈−0.07 / z≈0.10), so they override z.
-  shoulder_right: { position: [-0.67, 0.18, 0], rotation: [0, -Math.PI / 2, ROLL_HOODIE], size: 0.16, depth: 0.22 },
-  shoulder_left: { position: [0.67, 0.18, 0], rotation: [0, Math.PI / 2, -ROLL_HOODIE], size: 0.16, depth: 0.22 },
+  // z 0.03 is the kangaroo hoodie's (nudged forward from 0 at the user's
+  // request, TICKET-009b); the crewneck and zip hoodie sleeves sit further
+  // back / forward (patches z≈−0.07 / z≈0.10), so they set their own z.
+  shoulder_right: { position: [-0.67, 0.18, 0.03], rotation: [0, -Math.PI / 2, ROLL_HOODIE], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.67, 0.18, 0.03], rotation: [0, Math.PI / 2, -ROLL_HOODIE], size: 0.16, depth: 0.22 },
 };
 const HOODIE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.48, h: 0.58, label: 'קדמי מלא' },
