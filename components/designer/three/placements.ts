@@ -34,9 +34,10 @@ export type GuideBox = { w: number; h: number; label: string };
  * shoulder is its exact mirror. The rotation stays an axis-aligned quarter turn
  * with NO tilt: `previewMath` is only diagonal there.
  *
- * Every y/z below is the median of the sideways-facing surface patch
- * (normal.x > 0.75) of the real GLB in the upper-sleeve band, and the x is the
- * middle of that patch's own x spread, measured per model. `depth` is kept well
+ * Every y/z below STARTED as the median of the sideways-facing surface patch
+ * (normal.x > 0.75) of the real GLB in the upper-sleeve band, with x the middle
+ * of that patch's own x spread, measured per model — then checked on screen and
+ * nudged where the box did not sit square on the sleeve. `depth` is kept well
  * below the chest-logo depth: the sleeve is a thin tube, and a deep projector
  * would also paint the far wall. */
 
@@ -50,10 +51,12 @@ const TSHIRT_AREAS: Record<string, Placement> = {
   chest_logo_center: { position: [0, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   center: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
   center_wide: { position: [0, 0.16, 0.3], rotation: [0, 0, 0], size: 0.72, depth: 0.55 },
-  // Upper sleeve, just below the shoulder seam: the +x-facing patch there spans
-  // x 0.63–0.73 at y≈0.62, z≈−0.07.
-  shoulder_right: { position: [-0.68, 0.62, -0.07], rotation: [0, -Math.PI / 2, 0], size: 0.16, depth: 0.22 },
-  shoulder_left: { position: [0.68, 0.62, -0.07], rotation: [0, Math.PI / 2, 0], size: 0.16, depth: 0.22 },
+  // Upper sleeve, just below the shoulder seam. The sideways-facing patch spans
+  // x 0.66–0.75 around here; y/z were then nudged on screen until the box sat
+  // square on the sleeve — higher than y 0.6 and its top edge rides over the
+  // sleeve's upper seam, lower and it foreshortens off the leading edge.
+  shoulder_right: { position: [-0.69, 0.59, -0.03], rotation: [0, -Math.PI / 2, 0], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.69, 0.59, -0.03], rotation: [0, Math.PI / 2, 0], size: 0.16, depth: 0.22 },
 };
 const TSHIRT_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.62, h: 0.68, label: 'קדמי מלא' },
@@ -99,9 +102,10 @@ const OVERSIZED_AREAS: Record<string, Placement> = {
   chest_logo_center: { position: [0, 0.55, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
   center: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.66, depth: 0.55 },
   center_wide: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.78, depth: 0.55 },
-  // The baggy sleeve's sideways patch spans x 0.61–0.76 at y≈0.60, z≈−0.08.
-  shoulder_right: { position: [-0.68, 0.6, -0.08], rotation: [0, -Math.PI / 2, 0], size: 0.17, depth: 0.24 },
-  shoulder_left: { position: [0.68, 0.6, -0.08], rotation: [0, Math.PI / 2, 0], size: 0.17, depth: 0.24 },
+  // The baggy sleeve's sideways patch spans x 0.61–0.77; same screen-tuning as
+  // the tee, one notch lower because the oversized shoulder drops further.
+  shoulder_right: { position: [-0.67, 0.58, -0.035], rotation: [0, -Math.PI / 2, 0], size: 0.17, depth: 0.24 },
+  shoulder_left: { position: [0.67, 0.58, -0.035], rotation: [0, Math.PI / 2, 0], size: 0.17, depth: 0.24 },
 };
 const OVERSIZED_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.54, h: 0.64, label: 'קדמי מלא' },
