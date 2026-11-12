@@ -291,6 +291,22 @@ describe('OrderItem3DViewer — phone first', () => {
     expect(box.className).toMatch(/sm:aspect-/)
   })
 
+  it('שמור תמונה does not ride the scrolling angle row off the side of a 390 px phone', () => {
+    // Seen at 390: four angles fill the row, so a save button inside it sits
+    // past the right edge and the producer never finds it.
+    render(
+      <OrderItem3DViewer
+        item={item([design('front_full'), design('shoulder_right'), design('shoulder_left')])}
+        orderNumber={1592}
+        index={0}
+      />
+    )
+
+    const row = screen.getByRole('button', { name: 'קדימה' }).parentElement as HTMLElement
+    expect(row.className).toMatch(/overflow-x-auto/)
+    expect(row).not.toContainElement(screen.getByRole('button', { name: 'שמור תמונה' }))
+  })
+
   it('every control is a 44 px touch target', () => {
     render(
       <OrderItem3DViewer
