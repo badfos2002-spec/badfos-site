@@ -17,10 +17,10 @@ const deg = (d: number) => (d * Math.PI) / 180
 // The TICKET-007 positions — the roll must not move the square (TICKET-009
 // later moves the crewneck and zip hoodie in z only).
 const POSITION: Record<(typeof SHIRTS)[number], [number, number, number]> = {
-  tshirt: [-0.73, 0.36, -0.09],
+  tshirt: [-0.73, 0.36, NaN], // TICKET-009b nudges z (shoulder-followup.test.ts)
   polo: [-0.66, 0.24, -0.17],
   oversized: [-0.8, 0.32, -0.03],
-  hoodie: [-0.67, 0.18, 0],
+  hoodie: [-0.67, 0.18, NaN], // TICKET-009b nudges z (shoulder-followup.test.ts)
   // TICKET-009 moves these two in z only (pinned in shoulder-followup.test.ts).
   sweatshirt: [-0.67, 0.18, NaN],
   ziphoodie: [-0.67, 0.18, NaN],
