@@ -50,3 +50,12 @@ export default function EnlargeRows({
     </div>
   )
 }
+
+/**
+ * Desktop: the preview column is sticky (top-24), and with the rows card under
+ * the preview card it would be taller than a 1280×800 window — the rows would
+ * sit below the fold until the end of the step card. The 3:4 preview gives up
+ * height first: its width is capped so preview + rows fit 100vh (29.5rem is
+ * everything else in the column), never below 13rem, never above max-w-md.
+ */
+export const DESKTOP_PREVIEW_WITH_ROWS = 'max(13rem, min(28rem, calc((100vh - 29.5rem) * 0.75)))'

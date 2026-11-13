@@ -13,7 +13,7 @@ import ColorStep from './ColorStep'
 import DesignStep from './DesignStep'
 import SizeQuantityStep from './SizeQuantityStep'
 import PriceSummary from './PriceSummary'
-import EnlargeRows from './EnlargeRows'
+import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from './EnlargeRows'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { useCart } from '@/hooks/useCart'
 import { useCompactOnScroll } from '@/hooks/useCompactOnScroll'
@@ -584,7 +584,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
+        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip [overflow-anchor:none]">
           {/* 3D preview always on top on mobile — it is the focus. Sticky
               under the site header (h-20), with the size rows under it. */}
           <div
@@ -669,7 +669,9 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
                 </div>
               </div>
               <div className="p-6 pt-0">
-                <div className="relative mx-auto max-w-md">
+                {/* With the size rows under this card the column must still fit the
+                    viewport (it is sticky), so the preview gives up height first. */}
+                <div className="relative mx-auto max-w-md" style={hasEnlargeRows ? { maxWidth: DESKTOP_PREVIEW_WITH_ROWS } : undefined}>
                   {mockupElement}
                 </div>
                 <ViewTabs />

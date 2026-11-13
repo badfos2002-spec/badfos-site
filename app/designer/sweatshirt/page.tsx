@@ -7,7 +7,7 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
 import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
-import EnlargeRows from '@/components/designer/EnlargeRows'
+import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from '@/components/designer/EnlargeRows'
 import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 import { calculateItemPrice, applyQuantityDiscount, getPriceBreakdown, formatAmount } from '@/lib/pricing'
 import { canEnlarge, enlargeOverlayStyle, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
@@ -763,7 +763,7 @@ export default function SweatshirtDesignerPage() {
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
+        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip [overflow-anchor:none]">
           {/* Sticky mockup — under the site header (h-20), size rows under it */}
           <div
             data-compact={compact ? 'true' : 'false'}
@@ -843,7 +843,9 @@ export default function SweatshirtDesignerPage() {
                 </div>
               </div>
               <div className="p-6 pt-0">
-                <div className="relative mx-auto max-w-md">
+                {/* With the size rows under this card the column must still fit the
+                    viewport (it is sticky), so the preview gives up height first. */}
+                <div className="relative mx-auto max-w-md" style={hasEnlargeRows ? { maxWidth: DESKTOP_PREVIEW_WITH_ROWS } : undefined}>
                   {previewElement}
                 </div>
                 <p className="text-xs text-center text-gray-400 mt-3">* סקיצה להמחשה בלבד</p>
