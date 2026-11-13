@@ -1007,7 +1007,7 @@ export default function CartPage() {
 
         {/* Sidebar - Order Summary */}
         <div className="lg:col-span-1">
-          <div className="sticky top-24 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
+          <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
             <OrderSummary
               items={items}
               packageItems={packageItems}
