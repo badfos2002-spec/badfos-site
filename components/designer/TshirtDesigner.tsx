@@ -13,13 +13,14 @@ import ColorStep from './ColorStep'
 import DesignStep from './DesignStep'
 import SizeQuantityStep from './SizeQuantityStep'
 import PriceSummary from './PriceSummary'
+import EnlargeRows from './EnlargeRows'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_AREA_FILTER, TSHIRT_COLORS } from '@/lib/constants'
-import { enlargeScale, normalizeEnlarge, to3DDesigns } from '@/lib/enlarge'
+import { canEnlarge, enlargeScale, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
 
 // The R3F Canvas cannot be server-rendered, so load the 3D stage client-side
 // only. A 3D failure never breaks the page — it's wrapped in an error boundary
@@ -336,6 +337,32 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
 
+  /** Turn the preview to an area: the 3D turntable via the active area, the 2D
+   *  mockup via its front/back view. Used by the area grid and the size rows. */
+  const focusArea = (area: string) => {
+    setActiveDesignArea(area)
+    const overlay = DESIGN_AREA_OVERLAYS[area]
+    if (overlay) setPreviewView(overlay.view as 'front' | 'back')
+  }
+
+  /** Print enlargement for one area, from the size rows under the preview.
+   *  Functional, so it merges into the LATEST designs — an upload landing in
+   *  DesignStep between two presses must not be overwritten, nor erase them
+   *  (DesignStep re-reads `enlarge` from the latest prop when its upload lands). */
+  const setEnlarge = (area: string, steps: number) => {
+    setConfig(prev => ({ ...prev, designs: withEnlarge(prev.designs || [], prev.productType, area, steps) }))
+  }
+
+  const enlargeRows = currentStep === 3 ? (
+    <EnlargeRows
+      productType={config.productType}
+      designs={config.designs || []}
+      onChange={setEnlarge}
+      onFocusArea={focusArea}
+    />
+  ) : null
+  const hasEnlargeRows = currentStep === 3 && (config.designs || []).some(d => canEnlarge(config.productType, d.area))
+
   const stepContent = (() => {
     switch (currentStep) {
       case 1:
@@ -343,11 +370,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
       case 2:
         return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} fabricType={config.fabricType} />
       case 3:
-        return <DesignStep designs={config.designs || []} fabricType={config.fabricType} onUpdate={(designs) => updateConfig({ designs })} onBusyChange={setDesignUploading} onAreaFocus={(area) => {
-          setActiveDesignArea(area)
-          const overlay = DESIGN_AREA_OVERLAYS[area]
-          if (overlay) setPreviewView(overlay.view as 'front' | 'back')
-        }} />
+        return <DesignStep designs={config.designs || []} fabricType={config.fabricType} onUpdate={(designs) => updateConfig({ designs })} onBusyChange={setDesignUploading} onAreaFocus={focusArea} />
       case 4:
         return <SizeQuantityStep sizes={config.sizes || []} onUpdate={(sizes) => updateConfig({ sizes })} config={config as ProductConfig} />
       default:
@@ -559,8 +582,9 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
 
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
-          {/* 3D preview always on top on mobile — it is the focus */}
-          <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
+          {/* 3D preview always on top on mobile — it is the focus. Sticky
+              under the site header (h-20), with the size rows under it. */}
+          <div data-compact="false" className="sticky top-20 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
             <div className="relative mx-auto max-w-sm">
               {mockupElement}
               {config.designs && config.designs.length > 0 && (
@@ -570,6 +594,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
               )}
             </div>
             <ViewTabs />
+            {hasEnlargeRows && <div className="mx-auto mt-3 max-w-sm">{enlargeRows}</div>}
           </div>
 
           {/* Step content card */}
@@ -632,6 +657,11 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
                 <ViewTabs />
               </div>
             </div>
+            {hasEnlargeRows && (
+              <div className="mt-4 rounded-xl border border-yellow-200 bg-white p-3">
+                {enlargeRows}
+              </div>
+            )}
           </div>
 
         </div>
