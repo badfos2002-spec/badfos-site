@@ -13,13 +13,15 @@ import ColorStep from './ColorStep'
 import DesignStep from './DesignStep'
 import SizeQuantityStep from './SizeQuantityStep'
 import PriceSummary from './PriceSummary'
+import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from './EnlargeRows'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { useCart } from '@/hooks/useCart'
+import { useCompactOnScroll } from '@/hooks/useCompactOnScroll'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
 import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_AREA_FILTER, TSHIRT_COLORS } from '@/lib/constants'
-import { enlargeScale, normalizeEnlarge, to3DDesigns } from '@/lib/enlarge'
+import { canEnlarge, enlargeScale, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
 
 // The R3F Canvas cannot be server-rendered, so load the 3D stage client-side
 // only. A 3D failure never breaks the page — it's wrapped in an error boundary
@@ -168,6 +170,8 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   // HEIC-convert / reduce window, so the step reports it up.
   const [designUploading, setDesignUploading] = useState(false)
   const [previewView, setPreviewView] = useState<'front' | 'back'>('front')
+  const compact = useCompactOnScroll()
+
   const [config, setConfig] = useState<Partial<ProductConfig>>(() =>
     editingItem
       ? {
@@ -336,6 +340,32 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
 
+  /** Turn the preview to an area: the 3D turntable via the active area, the 2D
+   *  mockup via its front/back view. Used by the area grid and the size rows. */
+  const focusArea = (area: string) => {
+    setActiveDesignArea(area)
+    const overlay = DESIGN_AREA_OVERLAYS[area]
+    if (overlay) setPreviewView(overlay.view as 'front' | 'back')
+  }
+
+  /** Print enlargement for one area, from the size rows under the preview.
+   *  Functional, so it merges into the LATEST designs — an upload landing in
+   *  DesignStep between two presses must not be overwritten, nor erase them
+   *  (DesignStep re-reads `enlarge` from the latest prop when its upload lands). */
+  const setEnlarge = (area: string, steps: number) => {
+    setConfig(prev => ({ ...prev, designs: withEnlarge(prev.designs || [], prev.productType, area, steps) }))
+  }
+
+  const enlargeRows = currentStep === 3 ? (
+    <EnlargeRows
+      productType={config.productType}
+      designs={config.designs || []}
+      onChange={setEnlarge}
+      onFocusArea={focusArea}
+    />
+  ) : null
+  const hasEnlargeRows = currentStep === 3 && (config.designs || []).some(d => canEnlarge(config.productType, d.area))
+
   const stepContent = (() => {
     switch (currentStep) {
       case 1:
@@ -343,11 +373,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
       case 2:
         return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} fabricType={config.fabricType} />
       case 3:
-        return <DesignStep designs={config.designs || []} fabricType={config.fabricType} onUpdate={(designs) => updateConfig({ designs })} onBusyChange={setDesignUploading} onAreaFocus={(area) => {
-          setActiveDesignArea(area)
-          const overlay = DESIGN_AREA_OVERLAYS[area]
-          if (overlay) setPreviewView(overlay.view as 'front' | 'back')
-        }} />
+        return <DesignStep designs={config.designs || []} fabricType={config.fabricType} onUpdate={(designs) => updateConfig({ designs })} onBusyChange={setDesignUploading} onAreaFocus={focusArea} />
       case 4:
         return <SizeQuantityStep sizes={config.sizes || []} onUpdate={(sizes) => updateConfig({ sizes })} config={config as ProductConfig} />
       default:
@@ -558,18 +584,39 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
-          {/* 3D preview always on top on mobile — it is the focus */}
-          <div className="bg-white/95 pt-2 pb-4 -mx-4 px-4">
-            <div className="relative mx-auto max-w-sm">
-              {mockupElement}
-              {config.designs && config.designs.length > 0 && (
-                <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  ✓ {config.designs.length} עיצובים
-                </span>
+        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip [overflow-anchor:none]">
+          {/* 3D preview always on top on mobile — it is the focus. Sticky
+              under the site header (h-20), with the size rows under it. */}
+          <div
+            data-compact={compact ? 'true' : 'false'}
+            className={`sticky top-20 z-30 bg-white/95 backdrop-blur-sm pt-2 ${compact ? 'pb-2' : 'pb-4'} border-b border-gray-100 -mx-4 px-4 shadow-sm`}
+          >
+            {/* Compact (scrolled): the preview shrinks to 180 px tall and the size
+                rows move beside it, so the block stays ~200 px and both stay in
+                reach. Same element tree in both states — only classes change —
+                so the 3D canvas is never remounted. */}
+            <div className={compact && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
+              <div
+                data-preview-box=""
+                className={`relative w-full shrink-0 transition-[max-width] duration-200 motion-reduce:transition-none ${
+                  // Compact: the stage's 64 px «360°» badge and its drag hint would
+                  // cover a 135 px canvas, so both are hidden here — on the mobile
+                  // box only, never through the stage shared with desktop.
+                  compact ? `max-w-[135px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
+                }`}
+              >
+                {mockupElement}
+                {!compact && config.designs && config.designs.length > 0 && (
+                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    ✓ {config.designs.length} עיצובים
+                  </span>
+                )}
+              </div>
+              {!compact && <ViewTabs />}
+              {hasEnlargeRows && (
+                <div className={compact ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
               )}
             </div>
-            <ViewTabs />
           </div>
 
           {/* Step content card */}
@@ -626,12 +673,19 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
                 </div>
               </div>
               <div className="p-6 pt-0">
-                <div className="relative mx-auto max-w-md">
+                {/* With the size rows under this card the column must still fit the
+                    viewport (it is sticky), so the preview gives up height first. */}
+                <div className="relative mx-auto max-w-md" style={hasEnlargeRows ? { maxWidth: DESKTOP_PREVIEW_WITH_ROWS } : undefined}>
                   {mockupElement}
                 </div>
                 <ViewTabs />
               </div>
             </div>
+            {hasEnlargeRows && (
+              <div className="mt-4 rounded-xl border border-yellow-200 bg-white p-3">
+                {enlargeRows}
+              </div>
+            )}
           </div>
 
         </div>

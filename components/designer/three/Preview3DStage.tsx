@@ -334,6 +334,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           in globals.css — the only place that overrides it today. */}
       <div
         aria-hidden="true"
+        data-stage-badge=""
         style={{
           position: 'absolute',
           top: 'var(--stage-badge-top, 4px)',
@@ -353,6 +354,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           pointerEvents:none so the drag reaches the canvas; fades on 1st touch. */}
       <style>{`@keyframes t3dDrag{0%,100%{transform:translateX(-11px)}50%{transform:translateX(11px)}}`}</style>
       <div
+        data-stage-hint=""
         style={{
           position: 'absolute',
           inset: 0,

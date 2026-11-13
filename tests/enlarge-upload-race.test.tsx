@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import DesignStep from '@/components/designer/DesignStep'
+import EnlargeRows from '@/components/designer/EnlargeRows'
+import { withEnlarge } from '@/lib/enlarge'
 import type { DesignArea } from '@/lib/types'
 
 // TICKET-005, the race the "+" creates in EXISTING upload code.
@@ -15,8 +17,13 @@ import type { DesignArea } from '@/lib/types'
 // the swap would then overwrite their enlargement with the pre-upload snapshot:
 // the chip disappears and the price silently drops back.
 //
-// This test presses "+" while the upload is in flight and then lets the swap
-// land. It fails against the captured-entry code and passes once the swap
+// TICKET-010 moved the size control out of DesignStep to EnlargeRows under the
+// preview, so the press now arrives from the PARENT (the designer's state) —
+// exactly what the harness below wires, the way TshirtDesigner does. The race
+// is unchanged: the swap must re-read the area's current enlargement.
+//
+// This test presses a size button while the upload is in flight and then lets
+// the swap land. It fails against the captured-entry code and passes once the swap
 // merges the area's CURRENT enlargement.
 //
 // Everything that would touch the network is mocked at the module level
@@ -54,6 +61,11 @@ function Harness() {
   return (
     <>
       <DesignStep designs={designs} fabricType="cotton" onUpdate={setDesigns} />
+      <EnlargeRows
+        productType="tshirt"
+        designs={designs}
+        onChange={(area, steps) => setDesigns(prev => withEnlarge(prev, 'tshirt', area, steps))}
+      />
       <output data-testid="designs">{JSON.stringify(designs)}</output>
     </>
   )
@@ -102,7 +114,7 @@ describe('DesignStep — a "+" pressed while the upload is in flight survives th
     await uploadToFrontFull(user)
 
     // The customer presses "+" while the upload is still running.
-    await user.click(screen.getAllByRole('button', { name: 'הגדלת העיצוב' })[0])
+    await user.click(screen.getByRole('button', { name: '+1' }))
     await waitFor(() => expect(frontFull()?.enlarge).toBe(1))
 
     // The upload lands and the blob: preview is swapped for the Storage URL.
@@ -118,10 +130,9 @@ describe('DesignStep — a "+" pressed while the upload is in flight survives th
     render(<Harness />)
     await uploadToFrontFull(user)
 
-    const plus = () => screen.getAllByRole('button', { name: 'הגדלת העיצוב' })[0]
-    await user.click(plus())
-    await user.click(plus())
-    await user.click(plus())
+    await user.click(screen.getByRole('button', { name: '+1' }))
+    await user.click(screen.getByRole('button', { name: '+2' }))
+    await user.click(screen.getByRole('button', { name: '+3' }))
     await waitFor(() => expect(frontFull()?.enlarge).toBe(3))
 
     hoisted.resolveUpload!(PERMANENT_URL)

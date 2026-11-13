@@ -7,7 +7,7 @@ import StepIndicator from '@/components/designer/StepIndicator'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
 import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
-import EnlargeControl from '@/components/designer/EnlargeControl'
+import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from '@/components/designer/EnlargeRows'
 import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 import { calculateItemPrice, applyQuantityDiscount, getPriceBreakdown, formatAmount } from '@/lib/pricing'
 import { canEnlarge, enlargeOverlayStyle, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
@@ -16,6 +16,7 @@ import { DESIGN_AREA_OVERLAYS, SWEATSHIRT_AREA_OVERRIDES } from '@/lib/mockup-da
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { useCart } from '@/hooks/useCart'
+import { useCompactOnScroll } from '@/hooks/useCompactOnScroll'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
@@ -83,6 +84,8 @@ export default function SweatshirtDesignerPage() {
     if (allowedAreas) setDesigns(prev => prev.filter(d => allowedAreas.includes(d.area)))
   }
   const [designs, setDesigns] = useState<DesignArea[]>([])
+  const compact = useCompactOnScroll()
+
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
   const [uploadingArea, setUploadingArea] = useState<string | null>(null)
   const sessionId = useState(() => `sweatshirt-${Date.now()}`)[0]
@@ -368,17 +371,6 @@ export default function SweatshirtDesignerPage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={currentDesign.imageUrl} alt="עיצוב" className="w-full h-full object-contain" />
                   </div>
-                  {canEnlarge('sweatshirt', selectedAreaId) && (
-                    <div className="mb-3">
-                      <EnlargeControl
-                        productType="sweatshirt"
-                        area={selectedAreaId}
-                        hasDesign
-                        enlarge={currentDesign.enlarge}
-                        onChange={steps => setDesigns(prev => withEnlarge(prev, 'sweatshirt', selectedAreaId, steps))}
-                      />
-                    </div>
-                  )}
                   <label
                     role="button"
                     tabIndex={0}
@@ -671,6 +663,19 @@ export default function SweatshirtDesignerPage() {
     </ThreeErrorBoundary>
   )
 
+  // The size rows under the preview (design step only). A press also selects
+  // that area, which is what turns this page's preview: the 2D view follows
+  // `selectedAreaId === 'back'` and the 3D turntable its `activeArea`.
+  const enlargeRows = currentStep === 3 ? (
+    <EnlargeRows
+      productType="sweatshirt"
+      designs={designs}
+      onChange={(area, steps) => setDesigns(prev => withEnlarge(prev, 'sweatshirt', area, steps))}
+      onFocusArea={setSelectedAreaId}
+    />
+  ) : null
+  const hasEnlargeRows = currentStep === 3 && designs.some(d => canEnlarge('sweatshirt', d.area))
+
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
       <Button
@@ -758,15 +763,35 @@ export default function SweatshirtDesignerPage() {
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
-          {/* Sticky mockup */}
-          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
-            <div className="relative mx-auto max-w-sm">
-              {previewElement}
-              {designs.length > 0 && (
-                <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  ✓ {designs.length} אזורים
-                </span>
+        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip [overflow-anchor:none]">
+          {/* Sticky mockup — under the site header (h-20), size rows under it */}
+          <div
+            data-compact={compact ? 'true' : 'false'}
+            className={`sticky top-20 z-30 bg-white/95 backdrop-blur-sm pt-2 ${compact ? 'pb-2' : 'pb-4'} border-b border-gray-100 -mx-4 px-4 shadow-sm`}
+          >
+            {/* Compact (scrolled): the preview shrinks to 180 px tall and the size
+                rows move beside it, so the block stays ~200 px and both stay in
+                reach. Same element tree in both states — only classes change —
+                so the 3D canvas is never remounted. */}
+            <div className={compact && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
+              <div
+                data-preview-box=""
+                className={`relative w-full shrink-0 transition-[max-width] duration-200 motion-reduce:transition-none ${
+                  // Compact: the stage's 64 px «360°» badge and its drag hint would
+                  // cover a 135 px canvas, so both are hidden here — on the mobile
+                  // box only, never through the stage shared with desktop.
+                  compact ? `max-w-[135px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
+                }`}
+              >
+                {previewElement}
+                {!compact && designs.length > 0 && (
+                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    ✓ {designs.length} אזורים
+                  </span>
+                )}
+              </div>
+              {hasEnlargeRows && (
+                <div className={compact ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
               )}
             </div>
           </div>
@@ -822,12 +847,19 @@ export default function SweatshirtDesignerPage() {
                 </div>
               </div>
               <div className="p-6 pt-0">
-                <div className="relative mx-auto max-w-md">
+                {/* With the size rows under this card the column must still fit the
+                    viewport (it is sticky), so the preview gives up height first. */}
+                <div className="relative mx-auto max-w-md" style={hasEnlargeRows ? { maxWidth: DESKTOP_PREVIEW_WITH_ROWS } : undefined}>
                   {previewElement}
                 </div>
                 <p className="text-xs text-center text-gray-400 mt-3">* סקיצה להמחשה בלבד</p>
               </div>
             </div>
+            {hasEnlargeRows && (
+              <div className="mt-4 rounded-xl border border-yellow-200 bg-white p-3">
+                {enlargeRows}
+              </div>
+            )}
           </div>
 
         </div>
