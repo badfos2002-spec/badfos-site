@@ -1,18 +1,26 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { useState } from 'react'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import EnlargeControl from '@/components/designer/EnlargeControl'
 import { withEnlarge } from '@/lib/enlarge'
 import type { DesignArea, DesignAreaType } from '@/lib/types'
 
-// TICKET-005: the one control both designers use, at both widths. A "+" that
-// adds 10% per press up to three presses, a "חזרה לגודל רגיל" reset, and a
-// "הגדלה +n" chip. NO "−", no slider, no drag, and no centimetres or size
-// wording anywhere — the customer judges the size from the mockup.
+// TICKET-010: the control is a four-button segmented row — רגיל / +1 / +2 / +3 —
+// titled "גודל ההדפס · <area>", with a small per-step price line under it. It
+// replaces TICKET-005's "+" / reset / chip. Still NO centimetres, percentages or
+// size words anywhere — the customer judges the size from the mockup.
+//
+// The step price is admin-editable, so the line must come from the live
+// override getter, never a literal: the mock below sets it to 2.
 //
 // vitest.config.mts has no `globals: true`, so Testing Library's automatic
 // cleanup never registers — afterEach(cleanup) is mandatory in every .test.tsx.
+
+vi.mock('@/lib/constants', async (orig) => ({
+  ...(await orig<typeof import('@/lib/constants')>()),
+  getLiveEnlargeStepPrice: () => 2,
+}))
 
 afterEach(cleanup)
 
@@ -32,11 +40,13 @@ function Harness({
   area = 'front_full' as DesignAreaType,
   hasDesign = true,
   initial,
+  onChange,
 }: {
   productType?: string
   area?: DesignAreaType
   hasDesign?: boolean
   initial?: number
+  onChange?: (steps: number) => void
 }) {
   const [designs, setDesigns] = useState<DesignArea[]>([design(area, initial)])
   const current = designs.find(d => d.area === area)
@@ -47,7 +57,10 @@ function Harness({
         area={area}
         hasDesign={hasDesign}
         enlarge={current?.enlarge}
-        onChange={steps => setDesigns(prev => withEnlarge(prev, productType, area, steps))}
+        onChange={steps => {
+          onChange?.(steps)
+          setDesigns(prev => withEnlarge(prev, productType, area, steps))
+        }}
       />
       {/* What the designer would hand to the cart — proves the stored shape. */}
       <output data-testid="stored">{JSON.stringify(designs)}</output>
@@ -56,174 +69,138 @@ function Harness({
 }
 
 const stored = () => JSON.parse(screen.getByTestId('stored').textContent || '[]')
-const plusButton = () => screen.getByRole('button', { name: 'הגדלת העיצוב' })
-const resetButton = () => screen.getByRole('button', { name: 'חזרה לגודל רגיל' })
+const btn = (label: string) => screen.getByRole('button', { name: label })
+const pressed = () =>
+  screen.getAllByRole('button').filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.textContent)
 
-describe('EnlargeControl — the "+" steps up to 3 and then stops', () => {
-  it('renders a "+" on front_full with an uploaded design', () => {
+describe('EnlargeControl — four segmented buttons', () => {
+  it('renders exactly רגיל, +1, +2, +3 in a radiogroup', () => {
     render(<Harness />)
-    expect(plusButton()).toBeInTheDocument()
-    expect(plusButton()).not.toBeDisabled()
+    const group = screen.getByRole('radiogroup')
+    const labels = within(group).getAllByRole('button').map(b => b.textContent)
+    expect(labels).toEqual(['רגיל', '+1', '+2', '+3'])
   })
 
-  it('three presses report 1, then 2, then 3', async () => {
-    const user = userEvent.setup()
+  it('the radiogroup label names the area', () => {
     render(<Harness />)
-    await user.click(plusButton())
-    expect(screen.getByText('הגדלה +1')).toBeInTheDocument()
-    await user.click(plusButton())
-    expect(screen.getByText('הגדלה +2')).toBeInTheDocument()
-    await user.click(plusButton())
-    expect(screen.getByText('הגדלה +3')).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: 'גודל ההדפס — קידמי מלא' })).toBeInTheDocument()
   })
 
-  it('the third press leaves the "+" DISABLED', async () => {
-    const user = userEvent.setup()
+  it('the title line names the area (back on a sweatshirt)', () => {
+    render(<Harness productType="sweatshirt" area="back" />)
+    expect(screen.getByText('גודל ההדפס · גב')).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: 'גודל ההדפס — גב' })).toBeInTheDocument()
+  })
+
+  it('aria-pressed sits on רגיל at 0', () => {
     render(<Harness />)
-    await user.click(plusButton())
-    await user.click(plusButton())
-    expect(plusButton()).not.toBeDisabled()
-    await user.click(plusButton())
-    expect(plusButton()).toBeDisabled()
+    expect(pressed()).toEqual(['רגיל'])
   })
 
-  it('a fourth press cannot push it past 3', async () => {
-    const user = userEvent.setup()
-    render(<Harness initial={3} />)
-    await user.click(plusButton())
-    expect(screen.getByText('הגדלה +3')).toBeInTheDocument()
-    expect(stored()[0].enlarge).toBe(3)
+  it('aria-pressed sits on +2 at 2', () => {
+    render(<Harness initial={2} />)
+    expect(pressed()).toEqual(['+2'])
   })
 
-  it('it is already disabled when the area arrives at 3', () => {
-    render(<Harness initial={3} />)
-    expect(plusButton()).toBeDisabled()
+  it('every button carries aria-pressed', () => {
+    render(<Harness initial={1} />)
+    for (const b of screen.getAllByRole('button')) expect(b).toHaveAttribute('aria-pressed')
   })
 })
 
-describe('EnlargeControl — the reset', () => {
-  it('returns the design to its normal size', async () => {
+describe('EnlargeControl — pressing', () => {
+  it('+2 reports 2 and moves the selection', async () => {
     const user = userEvent.setup()
-    render(<Harness initial={2} />)
-    await user.click(resetButton())
-    expect(screen.queryByText('הגדלה +2')).not.toBeInTheDocument()
-    expect(screen.queryByText(/הגדלה \+/)).not.toBeInTheDocument()
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await user.click(btn('+2'))
+    expect(onChange).toHaveBeenCalledWith(2)
+    expect(pressed()).toEqual(['+2'])
+    expect(stored()[0].enlarge).toBe(2)
   })
 
-  it('re-enables the "+" after it was disabled at 3', async () => {
+  it('רגיל reports 0 and strips the key (addDoc throws on undefined)', async () => {
     const user = userEvent.setup()
-    render(<Harness initial={3} />)
-    await user.click(resetButton())
-    expect(plusButton()).not.toBeDisabled()
+    const onChange = vi.fn()
+    render(<Harness initial={3} onChange={onChange} />)
+    await user.click(btn('רגיל'))
+    expect(onChange).toHaveBeenCalledWith(0)
+    expect('enlarge' in stored()[0]).toBe(false)
   })
 
-  it('is not offered when there is nothing to reset', () => {
-    render(<Harness />)
-    expect(screen.queryByRole('button', { name: 'חזרה לגודל רגיל' })).not.toBeInTheDocument()
+  it('pressing the already-selected button does nothing', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<Harness initial={1} onChange={onChange} />)
+    await user.click(btn('+1'))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('pressing רגיל at 0 does nothing', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await user.click(btn('רגיל'))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('an out-of-range value is shown clamped at +3', () => {
+    render(<Harness initial={7} />)
+    expect(pressed()).toEqual(['+3'])
   })
 })
 
-describe('EnlargeControl — the chip is the only readout', () => {
-  it('reads exactly "הגדלה +2" at two steps', () => {
-    render(<Harness initial={2} />)
-    expect(screen.getByText('הגדלה +2')).toBeInTheDocument()
-  })
-
-  it('there is no chip at all at 0', () => {
+describe('EnlargeControl — the price line', () => {
+  it('shows the live step price from the override getter', () => {
     render(<Harness />)
-    expect(screen.queryByText(/הגדלה \+/)).not.toBeInTheDocument()
+    expect(screen.getByText('₪2 לכל צעד ליחידה')).toBeInTheDocument()
   })
+})
 
-  it('says nothing about centimetres or physical size', () => {
+describe('EnlargeControl — nothing about physical size', () => {
+  it('no %, centimetres or cm anywhere', () => {
     const { container } = render(<Harness initial={2} />)
-    expect(container.textContent).not.toMatch(/ס["״']?מ|סנטימטר|גודל הדפסה|cm/)
-  })
-})
-
-describe('EnlargeControl — there is no way to shrink', () => {
-  it('renders no "−" and no "הקטנה"', () => {
-    render(<Harness initial={2} />)
-    expect(screen.queryByText('−')).not.toBeInTheDocument()
-    expect(screen.queryByText('-')).not.toBeInTheDocument()
-    expect(screen.queryByText(/הקטנה|הקטן/)).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /הקטנ/ })).not.toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/%|ס"מ|סמ|cm/)
   })
 
-  it('renders no slider', () => {
+  it('no old "+"-strip vocabulary is left', () => {
     render(<Harness initial={2} />)
+    expect(screen.queryByText('חזרה לגודל רגיל')).not.toBeInTheDocument()
+    expect(screen.queryByText(/הגדלה \+/)).not.toBeInTheDocument()
     expect(screen.queryByRole('slider')).not.toBeInTheDocument()
-  })
-
-  it('offers exactly two buttons at full size: the disabled "+" and the reset', () => {
-    render(<Harness initial={3} />)
-    expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 })
 
 describe('EnlargeControl — it is not rendered where enlargement does not exist', () => {
-  it('nothing is rendered for chest_logo', () => {
-    render(<Harness area="chest_logo" initial={2} />)
+  it('nothing for chest_logo', () => {
+    const { container } = render(<Harness area="chest_logo" initial={2} />)
+    expect(container.querySelector('[role="radiogroup"]')).toBeNull()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
-    expect(screen.queryByText(/הגדלה/)).not.toBeInTheDocument()
   })
 
-  it('nothing is rendered for shoulder_right', () => {
+  it('nothing for shoulder_right', () => {
     render(<Harness area="shoulder_right" initial={2} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('nothing is rendered for a tote, even on front_full', () => {
+  it('nothing for a tote, even on front_full', () => {
     render(<Harness productType="tote" initial={2} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('nothing is rendered before a design is uploaded', () => {
+  it('nothing before a design is uploaded', () => {
     render(<Harness hasDesign={false} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
-  })
-
-  it('it IS rendered for back on a sweatshirt', () => {
-    render(<Harness productType="sweatshirt" area="back" />)
-    expect(plusButton()).toBeInTheDocument()
-  })
-})
-
-describe('EnlargeControl — what reaches Firestore', () => {
-  it('the design carries NO enlarge key at 0 (addDoc throws on undefined)', () => {
-    render(<Harness />)
-    expect('enlarge' in stored()[0]).toBe(false)
-  })
-
-  it('the key is stripped again after a reset, not written as 0', async () => {
-    const user = userEvent.setup()
-    render(<Harness initial={2} />)
-    await user.click(resetButton())
-    expect('enlarge' in stored()[0]).toBe(false)
-  })
-
-  it('two presses store enlarge: 2', async () => {
-    const user = userEvent.setup()
-    render(<Harness />)
-    await user.click(plusButton())
-    await user.click(plusButton())
-    expect(stored()[0].enlarge).toBe(2)
+    expect(screen.queryByText(/גודל ההדפס/)).not.toBeInTheDocument()
   })
 })
 
 describe('EnlargeControl — touch targets (jsdom has no layout, so pin the classes)', () => {
-  it('the "+" is at least 44×44 px', () => {
+  it('every button is at least 44 px tall and takes an equal share', () => {
     render(<Harness />)
-    expect(plusButton().className).toContain('min-h-[44px]')
-    expect(plusButton().className).toContain('min-w-[44px]')
-  })
-
-  it('the reset is at least 44 px tall', () => {
-    render(<Harness initial={1} />)
-    expect(resetButton().className).toContain('min-h-[44px]')
-  })
-
-  it('the disabled "+" is visibly disabled, not just inert', () => {
-    render(<Harness initial={3} />)
-    expect(plusButton().className).toContain('disabled:opacity-50')
+    for (const b of screen.getAllByRole('button')) {
+      expect(b.className).toContain('min-h-[44px]')
+      expect(b.className).toContain('flex-1')
+    }
   })
 })
