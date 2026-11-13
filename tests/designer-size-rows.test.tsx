@@ -181,3 +181,31 @@ describe('Sweatshirt designer — size rows under the preview', () => {
     expect(stages()[0].getAttribute('data-scales')).toContain('front_full:1.3')
   })
 })
+
+describe('Compact sticky preview on mobile', () => {
+  beforeEach(() => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => { cb(0); return 1 })
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  const scrollTo = async (y: number) => {
+    const { act } = await import('@testing-library/react')
+    Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+    act(() => { window.dispatchEvent(new Event('scroll')) })
+  }
+
+  it('t-shirt: the block goes compact on scroll, keeps the rows, and expands at the top', async () => {
+    seedTshirtSession([D('front_full', 'קידמי מלא')])
+    render(<TshirtDesigner use3DPreview />)
+    const block = () => document.querySelector<HTMLElement>('[data-compact]')!
+    expect(block().getAttribute('data-compact')).toBe('false')
+    expect(within(block()).getByText(/✓ 1 עיצובים/)).toBeInTheDocument()
+    await scrollTo(300)
+    expect(block().getAttribute('data-compact')).toBe('true')
+    expect(within(block()).queryByText(/✓ 1 עיצובים/)).not.toBeInTheDocument()
+    expect(block().querySelector('[data-enlarge-rows]')).not.toBeNull()
+    await scrollTo(0)
+    expect(block().getAttribute('data-compact')).toBe('false')
+  })
+})
