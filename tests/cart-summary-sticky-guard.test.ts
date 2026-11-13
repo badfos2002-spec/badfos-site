@@ -9,13 +9,24 @@ import { join } from 'node:path'
 // the checkout button would sit below the fold until the grid ends. The
 // wrapper is capped at the viewport minus its top-24 offset (6rem) and scrolls
 // on its own.
+//
+// DESKTOP ONLY (lg:). On mobile the cart is one column and sticky does
+// nothing; an unprefixed max-h/overflow would turn a tall summary into a
+// nested scroll box hiding «המשך לתשלום».
 
-describe('cart order summary — sticky with a viewport guard', () => {
-  it('the sticky top-24 wrapper also has max-h-[calc(100vh-6rem)] and overflow-y-auto', () => {
-    const src = readFileSync(join(__dirname, '..', 'components', 'cart', 'CartPage.tsx'), 'utf8')
-    const line = src.split('\n').find(l => l.includes('sticky top-24'))
-    expect(line).toBeDefined()
-    expect(line).toContain('max-h-[calc(100vh-6rem)]')
-    expect(line).toContain('overflow-y-auto')
+describe('cart order summary — sticky with a viewport guard, desktop only', () => {
+  const src = readFileSync(join(__dirname, '..', 'components', 'cart', 'CartPage.tsx'), 'utf8')
+  const line = src.split('\n').find(l => l.includes('top-24')) ?? ''
+
+  it('the wrapper is lg:sticky lg:top-24 with lg:max-h-[calc(100vh-6rem)] and lg:overflow-y-auto', () => {
+    for (const cls of ['lg:sticky', 'lg:top-24', 'lg:max-h-[calc(100vh-6rem)]', 'lg:overflow-y-auto']) {
+      expect(line).toContain(cls)
+    }
+  })
+
+  it('no unprefixed height cap or scroll box (mobile checkout stays one page)', () => {
+    expect(line).not.toContain(' max-h-[')
+    expect(line).not.toContain(' overflow-y-auto')
+    expect(line).not.toMatch(/"(max-h-\[|overflow-y-auto|sticky )/)
   })
 })
