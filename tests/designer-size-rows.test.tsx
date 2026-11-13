@@ -94,6 +94,9 @@ describe('TshirtDesigner — size rows under the preview', () => {
     const block = document.querySelector<HTMLElement>('[data-compact]')
     expect(block).not.toBeNull()
     expect(block!.className).toContain('sticky')
+    // Above the step card's z-10/z-20 children (tile × badges, upload overlay,
+    // nav row) that scroll under it; below the site header (z-[100]).
+    expect(block!.className).toContain('z-30')
     expect(block!.querySelector('[data-enlarge-rows]')).not.toBeNull()
   })
 
@@ -167,6 +170,9 @@ describe('Sweatshirt designer — size rows under the preview', () => {
     }
     const block = document.querySelector<HTMLElement>('[data-compact]')
     expect(block!.className).toContain('sticky')
+    // Above the step card's z-10/z-20 children (tile × badges, upload overlay,
+    // nav row) that scroll under it; below the site header (z-[100]).
+    expect(block!.className).toContain('z-30')
     expect(block!.querySelector('[data-enlarge-rows]')).not.toBeNull()
   })
 
@@ -228,26 +234,32 @@ describe('Compact mode clears the overlays off the 135×180 canvas (mobile)', ()
   // it through its data-stage-badge hook while compact.
   const mobileBox = () => mobileStage().closest<HTMLElement>('[data-preview-box]')!
 
-  it('t-shirt: noHint and the badge-hide only while compact', async () => {
+  // Both overlays are hidden by the MOBILE box (data-stage-* hooks), never via
+  // the shared stage element — a noHint prop would leak to the desktop stage.
+  const BADGE = '[&_[data-stage-badge]]:!hidden'
+  const HINT = '[&_[data-stage-hint]]:!hidden'
+
+  it('t-shirt: badge and hint hidden on the mobile box only while compact; stage never gets noHint', async () => {
     seedTshirtSession([D('front_full', 'קידמי מלא')])
     render(<TshirtDesigner use3DPreview />)
-    expect(mobileStage().getAttribute('data-nohint')).toBe('false')
-    expect(mobileBox().className).not.toContain('[&_[data-stage-badge]]:!hidden')
+    expect(mobileBox().className).not.toContain(BADGE)
+    expect(mobileBox().className).not.toContain(HINT)
     await scrollTo(300)
-    expect(mobileStage().getAttribute('data-nohint')).toBe('true')
-    expect(mobileBox().className).toContain('[&_[data-stage-badge]]:!hidden')
+    expect(mobileBox().className).toContain(BADGE)
+    expect(mobileBox().className).toContain(HINT)
+    for (const s of stages()) expect(s.getAttribute('data-nohint')).toBe('false')
     await scrollTo(0)
-    expect(mobileStage().getAttribute('data-nohint')).toBe('false')
-    expect(mobileBox().className).not.toContain('[&_[data-stage-badge]]:!hidden')
+    expect(mobileBox().className).not.toContain(BADGE)
+    expect(mobileBox().className).not.toContain(HINT)
   })
 
-  it('sweatshirt: noHint and the badge-hide only while compact', async () => {
+  it('sweatshirt: badge and hint hidden on the mobile box only while compact; stage never gets noHint', async () => {
     render(<SweatshirtDesignerPage />)
-    expect(mobileStage().getAttribute('data-nohint')).toBe('false')
     await scrollTo(300)
-    expect(mobileStage().getAttribute('data-nohint')).toBe('true')
-    expect(mobileBox().className).toContain('[&_[data-stage-badge]]:!hidden')
+    expect(mobileBox().className).toContain(BADGE)
+    expect(mobileBox().className).toContain(HINT)
+    for (const s of stages()) expect(s.getAttribute('data-nohint')).toBe('false')
     await scrollTo(0)
-    expect(mobileStage().getAttribute('data-nohint')).toBe('false')
+    expect(mobileBox().className).not.toContain(HINT)
   })
 })
