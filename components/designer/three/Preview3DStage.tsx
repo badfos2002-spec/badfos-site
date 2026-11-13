@@ -334,6 +334,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           in globals.css — the only place that overrides it today. */}
       <div
         aria-hidden="true"
+        data-stage-badge=""
         style={{
           position: 'absolute',
           top: 'var(--stage-badge-top, 4px)',

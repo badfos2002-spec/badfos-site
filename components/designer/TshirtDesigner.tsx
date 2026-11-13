@@ -493,6 +493,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
               .map((d) => ({ area: d.area, url: d.imageUrl, enlarge: d.enlarge }))
           )}
           showGuides={currentStep === 3}
+          noHint={compact}
           activeArea={currentStep === 3 ? activeDesignArea : undefined}
           variant={model3d.variant}
           modelUrl={model3d.url}
@@ -597,8 +598,11 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
                 so the 3D canvas is never remounted. */}
             <div className={compact && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
               <div
+                data-preview-box=""
                 className={`relative w-full shrink-0 transition-[max-width] duration-200 motion-reduce:transition-none ${
-                  compact ? `max-w-[135px] ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
+                  // Compact: the stage's 64 px «360°» badge would cover the collar
+                  // on a 135 px canvas, so it is hidden here (mobile box only).
+                  compact ? `max-w-[135px] [&_[data-stage-badge]]:!hidden ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
                 }`}
               >
                 {mockupElement}
