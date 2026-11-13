@@ -493,7 +493,6 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
               .map((d) => ({ area: d.area, url: d.imageUrl, enlarge: d.enlarge }))
           )}
           showGuides={currentStep === 3}
-          noHint={compact}
           activeArea={currentStep === 3 ? activeDesignArea : undefined}
           variant={model3d.variant}
           modelUrl={model3d.url}
@@ -590,7 +589,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
               under the site header (h-20), with the size rows under it. */}
           <div
             data-compact={compact ? 'true' : 'false'}
-            className={`sticky top-20 z-10 bg-white/95 backdrop-blur-sm pt-2 ${compact ? 'pb-2' : 'pb-4'} border-b border-gray-100 -mx-4 px-4 shadow-sm`}
+            className={`sticky top-20 z-30 bg-white/95 backdrop-blur-sm pt-2 ${compact ? 'pb-2' : 'pb-4'} border-b border-gray-100 -mx-4 px-4 shadow-sm`}
           >
             {/* Compact (scrolled): the preview shrinks to 180 px tall and the size
                 rows move beside it, so the block stays ~200 px and both stay in
@@ -600,9 +599,10 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
               <div
                 data-preview-box=""
                 className={`relative w-full shrink-0 transition-[max-width] duration-200 motion-reduce:transition-none ${
-                  // Compact: the stage's 64 px «360°» badge would cover the collar
-                  // on a 135 px canvas, so it is hidden here (mobile box only).
-                  compact ? `max-w-[135px] [&_[data-stage-badge]]:!hidden ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
+                  // Compact: the stage's 64 px «360°» badge and its drag hint would
+                  // cover a 135 px canvas, so both are hidden here — on the mobile
+                  // box only, never through the stage shared with desktop.
+                  compact ? `max-w-[135px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
                 }`}
               >
                 {mockupElement}

@@ -354,6 +354,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
           pointerEvents:none so the drag reaches the canvas; fades on 1st touch. */}
       <style>{`@keyframes t3dDrag{0%,100%{transform:translateX(-11px)}50%{transform:translateX(11px)}}`}</style>
       <div
+        data-stage-hint=""
         style={{
           position: 'absolute',
           inset: 0,
