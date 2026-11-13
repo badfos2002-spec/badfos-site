@@ -13,10 +13,11 @@ import type { DesignArea } from '@/lib/types'
 
 vi.mock('next/dynamic', () => ({
   default: () =>
-    function StageStub(props: { activeArea?: string; designs?: { area: string; transform: { scale: number } }[] }) {
+    function StageStub(props: { activeArea?: string; noHint?: boolean; designs?: { area: string; transform: { scale: number } }[] }) {
       return (
         <div
           data-testid="stage"
+          data-nohint={props.noHint ? 'true' : 'false'}
           data-active={props.activeArea ?? ''}
           data-scales={(props.designs ?? []).map(d => `${d.area}:${d.transform.scale}`).join(',')}
         />
@@ -207,5 +208,46 @@ describe('Compact sticky preview on mobile', () => {
     expect(block().querySelector('[data-enlarge-rows]')).not.toBeNull()
     await scrollTo(0)
     expect(block().getAttribute('data-compact')).toBe('false')
+  })
+})
+
+describe('Compact mode clears the overlays off the 135×180 canvas (mobile)', () => {
+  beforeEach(() => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => { cb(0); return 1 })
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  const scrollTo = async (y: number) => {
+    const { act } = await import('@testing-library/react')
+    Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+    act(() => { window.dispatchEvent(new Event('scroll')) })
+  }
+  const mobileStage = () => document.querySelector<HTMLElement>('[data-compact] [data-testid="stage"]')!
+  // The «360°» badge is drawn by the stage itself; the mobile preview box hides
+  // it through its data-stage-badge hook while compact.
+  const mobileBox = () => mobileStage().closest<HTMLElement>('[data-preview-box]')!
+
+  it('t-shirt: noHint and the badge-hide only while compact', async () => {
+    seedTshirtSession([D('front_full', 'קידמי מלא')])
+    render(<TshirtDesigner use3DPreview />)
+    expect(mobileStage().getAttribute('data-nohint')).toBe('false')
+    expect(mobileBox().className).not.toContain('[&_[data-stage-badge]]:hidden')
+    await scrollTo(300)
+    expect(mobileStage().getAttribute('data-nohint')).toBe('true')
+    expect(mobileBox().className).toContain('[&_[data-stage-badge]]:hidden')
+    await scrollTo(0)
+    expect(mobileStage().getAttribute('data-nohint')).toBe('false')
+    expect(mobileBox().className).not.toContain('[&_[data-stage-badge]]:hidden')
+  })
+
+  it('sweatshirt: noHint and the badge-hide only while compact', async () => {
+    render(<SweatshirtDesignerPage />)
+    expect(mobileStage().getAttribute('data-nohint')).toBe('false')
+    await scrollTo(300)
+    expect(mobileStage().getAttribute('data-nohint')).toBe('true')
+    expect(mobileBox().className).toContain('[&_[data-stage-badge]]:hidden')
+    await scrollTo(0)
+    expect(mobileStage().getAttribute('data-nohint')).toBe('false')
   })
 })
