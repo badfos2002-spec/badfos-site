@@ -16,6 +16,7 @@ import { DESIGN_AREA_OVERLAYS, SWEATSHIRT_AREA_OVERRIDES } from '@/lib/mockup-da
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { useCart } from '@/hooks/useCart'
+import { useCompactOnScroll } from '@/hooks/useCompactOnScroll'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
@@ -83,6 +84,8 @@ export default function SweatshirtDesignerPage() {
     if (allowedAreas) setDesigns(prev => prev.filter(d => allowedAreas.includes(d.area)))
   }
   const [designs, setDesigns] = useState<DesignArea[]>([])
+  const compact = useCompactOnScroll()
+
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
   const [uploadingArea, setUploadingArea] = useState<string | null>(null)
   const sessionId = useState(() => `sweatshirt-${Date.now()}`)[0]
@@ -762,16 +765,31 @@ export default function SweatshirtDesignerPage() {
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-hidden">
           {/* Sticky mockup — under the site header (h-20), size rows under it */}
-          <div data-compact="false" className="sticky top-20 z-10 bg-white/95 backdrop-blur-sm pt-2 pb-4 border-b border-gray-100 -mx-4 px-4 shadow-sm">
-            <div className="relative mx-auto max-w-sm">
-              {previewElement}
-              {designs.length > 0 && (
-                <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  ✓ {designs.length} אזורים
-                </span>
+          <div
+            data-compact={compact ? 'true' : 'false'}
+            className={`sticky top-20 z-10 bg-white/95 backdrop-blur-sm pt-2 ${compact ? 'pb-2' : 'pb-4'} border-b border-gray-100 -mx-4 px-4 shadow-sm`}
+          >
+            {/* Compact (scrolled): the preview shrinks to 180 px tall and the size
+                rows move beside it, so the block stays ~200 px and both stay in
+                reach. Same element tree in both states — only classes change —
+                so the 3D canvas is never remounted. */}
+            <div className={compact && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
+              <div
+                className={`relative w-full shrink-0 transition-[max-width] duration-200 motion-reduce:transition-none ${
+                  compact ? `max-w-[135px] ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
+                }`}
+              >
+                {previewElement}
+                {!compact && designs.length > 0 && (
+                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    ✓ {designs.length} אזורים
+                  </span>
+                )}
+              </div>
+              {hasEnlargeRows && (
+                <div className={compact ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
               )}
             </div>
-            {hasEnlargeRows && <div className="mx-auto mt-3 max-w-sm">{enlargeRows}</div>}
           </div>
 
           {/* Step content card */}
