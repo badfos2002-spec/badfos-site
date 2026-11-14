@@ -22,3 +22,25 @@ describe('designers without a compact preview have no mobile sticky block', () =
     })
   }
 })
+
+// TICKET-011: the t-shirt and sweatshirt designers dropped their compact sticky
+// preview too (the user disliked it shrinking/growing while scrolling). Their
+// MOBILE block is plain; only the desktop preview column stays sticky.
+const COMPACT_GONE = [
+  ['tshirt', join('components', 'designer', 'TshirtDesigner.tsx')],
+  ['sweatshirt', join('app', 'designer', 'sweatshirt', 'page.tsx')],
+]
+
+describe('t-shirt and sweatshirt: no mobile sticky block, desktop column still sticky', () => {
+  for (const [name, file] of COMPACT_GONE) {
+    it(`${name}: no "sticky top-20"/"sticky top-0", no compact hook; "sticky top-24" stays`, () => {
+      const src = readFileSync(join(__dirname, '..', file), 'utf8')
+      const mobile = src.slice(src.indexOf('MOBILE LAYOUT'), src.indexOf('DESKTOP LAYOUT'))
+      expect(mobile.length).toBeGreaterThan(0)
+      expect(mobile).not.toContain('sticky top-20')
+      expect(mobile).not.toContain('sticky top-0')
+      expect(src).not.toContain('useCompactOnScroll')
+      expect(src).toContain('sticky top-24')
+    })
+  }
+})
