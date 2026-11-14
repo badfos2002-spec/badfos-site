@@ -6,8 +6,9 @@ import type { DesignArea } from '@/lib/types'
 // TICKET-010, both designers end to end: the size rows render under the
 // preview (mobile preview block AND desktop preview column — both layouts are
 // mounted, CSS hides one), never inside the step card, and a press turns the
-// preview to that side. TICKET-011: the mobile block is no longer sticky or
-// compact; a floating «לסקיצה» button leads back to it instead.
+// preview to that side. TICKET-011: the mobile block is no longer a shrinking
+// sticky block; it is an in-flow placeholder whose content docks (fixed) under
+// the header once the placeholder has scrolled out.
 //
 // The 3D stage is replaced by a stub that exposes the area it is turned to.
 // Nothing touches the network: storage and print-image are mocked.
@@ -58,8 +59,7 @@ function expectPlainMobileBlock(block: HTMLElement) {
   expect(block.className).not.toMatch(/\bsticky\b/)
   expect(block.hasAttribute('data-compact')).toBe(false)
   expect(document.querySelector('[data-compact]')).toBeNull()
-  // Lands under the 80 px sticky header when the button scrolls to it.
-  expect(block.className).toContain('scroll-mt-20')
+  expect(block.getAttribute('data-docked')).toBe('false')
 }
 
 function seedTshirtSession(designs: DesignArea[]) {
@@ -99,7 +99,7 @@ describe('TshirtDesigner — size rows under the preview', () => {
     for (const g of all) expect(g.closest('[data-enlarge-rows]')).not.toBeNull()
   })
 
-  it('the mobile rows sit inside the plain (non-sticky, non-compact) preview block', () => {
+  it('the mobile rows sit inside the (undocked, non-sticky) preview placeholder', () => {
     render(<TshirtDesigner use3DPreview />)
     const block = mobileBlock()
     expect(block).not.toBeNull()
@@ -195,48 +195,68 @@ describe('Sweatshirt designer — size rows under the preview', () => {
 })
 
 
-// ── TICKET-011: the floating «לסקיצה» button ─────────────────────────────────
 
-type IOCb = (entries: Partial<IntersectionObserverEntry>[]) => void
-let ioObservers: { cb: IOCb; targets: Element[] }[] = []
-class IOStub {
-  private rec: { cb: IOCb; targets: Element[] }
-  constructor(cb: IOCb) { this.rec = { cb, targets: [] }; ioObservers.push(this.rec) }
-  observe(el: Element) { this.rec.targets.push(el) }
-  unobserve() {}
-  disconnect() { ioObservers = ioObservers.filter(o => o !== this.rec) }
-  takeRecords() { return [] }
-}
+// ── TICKET-011 revision: the docked compact preview ───────────────────────────
 
-/** Every observed element reports "out of view" (page scrolled to the middle). */
-async function scrollEverythingOut() {
+/** Fake the placeholder's position: everything reads its bottom edge. */
+async function placeholderAt(bottom: number) {
   const { act } = await import('@testing-library/react')
-  act(() => {
-    for (const o of ioObservers) o.cb(o.targets.map(target => ({ target, isIntersecting: false })))
-  })
+  const block = mobileBlock()!
+  block.getBoundingClientRect = () => ({ bottom, top: bottom - 694, height: 694, width: 390, left: 0, right: 390, x: 0, y: bottom - 694, toJSON() {} }) as DOMRect
+  Object.defineProperty(block, 'offsetHeight', { get: () => 694, configurable: true })
+  act(() => { window.dispatchEvent(new Event('scroll')) })
 }
-const sketchButton = () => screen.queryByRole('button', { name: 'חזרה לסקיצה' })
+const bar = () => mobileBlock()!.querySelector<HTMLElement>('[data-dock-bar]')!
+const mobileBox = () => mobileBlock()!.querySelector<HTMLElement>('[data-preview-box]')!
+const HIDE = ['[&_[data-stage-badge]]:!hidden', '[&_[data-stage-hint]]:!hidden', '[&_[data-stage-caption]]:!hidden']
 
-describe('Back-to-sketch button (mobile)', () => {
+function expectDocked(withRows: boolean) {
+  const block = mobileBlock()!
+  expect(block.getAttribute('data-docked')).toBe('true')
+  // The placeholder keeps the height it had, so nothing in flow moves.
+  expect(block.style.height).toBe('694px')
+  for (const c of ['fixed', 'top-20', 'z-30', 'inset-x-0']) expect(bar().className).toContain(c)
+  for (const c of [...HIDE, 'max-w-[165px]']) expect(mobileBox().className).toContain(c)
+  // 360 while docked: the compact canvas owns the touch (horizontal AND vertical).
+  expect(mobileBox().className).toContain('[&_canvas]:![touch-action:none]')
+  // ViewTabs and the ✓ chip are gone while docked.
+  expect(within(block).queryByText(/✓ \d+ (עיצובים|אזורים)/)).not.toBeInTheDocument()
+  const rows = block.querySelector('[data-enlarge-rows]')
+  if (withRows) {
+    expect(rows).not.toBeNull()
+    // Beside the compact preview.
+    expect(bar().querySelector('.flex.items-center')).not.toBeNull()
+  } else expect(rows).toBeNull()
+}
+
+describe('Docked compact preview (mobile)', () => {
   beforeEach(() => {
-    ioObservers = []
-    vi.stubGlobal('IntersectionObserver', IOStub)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => { cb(0); return 1 })
   })
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => vi.restoreAllMocks())
 
-  it('t-shirt step 3: watches the mobile preview block and appears once it is out of view', async () => {
+  it('t-shirt step 3: placeholder out under the header → docked bar with the rows beside; back → expanded', async () => {
     seedTshirtSession([D('front_full', 'קידמי מלא')])
     render(<TshirtDesigner use3DPreview />)
-    expect(ioObservers.some(o => o.targets.includes(mobileBlock()!))).toBe(true)
-    expect(sketchButton()).not.toBeInTheDocument()
-    await scrollEverythingOut()
-    const b = sketchButton()
-    expect(b).toBeInTheDocument()
-    // Inside the mobile layout only.
-    expect(b!.closest('.lg\\:hidden')).not.toBeNull()
+    expect(within(mobileBlock()!).getByText(/✓ 1 עיצובים/)).toBeInTheDocument()
+    expect(bar().className).not.toContain('fixed')
+    for (const c of HIDE) expect(mobileBox().className).not.toContain(c)
+    await placeholderAt(60)
+    expectDocked(true)
+    // The same stage element both ways — the canvas is never remounted.
+    const stageBefore = mobileBlock()!.querySelector('[data-testid="stage"]')
+    await placeholderAt(150)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('true')
+    await placeholderAt(300)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
+    expect(mobileBlock()!.style.height).toBe('')
+    expect(bar().className).not.toContain('fixed')
+    expect(mobileBlock()!.querySelector('[data-testid="stage"]')).toBe(stageBefore)
+    // The stage itself never gets noHint (the hide is the mobile box's job).
+    for (const s of stages()) expect(s.getAttribute('data-nohint')).toBe('false')
   })
 
-  it('t-shirt step 4 (sizes): never shown', async () => {
+  it('t-shirt step 4 (sizes): never docks', async () => {
     sessionStorage.setItem(
       'designer_session',
       JSON.stringify({
@@ -246,15 +266,21 @@ describe('Back-to-sketch button (mobile)', () => {
       })
     )
     render(<TshirtDesigner use3DPreview />)
-    await scrollEverythingOut()
-    expect(sketchButton()).not.toBeInTheDocument()
-    expectPlainMobileBlock(mobileBlock()!)
+    await placeholderAt(20)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
+    expect(bar().className).not.toContain('fixed')
   })
 
-  it('sweatshirt: shown on step 3 when the preview is out of view, never on step 4', async () => {
+  it('sweatshirt step 1: docks centred with no rows', async () => {
+    render(<SweatshirtDesignerPage />)
+    await placeholderAt(40)
+    expectDocked(false)
+    expect(mobileBox().className).toContain('mx-auto')
+  })
+
+  it('sweatshirt step 3 docks with the rows beside; step 4 never docks', async () => {
     const user = userEvent.setup()
     render(<SweatshirtDesignerPage />)
-    expectPlainMobileBlock(mobileBlock()!)
     await user.click(screen.getAllByRole('button', { name: /קנגרו/ })[0])
     await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
     await user.click(screen.getAllByRole('button', { name: 'שחור' })[0])
@@ -262,11 +288,12 @@ describe('Back-to-sketch button (mobile)', () => {
     const [label] = screen.getAllByLabelText(/העלאת עיצוב לאזור קידמי מלא/)
     await user.upload(label.querySelector('input[type="file"]') as HTMLInputElement, pngFile())
     await waitFor(() => expect(allRows().length).toBe(2))
-    await scrollEverythingOut()
-    expect(sketchButton()).toBeInTheDocument()
+    await placeholderAt(40)
+    expectDocked(true)
+    await placeholderAt(400)
     await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
     await waitFor(() => expect(allRows()).toHaveLength(0))
-    await scrollEverythingOut()
-    expect(sketchButton()).not.toBeInTheDocument()
+    await placeholderAt(20)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
   })
 })

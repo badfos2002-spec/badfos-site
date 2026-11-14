@@ -43,3 +43,14 @@ describe('t-shirt and sweatshirt: no mobile sticky block, desktop column still s
     })
   }
 })
+
+// TICKET-011 revision: the docked compact preview hides the stage caption
+// («סקיצה להמחשה בלבד») through this hook, like the badge and the hint.
+describe('Preview3DStage exposes the caption hook', () => {
+  it('the caption carries data-stage-caption', () => {
+    const src = readFileSync(join(__dirname, '..', 'components', 'designer', 'three', 'Preview3DStage.tsx'), 'utf8')
+    const at = src.indexOf('data-stage-caption')
+    expect(at).toBeGreaterThan(-1)
+    expect(src.indexOf('סקיצה להמחשה בלבד', at)).toBeGreaterThan(at)
+  })
+})
