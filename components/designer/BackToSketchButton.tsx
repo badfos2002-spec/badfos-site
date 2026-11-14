@@ -3,13 +3,16 @@
 import { useEffect, useState, type RefObject } from 'react'
 import { ArrowUp } from 'lucide-react'
 
+/** Button height (48) + its bottom offset (24) + a margin. */
+const BOTTOM_BAND = 96
+
 /**
  * Mobile-only floating «לסקיצה» button (TICKET-011): shown while the preview
  * block (`targetRef`) is out of view, a tap scrolls smoothly back to it.
  *
  * Pure visibility signal — nothing on the page resizes with it, so there is no
- * feedback loop. While `avoidRef` (the mobile nav row) is in view the button
- * steps aside: it sits bottom-left, exactly where «הבא» is in RTL.
+ * feedback loop. While `avoidRef` (the mobile nav row) crosses the bottom band
+ * the button steps aside: it sits bottom-left, exactly where «הבא» is in RTL.
  * `hidden` (the last step) renders nothing.
  */
 export default function BackToSketchButton({
@@ -27,21 +30,36 @@ export default function BackToSketchButton({
   useEffect(() => {
     const target = targetRef.current
     if (!target || typeof IntersectionObserver === 'undefined') return
-    const avoid = avoidRef?.current ?? null
     const observer = new IntersectionObserver(
-      entries => {
-        for (const e of entries) {
-          if (e.target === target) setPreviewOut(!e.isIntersecting)
-          else if (e.target === avoid) setAvoidIn(e.isIntersecting)
-        }
-      },
+      entries => { for (const e of entries) setPreviewOut(!e.isIntersecting) },
       // The site header is sticky (h-20): a preview hidden under it is out of sight.
       { threshold: 0, rootMargin: '-80px 0px 0px 0px' }
     )
     observer.observe(target)
-    if (avoid) observer.observe(avoid)
     return () => observer.disconnect()
-  }, [targetRef, avoidRef])
+  }, [targetRef])
+
+  useEffect(() => {
+    const avoid = avoidRef?.current
+    if (!avoid || typeof IntersectionObserver === 'undefined') return
+    let observer: IntersectionObserver | null = null
+    // Only the bottom band where the button sits counts: the nav row may stay
+    // on a tall phone's screen for most of the step without ever touching it.
+    const watch = () => {
+      observer?.disconnect()
+      observer = new IntersectionObserver(
+        entries => { for (const e of entries) setAvoidIn(e.isIntersecting) },
+        { threshold: 0, rootMargin: `-${Math.max(0, window.innerHeight - BOTTOM_BAND)}px 0px 0px 0px` }
+      )
+      observer.observe(avoid)
+    }
+    watch()
+    window.addEventListener('resize', watch)
+    return () => {
+      window.removeEventListener('resize', watch)
+      observer?.disconnect()
+    }
+  }, [avoidRef])
 
   if (hidden || !previewOut || avoidIn) return null
 
