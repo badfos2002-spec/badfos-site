@@ -269,18 +269,16 @@ describe('Docked compact preview (mobile)', () => {
     await placeholderAt(400)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
     expect(mobileBlock()!.style.height).toBe('')
-    // TICKET-012: the return animation's gate is absent until the first dock.
-    expect(mobileBlock()!.getAttribute('data-has-docked')).not.toBe('true')
     await placeholderAt(60)
     expectDocked(true)
-    expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
+    expect(mobileBlock()!.hasAttribute('data-has-docked')).toBe(false)
     const stageBefore = mobileBlock()!.querySelector('[data-testid="stage"]')
     await placeholderAt(470)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('true')
     await placeholderAt(490)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
     expect(mobileBlock()!.style.height).toBe('')
-    expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
+    expect(mobileBlock()!.hasAttribute('data-has-docked')).toBe(false)
     // The same stage element both ways — the canvas is never remounted.
     expect(mobileBlock()!.querySelector('[data-testid="stage"]')).toBe(stageBefore)
     for (const s of stages()) expect(s.getAttribute('data-nohint')).toBe('false')
@@ -335,13 +333,12 @@ describe('Docked compact preview (mobile)', () => {
   it('sweatshirt step 1: docks centred with no rows', async () => {
     render(<SweatshirtDesignerPage />)
     await placeholderAt(400)
-    expect(mobileBlock()!.getAttribute('data-has-docked')).not.toBe('true')
     await placeholderAt(40)
     expectDocked(false)
-    expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
+    expect(mobileBlock()!.hasAttribute('data-has-docked')).toBe(false)
     await placeholderAt(500)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
-    expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
+    expect(mobileBlock()!.hasAttribute('data-has-docked')).toBe(false)
   })
 
   it('sweatshirt: rows arriving while docked grow the pin, still docked (no undock)', async () => {
@@ -513,6 +510,14 @@ describe('the docked CSS — TICKET-012 size and animation', () => {
     expect(animated.some(sel => sel.endsWith('[data-dock-bar]::before'))).toBe(true)
     expect(animated.some(sel => sel.endsWith('[data-rows-wrap]'))).toBe(true)
     for (const sel of animated) expect(sel).not.toContain('data-measuring')
+  })
+
+  it('the rows fade in ~120 ms after the dock (once the box has mostly landed), opacity only', async () => {
+    const css = await load()
+    const r = rules(css, '[data-rows-wrap]').filter(r => /animation:/.test(r.body) && !/animation:\s*none/.test(r.body))
+    expect(r).toHaveLength(1)
+    expect(r[0].sel.replace(/\/\*[\s\S]*?\*\//g, '').trim()).toBe('[data-mobile-preview][data-docked="true"] [data-rows-wrap]')
+    expect(r[0].body).toMatch(/animation:\s*dock-enter\s+220ms\s+cubic-bezier\(\.2,\s*\.8,\s*\.2,\s*1\)\s+120ms\s+both/)
   })
 
   it('reduced motion: no dock or undock animation', async () => {
