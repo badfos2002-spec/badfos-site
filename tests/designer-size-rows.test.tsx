@@ -216,6 +216,9 @@ function expectDocked(withRows: boolean) {
   // The placeholder keeps the height it had, so nothing in flow moves.
   expect(block.style.height).toBe('694px')
   for (const c of ['fixed', 'top-20', 'z-30', 'inset-x-0']) expect(bar().className).toContain(c)
+  // Fully opaque, so no step content shows through the docked bar.
+  expect(bar().className.split(/\s+/)).toContain('bg-white')
+  expect(bar().className).not.toContain('bg-white/95')
   for (const c of [...HIDE, 'max-w-[165px]']) expect(mobileBox().className).toContain(c)
   // 360 while docked: the compact canvas owns the touch (horizontal AND vertical).
   expect(mobileBox().className).toContain('[&_canvas]:![touch-action:none]')

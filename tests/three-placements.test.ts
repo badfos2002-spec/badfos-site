@@ -139,9 +139,11 @@ describe('nothing but shirts prints on a shoulder', () => {
 // multiplies it by 1.3. The old t-shirt boxes (back 0.72, front 0.62) put a
 // 16:9 image at 0.94 wide on +3 — seam to seam, onto the sleeves. Narrowed so
 // +3 stays inside the torso (≤ 0.78); aspect kept close to the old boxes.
+// Back narrowed again to 0.55 × 0.72 after the renders: at 0.60 a wide/square
+// +3 print was 0.87 of the lower torso, at 0.55 it is ≈ 0.80.
 describe('t-shirt front/back guide boxes keep a wide +3 print inside the torso', () => {
-  it('back is 0.60 × 0.78, front_full 0.54 × 0.60', () => {
-    expect(guides('tshirt').back).toMatchObject({ w: 0.6, h: 0.78, label: 'גב' })
+  it('back is 0.55 × 0.72, front_full 0.54 × 0.60', () => {
+    expect(guides('tshirt').back).toMatchObject({ w: 0.55, h: 0.72, label: 'גב' })
     expect(guides('tshirt').front_full).toMatchObject({ w: 0.54, h: 0.6, label: 'קדמי מלא' })
   })
 
