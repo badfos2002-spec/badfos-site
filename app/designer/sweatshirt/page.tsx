@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
 import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
 import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from '@/components/designer/EnlargeRows'
-import BackToSketchButton from '@/components/designer/BackToSketchButton'
+import { useDockedPreview } from '@/hooks/useDockedPreview'
 import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 import { calculateItemPrice, applyQuantityDiscount, getPriceBreakdown, formatAmount } from '@/lib/pricing'
 import { canEnlarge, enlargeOverlayStyle, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
@@ -84,9 +84,8 @@ export default function SweatshirtDesignerPage() {
     if (allowedAreas) setDesigns(prev => prev.filter(d => allowedAreas.includes(d.area)))
   }
   const [designs, setDesigns] = useState<DesignArea[]>([])
-  // TICKET-011: the floating «לסקיצה» button watches these two mobile blocks.
+  // TICKET-011: the mobile preview placeholder the docked compact bar follows.
   const mobilePreviewRef = useRef<HTMLDivElement>(null)
-  const mobileNavRef = useRef<HTMLDivElement>(null)
 
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
   const [uploadingArea, setUploadingArea] = useState<string | null>(null)
@@ -668,6 +667,9 @@ export default function SweatshirtDesignerPage() {
   // The size rows under the preview (design step only). A press also selects
   // that area, which is what turns this page's preview: the 2D view follows
   // `selectedAreaId === 'back'` and the 3D turntable its `activeArea`.
+  // No docking on the last step (sizes & quantities) — the preview just scrolls away.
+  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, { enabled: currentStep !== totalSteps })
+
   const enlargeRows = currentStep === 3 ? (
     <EnlargeRows
       productType="sweatshirt"
@@ -766,18 +768,49 @@ export default function SweatshirtDesignerPage() {
 
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-clip">
-          {/* Mockup on top — not sticky (TICKET-011); size rows under it, the
-              floating «לסקיצה» button leads back here (scroll-mt-20 = under the header). */}
-          <div ref={mobilePreviewRef} data-mobile-preview="" className="scroll-mt-20 bg-white/95 pt-2 pb-4 border-b border-gray-100 -mx-4 px-4">
-            <div data-preview-box="" className="relative mx-auto w-full max-w-sm">
-              {previewElement}
-              {designs.length > 0 && (
-                <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  ✓ {designs.length} אזורים
-                </span>
-              )}
+          {/* Preview on top — the focus. Docked-video pattern (TICKET-011): this
+              block is an in-flow PLACEHOLDER that keeps its height; once it has
+              scrolled out under the header (h-20) its content docks in a fixed
+              compact bar with the size rows beside it, and returns when the
+              placeholder is back. Nothing in flow changes size, so nothing jumps.
+              Same element tree both ways — only classes change — so the 3D
+              canvas is never remounted. Never on the last step. */}
+          <div
+            ref={mobilePreviewRef}
+            data-mobile-preview=""
+            data-docked={docked ? 'true' : 'false'}
+            className="bg-white/95 pt-2 pb-4 -mx-4 px-4"
+            style={docked && dockHeight ? { height: dockHeight } : undefined}
+          >
+            <div
+              data-dock-bar=""
+              className={docked ? 'fixed inset-x-0 top-20 z-30 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 px-4 py-2 animate-in fade-in duration-150 motion-reduce:animate-none' : ''}
+            >
+              <div className={docked && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
+                <div
+                  data-preview-box=""
+                  className={`relative w-full shrink-0 ${
+                    // Docked: 165 px wide (220 tall at 3:4). The stage's badge, drag
+                    // hint and caption would crowd it, so the mobile box hides them
+                    // (never through the stage shared with desktop), and the canvas
+                    // takes every touch so a drag turns the garment, not the page.
+                    docked
+                      ? `max-w-[165px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden [&_[data-stage-caption]]:!hidden [&_canvas]:![touch-action:none] ${hasEnlargeRows ? '' : 'mx-auto'}`
+                      : 'mx-auto max-w-sm'
+                  }`}
+                >
+                  {previewElement}
+                  {!docked && designs.length > 0 && (
+                    <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      ✓ {designs.length} אזורים
+                    </span>
+                  )}
+                </div>
+                {hasEnlargeRows && (
+                  <div className={docked ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
+                )}
+              </div>
             </div>
-            {hasEnlargeRows && <div className="mx-auto mt-3 max-w-sm">{enlargeRows}</div>}
           </div>
 
           {/* Step content card */}
@@ -792,11 +825,9 @@ export default function SweatshirtDesignerPage() {
           </div>
 
           {/* Mobile bottom nav */}
-          <div ref={mobileNavRef} className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border">
+          <div className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border">
             <NavButtons fullWidth />
           </div>
-
-          <BackToSketchButton targetRef={mobilePreviewRef} avoidRef={mobileNavRef} hidden={currentStep === totalSteps} />
         </div>
 
         {/* ── DESKTOP LAYOUT ── */}

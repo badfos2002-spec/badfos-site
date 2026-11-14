@@ -410,6 +410,7 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
       {/* Caption below the shirt — illustration disclaimer (black).
           Offset overridable by the host, same as the badge above. */}
       <div
+        data-stage-caption=""
         style={{
           position: 'absolute',
           bottom: 'var(--stage-caption-bottom, 10px)',

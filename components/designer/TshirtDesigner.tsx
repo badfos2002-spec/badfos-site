@@ -14,7 +14,7 @@ import DesignStep from './DesignStep'
 import SizeQuantityStep from './SizeQuantityStep'
 import PriceSummary from './PriceSummary'
 import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from './EnlargeRows'
-import BackToSketchButton from './BackToSketchButton'
+import { useDockedPreview } from '@/hooks/useDockedPreview'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
@@ -170,9 +170,8 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   // HEIC-convert / reduce window, so the step reports it up.
   const [designUploading, setDesignUploading] = useState(false)
   const [previewView, setPreviewView] = useState<'front' | 'back'>('front')
-  // TICKET-011: the floating «לסקיצה» button watches these two mobile blocks.
+  // TICKET-011: the mobile preview placeholder the docked compact bar follows.
   const mobilePreviewRef = useRef<HTMLDivElement>(null)
-  const mobileNavRef = useRef<HTMLDivElement>(null)
 
   const [config, setConfig] = useState<Partial<ProductConfig>>(() =>
     editingItem
@@ -357,6 +356,9 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const setEnlarge = (area: string, steps: number) => {
     setConfig(prev => ({ ...prev, designs: withEnlarge(prev.designs || [], prev.productType, area, steps) }))
   }
+
+  // No docking on the last step (sizes & quantities) — the preview just scrolls away.
+  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, { enabled: currentStep !== totalSteps })
 
   const enlargeRows = currentStep === 3 ? (
     <EnlargeRows
@@ -587,20 +589,50 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
 
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-clip">
-          {/* 3D preview always on top on mobile — it is the focus. Not sticky
-              (TICKET-011); the size rows sit under it and the floating
-              «לסקיצה» button leads back here (scroll-mt-20 = under the header). */}
-          <div ref={mobilePreviewRef} data-mobile-preview="" className="scroll-mt-20 bg-white/95 pt-2 pb-4 -mx-4 px-4">
-            <div data-preview-box="" className="relative mx-auto w-full max-w-sm">
-              {mockupElement}
-              {config.designs && config.designs.length > 0 && (
-                <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  ✓ {config.designs.length} עיצובים
-                </span>
-              )}
+          {/* Preview on top — the focus. Docked-video pattern (TICKET-011): this
+              block is an in-flow PLACEHOLDER that keeps its height; once it has
+              scrolled out under the header (h-20) its content docks in a fixed
+              compact bar with the size rows beside it, and returns when the
+              placeholder is back. Nothing in flow changes size, so nothing jumps.
+              Same element tree both ways — only classes change — so the 3D
+              canvas is never remounted. Never on the last step. */}
+          <div
+            ref={mobilePreviewRef}
+            data-mobile-preview=""
+            data-docked={docked ? 'true' : 'false'}
+            className="bg-white/95 pt-2 pb-4 -mx-4 px-4"
+            style={docked && dockHeight ? { height: dockHeight } : undefined}
+          >
+            <div
+              data-dock-bar=""
+              className={docked ? 'fixed inset-x-0 top-20 z-30 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 px-4 py-2 animate-in fade-in duration-150 motion-reduce:animate-none' : ''}
+            >
+              <div className={docked && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
+                <div
+                  data-preview-box=""
+                  className={`relative w-full shrink-0 ${
+                    // Docked: 165 px wide (220 tall at 3:4). The stage's badge, drag
+                    // hint and caption would crowd it, so the mobile box hides them
+                    // (never through the stage shared with desktop), and the canvas
+                    // takes every touch so a drag turns the garment, not the page.
+                    docked
+                      ? `max-w-[165px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden [&_[data-stage-caption]]:!hidden [&_canvas]:![touch-action:none] ${hasEnlargeRows ? '' : 'mx-auto'}`
+                      : 'mx-auto max-w-sm'
+                  }`}
+                >
+                  {mockupElement}
+                  {!docked && config.designs && config.designs.length > 0 && (
+                    <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      ✓ {config.designs.length} עיצובים
+                    </span>
+                  )}
+                </div>
+              {!docked && <ViewTabs />}
+                {hasEnlargeRows && (
+                  <div className={docked ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
+                )}
+              </div>
             </div>
-            <ViewTabs />
-            {hasEnlargeRows && <div className="mx-auto mt-3 max-w-sm">{enlargeRows}</div>}
           </div>
 
           {/* Step content card */}
@@ -618,11 +650,9 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
           <PriceSummary config={config as ProductConfig} />
 
           {/* Mobile bottom nav */}
-          <div ref={mobileNavRef} className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border relative z-20">
+          <div className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border relative z-20">
             <NavButtons fullWidth />
           </div>
-
-          <BackToSketchButton targetRef={mobilePreviewRef} avoidRef={mobileNavRef} hidden={currentStep === totalSteps} />
         </div>
 
         {/* ── DESKTOP LAYOUT ── */}
