@@ -8,9 +8,8 @@ import { join } from 'node:path'
 // nothing. With the fix, sticky really sticks — including the full-height
 // mobile preview blocks (`sticky top-0 …`) on these six designers, which would
 // now pin a ~400 px preview at the top of the phone, under the (now sticky)
-// site header. Only the t-shirt and sweatshirt designers have the compact
-// preview that makes a sticky block usable; these pages keep their production
-// behaviour (a preview that scrolls away) until they get it too.
+// site header. These pages keep their production behaviour (a preview that
+// scrolls away).
 
 const PAGES = ['apron', 'cap', 'buff', 'baby', 'tote', 'vest']
 
