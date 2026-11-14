@@ -23,22 +23,26 @@ class IOStub {
   takeRecords() { return [] }
 }
 
-/** Report the preview as in / out of view to every live observer. */
-function setInView(isIntersecting: boolean) {
+/** Report one observed element (default: the preview) as in / out of view. */
+function report(isIntersecting: boolean, testId = 'preview') {
+  const el = screen.getByTestId(testId)
   act(() => {
     for (const o of observers) {
-      if (o.disconnected) continue
-      o.cb(o.targets.map(target => ({ target, isIntersecting })))
+      if (o.disconnected || !o.targets.includes(el)) continue
+      o.cb([{ target: el, isIntersecting }])
     }
   })
 }
+const setInView = (v: boolean) => report(v)
 
-function Harness({ hidden = false }: { hidden?: boolean }) {
+function Harness({ hidden = false, withNav = false }: { hidden?: boolean; withNav?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
+  const navRef = useRef<HTMLDivElement>(null)
   return (
     <div>
       <div ref={ref} data-testid="preview">preview</div>
-      <BackToSketchButton targetRef={ref} hidden={hidden} />
+      {withNav && <div ref={navRef} data-testid="nav">nav</div>}
+      <BackToSketchButton targetRef={ref} avoidRef={withNav ? navRef : undefined} hidden={hidden} />
     </div>
   )
 }
@@ -112,6 +116,17 @@ describe('BackToSketchButton', () => {
     render(<Harness hidden />)
     setInView(false)
     expect(button()).not.toBeInTheDocument()
+  })
+
+  it('steps aside while the nav row («הבא») is in view, so it never covers it', () => {
+    render(<Harness withNav />)
+    setInView(false)
+    report(false, 'nav')
+    expect(button()).toBeInTheDocument()
+    report(true, 'nav')
+    expect(button()).not.toBeInTheDocument()
+    report(false, 'nav')
+    expect(button()).toBeInTheDocument()
   })
 
   it('disconnects its observer on unmount', () => {
