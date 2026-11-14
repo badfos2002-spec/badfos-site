@@ -153,7 +153,8 @@ describe('EnlargeControl — pressing', () => {
 describe('EnlargeControl — the price line', () => {
   it('shows the live step price from the override getter', () => {
     render(<Harness />)
-    expect(screen.getByText('₪2 לכל צעד ליחידה')).toBeInTheDocument()
+    expect(screen.getByText('₪2 לכל הגדלה')).toBeInTheDocument()
+    expect(screen.queryByText(/לכל צעד ליחידה/)).not.toBeInTheDocument()
   })
 })
 

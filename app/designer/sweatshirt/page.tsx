@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Package, Eye, Check, Minus, Plus, CheckCircle, X, Sparkles } from 'lucide-react'
 import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/designer/AreaIcon'
 import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from '@/components/designer/EnlargeRows'
+import { useDockedPreview } from '@/hooks/useDockedPreview'
 import { SWEATSHIRT_DESIGN_AREAS, SWEATSHIRT_TYPES, SWEATSHIRT_COLORS, SWEATSHIRT_COLOR_FILTER, SWEATSHIRT_AREA_FILTER, STANDARD_SIZES, getBasePrice, getDesignAreasByProductType, getLiveQuantityDiscount, subscribePricing, getPricingVersion } from '@/lib/constants'
 import { calculateItemPrice, applyQuantityDiscount, getPriceBreakdown, formatAmount } from '@/lib/pricing'
 import { canEnlarge, enlargeOverlayStyle, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
@@ -16,7 +17,6 @@ import { DESIGN_AREA_OVERLAYS, SWEATSHIRT_AREA_OVERRIDES } from '@/lib/mockup-da
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
 import { preparePrintFile, printUploadErrorMessage } from '@/lib/print-image'
 import { useCart } from '@/hooks/useCart'
-import { useCompactOnScroll } from '@/hooks/useCompactOnScroll'
 import { confirmDesignReplace } from '@/lib/utils'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
@@ -84,7 +84,8 @@ export default function SweatshirtDesignerPage() {
     if (allowedAreas) setDesigns(prev => prev.filter(d => allowedAreas.includes(d.area)))
   }
   const [designs, setDesigns] = useState<DesignArea[]>([])
-  const compact = useCompactOnScroll()
+  // TICKET-011: the mobile preview placeholder the docked compact bar follows.
+  const mobilePreviewRef = useRef<HTMLDivElement>(null)
 
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
   const [uploadingArea, setUploadingArea] = useState<string | null>(null)
@@ -675,6 +676,12 @@ export default function SweatshirtDesignerPage() {
     />
   ) : null
   const hasEnlargeRows = currentStep === 3 && designs.some(d => canEnlarge('sweatshirt', d.area))
+  // No docking on the last step (sizes & quantities) — the preview just scrolls away.
+  // measureKey: what changes the EXPANDED preview's height (rows, chip/tabs, step).
+  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, {
+    enabled: currentStep !== totalSteps,
+    measureKey: `${currentStep}|${currentStep === 3 ? designs.filter(d => canEnlarge('sweatshirt', d.area)).length : 0}|${designs.length > 0}`,
+  })
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
@@ -763,36 +770,37 @@ export default function SweatshirtDesignerPage() {
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip [overflow-anchor:none]">
-          {/* Sticky mockup — under the site header (h-20), size rows under it */}
+        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip">
+          {/* Preview on top — the focus. Docked-video pattern (TICKET-011): this
+              block is an in-flow PLACEHOLDER; once it has scrolled out under the
+              header (h-20) its content docks in a fixed compact bar with the size
+              rows beside it, and returns when the placeholder is back. While
+              docked the placeholder is pinned to its expanded height (re-measured
+              when that layout changes), so nothing in flow ever jumps. The docked
+              look is CSS keyed on data-docked (app/globals.css) — the element tree
+              never changes, so the 3D canvas is never remounted. Never on the
+              last step. */}
           <div
-            data-compact={compact ? 'true' : 'false'}
-            className={`sticky top-20 z-30 bg-white/95 backdrop-blur-sm pt-2 ${compact ? 'pb-2' : 'pb-4'} border-b border-gray-100 -mx-4 px-4 shadow-sm`}
+            ref={mobilePreviewRef}
+            data-mobile-preview=""
+            data-docked={docked ? 'true' : 'false'}
+            className="bg-white/95 pt-2 pb-4 -mx-4 px-4"
+            style={docked && dockHeight ? { height: dockHeight } : undefined}
           >
-            {/* Compact (scrolled): the preview shrinks to 180 px tall and the size
-                rows move beside it, so the block stays ~200 px and both stay in
-                reach. Same element tree in both states — only classes change —
-                so the 3D canvas is never remounted. */}
-            <div className={compact && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
-              <div
-                data-preview-box=""
-                className={`relative w-full shrink-0 transition-[max-width] duration-200 motion-reduce:transition-none ${
-                  // Compact: the stage's 64 px «360°» badge and its drag hint would
-                  // cover a 135 px canvas, so both are hidden here — on the mobile
-                  // box only, never through the stage shared with desktop.
-                  compact ? `max-w-[135px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
-                }`}
-              >
-                {previewElement}
-                {!compact && designs.length > 0 && (
-                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    ✓ {designs.length} אזורים
-                  </span>
+            <div data-dock-bar="">
+              <div data-dock-row="" data-has-rows={hasEnlargeRows ? '' : undefined}>
+                <div data-preview-box="" className="relative w-full shrink-0 mx-auto max-w-sm">
+                  {previewElement}
+                  {designs.length > 0 && (
+                    <span data-dock-hide="" className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      ✓ {designs.length} אזורים
+                    </span>
+                  )}
+                </div>
+                {hasEnlargeRows && (
+                  <div data-rows-wrap="" className="mx-auto mt-3 max-w-sm">{enlargeRows}</div>
                 )}
               </div>
-              {hasEnlargeRows && (
-                <div className={compact ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
-              )}
             </div>
           </div>
 

@@ -8,9 +8,8 @@ import { join } from 'node:path'
 // nothing. With the fix, sticky really sticks — including the full-height
 // mobile preview blocks (`sticky top-0 …`) on these six designers, which would
 // now pin a ~400 px preview at the top of the phone, under the (now sticky)
-// site header. Only the t-shirt and sweatshirt designers have the compact
-// preview that makes a sticky block usable; these pages keep their production
-// behaviour (a preview that scrolls away) until they get it too.
+// site header. These pages keep their production behaviour (a preview that
+// scrolls away).
 
 const PAGES = ['apron', 'cap', 'buff', 'baby', 'tote', 'vest']
 
@@ -21,4 +20,38 @@ describe('designers without a compact preview have no mobile sticky block', () =
       expect(src).not.toContain('sticky top-0')
     })
   }
+})
+
+// TICKET-011: the t-shirt and sweatshirt designers dropped their shrinking
+// sticky preview (the user disliked it flickering while scrolling). Their MOBILE
+// block is an in-flow placeholder whose content docks as a FIXED bar; nothing
+// in it is sticky. Only the desktop preview column stays sticky.
+const COMPACT_GONE = [
+  ['tshirt', join('components', 'designer', 'TshirtDesigner.tsx')],
+  ['sweatshirt', join('app', 'designer', 'sweatshirt', 'page.tsx')],
+]
+
+describe('t-shirt and sweatshirt: no mobile sticky block, desktop column still sticky', () => {
+  for (const [name, file] of COMPACT_GONE) {
+    it(`${name}: no "sticky top-20"/"sticky top-0", no compact hook; "sticky top-24" stays`, () => {
+      const src = readFileSync(join(__dirname, '..', file), 'utf8')
+      const mobile = src.slice(src.indexOf('MOBILE LAYOUT'), src.indexOf('DESKTOP LAYOUT'))
+      expect(mobile.length).toBeGreaterThan(0)
+      expect(mobile).not.toContain('sticky top-20')
+      expect(mobile).not.toContain('sticky top-0')
+      expect(src).not.toContain('useCompactOnScroll')
+      expect(src).toContain('sticky top-24')
+    })
+  }
+})
+
+// TICKET-011 revision: the docked compact preview hides the stage caption
+// («סקיצה להמחשה בלבד») through this hook, like the badge and the hint.
+describe('Preview3DStage exposes the caption hook', () => {
+  it('the caption carries data-stage-caption', () => {
+    const src = readFileSync(join(__dirname, '..', 'components', 'designer', 'three', 'Preview3DStage.tsx'), 'utf8')
+    const at = src.indexOf('data-stage-caption')
+    expect(at).toBeGreaterThan(-1)
+    expect(src.indexOf('סקיצה להמחשה בלבד', at)).toBeGreaterThan(at)
+  })
 })

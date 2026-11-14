@@ -14,9 +14,9 @@ import DesignStep from './DesignStep'
 import SizeQuantityStep from './SizeQuantityStep'
 import PriceSummary from './PriceSummary'
 import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from './EnlargeRows'
+import { useDockedPreview } from '@/hooks/useDockedPreview'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { useCart } from '@/hooks/useCart'
-import { useCompactOnScroll } from '@/hooks/useCompactOnScroll'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
@@ -170,7 +170,8 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   // HEIC-convert / reduce window, so the step reports it up.
   const [designUploading, setDesignUploading] = useState(false)
   const [previewView, setPreviewView] = useState<'front' | 'back'>('front')
-  const compact = useCompactOnScroll()
+  // TICKET-011: the mobile preview placeholder the docked compact bar follows.
+  const mobilePreviewRef = useRef<HTMLDivElement>(null)
 
   const [config, setConfig] = useState<Partial<ProductConfig>>(() =>
     editingItem
@@ -365,6 +366,12 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     />
   ) : null
   const hasEnlargeRows = currentStep === 3 && (config.designs || []).some(d => canEnlarge(config.productType, d.area))
+  // No docking on the last step (sizes & quantities) — the preview just scrolls away.
+  // measureKey: what changes the EXPANDED preview's height (rows, chip/tabs, step).
+  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, {
+    enabled: currentStep !== totalSteps,
+    measureKey: `${currentStep}|${currentStep === 3 ? (config.designs || []).filter(d => canEnlarge(config.productType, d.area)).length : 0}|${(config.designs || []).length > 0}`,
+  })
 
   const stepContent = (() => {
     switch (currentStep) {
@@ -584,38 +591,38 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip [overflow-anchor:none]">
-          {/* 3D preview always on top on mobile — it is the focus. Sticky
-              under the site header (h-20), with the size rows under it. */}
+        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip">
+          {/* Preview on top — the focus. Docked-video pattern (TICKET-011): this
+              block is an in-flow PLACEHOLDER; once it has scrolled out under the
+              header (h-20) its content docks in a fixed compact bar with the size
+              rows beside it, and returns when the placeholder is back. While
+              docked the placeholder is pinned to its expanded height (re-measured
+              when that layout changes), so nothing in flow ever jumps. The docked
+              look is CSS keyed on data-docked (app/globals.css) — the element tree
+              never changes, so the 3D canvas is never remounted. Never on the
+              last step. */}
           <div
-            data-compact={compact ? 'true' : 'false'}
-            className={`sticky top-20 z-30 bg-white/95 backdrop-blur-sm pt-2 ${compact ? 'pb-2' : 'pb-4'} border-b border-gray-100 -mx-4 px-4 shadow-sm`}
+            ref={mobilePreviewRef}
+            data-mobile-preview=""
+            data-docked={docked ? 'true' : 'false'}
+            className="bg-white/95 pt-2 pb-4 -mx-4 px-4"
+            style={docked && dockHeight ? { height: dockHeight } : undefined}
           >
-            {/* Compact (scrolled): the preview shrinks to 180 px tall and the size
-                rows move beside it, so the block stays ~200 px and both stay in
-                reach. Same element tree in both states — only classes change —
-                so the 3D canvas is never remounted. */}
-            <div className={compact && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
-              <div
-                data-preview-box=""
-                className={`relative w-full shrink-0 transition-[max-width] duration-200 motion-reduce:transition-none ${
-                  // Compact: the stage's 64 px «360°» badge and its drag hint would
-                  // cover a 135 px canvas, so both are hidden here — on the mobile
-                  // box only, never through the stage shared with desktop.
-                  compact ? `max-w-[135px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
-                }`}
-              >
-                {mockupElement}
-                {!compact && config.designs && config.designs.length > 0 && (
-                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    ✓ {config.designs.length} עיצובים
-                  </span>
+            <div data-dock-bar="">
+              <div data-dock-row="" data-has-rows={hasEnlargeRows ? '' : undefined}>
+                <div data-preview-box="" className="relative w-full shrink-0 mx-auto max-w-sm">
+                  {mockupElement}
+                  {config.designs && config.designs.length > 0 && (
+                    <span data-dock-hide="" className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      ✓ {config.designs.length} עיצובים
+                    </span>
+                  )}
+                </div>
+                <div data-dock-hide=""><ViewTabs /></div>
+                {hasEnlargeRows && (
+                  <div data-rows-wrap="" className="mx-auto mt-3 max-w-sm">{enlargeRows}</div>
                 )}
               </div>
-              {!compact && <ViewTabs />}
-              {hasEnlargeRows && (
-                <div className={compact ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
-              )}
             </div>
           </div>
 

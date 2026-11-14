@@ -292,3 +292,60 @@
     touch-action: pinch-zoom !important;
   }
 }
+
+/* ── TICKET-011: docked compact preview (mobile t-shirt / sweatshirt designers) ──
+   The preview block ([data-mobile-preview]) stays in flow as a placeholder; while
+   it is docked its content becomes a fixed compact bar under the h-20 header.
+   Everything here is keyed on attributes so useDockedPreview can flip one
+   (data-measuring) to read the EXPANDED height synchronously, with no paint in
+   between. The fade sits in its own rule WITHOUT :not([data-measuring]), so a
+   re-measure never restarts it. */
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-dock-bar] {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 5rem;
+  z-index: 30;
+  background: #fff;
+  border-bottom: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  padding: 0.5rem 1rem;
+}
+[data-mobile-preview][data-docked="true"] [data-dock-bar] {
+  animation: dock-fade 150ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-mobile-preview][data-docked="true"] [data-dock-bar] { animation: none; }
+}
+@keyframes dock-fade { from { opacity: 0; } to { opacity: 1; } }
+/* 165 px wide → 165×220 at the stage's 3:4; centred unless the rows sit beside it. */
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-preview-box] {
+  max-width: 165px;
+}
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-dock-row][data-has-rows] {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-dock-row][data-has-rows] [data-preview-box] {
+  margin: 0;
+}
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-rows-wrap] {
+  flex: 1 1 0%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+}
+/* The stage's 360° badge, drag hint and caption, the ✓ chip and the view tabs
+   would crowd 165 px; hidden here, never through the stage shared with desktop. */
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-stage-badge],
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-stage-hint],
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-stage-caption],
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-dock-hide] {
+  display: none !important;
+}
+/* Docked, the compact canvas takes every touch: a drag turns the garment and
+   never scrolls the page (the turntable sets pan-y inline). */
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) canvas {
+  touch-action: none !important;
+}

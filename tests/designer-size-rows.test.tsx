@@ -4,9 +4,11 @@ import userEvent from '@testing-library/user-event'
 import type { DesignArea } from '@/lib/types'
 
 // TICKET-010, both designers end to end: the size rows render under the
-// preview (mobile sticky block AND desktop preview column — both layouts are
+// preview (mobile preview block AND desktop preview column — both layouts are
 // mounted, CSS hides one), never inside the step card, and a press turns the
-// preview to that side.
+// preview to that side. TICKET-011: the mobile block is no longer a shrinking
+// sticky block; it is an in-flow placeholder whose content docks (fixed) under
+// the header once the placeholder has scrolled out.
 //
 // The 3D stage is replaced by a stub that exposes the area it is turned to.
 // Nothing touches the network: storage and print-image are mocked.
@@ -51,6 +53,14 @@ afterEach(() => {
 const groupsIn = (el: HTMLElement) => within(el).queryAllByRole('radiogroup')
 const allRows = () => Array.from(document.querySelectorAll<HTMLElement>('[data-enlarge-rows]'))
 const stages = () => screen.getAllByTestId('stage')
+const mobileBlock = () => document.querySelector<HTMLElement>('[data-mobile-preview]')
+
+function expectPlainMobileBlock(block: HTMLElement) {
+  expect(block.className).not.toMatch(/\bsticky\b/)
+  expect(block.hasAttribute('data-compact')).toBe(false)
+  expect(document.querySelector('[data-compact]')).toBeNull()
+  expect(block.getAttribute('data-docked')).toBe('false')
+}
 
 function seedTshirtSession(designs: DesignArea[]) {
   sessionStorage.setItem(
@@ -89,14 +99,11 @@ describe('TshirtDesigner — size rows under the preview', () => {
     for (const g of all) expect(g.closest('[data-enlarge-rows]')).not.toBeNull()
   })
 
-  it('the mobile rows sit inside the sticky preview block', () => {
+  it('the mobile rows sit inside the (undocked, non-sticky) preview placeholder', () => {
     render(<TshirtDesigner use3DPreview />)
-    const block = document.querySelector<HTMLElement>('[data-compact]')
+    const block = mobileBlock()
     expect(block).not.toBeNull()
-    expect(block!.className).toContain('sticky')
-    // Above the step card's z-10/z-20 children (tile × badges, upload overlay,
-    // nav row) that scroll under it; below the site header (z-[100]).
-    expect(block!.className).toContain('z-30')
+    expectPlainMobileBlock(block!)
     expect(block!.querySelector('[data-enlarge-rows]')).not.toBeNull()
   })
 
@@ -159,7 +166,7 @@ describe('Sweatshirt designer — size rows under the preview', () => {
     await waitFor(() => expect(allRows().length).toBe(2))
   }
 
-  it('renders the rows in the mobile sticky block and the desktop column, none in the step card', async () => {
+  it('renders the rows in the mobile preview block and the desktop column, none in the step card', async () => {
     const user = userEvent.setup()
     await toDesignStepWithFront(user)
     const all = screen.getAllByRole('radiogroup')
@@ -168,11 +175,9 @@ describe('Sweatshirt designer — size rows under the preview', () => {
       expect(g.getAttribute('aria-label')).toBe('גודל ההדפס — קידמי מלא')
       expect(g.closest('[data-enlarge-rows]')).not.toBeNull()
     }
-    const block = document.querySelector<HTMLElement>('[data-compact]')
-    expect(block!.className).toContain('sticky')
-    // Above the step card's z-10/z-20 children (tile × badges, upload overlay,
-    // nav row) that scroll under it; below the site header (z-[100]).
-    expect(block!.className).toContain('z-30')
+    const block = mobileBlock()
+    expect(block).not.toBeNull()
+    expectPlainMobileBlock(block!)
     expect(block!.querySelector('[data-enlarge-rows]')).not.toBeNull()
   })
 
@@ -189,77 +194,193 @@ describe('Sweatshirt designer — size rows under the preview', () => {
   })
 })
 
-describe('Compact sticky preview on mobile', () => {
+
+
+// ── TICKET-011 revision: the docked compact preview ───────────────────────────
+// The docked presentation lives in app/globals.css, keyed on the placeholder's
+// attributes (jsdom has no layout, so the CSS itself is pinned by a source test
+// below). Here: the attributes, the pinned height, and that the pin follows the
+// expanded layout while docked.
+
+/** Expanded layout height in this fake: 501 + 193 per size-rows group. */
+const expandedHeight = (block: HTMLElement) => 501 + 193 * block.querySelectorAll('[role="radiogroup"]').length
+
+/** Fake the placeholder's layout and put its bottom edge at `bottom`. */
+async function placeholderAt(bottom: number) {
+  const { act } = await import('@testing-library/react')
+  const block = mobileBlock()!
+  const h = () => (!block.hasAttribute('data-measuring') && block.style.height ? parseFloat(block.style.height) : expandedHeight(block))
+  Object.defineProperty(block, 'offsetHeight', { get: h, configurable: true })
+  block.getBoundingClientRect = () => ({ bottom, top: bottom - h(), height: h(), width: 390, left: 0, right: 390, x: 0, y: bottom - h(), toJSON() {} }) as DOMRect
+  act(() => { window.dispatchEvent(new Event('scroll')) })
+}
+
+/** Record (data-docked, style.height) after every mutation batch on the placeholder. */
+function watchPairs(block: HTMLElement) {
+  const pairs: string[] = []
+  const mo = new MutationObserver(() => pairs.push(`${block.getAttribute('data-docked')}|${block.style.height}`))
+  mo.observe(block, { attributes: true, attributeFilter: ['data-docked', 'style'] })
+  return { pairs, stop: () => mo.disconnect() }
+}
+
+function expectDocked(withRows: boolean) {
+  const block = mobileBlock()!
+  expect(block.getAttribute('data-docked')).toBe('true')
+  expect(block.hasAttribute('data-measuring')).toBe(false)
+  // Pinned to the EXPANDED height, so nothing in flow moves.
+  expect(block.style.height).toBe(`${expandedHeight(block)}px`)
+  expect(block.querySelector('[data-dock-bar]')).not.toBeNull()
+  expect(block.querySelector('[data-preview-box]')).not.toBeNull()
+  // The ✓ chip (and the t-shirt's 2D view tabs) are tagged for the docked CSS to hide.
+  const chip = within(block).queryByText(/✓ \d+ (עיצובים|אזורים)/)
+  if (chip) expect(chip.closest('[data-dock-hide]')).not.toBeNull()
+  const row = block.querySelector<HTMLElement>('[data-dock-row]')!
+  if (withRows) {
+    expect(row.hasAttribute('data-has-rows')).toBe(true)
+    expect(row.querySelector('[data-rows-wrap] [data-enlarge-rows]')).not.toBeNull()
+  } else {
+    expect(row.hasAttribute('data-has-rows')).toBe(false)
+    expect(block.querySelector('[data-enlarge-rows]')).toBeNull()
+  }
+}
+
+async function sweatshirtToDesignStep(user: ReturnType<typeof userEvent.setup>) {
+  render(<SweatshirtDesignerPage />)
+  await user.click(screen.getAllByRole('button', { name: /קנגרו/ })[0])
+  await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+  await user.click(screen.getAllByRole('button', { name: 'שחור' })[0])
+  await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+}
+async function uploadFront(user: ReturnType<typeof userEvent.setup>) {
+  const [label] = screen.getAllByLabelText(/העלאת עיצוב לאזור קידמי מלא/)
+  await user.upload(label.querySelector('input[type="file"]') as HTMLInputElement, pngFile())
+  await waitFor(() => expect(allRows().length).toBe(2))
+}
+
+describe('Docked compact preview (mobile)', () => {
   beforeEach(() => {
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => { cb(0); return 1 })
-    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
   })
   afterEach(() => vi.restoreAllMocks())
 
-  const scrollTo = async (y: number) => {
-    const { act } = await import('@testing-library/react')
-    Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
-    act(() => { window.dispatchEvent(new Event('scroll')) })
-  }
-
-  it('t-shirt: the block goes compact on scroll, keeps the rows, and expands at the top', async () => {
+  it('t-shirt step 3: docks past the header with the rows beside; undocks only past 300', async () => {
     seedTshirtSession([D('front_full', 'קידמי מלא')])
     render(<TshirtDesigner use3DPreview />)
-    const block = () => document.querySelector<HTMLElement>('[data-compact]')!
-    expect(block().getAttribute('data-compact')).toBe('false')
-    expect(within(block()).getByText(/✓ 1 עיצובים/)).toBeInTheDocument()
-    await scrollTo(300)
-    expect(block().getAttribute('data-compact')).toBe('true')
-    expect(within(block()).queryByText(/✓ 1 עיצובים/)).not.toBeInTheDocument()
-    expect(block().querySelector('[data-enlarge-rows]')).not.toBeNull()
-    await scrollTo(0)
-    expect(block().getAttribute('data-compact')).toBe('false')
+    await placeholderAt(400)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
+    expect(mobileBlock()!.style.height).toBe('')
+    await placeholderAt(60)
+    expectDocked(true)
+    const stageBefore = mobileBlock()!.querySelector('[data-testid="stage"]')
+    await placeholderAt(290)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('true')
+    await placeholderAt(320)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
+    expect(mobileBlock()!.style.height).toBe('')
+    // The same stage element both ways — the canvas is never remounted.
+    expect(mobileBlock()!.querySelector('[data-testid="stage"]')).toBe(stageBefore)
+    for (const s of stages()) expect(s.getAttribute('data-nohint')).toBe('false')
+  })
+
+  it('t-shirt: removing the design while docked shrinks the pin, no undock/re-dock', async () => {
+    const user = userEvent.setup()
+    seedTshirtSession([D('front_full', 'קידמי מלא'), D('back', 'גב')])
+    render(<TshirtDesigner use3DPreview />)
+    await placeholderAt(60)
+    expectDocked(true)
+    expect(mobileBlock()!.style.height).toBe(`${501 + 193 * 2}px`)
+    const w = watchPairs(mobileBlock()!)
+    await user.click(screen.getAllByRole('button', { name: 'הסרת עיצוב מאזור גב' })[0])
+    await waitFor(() => expect(mobileBlock()!.style.height).toBe(`${501 + 193}px`))
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('true')
+    w.stop()
+    expect(w.pairs.every(p => p.startsWith('true|'))).toBe(true)
+  })
+
+  it('t-shirt step 3 → 4 while docked: undocked and unpinned together, never compact-but-unpinned', async () => {
+    const user = userEvent.setup()
+    seedTshirtSession([D('front_full', 'קידמי מלא')])
+    render(<TshirtDesigner use3DPreview />)
+    await placeholderAt(60)
+    expectDocked(true)
+    const w = watchPairs(mobileBlock()!)
+    await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+    await waitFor(() => expect(mobileBlock()!.getAttribute('data-docked')).toBe('false'))
+    await new Promise(r => setTimeout(r, 0))
+    w.stop()
+    expect(mobileBlock()!.style.height).toBe('')
+    expect(w.pairs.length).toBeGreaterThan(0)
+    for (const p of w.pairs) expect(p === 'false|' || /^true\|\d+px$/.test(p)).toBe(true)
+  })
+
+  it('t-shirt step 4 (sizes): never docks', async () => {
+    sessionStorage.setItem(
+      'designer_session',
+      JSON.stringify({
+        step: 4,
+        config: { productType: 'tshirt', fabricType: 'cotton', color: 'white', designs: [D('front_full', 'קידמי מלא')], sizes: [] },
+        timestamp: Date.now(),
+      })
+    )
+    render(<TshirtDesigner use3DPreview />)
+    await placeholderAt(20)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
+    expect(mobileBlock()!.style.height).toBe('')
+  })
+
+  it('sweatshirt step 1: docks centred with no rows', async () => {
+    render(<SweatshirtDesignerPage />)
+    await placeholderAt(40)
+    expectDocked(false)
+  })
+
+  it('sweatshirt: rows arriving while docked grow the pin, still docked (no undock)', async () => {
+    const user = userEvent.setup()
+    await sweatshirtToDesignStep(user)
+    await placeholderAt(40)
+    expectDocked(false)
+    expect(mobileBlock()!.style.height).toBe('501px')
+    const w = watchPairs(mobileBlock()!)
+    await uploadFront(user)
+    await waitFor(() => expect(mobileBlock()!.style.height).toBe(`${501 + 193}px`))
+    expectDocked(true)
+    w.stop()
+    expect(w.pairs.every(p => p.startsWith('true|'))).toBe(true)
+  })
+
+  it('sweatshirt step 3 → 4: never docks on the last step', async () => {
+    const user = userEvent.setup()
+    await sweatshirtToDesignStep(user)
+    await uploadFront(user)
+    await placeholderAt(400)
+    await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+    await waitFor(() => expect(allRows()).toHaveLength(0))
+    await placeholderAt(20)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
   })
 })
 
-describe('Compact mode clears the overlays off the 135×180 canvas (mobile)', () => {
-  beforeEach(() => {
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => { cb(0); return 1 })
-    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
-  })
-  afterEach(() => vi.restoreAllMocks())
-
-  const scrollTo = async (y: number) => {
-    const { act } = await import('@testing-library/react')
-    Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
-    act(() => { window.dispatchEvent(new Event('scroll')) })
-  }
-  const mobileStage = () => document.querySelector<HTMLElement>('[data-compact] [data-testid="stage"]')!
-  // The «360°» badge is drawn by the stage itself; the mobile preview box hides
-  // it through its data-stage-badge hook while compact.
-  const mobileBox = () => mobileStage().closest<HTMLElement>('[data-preview-box]')!
-
-  // Both overlays are hidden by the MOBILE box (data-stage-* hooks), never via
-  // the shared stage element — a noHint prop would leak to the desktop stage.
-  const BADGE = '[&_[data-stage-badge]]:!hidden'
-  const HINT = '[&_[data-stage-hint]]:!hidden'
-
-  it('t-shirt: badge and hint hidden on the mobile box only while compact; stage never gets noHint', async () => {
-    seedTshirtSession([D('front_full', 'קידמי מלא')])
-    render(<TshirtDesigner use3DPreview />)
-    expect(mobileBox().className).not.toContain(BADGE)
-    expect(mobileBox().className).not.toContain(HINT)
-    await scrollTo(300)
-    expect(mobileBox().className).toContain(BADGE)
-    expect(mobileBox().className).toContain(HINT)
-    for (const s of stages()) expect(s.getAttribute('data-nohint')).toBe('false')
-    await scrollTo(0)
-    expect(mobileBox().className).not.toContain(BADGE)
-    expect(mobileBox().className).not.toContain(HINT)
-  })
-
-  it('sweatshirt: badge and hint hidden on the mobile box only while compact; stage never gets noHint', async () => {
-    render(<SweatshirtDesignerPage />)
-    await scrollTo(300)
-    expect(mobileBox().className).toContain(BADGE)
-    expect(mobileBox().className).toContain(HINT)
-    for (const s of stages()) expect(s.getAttribute('data-nohint')).toBe('false')
-    await scrollTo(0)
-    expect(mobileBox().className).not.toContain(HINT)
+describe('the docked CSS (app/globals.css)', () => {
+  it('styles the docked bar, compact box and hides from the placeholder attributes, not while measuring', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const css = readFileSync(join(__dirname, '..', 'app', 'globals.css'), 'utf8')
+    const at = css.indexOf('TICKET-011')
+    expect(at).toBeGreaterThan(-1)
+    const block = css.slice(at)
+    const D = '[data-mobile-preview][data-docked="true"]:not([data-measuring])'
+    expect(block).toContain(`${D} [data-dock-bar]`)
+    expect(block).toMatch(/position:\s*fixed/)
+    expect(block).toMatch(/top:\s*5rem/)
+    expect(block).toMatch(/z-index:\s*30/)
+    expect(block).toMatch(/background(-color)?:\s*#fff\b/)
+    expect(block).toContain('165px')
+    expect(block).toContain('[data-stage-caption]')
+    expect(block).toContain('[data-stage-badge]')
+    expect(block).toContain('[data-stage-hint]')
+    expect(block).toContain('[data-dock-hide]')
+    expect(block).toMatch(/touch-action:\s*none\s*!important/)
+    // Opaque bar: no see-through blur.
+    expect(block).not.toContain('backdrop-filter')
   })
 })

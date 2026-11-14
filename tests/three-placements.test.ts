@@ -134,3 +134,29 @@ describe('nothing but shirts prints on a shoulder', () => {
     })
   }
 })
+
+// TICKET-011 addendum 3: a WIDE artwork contain-fits the guide box, then «+3»
+// multiplies it by 1.3. The old t-shirt boxes (back 0.72, front 0.62) put a
+// 16:9 image at 0.94 wide on +3 — seam to seam, onto the sleeves. Narrowed so
+// +3 stays inside the torso (≤ 0.78); aspect kept close to the old boxes.
+// Back narrowed again to 0.55 × 0.72 after the renders: at 0.60 a wide/square
+// +3 print was 0.87 of the lower torso, at 0.55 it is ≈ 0.80.
+describe('t-shirt front/back guide boxes keep a wide +3 print inside the torso', () => {
+  it('back is 0.55 × 0.72, front_full 0.54 × 0.60', () => {
+    expect(guides('tshirt').back).toMatchObject({ w: 0.55, h: 0.72, label: 'גב' })
+    expect(guides('tshirt').front_full).toMatchObject({ w: 0.54, h: 0.6, label: 'קדמי מלא' })
+  })
+
+  it('+3 (×1.3) never exceeds 0.78 of the shirt width', () => {
+    for (const id of ['back', 'front_full']) {
+      expect(guides('tshirt')[id]!.w * 1.3).toBeLessThanOrEqual(0.78 + 1e-9)
+    }
+  })
+
+  it('the other variants and the t-shirt placements are untouched', () => {
+    expect(guides('polo').back!.w).toBe(0.575)
+    expect(guides('oversized').back!.w).toBe(0.6)
+    expect(areas('tshirt').back).toMatchObject({ position: [0, 0.14, -0.3], size: 0.92, depth: 0.55 })
+    expect(areas('tshirt').front_full).toMatchObject({ position: [0, 0.13, 0.3], size: 0.68, depth: 0.55 })
+  })
+})
