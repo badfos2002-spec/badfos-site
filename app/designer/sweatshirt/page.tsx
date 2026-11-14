@@ -86,6 +86,7 @@ export default function SweatshirtDesignerPage() {
   const [designs, setDesigns] = useState<DesignArea[]>([])
   // TICKET-011: the mobile preview placeholder the docked compact bar follows.
   const mobilePreviewRef = useRef<HTMLDivElement>(null)
+  const previewBoxRef = useRef<HTMLDivElement>(null)
 
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
   const [uploadingArea, setUploadingArea] = useState<string | null>(null)
@@ -678,8 +679,9 @@ export default function SweatshirtDesignerPage() {
   const hasEnlargeRows = currentStep === 3 && designs.some(d => canEnlarge('sweatshirt', d.area))
   // No docking on the last step (sizes & quantities) — the preview just scrolls away.
   // measureKey: what changes the EXPANDED preview's height (rows, chip/tabs, step).
-  const { docked, height: dockHeight, hasDocked } = useDockedPreview(mobilePreviewRef, {
+  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, {
     enabled: currentStep !== totalSteps,
+    boxRef: previewBoxRef,
     measureKey: `${currentStep}|${currentStep === 3 ? designs.filter(d => canEnlarge('sweatshirt', d.area)).length : 0}|${designs.length > 0}`,
   })
 
@@ -784,13 +786,12 @@ export default function SweatshirtDesignerPage() {
             ref={mobilePreviewRef}
             data-mobile-preview=""
             data-docked={docked ? 'true' : 'false'}
-            data-has-docked={hasDocked ? 'true' : undefined}
             className="bg-white/95 pt-2 pb-4 -mx-4 px-4"
             style={docked && dockHeight ? { height: dockHeight } : undefined}
           >
             <div data-dock-bar="">
               <div data-dock-row="" data-has-rows={hasEnlargeRows ? '' : undefined}>
-                <div data-preview-box="" className="relative w-full shrink-0 mx-auto max-w-sm">
+                <div ref={previewBoxRef} data-preview-box="" className="relative w-full shrink-0 mx-auto max-w-sm">
                   {previewElement}
                   {designs.length > 0 && (
                     <span data-dock-hide="" className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">

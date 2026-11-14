@@ -48,15 +48,19 @@ describe('useDockedPreview', () => {
     expect(result.current.docked).toBe(false)
   })
 
-  it('docks under the header (bottom 60), stays docked up to 300 (240, 300), undocks past 300 (310)', () => {
+  // TICKET-013: docks earlier (bottom < 280: the lower part of the big box is
+  // still on screen, so the zoom into the bar is seen), undocks past 480 (gap 200).
+  it('docks under 280 (not at 290), stays docked up to 480, undocks past 480', () => {
     const { result } = renderHook(() => useDockedPreview(ref))
-    scrollPlaceholderTo(60)
+    scrollPlaceholderTo(290)
+    expect(result.current.docked).toBe(false)
+    scrollPlaceholderTo(270)
     expect(result.current.docked).toBe(true)
-    scrollPlaceholderTo(240)
+    scrollPlaceholderTo(400)
     expect(result.current.docked).toBe(true)
-    scrollPlaceholderTo(300)
+    scrollPlaceholderTo(480)
     expect(result.current.docked).toBe(true)
-    scrollPlaceholderTo(310)
+    scrollPlaceholderTo(490)
     expect(result.current.docked).toBe(false)
   })
 
@@ -72,11 +76,11 @@ describe('useDockedPreview', () => {
     expanded = 501
     const { result, rerender } = renderHook(({ k }) => useDockedPreview(ref, { measureKey: k }), { initialProps: { k: '3|0' } })
     scrollPlaceholderTo(60)
-    expect(result.current).toEqual({ docked: true, height: 501, hasDocked: true })
+    expect(result.current).toEqual({ docked: true, height: 501 })
     el.style.height = '501px' // what the designer pins from `height`
     expanded = 694
     rerender({ k: '3|1' })
-    expect(result.current).toEqual({ docked: true, height: 694, hasDocked: true })
+    expect(result.current).toEqual({ docked: true, height: 694 })
     expect(el.style.height).toBe('694px')
     expect(el.hasAttribute('data-measuring')).toBe(false)
   })
@@ -87,7 +91,7 @@ describe('useDockedPreview', () => {
     el.style.height = '694px'
     expanded = 501
     rerender({ k: '3|0' })
-    expect(result.current).toEqual({ docked: true, height: 501, hasDocked: true })
+    expect(result.current).toEqual({ docked: true, height: 501 })
     // A shrink of ~193 px moves the bottom by at most that much: still inside the gap.
     scrollPlaceholderTo(60 + 193)
     expect(result.current.docked).toBe(true)
@@ -136,32 +140,11 @@ describe('useDockedPreview', () => {
     expect(result.current.docked).toBe(false)
   })
 
-  // TICKET-012: the return animation is gated on "has docked at least once",
-  // so it never runs on first paint.
-  it('hasDocked: false until the first dock, then stays true through undock', () => {
+  // TICKET-013: nothing reads "has docked once" any more (the 012 return
+  // animation is gone) — the hook no longer reports it.
+  it('returns only docked and height', () => {
     const { result } = renderHook(() => useDockedPreview(ref))
-    expect(result.current.hasDocked).toBe(false)
-    scrollPlaceholderTo(240)
-    expect(result.current.hasDocked).toBe(false)
-    scrollPlaceholderTo(60)
-    expect(result.current.hasDocked).toBe(true)
-    scrollPlaceholderTo(400)
-    expect(result.current.docked).toBe(false)
-    expect(result.current.hasDocked).toBe(true)
-  })
-
-  it('hasDocked is true on first read when the page is already scrolled', () => {
-    bottom = 20
-    const { result } = renderHook(() => useDockedPreview(ref))
-    expect(result.current.hasDocked).toBe(true)
-  })
-
-  it('hasDocked stays true when disabling undocks', () => {
-    const { result, rerender } = renderHook(({ on }) => useDockedPreview(ref, { enabled: on }), { initialProps: { on: true } })
-    scrollPlaceholderTo(20)
-    rerender({ on: false })
-    expect(result.current.docked).toBe(false)
-    expect(result.current.hasDocked).toBe(true)
+    expect(Object.keys(result.current).sort()).toEqual(['docked', 'height'])
   })
 
   it('removes its scroll listener on unmount', () => {
@@ -169,5 +152,263 @@ describe('useDockedPreview', () => {
     const { unmount } = renderHook(() => useDockedPreview(ref))
     unmount()
     expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function))
+  })
+})
+
+// TICKET-013 (follow-up): with the box handed in, the decision reads the
+// EXPANDED box's bottom edge — placeholder top + the box's offset and height in
+// the expanded layout (layout facts, read via offsetTop/offsetHeight, captured
+// while undocked or inside the data-measuring pass) — so the size rows below the
+// box no longer move the dock point. Dock under 280, undock over 480.
+describe('useDockedPreview — dock point on the expanded box bottom', () => {
+  const BOX_TOP = 8
+  const BOX_H = 477
+  /** Box bottom → placeholder rect (placeholder top = box bottom − offset − height). */
+  let boxBottom = 600
+  const ph = document.createElement('div')
+  const box = document.createElement('div')
+  const parent = document.createElement('div')
+  let boxH = BOX_H
+  ph.getBoundingClientRect = () => {
+    const h = ph.offsetHeight
+    const top = boxBottom - BOX_TOP - BOX_H
+    return { top, bottom: top + h, height: h, width: 390, left: 0, right: 390, x: 0, y: top, toJSON() {} } as DOMRect
+  }
+  Object.defineProperty(ph, 'offsetHeight', {
+    get: () => (!ph.hasAttribute('data-measuring') && ph.style.height ? parseFloat(ph.style.height) : expanded),
+    configurable: true,
+  })
+  Object.defineProperty(ph, 'offsetTop', { get: () => 300, configurable: true })
+  Object.defineProperty(ph, 'offsetParent', { get: () => parent, configurable: true })
+  // Docked (not measuring) the box is the small fixed one; its layout facts
+  // must then never be used — expose a misleading offset to prove it.
+  const isDocked = () => ph.getAttribute('data-docked') === 'true' && !ph.hasAttribute('data-measuring')
+  Object.defineProperty(box, 'offsetTop', { get: () => (isDocked() ? 0 : 300 + BOX_TOP), configurable: true })
+  Object.defineProperty(box, 'offsetHeight', { get: () => (isDocked() ? 240 : boxH), configurable: true })
+  Object.defineProperty(box, 'offsetParent', { get: () => (isDocked() ? null : parent), configurable: true })
+  const phRef = { current: ph }
+  const boxRef = { current: box }
+
+  beforeEach(() => {
+    boxBottom = 600
+    boxH = BOX_H
+    expanded = 501
+    ph.style.height = ''
+    ph.removeAttribute('data-measuring')
+    ph.setAttribute('data-docked', 'false')
+  })
+  /** Mirror the designer: data-docked + the pin follow the hook's result. */
+  function setup(measureKey = 'a') {
+    return renderHook(({ k }) => {
+      const r = useDockedPreview(phRef, { boxRef, measureKey: k })
+      ph.setAttribute('data-docked', r.docked ? 'true' : 'false')
+      ph.style.height = r.docked && r.height ? `${r.height}px` : ''
+      return r
+    }, { initialProps: { k: measureKey } })
+  }
+  const scrollBoxTo = (b: number) => {
+    boxBottom = b
+    act(() => { window.dispatchEvent(new Event('scroll')) })
+  }
+
+  it('docks when the expanded box bottom is under 280, stays up to 480, undocks past 480', () => {
+    const { result } = setup()
+    scrollBoxTo(290)
+    expect(result.current.docked).toBe(false)
+    scrollBoxTo(270)
+    expect(result.current.docked).toBe(true)
+    scrollBoxTo(480)
+    expect(result.current.docked).toBe(true)
+    scrollBoxTo(490)
+    expect(result.current.docked).toBe(false)
+  })
+
+  it('the size rows below the box do not move the dock point', () => {
+    expanded = 501 + 193 // rows present: the placeholder is 193 px taller
+    const { result } = setup()
+    // The placeholder's bottom is now 193 px lower than the box's — the box decides.
+    scrollBoxTo(290)
+    expect(result.current.docked).toBe(false)
+    scrollBoxTo(270)
+    expect(result.current.docked).toBe(true)
+    scrollBoxTo(490)
+    expect(result.current.docked).toBe(false)
+  })
+
+  it('while docked, the box geometry comes from the expanded (data-measuring) layout, never the small fixed box', () => {
+    const { result, rerender } = setup('a')
+    scrollBoxTo(270)
+    expect(result.current.docked).toBe(true)
+    // Rows arrive while docked → re-measure; the expanded box is unchanged, so
+    // the undock point stays at a box bottom of 480.
+    expanded = 501 + 193
+    rerender({ k: 'b' })
+    scrollBoxTo(470)
+    expect(result.current.docked).toBe(true)
+    scrollBoxTo(490)
+    expect(result.current.docked).toBe(false)
+  })
+
+  it('a box that is not laid out (offsetHeight 0) falls back to the placeholder bottom', () => {
+    boxH = 0
+    const { result } = setup()
+    // box bottom 600 → placeholder top 115, bottom 616 → fallback: not docked
+    scrollBoxTo(600)
+    expect(result.current.docked).toBe(false)
+    // box bottom 250 → placeholder bottom 266 < 280 → docked via the fallback
+    scrollBoxTo(250)
+    expect(result.current.docked).toBe(true)
+  })
+})
+
+// TICKET-013: a continuous FLIP zoom of the preview box between its two layout
+// states. First = the box's visual rect right before the flip (includes any
+// in-flight transform); last = its rect after the commit, once running box
+// animations are cancelled; invert with translate + scale, play to none.
+describe('useDockedPreview — FLIP of the preview box', () => {
+  const BIG = { left: 16, top: -260, width: 358, height: 477.33 }
+  const SMALL = { left: 105, top: 88, width: 180, height: 240 }
+  const rectOf = (r: typeof BIG) =>
+    ({ ...r, right: r.left + r.width, bottom: r.top + r.height, x: r.left, y: r.top, toJSON() {} }) as DOMRect
+
+  let box: HTMLDivElement
+  let boxRef: { current: HTMLDivElement }
+  let events: string[]
+  let animate: ReturnType<typeof vi.fn>
+  let running: { cancel: () => void }[]
+  let reduced = false
+
+  beforeEach(() => {
+    events = []
+    running = []
+    reduced = false
+    box = document.createElement('div')
+    boxRef = { current: box }
+    // The box's layout follows the docked state the hook has committed.
+    let docked = false
+    box.getBoundingClientRect = () => {
+      events.push('measure')
+      return rectOf(docked ? SMALL : BIG)
+    }
+    animate = vi.fn(() => {
+      const a = { cancel: () => events.push('cancel') }
+      running.push(a)
+      return a as unknown as Animation
+    })
+    ;(box as unknown as { animate: unknown }).animate = animate
+    ;(box as unknown as { getAnimations: unknown }).getAnimations = () => running.splice(0)
+    setDocked = v => { docked = v }
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (q: string) => ({ matches: reduced && q.includes('prefers-reduced-motion'), media: q, addEventListener() {}, removeEventListener() {} }),
+    })
+  })
+  let setDocked: (v: boolean) => void = () => {}
+
+  /** Render the hook and keep the fake box layout in step with the committed state. */
+  function setup() {
+    return renderHook(() => {
+      const r = useDockedPreview(ref, { boxRef })
+      setDocked(r.docked)
+      return r
+    })
+  }
+
+  it('dock: animates the box from the big rect (translate + uniform scale) to none, 320 ms, the easing', () => {
+    const { result } = setup()
+    scrollPlaceholderTo(270)
+    expect(result.current.docked).toBe(true)
+    expect(animate).toHaveBeenCalledTimes(1)
+    const [frames, opts] = animate.mock.calls[0] as [Keyframe[], KeyframeAnimationOptions]
+    const sx = BIG.width / SMALL.width
+    const sy = BIG.height / SMALL.height
+    expect(sx).toBeCloseTo(sy, 2) // both boxes are 3:4 — a true zoom
+    const m = String(frames[0].transform).match(/^translate\((-?[\d.]+)px, (-?[\d.]+)px\) scale\((-?[\d.]+), (-?[\d.]+)\)$/)
+    expect(m).not.toBeNull()
+    expect(Number(m![1])).toBeCloseTo(BIG.left - SMALL.left)
+    expect(Number(m![2])).toBeCloseTo(BIG.top - SMALL.top)
+    expect(Number(m![3])).toBeCloseTo(sx, 3)
+    expect(Number(m![4])).toBeCloseTo(sy, 3)
+    expect(frames[frames.length - 1].transform).toBe('none')
+    expect(opts.duration).toBe(320)
+    expect(opts.easing).toBe('cubic-bezier(.2,.8,.2,1)')
+    expect(opts.id).toBe('preview-flip')
+  })
+
+  it('undock: the reverse — from the small rect back to the big one', () => {
+    const { result } = setup()
+    scrollPlaceholderTo(270)
+    scrollPlaceholderTo(490)
+    expect(result.current.docked).toBe(false)
+    expect(animate).toHaveBeenCalledTimes(2)
+    const [frames] = animate.mock.calls[1] as [Keyframe[]]
+    const m = String(frames[0].transform).match(/^translate\((-?[\d.]+)px, (-?[\d.]+)px\) scale\((-?[\d.]+), (-?[\d.]+)\)$/)
+    expect(Number(m![1])).toBeCloseTo(SMALL.left - BIG.left)
+    expect(Number(m![2])).toBeCloseTo(SMALL.top - BIG.top)
+    expect(Number(m![3])).toBeCloseTo(SMALL.width / BIG.width, 3)
+    expect(frames[frames.length - 1].transform).toBe('none')
+  })
+
+  it('cancels the running box animation before measuring the new rect (mid-animation reversal starts where the box is)', () => {
+    setup()
+    scrollPlaceholderTo(270)
+    events.length = 0
+    scrollPlaceholderTo(490)
+    // first (visual, in-flight) → cancel → last
+    expect(events).toEqual(['measure', 'cancel', 'measure'])
+  })
+
+  it('no FLIP for a scroll that does not flip the state', () => {
+    setup()
+    scrollPlaceholderTo(400)
+    scrollPlaceholderTo(300)
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it('a dock caused by a resize (not a scroll) does not zoom', () => {
+    const { result } = setup()
+    bottom = 270
+    act(() => { window.dispatchEvent(new Event('resize')) })
+    expect(result.current.docked).toBe(true)
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it('a scroll flip reverted by a resize before React commits leaves no stale "first" for the next zoom-free flip', () => {
+    const { result } = setup()
+    act(() => {
+      bottom = 270
+      window.dispatchEvent(new Event('scroll')) // read(true): first measured, state → docked
+      bottom = 500
+      window.dispatchEvent(new Event('resize')) // read(false): back to undocked, same batch
+    })
+    expect(result.current.docked).toBe(false)
+    expect(animate).not.toHaveBeenCalled()
+    bottom = 270
+    act(() => { window.dispatchEvent(new Event('resize')) }) // a resize-driven dock: no zoom
+    expect(result.current.docked).toBe(true)
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it('reduced motion → no FLIP, plain state change', () => {
+    reduced = true
+    const { result } = setup()
+    scrollPlaceholderTo(270)
+    expect(result.current.docked).toBe(true)
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it('a page that loads already scrolled docks with no zoom (that big rect was never painted)', () => {
+    bottom = 20
+    const { result } = setup()
+    expect(result.current.docked).toBe(true)
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it('works without the Web Animations API (no animate on the element)', () => {
+    delete (box as unknown as { animate?: unknown }).animate
+    delete (box as unknown as { getAnimations?: unknown }).getAnimations
+    const { result } = setup()
+    scrollPlaceholderTo(270)
+    expect(result.current.docked).toBe(true)
   })
 })
