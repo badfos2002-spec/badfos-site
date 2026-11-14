@@ -62,6 +62,13 @@ describe('useDockedPreview', () => {
     expect(result.current.docked).toBe(true)
   })
 
+  it('a placeholder that is not laid out (desktop: display:none) never docks', () => {
+    bottom = 0
+    height = 0
+    const { result } = renderHook(() => useDockedPreview(ref))
+    expect(result.current.docked).toBe(false)
+  })
+
   it('disabled (last step) never docks', () => {
     const { result } = renderHook(() => useDockedPreview(ref, { enabled: false }))
     scrollPlaceholderTo(20)
