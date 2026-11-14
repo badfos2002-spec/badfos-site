@@ -308,6 +308,13 @@
   z-index: 30;
   padding: 0.5rem 1rem;
 }
+/* Docked, the placeholder's leftover slot (the rows' area and the box slot
+   below the bar) can still be on screen for a moment: its own white
+   (bg-white/95) gives way to the page background, so it does not read as a
+   blank band. Colour only — no layout change. */
+[data-mobile-preview][data-docked="true"]:not([data-measuring]) {
+  background-color: transparent;
+}
 /* TICKET-013: the box zooms between its big and its docked rect — a FLIP in JS
    (useDockedPreview, Web Animations API, transform on the box ONLY), so it
    scales from its top-left corner in both states. The 012 box keyframes are
