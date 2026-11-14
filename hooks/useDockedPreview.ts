@@ -44,7 +44,8 @@ export function useDockedPreview(
     if (!el || !dockedRef.current) return
     el.setAttribute('data-measuring', '')
     el.style.height = ''
-    const h = el.offsetHeight
+    // Sub-pixel: a rounded pin is a visible 1 px jump at undock.
+    const h = el.getBoundingClientRect().height
     el.removeAttribute('data-measuring')
     el.style.height = `${h}px`
     setHeight(h)
@@ -70,8 +71,9 @@ export function useDockedPreview(
       if (!el) return
       // Not laid out (desktop: the mobile layout is display:none) — nothing to dock.
       if (!dockedRef.current && el.offsetHeight === 0) return
-      if (!dockedRef.current) setHeight(el.offsetHeight)
-      const bottom = el.getBoundingClientRect().bottom
+      const rect = el.getBoundingClientRect()
+      if (!dockedRef.current) setHeight(rect.height)
+      const bottom = rect.bottom
       const next = dockedRef.current ? bottom <= headerBottom + undockGap : bottom < headerBottom
       if (next !== dockedRef.current) {
         dockedRef.current = next
