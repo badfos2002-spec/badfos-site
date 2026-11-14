@@ -86,6 +86,7 @@ export default function SweatshirtDesignerPage() {
   const [designs, setDesigns] = useState<DesignArea[]>([])
   // TICKET-011: the mobile preview placeholder the docked compact bar follows.
   const mobilePreviewRef = useRef<HTMLDivElement>(null)
+  const previewBoxRef = useRef<HTMLDivElement>(null)
 
   const [selectedAreaId, setSelectedAreaId] = useState<string>(SWEATSHIRT_DESIGN_AREAS[0].id)
   const [uploadingArea, setUploadingArea] = useState<string | null>(null)
@@ -680,6 +681,7 @@ export default function SweatshirtDesignerPage() {
   // measureKey: what changes the EXPANDED preview's height (rows, chip/tabs, step).
   const { docked, height: dockHeight, hasDocked } = useDockedPreview(mobilePreviewRef, {
     enabled: currentStep !== totalSteps,
+    boxRef: previewBoxRef,
     measureKey: `${currentStep}|${currentStep === 3 ? designs.filter(d => canEnlarge('sweatshirt', d.area)).length : 0}|${designs.length > 0}`,
   })
 
@@ -790,7 +792,7 @@ export default function SweatshirtDesignerPage() {
           >
             <div data-dock-bar="">
               <div data-dock-row="" data-has-rows={hasEnlargeRows ? '' : undefined}>
-                <div data-preview-box="" className="relative w-full shrink-0 mx-auto max-w-sm">
+                <div ref={previewBoxRef} data-preview-box="" className="relative w-full shrink-0 mx-auto max-w-sm">
                   {previewElement}
                   {designs.length > 0 && (
                     <span data-dock-hide="" className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
