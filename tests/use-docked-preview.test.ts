@@ -93,6 +93,26 @@ describe('useDockedPreview', () => {
     expect(result.current.docked).toBe(true)
   })
 
+  it('pins the sub-pixel height (rect), not the rounded offsetHeight — a 0.4 px pin error showed as a 1 px jump at undock', () => {
+    const rect = el.getBoundingClientRect
+    el.getBoundingClientRect = () => {
+      const r = rect()
+      const h = !el.hasAttribute('data-measuring') && el.style.height ? parseFloat(el.style.height) : expanded + 0.4
+      return { ...r, height: h, top: bottom - h } as DOMRect
+    }
+    try {
+      const { result, rerender } = renderHook(({ k }) => useDockedPreview(ref, { measureKey: k }), { initialProps: { k: 'a' } })
+      scrollPlaceholderTo(60)
+      expect(result.current.height).toBeCloseTo(694.4)
+      el.style.height = '694.4px'
+      expanded = 600
+      rerender({ k: 'b' })
+      expect(result.current.height).toBeCloseTo(600.4)
+    } finally {
+      el.getBoundingClientRect = rect
+    }
+  })
+
   it('docks on first read when the page is already scrolled', () => {
     bottom = 20
     const { result } = renderHook(() => useDockedPreview(ref))
