@@ -35,7 +35,8 @@ export default function BackToSketchButton({
           else if (e.target === avoid) setAvoidIn(e.isIntersecting)
         }
       },
-      { threshold: 0 }
+      // The site header is sticky (h-20): a preview hidden under it is out of sight.
+      { threshold: 0, rootMargin: '-80px 0px 0px 0px' }
     )
     observer.observe(target)
     if (avoid) observer.observe(avoid)
