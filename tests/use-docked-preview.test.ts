@@ -373,6 +373,22 @@ describe('useDockedPreview — FLIP of the preview box', () => {
     expect(animate).not.toHaveBeenCalled()
   })
 
+  it('a scroll flip reverted by a resize before React commits leaves no stale "first" for the next zoom-free flip', () => {
+    const { result } = setup()
+    act(() => {
+      bottom = 270
+      window.dispatchEvent(new Event('scroll')) // read(true): first measured, state → docked
+      bottom = 500
+      window.dispatchEvent(new Event('resize')) // read(false): back to undocked, same batch
+    })
+    expect(result.current.docked).toBe(false)
+    expect(animate).not.toHaveBeenCalled()
+    bottom = 270
+    act(() => { window.dispatchEvent(new Event('resize')) }) // a resize-driven dock: no zoom
+    expect(result.current.docked).toBe(true)
+    expect(animate).not.toHaveBeenCalled()
+  })
+
   it('reduced motion → no FLIP, plain state change', () => {
     reduced = true
     const { result } = setup()

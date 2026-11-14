@@ -512,6 +512,16 @@ describe('the docked CSS — TICKET-012 size and animation', () => {
     for (const sel of animated) expect(sel).not.toContain('data-measuring')
   })
 
+  // A re-measure (data-measuring) while docked must not destroy and recreate
+  // the bar's ::before — that restarted its fade from opacity 0.
+  it('the bar chrome ::before exists whenever docked, NOT gated on data-measuring', async () => {
+    const css = await load()
+    const r = rules(css, '[data-dock-bar]::before').filter(r => /content:/.test(r.body))
+    expect(r).toHaveLength(1)
+    expect(r[0].sel.replace(/\/\*[\s\S]*?\*\//g, '').trim()).toBe('[data-mobile-preview][data-docked="true"] [data-dock-bar]::before')
+    expect(r[0].body).toMatch(/position:\s*absolute/)
+  })
+
   it('the rows fade in ~120 ms after the dock (once the box has mostly landed), opacity only', async () => {
     const css = await load()
     const r = rules(css, '[data-rows-wrap]').filter(r => /animation:/.test(r.body) && !/animation:\s*none/.test(r.body))
