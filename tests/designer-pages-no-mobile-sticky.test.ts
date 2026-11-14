@@ -22,9 +22,10 @@ describe('designers without a compact preview have no mobile sticky block', () =
   }
 })
 
-// TICKET-011: the t-shirt and sweatshirt designers dropped their compact sticky
-// preview too (the user disliked it shrinking/growing while scrolling). Their
-// MOBILE block is plain; only the desktop preview column stays sticky.
+// TICKET-011: the t-shirt and sweatshirt designers dropped their shrinking
+// sticky preview (the user disliked it flickering while scrolling). Their MOBILE
+// block is an in-flow placeholder whose content docks as a FIXED bar; nothing
+// in it is sticky. Only the desktop preview column stays sticky.
 const COMPACT_GONE = [
   ['tshirt', join('components', 'designer', 'TshirtDesigner.tsx')],
   ['sweatshirt', join('app', 'designer', 'sweatshirt', 'page.tsx')],

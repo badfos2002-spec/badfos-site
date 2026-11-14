@@ -4,14 +4,24 @@ import { useDockedPreview } from '@/hooks/useDockedPreview'
 
 // TICKET-011 (revision): the mobile preview docks under the 80 px sticky header
 // once its in-flow PLACEHOLDER has scrolled out, and undocks only when the
-// placeholder is well back in view (hysteresis). The placeholder never changes
-// size, so docking cannot move the page — the decision reads its rect only.
+// placeholder is well back in view (hysteresis). While docked the placeholder is
+// pinned to its EXPANDED height; when that layout changes (rows appear or go,
+// step changes) the pin is re-measured in the same layout pass, so undocking
+// never changes the page's height.
 
 let bottom = 300
-let height = 694
+/** The height the placeholder has in its expanded (undocked / measuring) layout. */
+let expanded = 694
 const el = document.createElement('div')
-el.getBoundingClientRect = () => ({ bottom, top: bottom - height, height, width: 390, left: 0, right: 390, x: 0, y: bottom - height, toJSON() {} }) as DOMRect
-Object.defineProperty(el, 'offsetHeight', { get: () => height, configurable: true })
+el.getBoundingClientRect = () => {
+  const h = el.offsetHeight
+  return { bottom, top: bottom - h, height: h, width: 390, left: 0, right: 390, x: 0, y: bottom - h, toJSON() {} } as DOMRect
+}
+// Docked + pinned → the pin; measuring or unpinned → the expanded layout.
+Object.defineProperty(el, 'offsetHeight', {
+  get: () => (!el.hasAttribute('data-measuring') && el.style.height ? parseFloat(el.style.height) : expanded),
+  configurable: true,
+})
 const ref = { current: el }
 
 function scrollPlaceholderTo(b: number) {
@@ -21,7 +31,9 @@ function scrollPlaceholderTo(b: number) {
 
 beforeEach(() => {
   bottom = 300
-  height = 694
+  expanded = 694
+  el.style.height = ''
+  el.removeAttribute('data-measuring')
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => { cb(0); return 1 })
 })
 afterEach(() => {
@@ -30,18 +42,21 @@ afterEach(() => {
 })
 
 describe('useDockedPreview', () => {
-  it('placeholder in view (bottom 300) → not docked', () => {
+  it('placeholder in view (bottom 400) → not docked', () => {
+    bottom = 400
     const { result } = renderHook(() => useDockedPreview(ref))
     expect(result.current.docked).toBe(false)
   })
 
-  it('docks under the header (bottom 60), stays docked in the band (150), undocks past 220 (240)', () => {
+  it('docks under the header (bottom 60), stays docked up to 300 (240, 300), undocks past 300 (310)', () => {
     const { result } = renderHook(() => useDockedPreview(ref))
     scrollPlaceholderTo(60)
     expect(result.current.docked).toBe(true)
-    scrollPlaceholderTo(150)
-    expect(result.current.docked).toBe(true)
     scrollPlaceholderTo(240)
+    expect(result.current.docked).toBe(true)
+    scrollPlaceholderTo(300)
+    expect(result.current.docked).toBe(true)
+    scrollPlaceholderTo(310)
     expect(result.current.docked).toBe(false)
   })
 
@@ -49,11 +64,33 @@ describe('useDockedPreview', () => {
     const { result } = renderHook(() => useDockedPreview(ref))
     expect(result.current.height).toBe(694)
     scrollPlaceholderTo(60)
-    // Docked: the content left the placeholder; the reserved height must not follow it.
-    height = 0
-    scrollPlaceholderTo(50)
     expect(result.current.docked).toBe(true)
     expect(result.current.height).toBe(694)
+  })
+
+  it('rows appear while docked → the pin grows to the new expanded height, still docked', () => {
+    expanded = 501
+    const { result, rerender } = renderHook(({ k }) => useDockedPreview(ref, { measureKey: k }), { initialProps: { k: '3|0' } })
+    scrollPlaceholderTo(60)
+    expect(result.current).toEqual({ docked: true, height: 501 })
+    el.style.height = '501px' // what the designer pins from `height`
+    expanded = 694
+    rerender({ k: '3|1' })
+    expect(result.current).toEqual({ docked: true, height: 694 })
+    expect(el.style.height).toBe('694px')
+    expect(el.hasAttribute('data-measuring')).toBe(false)
+  })
+
+  it('rows removed while docked → the pin shrinks, no undock/re-dock', () => {
+    const { result, rerender } = renderHook(({ k }) => useDockedPreview(ref, { measureKey: k }), { initialProps: { k: '3|2' } })
+    scrollPlaceholderTo(60)
+    el.style.height = '694px'
+    expanded = 501
+    rerender({ k: '3|0' })
+    expect(result.current).toEqual({ docked: true, height: 501 })
+    // A shrink of ~193 px moves the bottom by at most that much: still inside the gap.
+    scrollPlaceholderTo(60 + 193)
+    expect(result.current.docked).toBe(true)
   })
 
   it('docks on first read when the page is already scrolled', () => {
@@ -64,14 +101,18 @@ describe('useDockedPreview', () => {
 
   it('a placeholder that is not laid out (desktop: display:none) never docks', () => {
     bottom = 0
-    height = 0
+    expanded = 0
     const { result } = renderHook(() => useDockedPreview(ref))
     expect(result.current.docked).toBe(false)
   })
 
-  it('disabled (last step) never docks', () => {
-    const { result } = renderHook(() => useDockedPreview(ref, { enabled: false }))
+  it('disabled (last step) never docks, and turning it off while docked undocks', () => {
+    const { result, rerender } = renderHook(({ on }) => useDockedPreview(ref, { enabled: on }), { initialProps: { on: true } })
     scrollPlaceholderTo(20)
+    expect(result.current.docked).toBe(true)
+    rerender({ on: false })
+    expect(result.current.docked).toBe(false)
+    scrollPlaceholderTo(10)
     expect(result.current.docked).toBe(false)
   })
 
