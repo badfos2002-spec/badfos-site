@@ -136,6 +136,17 @@ describe('BackToSketchButton', () => {
     expect(button()).toBeInTheDocument()
   })
 
+  it('the nav row only counts while it crosses the button\'s bottom band (96 px)', () => {
+    // On a tall phone the nav row is on screen for most of the step; hiding the
+    // button whenever it is anywhere in view would leave a tiny window. Only
+    // the bottom band, where the button sits, matters for the overlap.
+    render(<Harness withNav />)
+    const nav = screen.getByTestId('nav')
+    const navObserver = observers.find(o => o.targets.includes(nav))!
+    expect(navObserver.targets).not.toContain(screen.getByTestId('preview'))
+    expect(navObserver.options?.rootMargin).toBe(`-${window.innerHeight - 96}px 0px 0px 0px`)
+  })
+
   it('disconnects its observer on unmount', () => {
     const { unmount } = render(<Harness />)
     unmount()
