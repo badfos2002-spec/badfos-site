@@ -269,14 +269,18 @@ describe('Docked compact preview (mobile)', () => {
     await placeholderAt(400)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
     expect(mobileBlock()!.style.height).toBe('')
+    // TICKET-012: the return animation's gate is absent until the first dock.
+    expect(mobileBlock()!.getAttribute('data-has-docked')).not.toBe('true')
     await placeholderAt(60)
     expectDocked(true)
+    expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
     const stageBefore = mobileBlock()!.querySelector('[data-testid="stage"]')
     await placeholderAt(290)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('true')
     await placeholderAt(320)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
     expect(mobileBlock()!.style.height).toBe('')
+    expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
     // The same stage element both ways — the canvas is never remounted.
     expect(mobileBlock()!.querySelector('[data-testid="stage"]')).toBe(stageBefore)
     for (const s of stages()) expect(s.getAttribute('data-nohint')).toBe('false')
@@ -330,8 +334,14 @@ describe('Docked compact preview (mobile)', () => {
 
   it('sweatshirt step 1: docks centred with no rows', async () => {
     render(<SweatshirtDesignerPage />)
+    await placeholderAt(400)
+    expect(mobileBlock()!.getAttribute('data-has-docked')).not.toBe('true')
     await placeholderAt(40)
     expectDocked(false)
+    expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
+    await placeholderAt(400)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
+    expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
   })
 
   it('sweatshirt: rows arriving while docked grow the pin, still docked (no undock)', async () => {
@@ -382,5 +392,103 @@ describe('the docked CSS (app/globals.css)', () => {
     expect(block).toMatch(/touch-action:\s*none\s*!important/)
     // Opaque bar: no see-through blur.
     expect(block).not.toContain('backdrop-filter')
+  })
+})
+
+// TICKET-012: a tad bigger at ≥ 390 px, and a dock/undock animation that is
+// transform/opacity only (nothing in flow changes size).
+describe('the docked CSS — TICKET-012 size and animation', () => {
+  const load = async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const css = readFileSync(join(__dirname, '..', 'app', 'globals.css'), 'utf8')
+    return css.slice(css.indexOf('TICKET-011'))
+  }
+  /** Every rule `selector { body }` whose selector contains `needle`, at any nesting. */
+  const rules = (css: string, needle: string) =>
+    Array.from(css.matchAll(/([^{}]+)\{([^{}]*)\}/g)).filter(m => m[1].includes(needle)).map(m => ({ sel: m[1].trim(), body: m[2] }))
+  const keyframes = (css: string) =>
+    Object.fromEntries(Array.from(css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^{}]*\})*[^{}]*)\}/g)).map(m => [m[1], m[2]]))
+  const animName = (body: string) => body.match(/animation:\s*([\w-]+)/)?.[1]
+
+  it('165 px wide by default, 180 px from 390 px wide', async () => {
+    const css = await load()
+    const D = '[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-preview-box]'
+    expect(rules(css, D).some(r => /max-width:\s*165px/.test(r.body))).toBe(true)
+    const media = css.match(/@media\s*\(min-width:\s*390px\)\s*\{([\s\S]*?\}\s*)\}/)
+    expect(media).not.toBeNull()
+    expect(media![1]).toContain(D)
+    expect(media![1]).toMatch(/max-width:\s*180px/)
+  })
+
+  it('dock: the bar slides down 12 px and fades in, the box settles from 1.06 — not keyed on data-measuring', async () => {
+    const css = await load()
+    const kf = keyframes(css)
+    const bar = rules(css, '[data-mobile-preview][data-docked="true"] [data-dock-bar]').find(r => /animation:/.test(r.body))!
+    expect(bar).toBeDefined()
+    expect(bar.sel).not.toContain('data-measuring')
+    expect(bar.body).toMatch(/220ms/)
+    expect(bar.body).toMatch(/cubic-bezier\(\s*\.2,\s*\.8,\s*\.2,\s*1\s*\)/)
+    const barKf = kf[animName(bar.body)!]
+    expect(barKf).toMatch(/translateY\(-12px\)/)
+    expect(barKf).toMatch(/opacity:\s*0\b/)
+    const box = rules(css, '[data-mobile-preview][data-docked="true"] [data-preview-box]').find(r => /animation:/.test(r.body))!
+    expect(box).toBeDefined()
+    expect(box.sel).not.toContain('data-measuring')
+    expect(box.body).toMatch(/220ms/)
+    expect(kf[animName(box.body)!]).toMatch(/scale\(1\.06\)/)
+  })
+
+  it('undock: the expanded box arrives from .97 / .6, only once it has docked', async () => {
+    const css = await load()
+    const kf = keyframes(css)
+    const back = rules(css, '[data-has-docked="true"][data-docked="false"] [data-preview-box]').find(r => /animation:/.test(r.body))!
+    expect(back).toBeDefined()
+    expect(back.body).toMatch(/200ms/)
+    const k = kf[animName(back.body)!]
+    expect(k).toMatch(/scale\(0?\.97\)/)
+    expect(k).toMatch(/opacity:\s*0?\.6\b/)
+    // Never on first paint: no box animation for a block that has not docked.
+    for (const r of rules(css, '[data-preview-box]').filter(r => /animation:\s*[\w-]/.test(r.body) && !/animation:\s*none/.test(r.body)))
+      expect(r.sel).toMatch(/data-docked="true"|data-has-docked="true"/)
+  })
+
+  it('reduced motion: no dock or undock animation', async () => {
+    const css = await load()
+    const rm = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?\}\s*)\}/)
+    expect(rm).not.toBeNull()
+    expect(rm![1]).toContain('[data-dock-bar]')
+    expect(rm![1]).toContain('[data-preview-box]')
+    expect(rm![1]).toMatch(/animation:\s*none/)
+  })
+
+  it('animations are transform/opacity only, and never on the placeholder itself', async () => {
+    const css = await load()
+    const kf = keyframes(css)
+    expect(Object.keys(kf).length).toBeGreaterThanOrEqual(3)
+    for (const body of Object.values(kf)) {
+      const props = Array.from(body.matchAll(/([\w-]+)\s*:/g)).map(m => m[1])
+      for (const p of props) expect(['transform', 'opacity']).toContain(p)
+      expect(body).not.toMatch(/\b(height|width|margin|top)\b/)
+    }
+    expect(css).not.toMatch(/transition[^;]*\b(height|width|margin|top)\b/)
+    // Transforms sit on the bar and the box, never on the placeholder (an
+    // ancestor of the fixed bar) — every animated rule targets one of those.
+    for (const r of Array.from(css.matchAll(/([^{}]+)\{([^{}]*)\}/g)).filter(m => /animation:\s*[\w-]/.test(m[2]) && !/animation:\s*none/.test(m[2])))
+      expect(r[1].trim()).toMatch(/\[data-dock-bar\]$|\[data-preview-box\]$/)
+  })
+})
+
+// The box's scale() animation runs while the docked layout resizes the 3D
+// canvas: R3F measures with getBoundingClientRect (transformed) by default, so
+// the canvas came out 1.06× the box (191×254 in a 180 box). It must size from
+// the layout box (offsetWidth/offsetHeight), which transforms do not touch.
+describe('the 3D stage canvas sizes from layout, not the transformed rect', () => {
+  it('Preview3DStage passes resize={{ offsetSize: true }} to the Canvas', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const src = readFileSync(join(__dirname, '..', 'components', 'designer', 'three', 'Preview3DStage.tsx'), 'utf8')
+    const canvas = src.slice(src.indexOf('<Canvas'), src.indexOf('>', src.indexOf('gl={{')) + 1)
+    expect(canvas).toMatch(/resize=\{\{\s*offsetSize:\s*true\s*\}\}/)
   })
 })

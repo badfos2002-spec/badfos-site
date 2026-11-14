@@ -290,6 +290,9 @@ export default function Preview3DStage({ colorHex, designs, showGuides, activeAr
         dpr={[1, 2]}
         camera={{ position: CAMERA.position, fov: CAMERA.fov }}
         gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
+        // Size from layout (offsetWidth/Height), not the transformed rect: the
+        // docked box animates scale() while the canvas resizes (TICKET-012).
+        resize={{ offsetSize: true }}
       >
         <ambientLight intensity={0.22} />
         <directionalLight position={[4, 6, 5]} intensity={1.45} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />

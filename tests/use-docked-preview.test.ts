@@ -72,11 +72,11 @@ describe('useDockedPreview', () => {
     expanded = 501
     const { result, rerender } = renderHook(({ k }) => useDockedPreview(ref, { measureKey: k }), { initialProps: { k: '3|0' } })
     scrollPlaceholderTo(60)
-    expect(result.current).toEqual({ docked: true, height: 501 })
+    expect(result.current).toEqual({ docked: true, height: 501, hasDocked: true })
     el.style.height = '501px' // what the designer pins from `height`
     expanded = 694
     rerender({ k: '3|1' })
-    expect(result.current).toEqual({ docked: true, height: 694 })
+    expect(result.current).toEqual({ docked: true, height: 694, hasDocked: true })
     expect(el.style.height).toBe('694px')
     expect(el.hasAttribute('data-measuring')).toBe(false)
   })
@@ -87,7 +87,7 @@ describe('useDockedPreview', () => {
     el.style.height = '694px'
     expanded = 501
     rerender({ k: '3|0' })
-    expect(result.current).toEqual({ docked: true, height: 501 })
+    expect(result.current).toEqual({ docked: true, height: 501, hasDocked: true })
     // A shrink of ~193 px moves the bottom by at most that much: still inside the gap.
     scrollPlaceholderTo(60 + 193)
     expect(result.current.docked).toBe(true)
@@ -134,6 +134,34 @@ describe('useDockedPreview', () => {
     expect(result.current.docked).toBe(false)
     scrollPlaceholderTo(10)
     expect(result.current.docked).toBe(false)
+  })
+
+  // TICKET-012: the return animation is gated on "has docked at least once",
+  // so it never runs on first paint.
+  it('hasDocked: false until the first dock, then stays true through undock', () => {
+    const { result } = renderHook(() => useDockedPreview(ref))
+    expect(result.current.hasDocked).toBe(false)
+    scrollPlaceholderTo(240)
+    expect(result.current.hasDocked).toBe(false)
+    scrollPlaceholderTo(60)
+    expect(result.current.hasDocked).toBe(true)
+    scrollPlaceholderTo(400)
+    expect(result.current.docked).toBe(false)
+    expect(result.current.hasDocked).toBe(true)
+  })
+
+  it('hasDocked is true on first read when the page is already scrolled', () => {
+    bottom = 20
+    const { result } = renderHook(() => useDockedPreview(ref))
+    expect(result.current.hasDocked).toBe(true)
+  })
+
+  it('hasDocked stays true when disabling undocks', () => {
+    const { result, rerender } = renderHook(({ on }) => useDockedPreview(ref, { enabled: on }), { initialProps: { on: true } })
+    scrollPlaceholderTo(20)
+    rerender({ on: false })
+    expect(result.current.docked).toBe(false)
+    expect(result.current.hasDocked).toBe(true)
   })
 
   it('removes its scroll listener on unmount', () => {
