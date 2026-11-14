@@ -478,3 +478,17 @@ describe('the docked CSS — TICKET-012 size and animation', () => {
       expect(r[1].trim()).toMatch(/\[data-dock-bar\]$|\[data-preview-box\]$/)
   })
 })
+
+// The box's scale() animation runs while the docked layout resizes the 3D
+// canvas: R3F measures with getBoundingClientRect (transformed) by default, so
+// the canvas came out 1.06× the box (191×254 in a 180 box). It must size from
+// the layout box (offsetWidth/offsetHeight), which transforms do not touch.
+describe('the 3D stage canvas sizes from layout, not the transformed rect', () => {
+  it('Preview3DStage passes resize={{ offsetSize: true }} to the Canvas', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const src = readFileSync(join(__dirname, '..', 'components', 'designer', 'three', 'Preview3DStage.tsx'), 'utf8')
+    const canvas = src.slice(src.indexOf('<Canvas'), src.indexOf('>', src.indexOf('gl={{')) + 1)
+    expect(canvas).toMatch(/resize=\{\{\s*offsetSize:\s*true\s*\}\}/)
+  })
+})
