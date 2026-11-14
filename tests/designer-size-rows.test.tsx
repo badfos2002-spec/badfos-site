@@ -496,7 +496,7 @@ describe('the docked CSS — TICKET-012 size and animation', () => {
     const css = await load()
     const r = rules(css, '[data-preview-box]').find(r => /transform-origin:\s*0\s+0/.test(r.body))
     expect(r).toBeDefined()
-    expect(r!.sel).toBe('[data-mobile-preview] [data-preview-box]')
+    expect(r!.sel.replace(/\/\*[\s\S]*?\*\//g, '').trim()).toBe('[data-mobile-preview] [data-preview-box]')
   })
 
   it('dock fade is opacity only (no translate) and never fades the flying box: the bar chrome and the rows fade', async () => {
@@ -505,7 +505,9 @@ describe('the docked CSS — TICKET-012 size and animation', () => {
     expect(kf['dock-enter']).toBeDefined()
     expect(kf['dock-enter']).toMatch(/opacity:\s*0\b/)
     expect(kf['dock-enter']).not.toMatch(/transform|translate/)
-    const animated = Array.from(css.matchAll(/([^{}]+)\{([^{}]*)\}/g)).filter(m => /animation:\s*dock-enter/.test(m[2])).map(m => m[1].trim())
+    const animated = Array.from(css.matchAll(/([^{}]+)\{([^{}]*)\}/g))
+      .filter(m => /animation:\s*dock-enter/.test(m[2]))
+      .flatMap(m => m[1].replace(/\/\*[\s\S]*?\*\//g, '').split(',').map(sel => sel.trim()))
     // The box lives inside the bar: opacity on the bar itself would fade the box too.
     expect(animated.some(sel => sel.endsWith('[data-dock-bar]'))).toBe(false)
     expect(animated.some(sel => sel.endsWith('[data-dock-bar]::before'))).toBe(true)
