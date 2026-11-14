@@ -328,9 +328,12 @@
   border-bottom: 1px solid #f3f4f6;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
-[data-mobile-preview][data-docked="true"] [data-dock-bar]::before,
-[data-mobile-preview][data-docked="true"] [data-rows-wrap] {
+[data-mobile-preview][data-docked="true"] [data-dock-bar]::before {
   animation: dock-enter 220ms cubic-bezier(.2,.8,.2,1);
+}
+/* The rows beside the box appear once it has mostly landed (120 ms in). */
+[data-mobile-preview][data-docked="true"] [data-rows-wrap] {
+  animation: dock-enter 220ms cubic-bezier(.2,.8,.2,1) 120ms both;
 }
 /* !important: the animated selectors above are more specific than these. */
 @media (prefers-reduced-motion: reduce) {

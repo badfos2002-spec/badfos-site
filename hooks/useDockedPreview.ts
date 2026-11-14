@@ -9,21 +9,23 @@ const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : use
  * Docked-video pattern for the mobile designers' preview (TICKET-011).
  *
  * The preview block stays in normal flow as a PLACEHOLDER; once it has scrolled
- * out under the sticky header (h-20 = 80 px) its content docks in a fixed
- * compact bar (app/globals.css, keyed on `data-docked`), and comes back when the
- * placeholder is well back in view. Every decision reads the placeholder's rect
- * — never the element that moves.
+ * up under the sticky header its content docks in a fixed compact bar
+ * (app/globals.css, keyed on `data-docked`), and comes back when it is well back
+ * in view. Every decision reads the placeholder's rect — never the element that
+ * moves. With `boxRef` (TICKET-013) the edge compared is the EXPANDED box's
+ * bottom: placeholder top + the box's offset and height in the expanded layout,
+ * layout facts (offsetTop/offsetHeight, untouched by transforms) captured while
+ * undocked or in the data-measuring pass — so the size rows below the box do
+ * not move the dock point. Without a laid-out box: the placeholder's bottom.
  *
  * While docked the placeholder is pinned to its EXPANDED height (`height`), so
  * undocking cannot change the page's height. When the expanded layout changes
  * while docked (`measureKey`: rows appear or go, the step changes) or the
  * viewport is resized, the pin is re-measured synchronously: `data-measuring`
  * makes the CSS treat the block as undocked for one read, inside a layout
- * effect, so no frame is ever painted in between. The hysteresis gap (dock
- * under 280, undock over 480) is larger than any rows change (~193 px), so a
- * re-measured shrink can never re-trigger docking. TICKET-013: 280, not the
- * header's 80 — the lower part of the big box is still on screen when it docks,
- * so its zoom into the bar is seen.
+ * effect, so no frame is ever painted in between. Hysteresis: dock under 280,
+ * undock over 480. TICKET-013: 280, not the header's 80 — the lower ~200 px of
+ * the big box are still on screen when it docks, so its zoom into the bar is seen.
  *
  * FLIP (TICKET-013, `boxRef`): on every scroll-driven flip the box zooms
  * continuously between its two rects. First = its visual rect right before the
@@ -31,9 +33,7 @@ const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : use
  * its running animations are cancelled — so a reversal mid-zoom starts where the
  * box visually is. Inverted with translate + scale (transform-origin 0 0 in
  * CSS) and played to `none`. Transform on the box only; reduced motion, the
- * first read and the last-step undock never zoom.
- *
- * `hasDocked` turns true on the first dock and stays (TICKET-012).
+ * first read, a resize and the last-step undock never zoom.
  *
  * Passive listeners, one read per animation frame, SSR-safe, removed on unmount.
  */
@@ -46,11 +46,23 @@ export function useDockedPreview(
     undockGap = 200,
     boxRef,
   }: { enabled?: boolean; measureKey?: string; dockAt?: number; undockGap?: number; boxRef?: RefObject<HTMLElement> } = {}
-): { docked: boolean; height: number | undefined; hasDocked: boolean } {
+): { docked: boolean; height: number | undefined } {
   const [docked, setDocked] = useState(false)
   const [height, setHeight] = useState<number | undefined>(undefined)
-  const [hasDocked, setHasDocked] = useState(false)
   const dockedRef = useRef(false)
+  /** The box's offset from the placeholder top and its height, in the EXPANDED layout. */
+  const boxGeom = useRef<{ top: number; height: number } | null>(null)
+
+  /** Read the expanded box's layout facts; call only while the expanded layout is applied. */
+  const measureBox = useCallback(() => {
+    const el = placeholderRef.current
+    const box = boxRef?.current
+    boxGeom.current = null
+    if (!el || !box || !box.offsetHeight) return
+    if (box.offsetParent === el) boxGeom.current = { top: box.offsetTop, height: box.offsetHeight }
+    else if (box.offsetParent === el.offsetParent)
+      boxGeom.current = { top: box.offsetTop - el.offsetTop, height: box.offsetHeight }
+  }, [placeholderRef, boxRef])
   /** The box's visual rect right before a scroll-driven flip (FLIP "first"). */
   const flipFrom = useRef<DOMRect | null>(null)
 
@@ -80,10 +92,11 @@ export function useDockedPreview(
     el.style.height = ''
     // Sub-pixel: a rounded pin is a visible 1 px jump at undock.
     const h = el.getBoundingClientRect().height
+    measureBox()
     el.removeAttribute('data-measuring')
     el.style.height = `${h}px`
     setHeight(h)
-  }, [placeholderRef])
+  }, [placeholderRef, measureBox])
 
   // Expanded layout changed while docked → new pin, same layout pass.
   useIsoLayoutEffect(() => {
@@ -106,8 +119,12 @@ export function useDockedPreview(
       // Not laid out (desktop: the mobile layout is display:none) — nothing to dock.
       if (!dockedRef.current && el.offsetHeight === 0) return
       const rect = el.getBoundingClientRect()
-      if (!dockedRef.current) setHeight(rect.height)
-      const bottom = rect.bottom
+      if (!dockedRef.current) {
+        setHeight(rect.height)
+        measureBox()
+      }
+      const g = boxGeom.current
+      const bottom = g ? rect.top + g.top + g.height : rect.bottom
       const next = dockedRef.current ? bottom <= dockAt + undockGap : bottom < dockAt
       if (next !== dockedRef.current) {
         const box = boxRef?.current
@@ -115,7 +132,6 @@ export function useDockedPreview(
           flipFrom.current = box.getBoundingClientRect()
         dockedRef.current = next
         setDocked(next)
-        if (next) setHasDocked(true)
       }
     }
     const onScroll = () => {
@@ -123,9 +139,12 @@ export function useDockedPreview(
       pending = true
       frame = window.requestAnimationFrame(() => read(true))
     }
+    // A state change caused by a resize sets the state without a zoom.
     const onResize = () => {
       remeasure()
-      onScroll()
+      if (pending) window.cancelAnimationFrame(frame)
+      pending = true
+      frame = window.requestAnimationFrame(() => read(false))
     }
     // First read: a page loaded already scrolled docks with no zoom — the big
     // rect it would start from was never painted.
@@ -137,7 +156,7 @@ export function useDockedPreview(
       window.removeEventListener('resize', onResize)
       if (pending) window.cancelAnimationFrame(frame)
     }
-  }, [placeholderRef, boxRef, enabled, dockAt, undockGap, remeasure])
+  }, [placeholderRef, boxRef, enabled, dockAt, undockGap, remeasure, measureBox])
 
-  return { docked, height, hasDocked }
+  return { docked, height }
 }

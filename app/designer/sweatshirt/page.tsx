@@ -679,7 +679,7 @@ export default function SweatshirtDesignerPage() {
   const hasEnlargeRows = currentStep === 3 && designs.some(d => canEnlarge('sweatshirt', d.area))
   // No docking on the last step (sizes & quantities) — the preview just scrolls away.
   // measureKey: what changes the EXPANDED preview's height (rows, chip/tabs, step).
-  const { docked, height: dockHeight, hasDocked } = useDockedPreview(mobilePreviewRef, {
+  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, {
     enabled: currentStep !== totalSteps,
     boxRef: previewBoxRef,
     measureKey: `${currentStep}|${currentStep === 3 ? designs.filter(d => canEnlarge('sweatshirt', d.area)).length : 0}|${designs.length > 0}`,
@@ -786,7 +786,6 @@ export default function SweatshirtDesignerPage() {
             ref={mobilePreviewRef}
             data-mobile-preview=""
             data-docked={docked ? 'true' : 'false'}
-            data-has-docked={hasDocked ? 'true' : undefined}
             className="bg-white/95 pt-2 pb-4 -mx-4 px-4"
             style={docked && dockHeight ? { height: dockHeight } : undefined}
           >
