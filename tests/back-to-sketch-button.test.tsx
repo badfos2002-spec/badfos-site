@@ -9,12 +9,12 @@ import BackToSketchButton from '@/components/designer/BackToSketchButton'
 // so a controllable stub is installed per test.
 
 type Cb = (entries: Partial<IntersectionObserverEntry>[]) => void
-let observers: { cb: Cb; targets: Element[]; disconnected: boolean }[] = []
+let observers: { cb: Cb; targets: Element[]; disconnected: boolean; options?: IntersectionObserverInit }[] = []
 
 class IOStub {
-  private rec: { cb: Cb; targets: Element[]; disconnected: boolean }
-  constructor(cb: Cb) {
-    this.rec = { cb, targets: [], disconnected: false }
+  private rec: { cb: Cb; targets: Element[]; disconnected: boolean; options?: IntersectionObserverInit }
+  constructor(cb: Cb, options?: IntersectionObserverInit) {
+    this.rec = { cb, targets: [], disconnected: false, options }
     observers.push(this.rec)
   }
   observe(el: Element) { this.rec.targets.push(el) }
@@ -63,6 +63,13 @@ describe('BackToSketchButton', () => {
     render(<Harness />)
     expect(observers.length).toBeGreaterThan(0)
     expect(observers[0].targets).toContain(screen.getByTestId('preview'))
+  })
+
+  it('the 80 px sticky header does not count as "in view"', () => {
+    // A preview hidden behind the sticky header is out of sight for the user,
+    // so the observed viewport starts under the header.
+    render(<Harness />)
+    expect(observers[0].options?.rootMargin).toBe('-80px 0px 0px 0px')
   })
 
   it('is not shown while the preview is in view', () => {
