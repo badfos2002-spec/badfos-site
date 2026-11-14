@@ -667,9 +667,6 @@ export default function SweatshirtDesignerPage() {
   // The size rows under the preview (design step only). A press also selects
   // that area, which is what turns this page's preview: the 2D view follows
   // `selectedAreaId === 'back'` and the 3D turntable its `activeArea`.
-  // No docking on the last step (sizes & quantities) — the preview just scrolls away.
-  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, { enabled: currentStep !== totalSteps })
-
   const enlargeRows = currentStep === 3 ? (
     <EnlargeRows
       productType="sweatshirt"
@@ -679,6 +676,12 @@ export default function SweatshirtDesignerPage() {
     />
   ) : null
   const hasEnlargeRows = currentStep === 3 && designs.some(d => canEnlarge('sweatshirt', d.area))
+  // No docking on the last step (sizes & quantities) — the preview just scrolls away.
+  // measureKey: what changes the EXPANDED preview's height (rows, chip/tabs, step).
+  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, {
+    enabled: currentStep !== totalSteps,
+    measureKey: `${currentStep}|${currentStep === 3 ? designs.filter(d => canEnlarge('sweatshirt', d.area)).length : 0}|${designs.length > 0}`,
+  })
 
   const NavButtons = ({ fullWidth = false }: { fullWidth?: boolean }) => (
     <>
@@ -769,12 +772,14 @@ export default function SweatshirtDesignerPage() {
         {/* ── MOBILE LAYOUT ── */}
         <div className="lg:hidden space-y-6 pb-8 overflow-x-clip">
           {/* Preview on top — the focus. Docked-video pattern (TICKET-011): this
-              block is an in-flow PLACEHOLDER that keeps its height; once it has
-              scrolled out under the header (h-20) its content docks in a fixed
-              compact bar with the size rows beside it, and returns when the
-              placeholder is back. Nothing in flow changes size, so nothing jumps.
-              Same element tree both ways — only classes change — so the 3D
-              canvas is never remounted. Never on the last step. */}
+              block is an in-flow PLACEHOLDER; once it has scrolled out under the
+              header (h-20) its content docks in a fixed compact bar with the size
+              rows beside it, and returns when the placeholder is back. While
+              docked the placeholder is pinned to its expanded height (re-measured
+              when that layout changes), so nothing in flow ever jumps. The docked
+              look is CSS keyed on data-docked (app/globals.css) — the element tree
+              never changes, so the 3D canvas is never remounted. Never on the
+              last step. */}
           <div
             ref={mobilePreviewRef}
             data-mobile-preview=""
@@ -782,32 +787,18 @@ export default function SweatshirtDesignerPage() {
             className="bg-white/95 pt-2 pb-4 -mx-4 px-4"
             style={docked && dockHeight ? { height: dockHeight } : undefined}
           >
-            <div
-              data-dock-bar=""
-              className={docked ? 'fixed inset-x-0 top-20 z-30 bg-white backdrop-blur-sm shadow-sm border-b border-gray-100 px-4 py-2 animate-in fade-in duration-150 motion-reduce:animate-none' : ''}
-            >
-              <div className={docked && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
-                <div
-                  data-preview-box=""
-                  className={`relative w-full shrink-0 ${
-                    // Docked: 165 px wide (220 tall at 3:4). The stage's badge, drag
-                    // hint and caption would crowd it, so the mobile box hides them
-                    // (never through the stage shared with desktop), and the canvas
-                    // takes every touch so a drag turns the garment, not the page.
-                    docked
-                      ? `max-w-[165px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden [&_[data-stage-caption]]:!hidden [&_canvas]:![touch-action:none] ${hasEnlargeRows ? '' : 'mx-auto'}`
-                      : 'mx-auto max-w-sm'
-                  }`}
-                >
+            <div data-dock-bar="">
+              <div data-dock-row="" data-has-rows={hasEnlargeRows ? '' : undefined}>
+                <div data-preview-box="" className="relative w-full shrink-0 mx-auto max-w-sm">
                   {previewElement}
-                  {!docked && designs.length > 0 && (
-                    <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {designs.length > 0 && (
+                    <span data-dock-hide="" className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                       ✓ {designs.length} אזורים
                     </span>
                   )}
                 </div>
                 {hasEnlargeRows && (
-                  <div className={docked ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
+                  <div data-rows-wrap="" className="mx-auto mt-3 max-w-sm">{enlargeRows}</div>
                 )}
               </div>
             </div>
