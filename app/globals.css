@@ -326,7 +326,10 @@
 [data-mobile-preview] [data-preview-box] {
   transform-origin: 0 0;
 }
-[data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-dock-bar]::before {
+/* Not gated on data-measuring: the re-measure pass would destroy and recreate
+   the pseudo-element and restart its fade; absolutely positioned, it has no
+   effect on the measured layout. */
+[data-mobile-preview][data-docked="true"] [data-dock-bar]::before {
   content: '';
   position: absolute;
   inset: 0;

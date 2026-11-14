@@ -128,8 +128,10 @@ export function useDockedPreview(
       const next = dockedRef.current ? bottom <= dockAt + undockGap : bottom < dockAt
       if (next !== dockedRef.current) {
         const box = boxRef?.current
-        if (flip && box && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
-          flipFrom.current = box.getBoundingClientRect()
+        // Set on EVERY state change: a zoom-free change (resize) that lands in the
+        // same commit as a scroll flip must not leave that flip's rect behind.
+        flipFrom.current =
+          flip && box && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? box.getBoundingClientRect() : null
         dockedRef.current = next
         setDocked(next)
       }
