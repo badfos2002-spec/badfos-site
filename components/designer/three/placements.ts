@@ -77,8 +77,8 @@ const TSHIRT_AREAS: Record<string, Placement> = {
   shoulder_left: { position: [0.73, 0.36, -0.07], rotation: [0, Math.PI / 2, -ROLL_TSHIRT], size: 0.16, depth: 0.22 },
 };
 const TSHIRT_GUIDES: Record<string, GuideBox> = {
-  front_full: { w: 0.62, h: 0.68, label: 'קדמי מלא' },
-  back: { w: 0.72, h: 0.92, label: 'גב' },
+  front_full: { w: 0.54, h: 0.6, label: 'קדמי מלא' },
+  back: { w: 0.6, h: 0.78, label: 'גב' },
   chest_logo: { w: 0.17, h: 0.17, label: 'סמל ימין' },
   chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
   chest_logo_center: { w: 0.17, h: 0.17, label: 'סמל אמצעי' },
