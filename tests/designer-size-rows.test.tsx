@@ -520,6 +520,14 @@ describe('the docked CSS — TICKET-012 size and animation', () => {
     expect(r[0].body).toMatch(/animation:\s*dock-enter\s+220ms\s+cubic-bezier\(\.2,\s*\.8,\s*\.2,\s*1\)\s+120ms\s+both/)
   })
 
+  it('docked, the placeholder\'s leftover slot blends into the page: transparent background, no layout change, not while measuring', async () => {
+    const css = await load()
+    const r = rules(css, '[data-mobile-preview]').filter(r => /background(-color)?:\s*transparent/.test(r.body))
+    expect(r).toHaveLength(1)
+    expect(r[0].sel.replace(/\/\*[\s\S]*?\*\//g, '').trim()).toBe('[data-mobile-preview][data-docked="true"]:not([data-measuring])')
+    expect(r[0].body.replace(/\/\*[\s\S]*?\*\//g, '').trim()).toMatch(/^background-color:\s*transparent;?$/)
+  })
+
   it('reduced motion: no dock or undock animation', async () => {
     const css = await load()
     const rm = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?\}\s*)\}/)
