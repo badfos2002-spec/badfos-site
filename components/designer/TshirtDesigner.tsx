@@ -14,9 +14,9 @@ import DesignStep from './DesignStep'
 import SizeQuantityStep from './SizeQuantityStep'
 import PriceSummary from './PriceSummary'
 import EnlargeRows, { DESKTOP_PREVIEW_WITH_ROWS } from './EnlargeRows'
+import BackToSketchButton from './BackToSketchButton'
 import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { useCart } from '@/hooks/useCart'
-import { useCompactOnScroll } from '@/hooks/useCompactOnScroll'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
@@ -170,7 +170,9 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   // HEIC-convert / reduce window, so the step reports it up.
   const [designUploading, setDesignUploading] = useState(false)
   const [previewView, setPreviewView] = useState<'front' | 'back'>('front')
-  const compact = useCompactOnScroll()
+  // TICKET-011: the floating «לסקיצה» button watches these two mobile blocks.
+  const mobilePreviewRef = useRef<HTMLDivElement>(null)
+  const mobileNavRef = useRef<HTMLDivElement>(null)
 
   const [config, setConfig] = useState<Partial<ProductConfig>>(() =>
     editingItem
@@ -584,39 +586,21 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip [overflow-anchor:none]">
-          {/* 3D preview always on top on mobile — it is the focus. Sticky
-              under the site header (h-20), with the size rows under it. */}
-          <div
-            data-compact={compact ? 'true' : 'false'}
-            className={`sticky top-20 z-30 bg-white/95 backdrop-blur-sm pt-2 ${compact ? 'pb-2' : 'pb-4'} border-b border-gray-100 -mx-4 px-4 shadow-sm`}
-          >
-            {/* Compact (scrolled): the preview shrinks to 180 px tall and the size
-                rows move beside it, so the block stays ~200 px and both stay in
-                reach. Same element tree in both states — only classes change —
-                so the 3D canvas is never remounted. */}
-            <div className={compact && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
-              <div
-                data-preview-box=""
-                className={`relative w-full shrink-0 transition-[max-width] duration-200 motion-reduce:transition-none ${
-                  // Compact: the stage's 64 px «360°» badge and its drag hint would
-                  // cover a 135 px canvas, so both are hidden here — on the mobile
-                  // box only, never through the stage shared with desktop.
-                  compact ? `max-w-[135px] [&_[data-stage-badge]]:!hidden [&_[data-stage-hint]]:!hidden ${hasEnlargeRows ? '' : 'mx-auto'}` : 'mx-auto max-w-sm'
-                }`}
-              >
-                {mockupElement}
-                {!compact && config.designs && config.designs.length > 0 && (
-                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    ✓ {config.designs.length} עיצובים
-                  </span>
-                )}
-              </div>
-              {!compact && <ViewTabs />}
-              {hasEnlargeRows && (
-                <div className={compact ? 'min-w-0 flex-1' : 'mx-auto mt-3 max-w-sm'}>{enlargeRows}</div>
+        <div className="lg:hidden space-y-6 pb-8 overflow-x-clip">
+          {/* 3D preview always on top on mobile — it is the focus. Not sticky
+              (TICKET-011); the size rows sit under it and the floating
+              «לסקיצה» button leads back here (scroll-mt-20 = under the header). */}
+          <div ref={mobilePreviewRef} data-mobile-preview="" className="scroll-mt-20 bg-white/95 pt-2 pb-4 -mx-4 px-4">
+            <div data-preview-box="" className="relative mx-auto w-full max-w-sm">
+              {mockupElement}
+              {config.designs && config.designs.length > 0 && (
+                <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  ✓ {config.designs.length} עיצובים
+                </span>
               )}
             </div>
+            <ViewTabs />
+            {hasEnlargeRows && <div className="mx-auto mt-3 max-w-sm">{enlargeRows}</div>}
           </div>
 
           {/* Step content card */}
@@ -634,9 +618,11 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
           <PriceSummary config={config as ProductConfig} />
 
           {/* Mobile bottom nav */}
-          <div className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border relative z-20">
+          <div ref={mobileNavRef} className="bg-white border-t border-gray-200 p-4 shadow-sm flex justify-between items-center gap-3 rounded-lg border relative z-20">
             <NavButtons fullWidth />
           </div>
+
+          <BackToSketchButton targetRef={mobilePreviewRef} avoidRef={mobileNavRef} hidden={currentStep === totalSteps} />
         </div>
 
         {/* ── DESKTOP LAYOUT ── */}
