@@ -263,7 +263,7 @@ describe('Docked compact preview (mobile)', () => {
   })
   afterEach(() => vi.restoreAllMocks())
 
-  it('t-shirt step 3: docks past the header with the rows beside; undocks only past 300', async () => {
+  it('t-shirt step 3: docks under 280 with the rows beside; undocks only past 480', async () => {
     seedTshirtSession([D('front_full', 'קידמי מלא')])
     render(<TshirtDesigner use3DPreview />)
     await placeholderAt(400)
@@ -275,9 +275,9 @@ describe('Docked compact preview (mobile)', () => {
     expectDocked(true)
     expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
     const stageBefore = mobileBlock()!.querySelector('[data-testid="stage"]')
-    await placeholderAt(290)
+    await placeholderAt(470)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('true')
-    await placeholderAt(320)
+    await placeholderAt(490)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
     expect(mobileBlock()!.style.height).toBe('')
     expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
@@ -339,7 +339,7 @@ describe('Docked compact preview (mobile)', () => {
     await placeholderAt(40)
     expectDocked(false)
     expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
-    await placeholderAt(400)
+    await placeholderAt(500)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
     expect(mobileBlock()!.getAttribute('data-has-docked')).toBe('true')
   })
@@ -367,6 +367,68 @@ describe('Docked compact preview (mobile)', () => {
     await waitFor(() => expect(allRows()).toHaveLength(0))
     await placeholderAt(20)
     expect(mobileBlock()!.getAttribute('data-docked')).toBe('false')
+  })
+})
+
+// TICKET-013: both designers hand the preview box to the hook, which zooms it
+// (FLIP via the Web Animations API) between the big and the docked rect.
+describe('Docked preview — FLIP zoom of the box (both designers)', () => {
+  const BIG = { left: 16, top: -260, width: 358, height: 477.33 }
+  const SMALL = { left: 105, top: 88, width: 180, height: 240 }
+  let animate: ReturnType<typeof vi.fn>
+  beforeEach(() => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => { cb(0); return 1 })
+    animate = vi.fn(() => ({ cancel() {} }) as unknown as Animation)
+    ;(HTMLElement.prototype as unknown as { animate: unknown }).animate = animate
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete (HTMLElement.prototype as unknown as { animate?: unknown }).animate
+  })
+  /** The box's rect follows the placeholder's committed data-docked. */
+  function fakeBox() {
+    const box = mobileBlock()!.querySelector<HTMLElement>('[data-preview-box]')!
+    box.getBoundingClientRect = () => {
+      const r = mobileBlock()!.getAttribute('data-docked') === 'true' ? SMALL : BIG
+      return { ...r, right: r.left + r.width, bottom: r.top + r.height, x: r.left, y: r.top, toJSON() {} } as DOMRect
+    }
+    return box
+  }
+  const expectZoom = (call: unknown[], from: typeof BIG, to: typeof BIG) => {
+    const [frames, opts] = call as [Keyframe[], KeyframeAnimationOptions]
+    const m = String(frames[0].transform).match(/^translate\((-?[\d.]+)px, (-?[\d.]+)px\) scale\((-?[\d.]+), (-?[\d.]+)\)$/)
+    expect(m).not.toBeNull()
+    expect(Number(m![1])).toBeCloseTo(from.left - to.left)
+    expect(Number(m![2])).toBeCloseTo(from.top - to.top)
+    expect(Number(m![3])).toBeCloseTo(from.width / to.width, 3)
+    expect(frames[frames.length - 1].transform).toBe('none')
+    expect(opts.duration).toBe(320)
+  }
+
+  it('t-shirt: dock zooms the box from the big rect into the bar, undock zooms it back', async () => {
+    seedTshirtSession([D('front_full', 'קידמי מלא')])
+    render(<TshirtDesigner use3DPreview />)
+    await placeholderAt(400)
+    const box = fakeBox()
+    await placeholderAt(270)
+    expect(mobileBlock()!.getAttribute('data-docked')).toBe('true')
+    expect(animate).toHaveBeenCalledTimes(1)
+    expect(animate.mock.contexts[0]).toBe(box)
+    expectZoom(animate.mock.calls[0], BIG, SMALL)
+    await placeholderAt(490)
+    expect(animate).toHaveBeenCalledTimes(2)
+    expect(animate.mock.contexts[1]).toBe(box)
+    expectZoom(animate.mock.calls[1], SMALL, BIG)
+  })
+
+  it('sweatshirt: the same zoom on the box', async () => {
+    render(<SweatshirtDesignerPage />)
+    await placeholderAt(400)
+    const box = fakeBox()
+    await placeholderAt(270)
+    expect(animate).toHaveBeenCalledTimes(1)
+    expect(animate.mock.contexts[0]).toBe(box)
+    expectZoom(animate.mock.calls[0], BIG, SMALL)
   })
 })
 
@@ -421,51 +483,49 @@ describe('the docked CSS — TICKET-012 size and animation', () => {
     expect(media![1]).toMatch(/max-width:\s*180px/)
   })
 
-  it('dock: the bar slides down 12 px and fades in, the box settles from 1.06 — not keyed on data-measuring', async () => {
+  // TICKET-013: the box's zoom is a FLIP in JS (useDockedPreview); the 012
+  // box keyframes would fight its transform, so they are gone.
+  it('no CSS box keyframes any more: dock-box-settle and undock-arrive are gone', async () => {
     const css = await load()
-    const kf = keyframes(css)
-    const bar = rules(css, '[data-mobile-preview][data-docked="true"] [data-dock-bar]').find(r => /animation:/.test(r.body))!
-    expect(bar).toBeDefined()
-    expect(bar.sel).not.toContain('data-measuring')
-    expect(bar.body).toMatch(/220ms/)
-    expect(bar.body).toMatch(/cubic-bezier\(\s*\.2,\s*\.8,\s*\.2,\s*1\s*\)/)
-    const barKf = kf[animName(bar.body)!]
-    expect(barKf).toMatch(/translateY\(-12px\)/)
-    expect(barKf).toMatch(/opacity:\s*0\b/)
-    const box = rules(css, '[data-mobile-preview][data-docked="true"] [data-preview-box]').find(r => /animation:/.test(r.body))!
-    expect(box).toBeDefined()
-    expect(box.sel).not.toContain('data-measuring')
-    expect(box.body).toMatch(/220ms/)
-    expect(kf[animName(box.body)!]).toMatch(/scale\(1\.06\)/)
+    expect(css).not.toContain('dock-box-settle')
+    expect(css).not.toContain('undock-arrive')
+    for (const r of rules(css, '[data-preview-box]')) expect(r.body).not.toMatch(/animation:\s*(?!none)[\w-]/)
   })
 
-  it('undock: the expanded box arrives from .97 / .6, only once it has docked', async () => {
+  it('the box scales from its top-left corner in BOTH states (transform-origin: 0 0, not docked-gated)', async () => {
+    const css = await load()
+    const r = rules(css, '[data-preview-box]').find(r => /transform-origin:\s*0\s+0/.test(r.body))
+    expect(r).toBeDefined()
+    expect(r!.sel).toBe('[data-mobile-preview] [data-preview-box]')
+  })
+
+  it('dock fade is opacity only (no translate) and never fades the flying box: the bar chrome and the rows fade', async () => {
     const css = await load()
     const kf = keyframes(css)
-    const back = rules(css, '[data-has-docked="true"][data-docked="false"] [data-preview-box]').find(r => /animation:/.test(r.body))!
-    expect(back).toBeDefined()
-    expect(back.body).toMatch(/200ms/)
-    const k = kf[animName(back.body)!]
-    expect(k).toMatch(/scale\(0?\.97\)/)
-    expect(k).toMatch(/opacity:\s*0?\.6\b/)
-    // Never on first paint: no box animation for a block that has not docked.
-    for (const r of rules(css, '[data-preview-box]').filter(r => /animation:\s*[\w-]/.test(r.body) && !/animation:\s*none/.test(r.body)))
-      expect(r.sel).toMatch(/data-docked="true"|data-has-docked="true"/)
+    expect(kf['dock-enter']).toBeDefined()
+    expect(kf['dock-enter']).toMatch(/opacity:\s*0\b/)
+    expect(kf['dock-enter']).not.toMatch(/transform|translate/)
+    const animated = Array.from(css.matchAll(/([^{}]+)\{([^{}]*)\}/g)).filter(m => /animation:\s*dock-enter/.test(m[2])).map(m => m[1].trim())
+    // The box lives inside the bar: opacity on the bar itself would fade the box too.
+    expect(animated.some(sel => sel.endsWith('[data-dock-bar]'))).toBe(false)
+    expect(animated.some(sel => sel.endsWith('[data-dock-bar]::before'))).toBe(true)
+    expect(animated.some(sel => sel.endsWith('[data-rows-wrap]'))).toBe(true)
+    for (const sel of animated) expect(sel).not.toContain('data-measuring')
   })
 
   it('reduced motion: no dock or undock animation', async () => {
     const css = await load()
     const rm = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?\}\s*)\}/)
     expect(rm).not.toBeNull()
-    expect(rm![1]).toContain('[data-dock-bar]')
-    expect(rm![1]).toContain('[data-preview-box]')
+    expect(rm![1]).toContain('[data-dock-bar]::before')
+    expect(rm![1]).toContain('[data-rows-wrap]')
     expect(rm![1]).toMatch(/animation:\s*none/)
   })
 
   it('animations are transform/opacity only, and never on the placeholder itself', async () => {
     const css = await load()
     const kf = keyframes(css)
-    expect(Object.keys(kf).length).toBeGreaterThanOrEqual(3)
+    expect(Object.keys(kf).length).toBeGreaterThanOrEqual(1)
     for (const body of Object.values(kf)) {
       const props = Array.from(body.matchAll(/([\w-]+)\s*:/g)).map(m => m[1])
       for (const p of props) expect(['transform', 'opacity']).toContain(p)
@@ -475,7 +535,7 @@ describe('the docked CSS — TICKET-012 size and animation', () => {
     // Transforms sit on the bar and the box, never on the placeholder (an
     // ancestor of the fixed bar) — every animated rule targets one of those.
     for (const r of Array.from(css.matchAll(/([^{}]+)\{([^{}]*)\}/g)).filter(m => /animation:\s*[\w-]/.test(m[2]) && !/animation:\s*none/.test(m[2])))
-      expect(r[1].trim()).toMatch(/\[data-dock-bar\]$|\[data-preview-box\]$/)
+      expect(r[1].trim()).toMatch(/\[data-dock-bar\]::before$|\[data-rows-wrap\]$/)
   })
 })
 
