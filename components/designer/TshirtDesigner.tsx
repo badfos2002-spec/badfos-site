@@ -605,7 +605,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
           >
             <div
               data-dock-bar=""
-              className={docked ? 'fixed inset-x-0 top-20 z-30 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 px-4 py-2 animate-in fade-in duration-150 motion-reduce:animate-none' : ''}
+              className={docked ? 'fixed inset-x-0 top-20 z-30 bg-white backdrop-blur-sm shadow-sm border-b border-gray-100 px-4 py-2 animate-in fade-in duration-150 motion-reduce:animate-none' : ''}
             >
               <div className={docked && hasEnlargeRows ? 'flex items-center gap-3' : ''}>
                 <div
