@@ -87,7 +87,7 @@ export default function EnlargeControl({
           )
         })}
       </div>
-      <div className="mt-1 text-[11px] text-gray-500">{formatPrice(getLiveEnlargeStepPrice())} לכל צעד ליחידה</div>
+      <div className="mt-1 text-[11px] text-gray-500">{formatPrice(getLiveEnlargeStepPrice())} לכל הגדלה</div>
     </div>
   )
 }
