@@ -311,16 +311,37 @@
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   padding: 0.5rem 1rem;
 }
+/* TICKET-012: dock = the bar slides down from under the header and fades in
+   while the compact box settles; undock = the expanded box arrives (gated on
+   data-has-docked, so never on first paint). Transform/opacity ONLY, and only
+   on the bar and the box — a transform on the placeholder (an ancestor of the
+   fixed bar) would break position: fixed. */
 [data-mobile-preview][data-docked="true"] [data-dock-bar] {
-  animation: dock-fade 150ms ease-out;
+  animation: dock-enter 220ms cubic-bezier(.2,.8,.2,1);
 }
+[data-mobile-preview][data-docked="true"] [data-preview-box] {
+  animation: dock-box-settle 220ms cubic-bezier(.2,.8,.2,1);
+}
+[data-mobile-preview][data-has-docked="true"][data-docked="false"] [data-preview-box] {
+  animation: undock-arrive 200ms cubic-bezier(.2,.8,.2,1);
+}
+/* !important: the animated selectors above are more specific than these. */
 @media (prefers-reduced-motion: reduce) {
-  [data-mobile-preview][data-docked="true"] [data-dock-bar] { animation: none; }
+  [data-mobile-preview] [data-dock-bar],
+  [data-mobile-preview] [data-preview-box] { animation: none !important; }
 }
-@keyframes dock-fade { from { opacity: 0; } to { opacity: 1; } }
-/* 165 px wide → 165×220 at the stage's 3:4; centred unless the rows sit beside it. */
+@keyframes dock-enter { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes dock-box-settle { from { transform: scale(1.06); } to { transform: scale(1); } }
+@keyframes undock-arrive { from { opacity: .6; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+/* 165 px wide → 165×220 at the stage's 3:4; centred unless the rows sit beside it.
+   From 390 px wide 180×240 (TICKET-012) — the rows beside it still get 166 px. */
 [data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-preview-box] {
   max-width: 165px;
+}
+@media (min-width: 390px) {
+  [data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-preview-box] {
+    max-width: 180px;
+  }
 }
 [data-mobile-preview][data-docked="true"]:not([data-measuring]) [data-dock-row][data-has-rows] {
   display: flex;

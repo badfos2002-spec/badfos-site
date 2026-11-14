@@ -23,6 +23,9 @@ const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : use
  * under 80, undock over 300) is larger than any rows change (~193 px), so a
  * re-measured shrink can never re-trigger docking.
  *
+ * `hasDocked` turns true on the first dock and stays (TICKET-012): the CSS
+ * return animation is gated on it, so it never runs on first paint.
+ *
  * Passive listeners, one read per animation frame, SSR-safe, removed on unmount.
  */
 export function useDockedPreview(
@@ -33,9 +36,10 @@ export function useDockedPreview(
     headerBottom = 80,
     undockGap = 220,
   }: { enabled?: boolean; measureKey?: string; headerBottom?: number; undockGap?: number } = {}
-): { docked: boolean; height: number | undefined } {
+): { docked: boolean; height: number | undefined; hasDocked: boolean } {
   const [docked, setDocked] = useState(false)
   const [height, setHeight] = useState<number | undefined>(undefined)
+  const [hasDocked, setHasDocked] = useState(false)
   const dockedRef = useRef(false)
 
   /** Read the expanded height while docked, without a painted frame in between. */
@@ -78,6 +82,7 @@ export function useDockedPreview(
       if (next !== dockedRef.current) {
         dockedRef.current = next
         setDocked(next)
+        if (next) setHasDocked(true)
       }
     }
     const onScroll = () => {
@@ -99,5 +104,5 @@ export function useDockedPreview(
     }
   }, [placeholderRef, enabled, headerBottom, undockGap, remeasure])
 
-  return { docked, height }
+  return { docked, height, hasDocked }
 }

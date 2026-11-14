@@ -368,7 +368,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const hasEnlargeRows = currentStep === 3 && (config.designs || []).some(d => canEnlarge(config.productType, d.area))
   // No docking on the last step (sizes & quantities) — the preview just scrolls away.
   // measureKey: what changes the EXPANDED preview's height (rows, chip/tabs, step).
-  const { docked, height: dockHeight } = useDockedPreview(mobilePreviewRef, {
+  const { docked, height: dockHeight, hasDocked } = useDockedPreview(mobilePreviewRef, {
     enabled: currentStep !== totalSteps,
     measureKey: `${currentStep}|${currentStep === 3 ? (config.designs || []).filter(d => canEnlarge(config.productType, d.area)).length : 0}|${(config.designs || []).length > 0}`,
   })
@@ -605,6 +605,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
             ref={mobilePreviewRef}
             data-mobile-preview=""
             data-docked={docked ? 'true' : 'false'}
+            data-has-docked={hasDocked ? 'true' : undefined}
             className="bg-white/95 pt-2 pb-4 -mx-4 px-4"
             style={docked && dockHeight ? { height: dockHeight } : undefined}
           >
