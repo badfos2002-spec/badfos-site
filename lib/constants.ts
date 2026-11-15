@@ -644,6 +644,12 @@ export const BUSINESS_ADDRESS = {
   full: 'אליהו איתן 3, בית גירון, קומה 3, ראשון לציון', // שורת תצוגה
 } as const
 
+// שעות פעילות — מקור אמת יחיד ל-JSON-LD, לדף צור קשר ולתג "פתוח עכשיו". ימים: 0=ראשון … 6=שבת (שבת חסרה = סגור)
+export const BUSINESS_HOURS = [
+  { days: [0, 1, 2, 3, 4], label: 'ראשון–חמישי', open: '09:00', close: '21:00' },
+  { days: [5], label: 'שישי', open: '09:00', close: '14:00' },
+] as const
+
 export const CONTACT_INFO = {
   phone: '055-988-5954',
   whatsapp: '972559885954',
