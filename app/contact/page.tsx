@@ -5,6 +5,7 @@ import { Phone, Mail, MessageCircle, Instagram, Send, MapPin } from 'lucide-reac
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CONTACT_INFO } from '@/lib/constants'
+import { isOpenNow, hoursLines } from '@/lib/business-hours'
 import { createLead } from '@/lib/db'
 import { sendLeadWebhook, trackWhatsAppClick, trackPhoneClick, getGclid } from '@/lib/tracking'
 
@@ -19,7 +20,13 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const lastSubmitRef = useRef(0)
-  const [businessInfo, setBusinessInfo] = useState<{ address: string; phone: string; isOpenNow: boolean; openingHours: { day: number; open: string; close: string }[] } | null>(null)
+  const [businessInfo, setBusinessInfo] = useState<{ address: string; phone: string } | null>(null)
+  // מחושב בצד הלקוח אחרי הטעינה — כדי לא ליצור אי-התאמה בהידרציה
+  const [openNow, setOpenNow] = useState(false)
+
+  useEffect(() => {
+    setOpenNow(isOpenNow())
+  }, [])
 
   useEffect(() => {
     fetch('/api/google-business')
@@ -29,8 +36,6 @@ export default function ContactPage() {
           setBusinessInfo({
             address: data.address,
             phone: data.phone,
-            isOpenNow: data.isOpenNow,
-            openingHours: data.openingHours,
           })
         }
       })
@@ -311,32 +316,15 @@ export default function ContactPage() {
             <div className="bg-gradient-to-br from-teal-600 to-cyan-600 rounded-2xl p-8 text-white shadow-xl mt-8">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xl font-bold">שעות פעילות</h3>
-                {businessInfo && (
-                  <span className={`text-xs px-3 py-1 rounded-full ${businessInfo.isOpenNow ? 'bg-green-500' : 'bg-red-400'}`}>
-                    {businessInfo.isOpenNow ? 'פתוח עכשיו' : 'סגור'}
-                  </span>
-                )}
+                <span className={`text-xs px-3 py-1 rounded-full ${openNow ? 'bg-green-500' : 'bg-red-400'}`}>
+                  {openNow ? 'פתוח עכשיו' : 'סגור'}
+                </span>
               </div>
-              {businessInfo?.openingHours && businessInfo.openingHours.length > 0 ? (
-                <div className="space-y-1 mb-4">
-                  {(() => {
-                    const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
-                    const seen = new Set<number>()
-                    return businessInfo.openingHours
-                      .filter(h => { if (seen.has(h.day)) return false; seen.add(h.day); return true })
-                      .sort((a, b) => a.day - b.day)
-                      .map(h => (
-                        <p key={h.day} className="text-sm">
-                          {dayNames[h.day]}: {h.open}–{h.close}
-                        </p>
-                      ))
-                  })()}
-                </div>
-              ) : (
-                <p className="mb-4">
-                  ראשון-חמישי: 9:00-23:00
-                </p>
-              )}
+              <div className="space-y-1 mb-4">
+                {hoursLines().map(line => (
+                  <p key={line} className="text-sm">{line}</p>
+                ))}
+              </div>
               <p className="text-sm opacity-90">
                 זמן מענה ממוצע: תוך 24 שעות
               </p>

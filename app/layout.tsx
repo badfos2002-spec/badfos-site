@@ -5,6 +5,7 @@ import './globals.css'
 import TrackingScripts from '@/components/common/TrackingScripts'
 import PricingLoader from '@/components/common/PricingLoader'
 import { getBasePrice, BUSINESS_LEGAL, BUSINESS_ADDRESS } from '@/lib/constants'
+import { openingHoursSpecification } from '@/lib/business-hours'
 
 const rubik = Rubik({
   subsets: ['hebrew', 'latin'],
@@ -239,11 +240,7 @@ export default function RootLayout({
                   },
                 })),
               },
-              openingHoursSpecification: [
-                { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'], opens: '09:00', closes: '23:00' },
-                { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Friday'], opens: '09:00', closes: '14:00' },
-                { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '00:00', closes: '00:00' },
-              ],
+              openingHoursSpecification: openingHoursSpecification(),
               sameAs: [
                 'https://www.instagram.com/badfos.co.il',
                 'https://www.facebook.com/profile.php?id=61575195215091',

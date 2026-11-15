@@ -4,7 +4,7 @@ import { BUSINESS_LEGAL, BUSINESS_ADDRESS } from '@/lib/constants'
 export const metadata: Metadata = {
   alternates: { canonical: '/contact' },
   title: 'יצירת קשר | בדפוס',
-  description: 'צרו קשר עם בדפוס - טלפון, וואטסאפ, אימייל. שעות פעילות ראשון-חמישי 9:00-23:00. מענה מהיר תוך 24 שעות.',
+  description: 'צרו קשר עם בדפוס - טלפון, וואטסאפ, אימייל. שעות פעילות ראשון-חמישי 9:00-21:00. מענה מהיר תוך 24 שעות.',
   keywords: 'יצירת קשר בדפוס, טלפון בדפוס, וואטסאפ בדפוס, כתובת בדפוס',
   openGraph: {
     title: 'יצירת קשר | בדפוס',
