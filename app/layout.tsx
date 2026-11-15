@@ -4,7 +4,7 @@ import { Rubik, Secular_One } from 'next/font/google'
 import './globals.css'
 import TrackingScripts from '@/components/common/TrackingScripts'
 import PricingLoader from '@/components/common/PricingLoader'
-import { getBasePrice, BUSINESS_LEGAL } from '@/lib/constants'
+import { getBasePrice, BUSINESS_LEGAL, BUSINESS_ADDRESS } from '@/lib/constants'
 
 const rubik = Rubik({
   subsets: ['hebrew', 'latin'],
@@ -202,15 +202,15 @@ export default function RootLayout({
               email: 'badfos2002@gmail.com',
               address: {
                 '@type': 'PostalAddress',
-                streetAddress: 'דובנוב 10',
-                addressLocality: 'ראשון לציון',
-                postalCode: '7520501',
+                streetAddress: BUSINESS_ADDRESS.streetLine,
+                addressLocality: BUSINESS_ADDRESS.city,
+                postalCode: BUSINESS_ADDRESS.postalCode,
                 addressCountry: 'IL',
               },
               geo: {
                 '@type': 'GeoCoordinates',
-                latitude: 31.9635,
-                longitude: 34.8073,
+                latitude: BUSINESS_ADDRESS.lat,
+                longitude: BUSINESS_ADDRESS.lng,
               },
               hasMap: 'https://www.google.com/maps/place/?q=place_id:ChIJdWBwSp2984gRNGbFgb-Kykc',
               areaServed: ['ראשון לציון', 'נס ציונה', 'רחובות', 'באר יעקב'],

@@ -4,6 +4,7 @@
 import Link from 'next/link'
 import { ArrowLeft, ChevronLeft } from 'lucide-react'
 import { getSeoPage } from '@/lib/seo-pages'
+import { BUSINESS_ADDRESS } from '@/lib/constants'
 import WhatsAppCta from '@/components/seo/WhatsAppCta'
 import type { SeoLayoutProps } from './types'
 import {
@@ -81,7 +82,7 @@ export default function RishonLayout({ page, waUrl }: SeoLayoutProps) {
         bandClass="bg-[#fff6e6]"
         stats={[
           { value: 'חינם', label: 'איסוף עצמי בתיאום מראש' },
-          { value: 'דובנוב 10', label: 'ראשון לציון' },
+          { value: BUSINESS_ADDRESS.street, label: `${BUSINESS_ADDRESS.building}, ${BUSINESS_ADDRESS.floor} · ${BUSINESS_ADDRESS.city}` },
           { value: 'לכל הארץ', label: 'משלוח עד הבית' },
         ]}
         valueClass="text-[#b45309]"

@@ -1,7 +1,7 @@
 'use client'
 
 import { LOGO_DATA_URL } from './logoData'
-import { BUSINESS_LEGAL } from '@/lib/constants'
+import { BUSINESS_LEGAL, BUSINESS_ADDRESS, CONTACT_INFO } from '@/lib/constants'
 
 export interface QuotePrintData {
   quoteNumber: number | null
@@ -71,7 +71,7 @@ export default function QuotePrintSheet({ quote }: { quote: QuotePrintData }) {
               <div className="text-3xl font-extrabold text-gray-900 leading-tight">בדפוס</div>
               <div className="text-sm font-medium text-amber-600">הדפסת חולצות ומוצרי טקסטיל</div>
               <div className="text-xs text-gray-500 mt-1 leading-relaxed">
-                דובנוב 10, ראשון לציון · 055-9885954
+                {CONTACT_INFO.address} · 055-9885954
                 <br />
                 badfos2002@gmail.com · badfos.co.il
                 <br />
@@ -177,7 +177,7 @@ export default function QuotePrintSheet({ quote }: { quote: QuotePrintData }) {
               ההצעה בתוקף עד {fmtDate(quote.validUntil)} · תודה שבחרתם בבדפוס! 🙏
             </div>
             <div className="text-xs text-gray-400 mt-1">
-              בדפוס · דובנוב 10, ראשון לציון · 055-9885954 · badfos.co.il
+              בדפוס · {BUSINESS_ADDRESS.street}, {BUSINESS_ADDRESS.city} · 055-9885954 · badfos.co.il
             </div>
           </div>
         </div>

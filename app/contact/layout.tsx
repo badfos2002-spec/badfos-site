@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { BUSINESS_LEGAL } from '@/lib/constants'
+import { BUSINESS_LEGAL, BUSINESS_ADDRESS } from '@/lib/constants'
 
 export const metadata: Metadata = {
   alternates: { canonical: '/contact' },
@@ -49,9 +49,9 @@ export default function ContactLayout({ children }: { children: React.ReactNode 
               },
               address: {
                 '@type': 'PostalAddress',
-                streetAddress: 'דובנוב 10',
-                addressLocality: 'ראשון לציון',
-                postalCode: '7520501',
+                streetAddress: BUSINESS_ADDRESS.streetLine,
+                addressLocality: BUSINESS_ADDRESS.city,
+                postalCode: BUSINESS_ADDRESS.postalCode,
                 addressCountry: 'IL',
               },
             },

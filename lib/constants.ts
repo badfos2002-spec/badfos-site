@@ -632,6 +632,18 @@ export const UPLOAD_CONSTRAINTS = {
 // Contact Information
 // ============================================================================
 
+export const BUSINESS_ADDRESS = {
+  street: 'אליהו איתן 3',
+  building: 'בית גירון',
+  floor: 'קומה 3',
+  city: 'ראשון לציון',
+  postalCode: '7565040', // לפי OpenStreetMap, לא אומת מול דואר ישראל
+  lat: 31.9944,
+  lng: 34.7656,
+  streetLine: 'אליהו איתן 3, בית גירון, קומה 3', // streetAddress ב-JSON-LD
+  full: 'אליהו איתן 3, בית גירון, קומה 3, ראשון לציון', // שורת תצוגה
+} as const
+
 export const CONTACT_INFO = {
   phone: '055-988-5954',
   whatsapp: '972559885954',
@@ -639,7 +651,7 @@ export const CONTACT_INFO = {
   instagram: 'https://www.instagram.com/badfos.co.il',
   facebook: 'https://www.facebook.com/profile.php?id=61575195215091',
   tiktok: 'https://www.tiktok.com/@badfos',
-  address: 'דובנוב 10, ראשון לציון',
+  address: BUSINESS_ADDRESS.full,
 } as const
 
 // פרטי העסק הרשמיים (עוסק מורשה מ-01.11.2026) — מקור אמת יחיד לתקנון, פרטיות, הצעות מחיר, פוטר ומיילים
