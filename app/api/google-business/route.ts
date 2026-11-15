@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { CONTACT_INFO } from '@/lib/constants'
 
 // Dynamic so a fixed key/outage recovers without redeploy; success is cached (memory + CDN), fallback only 60s
 export const dynamic = 'force-dynamic'
@@ -63,7 +64,7 @@ export async function GET() {
       // Return empty fallback instead of 502 — prevents console errors
       return NextResponse.json({
         name: 'בדפוס הדפסת חולצות',
-        address: 'דובנוב 10, ראשון לציון',
+        address: CONTACT_INFO.address,
         phone: '055-988-5954',
         rating: null,
         reviewCount: 0,
@@ -82,7 +83,7 @@ export async function GET() {
 
     const data = {
       name: raw.displayName?.text || 'בדפוס הדפסת חולצות',
-      address: raw.formattedAddress || '',
+      address: CONTACT_INFO.address,
       phone: raw.nationalPhoneNumber || '',
       rating: raw.rating ?? null,
       reviewCount: raw.userRatingCount || 0,
