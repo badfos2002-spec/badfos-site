@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { render, screen } from '@testing-library/react'
+import { render, screen, cleanup } from '@testing-library/react'
 import { BUSINESS_HOURS } from '@/lib/constants'
 import { isOpenNow, hoursLines, openingHoursSpecification } from '@/lib/business-hours'
 
@@ -62,7 +62,8 @@ describe('isOpenNow evaluates in Asia/Jerusalem', () => {
 
 describe('hoursLines', () => {
   it('returns exactly the three display lines', () => {
-    expect(hoursLines()).toEqual(['ראשון–חמישי: 9:00–21:00', 'שישי: 9:00–14:00', 'שבת: סגור'])
+    // hyphen-minus between the times: a European separator keeps 9:00-21:00 one LTR run in an RTL line
+    expect(hoursLines()).toEqual(['ראשון–חמישי: 9:00-21:00', 'שישי: 9:00-14:00', 'שבת: סגור'])
   })
 })
 
@@ -131,15 +132,35 @@ vi.mock('@/lib/tracking', () => ({
 
 describe('contact page hours card', () => {
   afterEach(() => {
+    cleanup()
     vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+  it('server render (before mount) shows the hours but no open/closed badge', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))))
+    const { renderToString } = await import('react-dom/server')
+    const { default: ContactPage } = await import('@/app/contact/page')
+    const html = renderToString(<ContactPage />)
+    expect(html).toContain('ראשון–חמישי: 9:00-21:00')
+    expect(html).not.toContain('פתוח עכשיו')
+    expect(html).not.toMatch(/>סגור</)
+  })
+  it('after mount the badge says פתוח עכשיו inside opening hours (Sunday 12:00 Israel)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-15T10:00:00Z'))
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { default: ContactPage } = await import('@/app/contact/page')
+    render(<ContactPage />)
+    expect(await screen.findByText('פתוח עכשיו')).toBeInTheDocument()
   })
   it('always renders our hours, never 23:00', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))))
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { default: ContactPage } = await import('@/app/contact/page')
     const { container } = render(<ContactPage />)
-    expect(screen.getByText('ראשון–חמישי: 9:00–21:00')).toBeInTheDocument()
-    expect(screen.getByText('שישי: 9:00–14:00')).toBeInTheDocument()
+    expect(screen.getByText('ראשון–חמישי: 9:00-21:00')).toBeInTheDocument()
+    expect(screen.getByText('שישי: 9:00-14:00')).toBeInTheDocument()
     expect(screen.getByText('שבת: סגור')).toBeInTheDocument()
     expect(container.textContent).not.toContain('23:00')
     // badge is computed after mount from isOpenNow()

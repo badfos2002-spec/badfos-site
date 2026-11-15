@@ -22,10 +22,10 @@ export function isOpenNow(now: Date = new Date()): boolean {
 
 const displayTime = (t: string) => t.replace(/^0/, '')
 
-/** שורות התצוגה לדף צור קשר, למשל «ראשון–חמישי: 9:00–21:00» */
+/** שורות התצוגה לדף צור קשר, למשל «ראשון–חמישי: 9:00-21:00» — מקף רגיל בין השעות כדי שיישארו רצף LTR אחד בשורה RTL */
 export function hoursLines(): string[] {
   return [
-    ...BUSINESS_HOURS.map((h) => `${h.label}: ${displayTime(h.open)}–${displayTime(h.close)}`),
+    ...BUSINESS_HOURS.map((h) => `${h.label}: ${displayTime(h.open)}-${displayTime(h.close)}`),
     'שבת: סגור',
   ]
 }

@@ -21,8 +21,8 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
   const lastSubmitRef = useRef(0)
   const [businessInfo, setBusinessInfo] = useState<{ address: string; phone: string } | null>(null)
-  // מחושב בצד הלקוח אחרי הטעינה — כדי לא ליצור אי-התאמה בהידרציה
-  const [openNow, setOpenNow] = useState(false)
+  // מחושב בצד הלקוח אחרי הטעינה — כדי לא ליצור אי-התאמה בהידרציה; null = עדיין לא ידוע, בלי תג
+  const [openNow, setOpenNow] = useState<boolean | null>(null)
 
   useEffect(() => {
     setOpenNow(isOpenNow())
@@ -316,9 +316,11 @@ export default function ContactPage() {
             <div className="bg-gradient-to-br from-teal-600 to-cyan-600 rounded-2xl p-8 text-white shadow-xl mt-8">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xl font-bold">שעות פעילות</h3>
-                <span className={`text-xs px-3 py-1 rounded-full ${openNow ? 'bg-green-500' : 'bg-red-400'}`}>
-                  {openNow ? 'פתוח עכשיו' : 'סגור'}
-                </span>
+                {openNow !== null && (
+                  <span className={`text-xs px-3 py-1 rounded-full ${openNow ? 'bg-green-500' : 'bg-red-400'}`}>
+                    {openNow ? 'פתוח עכשיו' : 'סגור'}
+                  </span>
+                )}
               </div>
               <div className="space-y-1 mb-4">
                 {hoursLines().map(line => (
