@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { render, screen } from '@testing-library/react'
@@ -32,7 +32,7 @@ describe('no stale old address anywhere in the source', () => {
       if (SKIP.has(name)) continue
       const p = join(dir, name)
       if (statSync(p).isDirectory()) walk(p, out)
-      else if (/\.(ts|tsx)$/.test(name)) out.push(p)
+      else if (/\.(ts|tsx|md|mdx|js|json)$/.test(name)) out.push(p)
     }
     return out
   }
@@ -71,11 +71,16 @@ describe('JSON-LD uses BUSINESS_ADDRESS', () => {
 })
 
 describe('google-business API always returns our address', () => {
+  let prevKey: string | undefined
+  beforeEach(() => {
+    prevKey = process.env.GOOGLE_PLACES_API_KEY
+  })
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.resetModules()
     vi.restoreAllMocks()
-    delete process.env.GOOGLE_PLACES_API_KEY
+    if (prevKey === undefined) delete process.env.GOOGLE_PLACES_API_KEY
+    else process.env.GOOGLE_PLACES_API_KEY = prevKey
   })
 
   async function loadRoute() {

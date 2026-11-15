@@ -98,7 +98,7 @@ describe('no stale 23:00 closing time anywhere in the source', () => {
       if (SKIP.has(name)) continue
       const p = join(dir, name)
       if (statSync(p).isDirectory()) walk(p, out)
-      else if (/\.(ts|tsx|md)$/.test(name)) out.push(p)
+      else if (/\.(ts|tsx|md|mdx|js|json)$/.test(name)) out.push(p)
     }
     return out
   }
