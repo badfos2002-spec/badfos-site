@@ -1,6 +1,6 @@
 import { Order } from '../types'
 import { escapeHtml } from '../utils'
-import { BUSINESS_LEGAL } from '../constants'
+import { BUSINESS_LEGAL, CONTACT_INFO } from '../constants'
 
 const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.siteName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
 
@@ -193,7 +193,7 @@ export function OrderShippedEmail({
         <h3>איסוף עצמי</h3>
         <p style="margin: 5px 0; color: #1A1A2E;">
           ההזמנה שלך מוכנה לאיסוף מהכתובת שלנו:<br>
-          <strong>ראשון לציון</strong>
+          <strong>${escapeHtml(CONTACT_INFO.address)}</strong>
         </p>
         <p style="margin: 10px 0 0 0; font-size: 14px; color: #6B7280;">
           אנא התקשרו לתיאום מועד: 055-988-5954

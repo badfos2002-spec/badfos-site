@@ -1,6 +1,6 @@
 import { Order } from '../types'
 import { escapeHtml } from '../utils'
-import { getColorLabel, getTypeLabel, getProductLabel, BUSINESS_LEGAL } from '../constants'
+import { getColorLabel, getTypeLabel, getProductLabel, BUSINESS_LEGAL, CONTACT_INFO } from '../constants'
 
 const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.siteName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
 
@@ -184,6 +184,16 @@ export function OrderConfirmationEmail({
           <span class="info-label">${order.shipping.method === 'delivery' ? 'משלוח:' : 'איסוף עצמי:'}</span>
           <span class="info-value">${order.shipping.method === 'delivery' ? '₪35' : 'חינם'}</span>
         </div>
+        ${
+          order.shipping.method !== 'delivery'
+            ? `
+        <div class="info-row">
+          <span class="info-label">כתובת לאיסוף:</span>
+          <span class="info-value">${escapeHtml(CONTACT_INFO.address)}</span>
+        </div>
+        `
+            : ''
+        }
         ${
           order.shipping.express
             ? `
