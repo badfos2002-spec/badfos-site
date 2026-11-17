@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event'
 
 // TICKET-017, the designer end to end: כותנה → שרוול ארוך lands on step 2
 // (white/black only) in one tap, with no «יש לבחור סוג חולצה» alert in
-// between; long-sleeve has no 3D model yet, so the preview is the 2D mockup
-// (with its חזית/גב tabs) while cotton keeps the 3D stage.
+// between. TICKET-018 gave long-sleeve its own 3D model, so its design step
+// shows the 3D stage like cotton.
 
 vi.mock('next/dynamic', () => ({
   default: () => function StageStub() { return <div data-testid="stage" /> },
@@ -55,13 +55,15 @@ describe('TshirtDesigner — long-sleeve flow', () => {
     expect(screen.queryByRole('button', { name: 'נייבי' })).toBeNull()
   })
 
-  it('long-sleeve on the design step: 2D preview (no 3D stage) with front/back tabs and the sleeve areas', () => {
+  it('long-sleeve on the design step: the 3D stage (TICKET-018) and the cotton areas, no sleeve area', () => {
     seed(3, 'long-sleeve')
     render(<TshirtDesigner use3DPreview />)
-    expect(screen.queryAllByTestId('stage')).toHaveLength(0)
-    expect(screen.getAllByRole('button', { name: 'חזית' }).length).toBeGreaterThan(0)
-    expect(screen.getAllByText('שרוול ימין').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('שרוול שמאל').length).toBeGreaterThan(0)
+    expect(screen.getAllByTestId('stage').length).toBeGreaterThan(0)
+    expect(screen.queryByRole('button', { name: 'חזית' })).toBeNull()
+    expect(screen.getAllByText('כתף ימין').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('סמל אמצעי').length).toBeGreaterThan(0)
+    expect(screen.queryByText('שרוול ימין')).toBeNull()
+    expect(screen.queryByText('שרוול שמאל')).toBeNull()
   })
 
   it('cotton on the design step keeps the 3D stage and offers no sleeve area', () => {

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getSharedCart, SharedDesignData, createShareCoupon } from '@/lib/db'
-import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS, overlayStyle, tshirtMockupSrc } from '@/lib/mockup-data'
 import { getColorLabel, getColorHex, getModel3D, PRODUCT_CATEGORIES, FABRIC_TYPES } from '@/lib/constants'
 import { enlargeOverlayStyle, to3DDesigns } from '@/lib/enlarge'
 import { Button } from '@/components/ui/button'
@@ -27,16 +27,20 @@ function getFabricLabel(fabricType: string) {
   return FABRIC_TYPES.find(f => f.id === fabricType)?.name || fabricType
 }
 
-function Lightbox({ view, color, designs, onClose }: {
+function Lightbox({ view, color, designs, fabricType, onClose }: {
   view: 'front' | 'back'
   color: string
   designs: SharedDesignData['designs']
+  /** The long-sleeve tee has its own renders and boxes (TICKET-018). */
+  fabricType?: string
   onClose: () => void
 }) {
   const resolvedColor = colorFallback[color] || color
-  const mockupSrc = view === 'front'
-    ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
-    : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
+  const mockupSrc = fabricType === 'long-sleeve'
+    ? tshirtMockupSrc(color, view, fabricType)
+    : view === 'front'
+      ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
+      : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
 
   const viewDesigns = designs.filter(d => {
     const overlay = DESIGN_AREA_OVERLAYS[d.area]
@@ -79,7 +83,7 @@ function Lightbox({ view, color, designs, onClose }: {
               src={design.imageBase64}
               alt={design.areaName}
               className="absolute object-contain"
-              style={enlargeOverlayStyle(overlay.style, design.enlarge) as React.CSSProperties}
+              style={enlargeOverlayStyle(overlayStyle(design.area, fabricType) ?? overlay.style, design.enlarge) as React.CSSProperties}
             />
           )
         })}
@@ -88,16 +92,19 @@ function Lightbox({ view, color, designs, onClose }: {
   )
 }
 
-function MockupView({ view, color, designs, onClick }: {
+function MockupView({ view, color, designs, fabricType, onClick }: {
   view: 'front' | 'back'
   color: string
   designs: SharedDesignData['designs']
+  fabricType?: string
   onClick?: () => void
 }) {
   const resolvedColor = colorFallback[color] || color
-  const mockupSrc = view === 'front'
-    ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
-    : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
+  const mockupSrc = fabricType === 'long-sleeve'
+    ? tshirtMockupSrc(color, view, fabricType)
+    : view === 'front'
+      ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
+      : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
 
   const viewDesigns = designs.filter(d => {
     const overlay = DESIGN_AREA_OVERLAYS[d.area]
@@ -119,7 +126,7 @@ function MockupView({ view, color, designs, onClick }: {
             src={design.imageBase64}
             alt={design.areaName}
             className="absolute object-contain"
-            style={enlargeOverlayStyle(overlay.style, design.enlarge) as React.CSSProperties}
+            style={enlargeOverlayStyle(overlayStyle(design.area, fabricType) ?? overlay.style, design.enlarge) as React.CSSProperties}
           />
         )
       })}
@@ -127,7 +134,7 @@ function MockupView({ view, color, designs, onClick }: {
   )
 }
 
-function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMockup: (view: 'front' | 'back', color: string, designs: SharedDesignData['designs']) => void }) {
+function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMockup: (view: 'front' | 'back', color: string, designs: SharedDesignData['designs'], fabricType?: string) => void }) {
   const hasFront = item.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'front')
   const hasBack = item.designs.some(d => DESIGN_AREA_OVERLAYS[d.area]?.view === 'back')
   const colorLabel = getColorLabel(item.color, item.productType)
@@ -141,7 +148,7 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
       {/* Preview — 3D for products with a model, else the 2D mockup(s) */}
       <div className="p-5 sm:p-6">
         {m3d ? (
-          <ThreeErrorBoundary fallback={<MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />}>
+          <ThreeErrorBoundary fallback={<MockupView view="front" color={item.color} designs={item.designs} fabricType={item.fabricType} onClick={() => onClickMockup('front', item.color, item.designs, item.fabricType)} />}>
             <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
               <Preview3DStage
                 colorHex={getColorHex(item.color, item.productType)}
@@ -157,9 +164,9 @@ function DesignCard({ item, onClickMockup }: { item: SharedDesignData; onClickMo
           </ThreeErrorBoundary>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <MockupView view="front" color={item.color} designs={item.designs} onClick={() => onClickMockup('front', item.color, item.designs)} />
+            <MockupView view="front" color={item.color} designs={item.designs} fabricType={item.fabricType} onClick={() => onClickMockup('front', item.color, item.designs, item.fabricType)} />
             {hasBack ? (
-              <MockupView view="back" color={item.color} designs={item.designs} onClick={() => onClickMockup('back', item.color, item.designs)} />
+              <MockupView view="back" color={item.color} designs={item.designs} fabricType={item.fabricType} onClick={() => onClickMockup('back', item.color, item.designs, item.fabricType)} />
             ) : (
               <div className="w-full" />
             )}
@@ -187,7 +194,7 @@ export default function ShareCartPage() {
   const [cart, setCart] = useState<{ id: string; items: SharedDesignData[]; designsDeleted?: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [lightbox, setLightbox] = useState<{ view: 'front' | 'back'; color: string; designs: SharedDesignData['designs'] } | null>(null)
+  const [lightbox, setLightbox] = useState<{ view: 'front' | 'back'; color: string; designs: SharedDesignData['designs']; fabricType?: string } | null>(null)
   const [couponCode, setCouponCode] = useState<string | null>(null)
   const [couponLoading, setCouponLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -310,7 +317,7 @@ export default function ShareCartPage() {
             <DesignCard
               key={i}
               item={item}
-              onClickMockup={(view, color, designs) => setLightbox({ view, color, designs })}
+              onClickMockup={(view, color, designs, fabricType) => setLightbox({ view, color, designs, fabricType })}
             />
           ))}
         </div>
@@ -382,6 +389,7 @@ export default function ShareCartPage() {
           view={lightbox.view}
           color={lightbox.color}
           designs={lightbox.designs}
+          fabricType={lightbox.fabricType}
           onClose={() => setLightbox(null)}
         />
       )}

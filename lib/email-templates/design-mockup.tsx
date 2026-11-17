@@ -1,7 +1,7 @@
 import type { CustomerInfo, DesignArea } from '../types'
 import { escapeHtml } from '../utils'
 import { getColorLabel, getTypeLabel, getProductLabel, BUSINESS_LEGAL } from '../constants'
-import { capMockups } from '../mockup-data'
+import { capMockups, tshirtMockupSrc } from '../mockup-data'
 import { enlargeLabel, normalizeEnlarge } from '../enlarge'
 
 const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.siteName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
@@ -204,6 +204,10 @@ export function DesignMockupEmail({ customer, items, siteUrl }: DesignMockupEmai
         } else if (item.productType === 'buff' || item.productType === 'apron' || item.productType === 'baby' || item.productType === 'tote' || item.productType === 'vest') {
           frontImg = undefined
           backImg = undefined
+        } else if (item.productType === 'tshirt' && item.fabricType === 'long-sleeve') {
+          // TICKET-018: the long-sleeve renders, never a short-sleeve photo.
+          frontImg = tshirtMockupSrc(item.color, 'front', item.fabricType)
+          backImg = tshirtMockupSrc(item.color, 'back', item.fabricType)
         } else {
           const resolvedColor = COLOR_FALLBACK[item.color] || item.color
           const mockup = MOCKUP_IMAGES[resolvedColor] || MOCKUP_IMAGES['black']

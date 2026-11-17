@@ -20,7 +20,7 @@ import NoDesignConfirmModal from '@/components/designer/NoDesignConfirmModal'
 import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
-import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { colorFallback, DESIGN_AREA_OVERLAYS, overlayStyle, tshirtMockupSrc } from '@/lib/mockup-data'
 import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_AREA_FILTER, TSHIRT_COLORS, getModel3D, getTshirtAreaIds } from '@/lib/constants'
 import { canEnlarge, enlargeScale, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
 
@@ -335,10 +335,10 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const mockupSrc = previewView === 'back'
     ? isSweatshirt
       ? (sweatshirtMockupsBack[resolvedColor] || sweatshirtMockupsBack['black'])
-      : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
+      : tshirtMockupSrc(config.color || 'black', 'back', config.fabricType)
     : isSweatshirt
       ? (sweatshirtMockupsFront[resolvedColor] || sweatshirtMockupsFront['black'])
-      : (tshirtMockups[resolvedColor] || tshirtMockups['black'])
+      : tshirtMockupSrc(config.color || 'black', 'front', config.fabricType)
 
   const StepIcon = stepConfig[currentStep - 1].icon
   const stepTitle = stepConfig[currentStep - 1].title
@@ -451,7 +451,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
               key={areaId}
               className={`absolute${scale === 1 ? ' overflow-hidden' : ''}`}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              style={overlay.style as any}
+              style={(overlayStyle(areaId, config.fabricType) ?? overlay.style) as any}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -473,7 +473,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
                 : 'border-gray-300 bg-gray-200/75'
             }`}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            style={overlay.style as any}
+            style={(overlayStyle(areaId, config.fabricType) ?? overlay.style) as any}
           >
             <span className={`text-xs font-medium text-center leading-tight px-1 ${isActive ? 'text-green-700' : 'text-gray-600'}`}>
               {overlay.label}

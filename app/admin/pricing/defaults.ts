@@ -3,7 +3,7 @@ export type ProductPricing = { base: Record<string, number>; areas: Record<strin
 /** Code-default products pricing (used when nothing is saved yet). */
 export function codeDefaults(): Record<string, ProductPricing> {
   return {
-    tshirt: { base: { cotton: 37, 'dri-fit': 37, polo: 47, oversized: 47, 'long-sleeve': 42 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, chest_logo_center: 5, shoulder_right: 5, shoulder_left: 5, sleeve_right: 5, sleeve_left: 5 } },
+    tshirt: { base: { cotton: 37, 'dri-fit': 37, polo: 47, oversized: 47, 'long-sleeve': 42 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, chest_logo_center: 5, shoulder_right: 5, shoulder_left: 5 } },
     sweatshirt: { base: { kangaroo: 53, putter: 53, zip: 53 }, areas: { front_full: 10, back: 10, chest_logo: 5, chest_logo_right: 5, chest_logo_center: 5, shoulder_right: 5, shoulder_left: 5 } },
     cap: { base: { tembel: 30, mesh: 30 }, areas: { center: 5, center_wide: 5 } },
     tote: { base: { volume: 35, drawstring: 35 }, areas: { front_full: 5, back: 5 } },

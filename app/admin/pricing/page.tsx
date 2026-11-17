@@ -45,8 +45,6 @@ const CATALOG: {
       { id: 'chest_logo_center', label: 'סמל אמצעי' },
       { id: 'shoulder_right', label: 'כתף ימין' },
       { id: 'shoulder_left', label: 'כתף שמאל' },
-      { id: 'sleeve_right', label: 'שרוול ימין (שרוול ארוך)' },
-      { id: 'sleeve_left', label: 'שרוול שמאל (שרוול ארוך)' },
     ],
   },
   {
@@ -162,7 +160,7 @@ function migrateLegacy(legacy: LegacyDoc): Record<string, ProductPricing> {
     shoulder_right: da.shoulder_right ?? 5,
     shoulder_left: da.shoulder_left ?? 5,
   }
-  d.tshirt.areas = { ...shirtAreas, sleeve_right: da.sleeve_right ?? 5, sleeve_left: da.sleeve_left ?? 5 }
+  d.tshirt.areas = { ...shirtAreas }
   const sBase = bp.sweatshirt ?? 53
   d.sweatshirt.base = { kangaroo: sBase, putter: sBase, zip: sBase }
   d.sweatshirt.areas = { ...shirtAreas }

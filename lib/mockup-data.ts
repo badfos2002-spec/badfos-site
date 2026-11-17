@@ -23,6 +23,20 @@ export const tshirtMockupsBack: Record<string, string> = {
   beige: '/assets/חולצה בז אחורה.webp',
 }
 
+// TICKET-018: the long-sleeve tee (fabric `long-sleeve`, white/black only) has
+// its own photos — renders of the 3D model composed into the same branded
+// 1200×1454 frame as the tee photos above, so every consumer's box maths reads
+// the same way.
+export const longSleeveMockups: Record<string, string> = {
+  white: '/assets/longsleeve-white-front.webp',
+  black: '/assets/longsleeve-black-front.webp',
+}
+
+export const longSleeveMockupsBack: Record<string, string> = {
+  white: '/assets/longsleeve-white-back.webp',
+  black: '/assets/longsleeve-black-back.webp',
+}
+
 export const colorFallback: Record<string, string> = {
   white: 'white', black: 'black', gray: 'gray', red: 'red',
   navy: 'blue', beige: 'beige', burgundy: 'burgundy', olive: 'olive',
@@ -99,20 +113,6 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'כתף שמאל',
     style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '79.25%', borderRadius: '4px', transform: 'rotate(-20deg)' },
   },
-  // TICKET-017: prints along the long sleeve. Approximate narrow vertical
-  // boxes on the SHORT-sleeve tee photos (outside the shoulder box, tilted
-  // with the sleeve) — TICKET-018 replaces the photos and boxes with
-  // long-sleeve renders. Wearer's right = viewer's left, exact mirror.
-  sleeve_right: {
-    view: 'front',
-    label: 'שרוול ימין',
-    style: { width: '4.5%', aspectRatio: '1 / 3', top: '33%', left: '11%', borderRadius: '4px', transform: 'rotate(20deg)' },
-  },
-  sleeve_left: {
-    view: 'front',
-    label: 'שרוול שמאל',
-    style: { width: '4.5%', aspectRatio: '1 / 3', top: '33%', left: '84.5%', borderRadius: '4px', transform: 'rotate(-20deg)' },
-  },
   center: {
     view: 'front',
     label: 'מרכזי',
@@ -154,4 +154,40 @@ export const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }
   back: { width: '36%', aspectRatio: '180 / 200', top: '33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
   shoulder_right: { width: '5%', aspectRatio: '1', top: '42%', left: '16.7%', borderRadius: '4px', transform: 'rotate(8deg)' },
   shoulder_left: { width: '5%', aspectRatio: '1', top: '42%', left: '78.3%', borderRadius: '4px', transform: 'rotate(-8deg)' },
+}
+
+// TICKET-018: every long-sleeve area's box on the long-sleeve renders (the
+// seven cotton areas). Front/back areas were measured from the 3D decals
+// themselves (each area rendered alone, diffed against the bare render), so the
+// 2D box agrees with the 3D view. The shoulder boxes sit on the FRONT face of
+// the hanging arm — the decal itself is on the arm's outer side, edge-on from
+// the front — at the decal's height, tilted with the arm. Wearer's right =
+// viewer's left; the shoulders mirror exactly.
+export const LONG_SLEEVE_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
+  front_full: { width: '22.5%', aspectRatio: '270 / 302', top: '37%', left: '50%', transform: 'translateX(-50%)', borderRadius: '10px' },
+  back: { width: '23.1%', aspectRatio: '277 / 364', top: '35.9%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
+  chest_logo: { width: '7.2%', aspectRatio: '1', top: '27.3%', left: '35.4%', borderRadius: '6px' },
+  chest_logo_right: { width: '7.2%', aspectRatio: '1', top: '27.3%', right: '35.4%', borderRadius: '6px' },
+  chest_logo_center: { width: '7.2%', aspectRatio: '1', top: '27.3%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
+  shoulder_right: { width: '7.3%', aspectRatio: '1', top: '34.6%', left: '20.3%', borderRadius: '4px', transform: 'rotate(6deg)' },
+  shoulder_left: { width: '7.3%', aspectRatio: '1', top: '34.6%', left: '72.4%', borderRadius: '4px', transform: 'rotate(-6deg)' },
+}
+
+/** The t-shirt photo for a colour and side: the long-sleeve renders for the
+ *  long-sleeve fabric (black when the colour has none — never a short-sleeve
+ *  photo), otherwise the tee photos with their colour fallback. */
+export function tshirtMockupSrc(color: string, view: 'front' | 'back', fabricType?: string): string {
+  if (fabricType === 'long-sleeve') {
+    const set = view === 'front' ? longSleeveMockups : longSleeveMockupsBack
+    return set[color] || set.black
+  }
+  const resolved = colorFallback[color] || color
+  const set = view === 'front' ? tshirtMockups : tshirtMockupsBack
+  return set[resolved] || set.black
+}
+
+/** The overlay box style of an area on that photo. */
+export function overlayStyle(area: string, fabricType?: string): { [key: string]: string } | undefined {
+  if (fabricType === 'long-sleeve') return LONG_SLEEVE_AREA_OVERRIDES[area]
+  return DESIGN_AREA_OVERLAYS[area]?.style
 }
