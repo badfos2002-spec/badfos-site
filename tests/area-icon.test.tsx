@@ -149,3 +149,72 @@ describe('isCompactArea — small prints get the short button', () => {
     expect(isChestArea('shoulder_right')).toBe(false)
   })
 })
+
+// TICKET-017: the long-sleeve tee's sleeve prints. Drawn on a LONG-sleeve
+// silhouette (not the short tee), as a tall narrow rect down the sleeve, the
+// left one the exact mirror of the right.
+describe('AreaIcon — sleeve icons (long-sleeve)', () => {
+  const pathOf = (area: string) => {
+    const { container } = render(<AreaIcon area={area} product="tshirt" />)
+    const d = container.querySelector('path')?.getAttribute('d')
+    cleanup()
+    return d
+  }
+
+  it('renders a print rect for both sleeves on tshirt', () => {
+    expect(iconRect('sleeve_right', 'tshirt')).not.toBeNull()
+    cleanup()
+    expect(iconRect('sleeve_left', 'tshirt')).not.toBeNull()
+  })
+
+  it('uses a long-sleeve silhouette, not the short tee outline', () => {
+    const tee = pathOf('front_full')
+    const sleeve = pathOf('sleeve_right')
+    expect(sleeve).toBeTruthy()
+    expect(sleeve).not.toBe(tee)
+    expect(pathOf('sleeve_left')).toBe(sleeve)
+  })
+
+  it('the rect is tall and narrow, and the pair mirrors across the 48-wide icon', () => {
+    const right = iconRect('sleeve_right', 'tshirt')!
+    cleanup()
+    const left = iconRect('sleeve_left', 'tshirt')!
+    expect(right.height).toBeGreaterThan(right.width)
+    expect(right.width).toBe(left.width)
+    expect(right.height).toBe(left.height)
+    expect(right.y).toBe(left.y)
+    expect(right.x + right.width + left.x).toBe(48)
+    // כתף/שרוול ימין = the wearer's right = the viewer's LEFT
+    expect(right.x).toBeLessThan(24)
+  })
+
+  it('no sleeve icon on products without sleeve prints', () => {
+    for (const product of ['sweatshirt', 'hoodie', 'vest'] as const) {
+      const { container } = render(<AreaIcon area="sleeve_right" product={product} />)
+      expect(container.firstChild).toBeNull()
+      cleanup()
+    }
+  })
+})
+
+describe('areaRows / isCompactArea — sleeves', () => {
+  it('the 9 long-sleeve areas get a 4th row: שרוול ימין, שרוול שמאל', () => {
+    const rows = areaRows([
+      { id: 'front_full' }, { id: 'back' },
+      { id: 'chest_logo' }, { id: 'chest_logo_right' }, { id: 'chest_logo_center' },
+      { id: 'shoulder_right' }, { id: 'shoulder_left' },
+      { id: 'sleeve_left' }, { id: 'sleeve_right' },
+    ])
+    expect(rows.map(r => r.map(a => a.id))).toEqual([
+      ['front_full', 'back'],
+      ['chest_logo', 'chest_logo_center', 'chest_logo_right'],
+      ['shoulder_right', 'shoulder_left'],
+      ['sleeve_right', 'sleeve_left'],
+    ])
+  })
+
+  it('sleeves are compact', () => {
+    expect(isCompactArea('sleeve_right')).toBe(true)
+    expect(isCompactArea('sleeve_left')).toBe(true)
+  })
+})
