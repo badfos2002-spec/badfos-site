@@ -892,8 +892,7 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
   if (productType === 'tshirt') {
     if (fabricType === 'polo') return { variant: 'polo', url: '/models/polo-web.glb' }
     if (fabricType === 'oversized') return { variant: 'oversized', url: '/models/oversized-web.glb' }
-    // TICKET-018 wires the long-sleeve model; until then the designers show 2D.
-    if (fabricType === 'long-sleeve') return null
+    if (fabricType === 'long-sleeve') return { variant: 'longsleeve', url: '/models/longsleeve-web.glb' }
     return { variant: 'tshirt', url: '/models/tshirt-web.glb' }
   }
   if (productType === 'sweatshirt') {

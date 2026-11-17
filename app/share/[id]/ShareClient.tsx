@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { getSharedDesign, SharedDesignData } from '@/lib/db'
-import { tshirtMockups, tshirtMockupsBack, capMockups, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { tshirtMockups, tshirtMockupsBack, capMockups, colorFallback, DESIGN_AREA_OVERLAYS, overlayStyle, tshirtMockupSrc } from '@/lib/mockup-data'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
@@ -33,6 +33,8 @@ function MockupView({ view, color, designs, productType, fabricType }: {
     mockupSrc = set?.[color] || set?.['black']
   } else if (productType === 'buff' || productType === 'apron' || productType === 'baby' || productType === 'tote' || productType === 'vest') {
     mockupSrc = undefined
+  } else if (fabricType === 'long-sleeve') {
+    mockupSrc = tshirtMockupSrc(color, view, fabricType) // TICKET-018 renders
   } else {
     mockupSrc = view === 'front'
       ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
@@ -87,7 +89,7 @@ function MockupView({ view, color, designs, productType, fabricType }: {
             src={design.imageBase64}
             alt={design.areaName}
             className="absolute object-contain"
-            style={enlargeOverlayStyle(overlay.style, design.enlarge) as React.CSSProperties}
+            style={enlargeOverlayStyle(overlayStyle(design.area, fabricType) ?? overlay.style, design.enlarge) as React.CSSProperties}
           />
         )
       })}

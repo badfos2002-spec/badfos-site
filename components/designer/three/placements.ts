@@ -111,10 +111,10 @@ const LONGSLEEVE_AREAS: Record<string, Placement> = {
   chest_logo: { position: [-0.25, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.25, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_center: { position: [0, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
-  shoulder_right: { position: [-0.64, 0.4, -0.07], rotation: [0, -Math.PI / 2, ROLL_LONGSLEEVE_SHOULDER], size: 0.16, depth: 0.22 },
-  shoulder_left: { position: [0.64, 0.4, -0.07], rotation: [0, Math.PI / 2, -ROLL_LONGSLEEVE_SHOULDER], size: 0.16, depth: 0.22 },
-  sleeve_right: { position: [-0.74, -0.43, -0.01], rotation: [0, -Math.PI / 2, ROLL_LONGSLEEVE_SLEEVE], size: 0.52, depth: 0.22 },
-  sleeve_left: { position: [0.74, -0.43, -0.01], rotation: [0, Math.PI / 2, -ROLL_LONGSLEEVE_SLEEVE], size: 0.52, depth: 0.22 },
+  shoulder_right: { position: [-0.64, 0.4, -0.05], rotation: [0, -Math.PI / 2, ROLL_LONGSLEEVE_SHOULDER], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.64, 0.4, -0.05], rotation: [0, Math.PI / 2, -ROLL_LONGSLEEVE_SHOULDER], size: 0.16, depth: 0.22 },
+  sleeve_right: { position: [-0.74, -0.43, 0], rotation: [0, -Math.PI / 2, ROLL_LONGSLEEVE_SLEEVE], size: 0.52, depth: 0.22 },
+  sleeve_left: { position: [0.74, -0.43, 0], rotation: [0, Math.PI / 2, -ROLL_LONGSLEEVE_SLEEVE], size: 0.52, depth: 0.22 },
 };
 const LONGSLEEVE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.5, h: 0.56, label: 'קדמי מלא' },
@@ -345,6 +345,9 @@ const MESHCAP_GUIDES: Record<string, GuideBox> = {
 
 export const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
+  // Plain fabric material like the cotton tee: the CLO tangent-space normal map
+  // was A/B-tested (1024px, +0.55 MB) and added nothing visible at preview size
+  // while washing the black out — so the GLB ships with no textures at all.
   longsleeve: { areas: LONGSLEEVE_AREAS, guides: LONGSLEEVE_GUIDES, panels: false },
   tote: { areas: TOTE_AREAS, guides: TOTE_GUIDES, panels: false },
   // NOTE: no normal map — the source texture's reflective-stripe regions

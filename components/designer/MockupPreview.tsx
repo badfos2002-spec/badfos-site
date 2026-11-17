@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { Truck, Tag } from 'lucide-react'
 import type { ProductConfig } from '@/lib/types'
+import { longSleeveMockups, longSleeveMockupsBack } from '@/lib/mockup-data'
 
 interface MockupPreviewProps {
   config: ProductConfig
@@ -52,7 +53,11 @@ export default function MockupPreview({ config }: MockupPreviewProps) {
 
   const defaultColor = 'gray'
   const resolvedColor = color ? (colorFallback[color] || color) : defaultColor
-  const mockup = productType ? mockupImages[productType]?.[resolvedColor] : sweatshirtMockups[defaultColor]
+  // TICKET-018: the long-sleeve tee has its own renders (white/black; black otherwise).
+  const longSleeve = productType === 'tshirt' && fabricType === 'long-sleeve'
+    ? { front: longSleeveMockups[color ?? ''] || longSleeveMockups.black, back: longSleeveMockupsBack[color ?? ''] || longSleeveMockupsBack.black }
+    : undefined
+  const mockup = longSleeve ?? (productType ? mockupImages[productType]?.[resolvedColor] : sweatshirtMockups[defaultColor])
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

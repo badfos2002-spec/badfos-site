@@ -18,8 +18,7 @@ import type { DesignArea, DesignAreaType, ProductConfig } from '@/lib/types'
 
 // TICKET-017: «חולצת שרוול ארוך» — a cotton sleeve variant. +₪5 over cotton,
 // white/black only, XS–XXL, and two print areas of its own (שרוול ימין/שמאל)
-// that no other fabric offers. The 3D model lands in TICKET-018 — until then
-// getModel3D returns null and the designer shows the 2D mockup.
+// that no other fabric offers. The 3D model landed in TICKET-018.
 
 afterEach(() => applyPricingOverrides({}))
 
@@ -131,8 +130,8 @@ describe('long-sleeve pricing', () => {
 })
 
 describe('long-sleeve 3D model', () => {
-  it('has no 3D model yet (TICKET-018) — the designer falls back to 2D', () => {
-    expect(getModel3D('tshirt', 'long-sleeve')).toBeNull()
+  it('has its own 3D model (TICKET-018)', () => {
+    expect(getModel3D('tshirt', 'long-sleeve')).toEqual({ variant: 'longsleeve', url: '/models/longsleeve-web.glb' })
   })
 
   it('the other t-shirt fabrics keep their models', () => {

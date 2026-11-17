@@ -9,7 +9,7 @@ import { useCart } from '@/hooks/useCart'
 import type { CartItem as CartItemType, DesignArea, ProductType } from '@/lib/types'
 import { formatPrice } from '@/lib/pricing'
 import { getColorLabel, getTypeLabel } from '@/lib/constants'
-import { tshirtMockups, tshirtMockupsBack, capMockups, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
+import { capMockups, DESIGN_AREA_OVERLAYS, overlayStyle, tshirtMockupSrc } from '@/lib/mockup-data'
 import { createSharedDesign } from '@/lib/db'
 import DesignAreaLines from './DesignAreaLines'
 import { enlargeScale, normalizeEnlarge } from '@/lib/enlarge'
@@ -34,10 +34,8 @@ function MockupView({ view, color, designs, productType, fabricType }: {
   // tshirt → tshirt image maps; cap → capMockups keyed by [fabricType][color].
   let mockupSrc: string | undefined
   if (productType === 'tshirt') {
-    const resolvedColor = colorFallback[color] || color
-    mockupSrc = view === 'front'
-      ? (tshirtMockups[resolvedColor] || tshirtMockups['black'])
-      : (tshirtMockupsBack[resolvedColor] || tshirtMockupsBack['black'])
+    // The long-sleeve fabric has its own renders (TICKET-018).
+    mockupSrc = tshirtMockupSrc(color, view, fabricType)
   } else if (productType === 'cap' && fabricType) {
     mockupSrc = capMockups[fabricType]?.[color] || capMockups[fabricType]?.['black']
   }
@@ -77,7 +75,7 @@ function MockupView({ view, color, designs, productType, fabricType }: {
           <div
             key={design.area}
             className={scale === 1 ? 'absolute overflow-hidden' : 'absolute'}
-            style={{ ...overlay.style, position: 'absolute' }}
+            style={{ ...(overlayStyle(design.area, fabricType) ?? overlay.style), position: 'absolute' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
