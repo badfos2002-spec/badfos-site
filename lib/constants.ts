@@ -869,6 +869,13 @@ export function getTypeLabel(id: string): string {
   return all.find(t => t.id === id)?.name ?? id
 }
 
+/** The type name after a garment noun the caller already wrote ("חולצה …",
+ *  "חולצות …"): «חולצת שרוול ארוך» → «שרוול ארוך», so the noun isn't doubled.
+ *  `label` lets a site keep its own label source (e.g. the admin fabricLabels). */
+export function typeLabelAfterNoun(id: string, label: string = getTypeLabel(id)): string {
+  return label.replace(/^חולצת /, '')
+}
+
 export function getProductLabel(id: string): string {
   return (PRODUCT_CATEGORIES as readonly { id: string; name: string }[]).find(p => p.id === id)?.name ?? id
 }

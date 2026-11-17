@@ -1,6 +1,6 @@
 import { Order } from '../types'
 import { escapeHtml } from '../utils'
-import { getColorLabel, getTypeLabel, getProductLabel, BUSINESS_LEGAL, CONTACT_INFO } from '../constants'
+import { getColorLabel, typeLabelAfterNoun, getProductLabel, BUSINESS_LEGAL, CONTACT_INFO } from '../constants'
 
 const BUSINESS_LEGAL_LINE = escapeHtml(`${BUSINESS_LEGAL.siteName} · ${BUSINESS_LEGAL.vatStatus} ${BUSINESS_LEGAL.vatNumber}`)
 
@@ -154,7 +154,7 @@ export function OrderConfirmationEmail({
           .map(
             (item) => `
           <div class="item">
-            <strong>${escapeHtml(getProductLabel(item.productType))}${item.fabricType ? ' - ' + escapeHtml(getTypeLabel(item.fabricType)) : ''}</strong><br>
+            <strong>${escapeHtml(getProductLabel(item.productType))}${item.fabricType ? ' - ' + escapeHtml(typeLabelAfterNoun(item.fabricType)) : ''}</strong><br>
             צבע: ${escapeHtml(getColorLabel(item.color, item.productType))}<br>
             כמות: ${escapeHtml(String(Number(item.totalQuantity) || 0))} יחידות<br>
             מחיר: ₪${Number(item.totalPrice) || 0}
