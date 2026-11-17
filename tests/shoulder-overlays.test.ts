@@ -79,8 +79,8 @@ describe('SWEATSHIRT_AREA_OVERRIDES — the hoodie sleeve is narrower', () => {
     )
   })
 
-  it('the existing גב override is untouched', () => {
-    expect(SWEATSHIRT_AREA_OVERRIDES.back.width).toBe('36%')
-    expect(SWEATSHIRT_AREA_OVERRIDES.back.top).toBe('33%')
+  it('the existing גב override is untouched (TICKET-019: back print +5%)', () => {
+    expect(SWEATSHIRT_AREA_OVERRIDES.back.width).toBe('37.8%')
+    expect(SWEATSHIRT_AREA_OVERRIDES.back.top).toBe('32.17%')
   })
 })
