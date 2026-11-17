@@ -1054,10 +1054,10 @@ export const SEO_PAGES: SeoPage[] = [
       },
     ],
     galleryImages: [
-      '/renders/longsleeve-white-front.webp',
-      '/renders/longsleeve-black-front.webp',
-      '/renders/longsleeve-white-back.webp',
-      '/renders/longsleeve-black-back.webp',
+      asset('longsleeve-white-front.webp'),
+      asset('longsleeve-black-front.webp'),
+      asset('longsleeve-white-back.webp'),
+      asset('longsleeve-black-back.webp'),
     ],
     galleryAlts: [
       'חולצת שרוול ארוך לבנה — מבט מלפנים',
