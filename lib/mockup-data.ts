@@ -99,6 +99,20 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'כתף שמאל',
     style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '79.25%', borderRadius: '4px', transform: 'rotate(-20deg)' },
   },
+  // TICKET-017: prints along the long sleeve. Approximate narrow vertical
+  // boxes on the SHORT-sleeve tee photos (outside the shoulder box, tilted
+  // with the sleeve) — TICKET-018 replaces the photos and boxes with
+  // long-sleeve renders. Wearer's right = viewer's left, exact mirror.
+  sleeve_right: {
+    view: 'front',
+    label: 'שרוול ימין',
+    style: { width: '4.5%', aspectRatio: '1 / 3', top: '33%', left: '11%', borderRadius: '4px', transform: 'rotate(20deg)' },
+  },
+  sleeve_left: {
+    view: 'front',
+    label: 'שרוול שמאל',
+    style: { width: '4.5%', aspectRatio: '1 / 3', top: '33%', left: '84.5%', borderRadius: '4px', transform: 'rotate(-20deg)' },
+  },
   center: {
     view: 'front',
     label: 'מרכזי',

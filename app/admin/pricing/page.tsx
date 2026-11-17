@@ -35,6 +35,7 @@ const CATALOG: {
       { id: 'dri-fit', label: 'דרייפיט' },
       { id: 'polo', label: 'פולו' },
       { id: 'oversized', label: 'אוברסייז' },
+      { id: 'long-sleeve', label: 'חולצת שרוול ארוך' },
     ],
     areas: [
       { id: 'front_full', label: 'קדמי מלא' },
@@ -44,6 +45,8 @@ const CATALOG: {
       { id: 'chest_logo_center', label: 'סמל אמצעי' },
       { id: 'shoulder_right', label: 'כתף ימין' },
       { id: 'shoulder_left', label: 'כתף שמאל' },
+      { id: 'sleeve_right', label: 'שרוול ימין (שרוול ארוך)' },
+      { id: 'sleeve_left', label: 'שרוול שמאל (שרוול ארוך)' },
     ],
   },
   {
@@ -148,6 +151,7 @@ function migrateLegacy(legacy: LegacyDoc): Record<string, ProductPricing> {
     'dri-fit': tBase + (fs['dri-fit'] ?? 0),
     polo: tBase + (fs.polo ?? 10),
     oversized: tBase + (fs.oversized ?? 10),
+    'long-sleeve': tBase + (fs['long-sleeve'] ?? 5),
   }
   const shirtAreas = {
     front_full: da.front_full ?? 10,
@@ -158,7 +162,7 @@ function migrateLegacy(legacy: LegacyDoc): Record<string, ProductPricing> {
     shoulder_right: da.shoulder_right ?? 5,
     shoulder_left: da.shoulder_left ?? 5,
   }
-  d.tshirt.areas = { ...shirtAreas }
+  d.tshirt.areas = { ...shirtAreas, sleeve_right: da.sleeve_right ?? 5, sleeve_left: da.sleeve_left ?? 5 }
   const sBase = bp.sweatshirt ?? 53
   d.sweatshirt.base = { kangaroo: sBase, putter: sBase, zip: sBase }
   d.sweatshirt.areas = { ...shirtAreas }

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 // TICKET-017, the designer end to end: כותנה → שרוול ארוך lands on step 2
@@ -42,7 +42,10 @@ describe('TshirtDesigner — long-sleeve flow', () => {
     const user = userEvent.setup()
     render(<TshirtDesigner use3DPreview />)
     await user.click(screen.getAllByRole('button', { name: /^כותנה/ })[0])
-    expect(screen.queryByRole('alert')).toBeNull()
+    // The step card is mounted twice (mobile + desktop layouts, CSS hides one);
+    // the sub-view opened in the one tapped — it shows no validation alert.
+    const sub = screen.getByText('כותנה — איזה שרוול?').parentElement!
+    expect(within(sub).queryByRole('alert')).toBeNull()
     await user.click(screen.getAllByRole('button', { name: /שרוול ארוך/ })[0])
     expect(screen.queryByText('יש לבחור סוג חולצה כדי להמשיך.')).toBeNull()
     expect(screen.getAllByText('בחר צבע').length).toBeGreaterThan(0)
