@@ -14,6 +14,7 @@ import { isManualOrder, paymentMethodLabel } from '@/lib/manual-order'
 import SketchLinkButton from '@/components/admin/SketchLinkButton'
 import OrderItem3DButton from '@/components/admin/OrderItem3DButton'
 import { sizeLabel } from '@/lib/daily-orders'
+import { typeLabelAfterNoun } from '@/lib/constants'
 import { adminFetch } from '@/lib/admin-fetch'
 import { buildDesignDownloadNames, extFor, filenameFromContentDisposition } from '@/lib/design-download-name'
 import { enlargeLabel, normalizeEnlarge } from '@/lib/enlarge'
@@ -44,6 +45,7 @@ const fabricLabels: Record<string, string> = {
   'dri-fit': 'דרייפיט',
   polo: 'פולו',
   oversized: 'אוברסייז',
+  'long-sleeve': 'חולצת שרוול ארוך',
   mesh: 'רשת',
   tembel: 'טמבל',
   kangaroo: 'קפוצ׳ון קנגרו',
@@ -843,7 +845,7 @@ export default function AdminOrdersPage() {
                             const fabricName = item.fabricType ? (fabricLabels[item.fabricType] ?? item.fabricType) : ''
                             // מוצר "אחר" מהזמנה ידנית (productType:'other', lib/manual-order.ts): שם חופשי — מוצג כמו שהוא
                             const isOther = (item.productType as string) === 'other'
-                            const productName = isOther ? (item.specialProductName ?? '') : `${productLabels[item.productType] ?? item.productType}${fabricName ? ` ${fabricName}` : ''} ${item.productType === 'tshirt' ? 'מעוצבת' : 'מעוצב'}`
+                            const productName = isOther ? (item.specialProductName ?? '') : `${productLabels[item.productType] ?? item.productType}${fabricName ? ` ${typeLabelAfterNoun(item.fabricType!, fabricName)}` : ''} ${item.productType === 'tshirt' ? 'מעוצבת' : 'מעוצב'}`
 
                             return (
                               <div key={idx} className="bg-white border rounded-lg p-4">

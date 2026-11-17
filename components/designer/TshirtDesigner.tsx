@@ -6,6 +6,7 @@ import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import type { ProductConfig, SizeQuantity, DesignArea, FabricType } from '@/lib/types'
 import ThreeErrorBoundary from './three/ThreeErrorBoundary'
+import type { ShirtVariant } from './three/placements'
 import Preview3DLoading from './three/Preview3DLoading'
 import StepIndicator from './StepIndicator'
 import ShirtTypeStep from './ShirtTypeStep'
@@ -20,7 +21,7 @@ import { useCart } from '@/hooks/useCart'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowLeft, RefreshCw, Shirt, Palette, ImagePlus, Ruler, Eye } from 'lucide-react'
 import { tshirtMockups, tshirtMockupsBack, colorFallback, DESIGN_AREA_OVERLAYS } from '@/lib/mockup-data'
-import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_AREA_FILTER, TSHIRT_COLORS } from '@/lib/constants'
+import { FABRIC_COLOR_FILTER, FABRIC_TYPES, TSHIRT_AREA_FILTER, TSHIRT_COLORS, getModel3D, getTshirtAreaIds } from '@/lib/constants'
 import { canEnlarge, enlargeScale, normalizeEnlarge, to3DDesigns, withEnlarge } from '@/lib/enlarge'
 
 // The R3F Canvas cannot be server-rendered, so load the 3D stage client-side
@@ -378,7 +379,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
   const stepContent = (() => {
     switch (currentStep) {
       case 1:
-        return <ShirtTypeStep selectedType={config.fabricType} onSelect={(type) => updateConfig({ fabricType: type })} />
+        return <ShirtTypeStep selectedType={config.fabricType} onSelect={(type) => updateConfig({ fabricType: type })} onAdvance={goToNextStep} />
       case 2:
         return <ColorStep selectedColor={config.color} onSelect={(color) => updateConfig({ color })} fabricType={config.fabricType} />
       case 3:
@@ -390,7 +391,12 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
     }
   })()
 
-  const ViewTabs = () => currentStep >= 3 && !use3DPreview ? (
+  // Which 3D model each fabric shows (cotton & dri-fit use the regular tshirt).
+  // No model yet (long-sleeve, until TICKET-018) → the 2D mockup, with its tabs.
+  const model3d = getModel3D('tshirt', config.fabricType) as { variant: ShirtVariant; url: string } | null
+  const show3D = use3DPreview && !!model3d
+
+  const ViewTabs = () => currentStep >= 3 && !show3D ? (
     <div className="flex justify-center gap-2 mt-3">
       <button
         onClick={() => setPreviewView('front')}
@@ -411,17 +417,8 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
 
   const shirtHex = TSHIRT_COLORS.find(c => c.id === config.color)?.hex ?? '#000000'
 
-  // Which 3D model each fabric shows (cotton & dri-fit use the regular tshirt).
-  const model3d = ({
-    polo: { variant: 'polo' as const, url: '/models/polo-web.glb' },
-    oversized: { variant: 'oversized' as const, url: '/models/oversized-web.glb' },
-  } as Record<string, { variant: 'tshirt' | 'polo' | 'oversized'; url: string }>)[config.fabricType || ''] ?? {
-    variant: 'tshirt' as const,
-    url: '/models/tshirt-web.glb',
-  }
-
   const mockupDesigns = config.designs || []
-  const tshirtAreaIds = TSHIRT_AREA_FILTER[config.fabricType || ''] ?? ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'chest_logo_center', 'shoulder_right', 'shoulder_left']
+  const tshirtAreaIds = getTshirtAreaIds(config.fabricType)
   const visibleAreas = Object.entries(DESIGN_AREA_OVERLAYS).filter(([areaId, overlay]) => {
     if (!tshirtAreaIds.includes(areaId)) return false
     if (overlay.view !== previewView) return false
@@ -489,7 +486,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
 
   // In 3D mode, show the live 3D shirt; any 3D failure cleanly falls back to
   // the static 2D mockup via the error boundary. Otherwise keep the 2D preview.
-  const mockupElement = use3DPreview ? (
+  const mockupElement = show3D && model3d ? (
     <ThreeErrorBoundary fallback={static2D}>
       <div className="relative w-full" style={{ aspectRatio: '3/4' }}>
         <Preview3DStage
@@ -672,7 +669,7 @@ export default function TshirtDesigner({ breadcrumbs, use3DPreview = false }: { 
                 <div className="font-semibold leading-none tracking-tight flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Eye className="w-5 h-5 text-yellow-500" />
-                    <span>{use3DPreview ? 'תצוגה 360°' : 'תצוגה מקדימה'}</span>
+                    <span>{show3D ? 'תצוגה 360°' : 'תצוגה מקדימה'}</span>
                   </div>
                   {config.designs && config.designs.length > 0 && (
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
