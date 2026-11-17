@@ -21,8 +21,6 @@ export const MAX_OFFSET = 0.35;
  *  curve — long before 0.35. Measured on the t-shirt: a committed offset of
  *  ~0.13 lost about half the artwork, ~0.045 landed complete. */
 export const SHOULDER_MAX_OFFSET = 0.04;
-// The long-sleeve forearm print (TICKET-018) sits on the same kind of thin tube,
-// so it shares the shoulder's rail.
 export const MIN_SCALE = 0.3;
 export const MAX_SCALE = 2.0;
 
@@ -31,7 +29,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 /** How far this area may be nudged. Unknown areas — and callers that pass none —
  *  keep the original rail. */
 export function maxOffsetForArea(area?: string): number {
-  return area?.startsWith('shoulder_') || area?.startsWith('sleeve_') ? SHOULDER_MAX_OFFSET : MAX_OFFSET;
+  return area?.startsWith('shoulder_') ? SHOULDER_MAX_OFFSET : MAX_OFFSET;
 }
 
 export function clampTransform(t: DesignTransform, area?: string): DesignTransform {

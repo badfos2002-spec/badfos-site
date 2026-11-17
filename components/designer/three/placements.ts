@@ -95,16 +95,12 @@ const TSHIRT_GUIDES: Record<string, GuideBox> = {
 //    «ממש מעל לסוף השרוול», carried over to a long sleeve the way the hoodie
 //    family did) — about a short sleeve's length below the seam. Rolled like
 //    the tee (TICKET-009 sign: positive on the right).
-//  - Sleeves (TICKET-017's new areas): a tall narrow print down the outside of
-//    the forearm, top toward the elbow, bottom just above the cuff. The forearm
-//    leans forward going down, so the projector rolls the same way as the
-//    shoulder (counter-clockwise seen from outside the right arm).
+//  - No along-the-sleeve prints: the user kept the cotton areas only.
 // Every number started from the outer-wall patch of the GLB (x = the wall, y/z
 // the median of the sideways-facing band) and was nudged on screen. `depth`
 // stays shallow: the arm is a thin tube right beside the body, and a deep
 // projector would also paint the inner wall / the body's side.
 const ROLL_LONGSLEEVE_SHOULDER = 0.12;
-const ROLL_LONGSLEEVE_SLEEVE = 0.16;
 const LONGSLEEVE_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.13, 0.35], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
   back: { position: [0, 0.1, -0.33], rotation: [0, Math.PI, 0], size: 0.84, depth: 0.55 },
@@ -113,8 +109,6 @@ const LONGSLEEVE_AREAS: Record<string, Placement> = {
   chest_logo_center: { position: [0, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   shoulder_right: { position: [-0.64, 0.4, -0.05], rotation: [0, -Math.PI / 2, ROLL_LONGSLEEVE_SHOULDER], size: 0.16, depth: 0.22 },
   shoulder_left: { position: [0.64, 0.4, -0.05], rotation: [0, Math.PI / 2, -ROLL_LONGSLEEVE_SHOULDER], size: 0.16, depth: 0.22 },
-  sleeve_right: { position: [-0.74, -0.43, 0], rotation: [0, -Math.PI / 2, ROLL_LONGSLEEVE_SLEEVE], size: 0.52, depth: 0.22 },
-  sleeve_left: { position: [0.74, -0.43, 0], rotation: [0, Math.PI / 2, -ROLL_LONGSLEEVE_SLEEVE], size: 0.52, depth: 0.22 },
 };
 const LONGSLEEVE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.5, h: 0.56, label: 'קדמי מלא' },
@@ -124,8 +118,6 @@ const LONGSLEEVE_GUIDES: Record<string, GuideBox> = {
   chest_logo_center: { w: 0.16, h: 0.16, label: 'סמל אמצעי' },
   shoulder_right: { w: 0.16, h: 0.16, label: 'כתף ימין' },
   shoulder_left: { w: 0.16, h: 0.16, label: 'כתף שמאל' },
-  sleeve_right: { w: 0.16, h: 0.52, label: 'שרוול ימין' },
-  sleeve_left: { w: 0.16, h: 0.52, label: 'שרוול שמאל' },
 };
 
 // POLO — separate front panel (local z ∈ [-0.15,0.46]) and back panel

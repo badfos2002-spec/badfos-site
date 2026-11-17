@@ -113,20 +113,6 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
     label: 'כתף שמאל',
     style: { width: '6.5%', aspectRatio: '1', top: '38.5%', left: '79.25%', borderRadius: '4px', transform: 'rotate(-20deg)' },
   },
-  // TICKET-017: prints along the long sleeve. Approximate narrow vertical
-  // boxes on the SHORT-sleeve tee photos (outside the shoulder box, tilted
-  // with the sleeve) — TICKET-018 replaces the photos and boxes with
-  // long-sleeve renders. Wearer's right = viewer's left, exact mirror.
-  sleeve_right: {
-    view: 'front',
-    label: 'שרוול ימין',
-    style: { width: '4.5%', aspectRatio: '1 / 3', top: '33%', left: '11%', borderRadius: '4px', transform: 'rotate(20deg)' },
-  },
-  sleeve_left: {
-    view: 'front',
-    label: 'שרוול שמאל',
-    style: { width: '4.5%', aspectRatio: '1 / 3', top: '33%', left: '84.5%', borderRadius: '4px', transform: 'rotate(-20deg)' },
-  },
   center: {
     view: 'front',
     label: 'מרכזי',
@@ -170,13 +156,13 @@ export const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }
   shoulder_left: { width: '5%', aspectRatio: '1', top: '42%', left: '78.3%', borderRadius: '4px', transform: 'rotate(-8deg)' },
 }
 
-// TICKET-018: every t-shirt area's box on the long-sleeve renders (all nine —
-// the cotton seven plus the two sleeves). Front/back areas were measured from
-// the 3D decals themselves (each area rendered alone, diffed against the bare
-// render), so the 2D box agrees with the 3D view. The arm boxes sit on the
-// FRONT face of the hanging arm — the decal itself is on the arm's outer side,
-// edge-on from the front — at the decal's height, tilted with the arm (it leans
-// out toward the cuff). Wearer's right = viewer's left; arms mirror exactly.
+// TICKET-018: every long-sleeve area's box on the long-sleeve renders (the
+// seven cotton areas). Front/back areas were measured from the 3D decals
+// themselves (each area rendered alone, diffed against the bare render), so the
+// 2D box agrees with the 3D view. The shoulder boxes sit on the FRONT face of
+// the hanging arm — the decal itself is on the arm's outer side, edge-on from
+// the front — at the decal's height, tilted with the arm. Wearer's right =
+// viewer's left; the shoulders mirror exactly.
 export const LONG_SLEEVE_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
   front_full: { width: '22.5%', aspectRatio: '270 / 302', top: '37%', left: '50%', transform: 'translateX(-50%)', borderRadius: '10px' },
   back: { width: '23.1%', aspectRatio: '277 / 364', top: '35.9%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
@@ -185,8 +171,6 @@ export const LONG_SLEEVE_AREA_OVERRIDES: Record<string, { [key: string]: string 
   chest_logo_center: { width: '7.2%', aspectRatio: '1', top: '27.3%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
   shoulder_right: { width: '7.3%', aspectRatio: '1', top: '34.6%', left: '20.3%', borderRadius: '4px', transform: 'rotate(6deg)' },
   shoulder_left: { width: '7.3%', aspectRatio: '1', top: '34.6%', left: '72.4%', borderRadius: '4px', transform: 'rotate(-6deg)' },
-  sleeve_right: { width: '7%', aspectRatio: '84 / 274', top: '57.9%', left: '17.33%', borderRadius: '4px', transform: 'rotate(12deg)' },
-  sleeve_left: { width: '7%', aspectRatio: '84 / 274', top: '57.9%', left: '75.67%', borderRadius: '4px', transform: 'rotate(-12deg)' },
 }
 
 /** The t-shirt photo for a colour and side: the long-sleeve renders for the

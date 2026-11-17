@@ -47,16 +47,12 @@ const SHAPES: Record<AreaIconProduct, { front: string; back: string; extraFront?
   },
 }
 
-// The long-sleeve tee (TICKET-017): the sleeve prints are drawn on it.
-const LONG_SLEEVE_FRONT = 'M17 6 Q24 12 31 6 L40 10 L46 40 L40 41 L37 20 L37 44 L11 44 L11 20 L8 41 L2 40 L8 10 Z'
-
 // Print rectangles per product (x, y, w, h).
 const AREAS: Record<AreaIconProduct, Record<string, Rect>> = {
   tshirt: {
     front_full: [16, 17, 16, 17], back: [14, 13, 20, 22],
     chest_logo: [14, 13, 6.5, 6.5], chest_logo_right: [27.5, 13, 6.5, 6.5], chest_logo_center: [20.75, 13.5, 6.5, 6.5],
     shoulder_right: [6, 14, 4.5, 4.5], shoulder_left: [37.5, 14, 4.5, 4.5],
-    sleeve_right: [5, 20, 3.5, 14], sleeve_left: [39.5, 20, 3.5, 14],
   },
   sweatshirt: {
     front_full: [16, 19, 16, 16], back: [14, 15, 20, 21],
@@ -83,7 +79,7 @@ export default function AreaIcon({ area, product, className = 'w-10 h-10' }: { a
   const isBack = area === 'back'
   const shape = SHAPES[product]
   const extra = isBack ? shape.extraBack : shape.extraFront
-  const outline = isSleeveArea(area) ? LONG_SLEEVE_FRONT : isBack ? shape.back : shape.front
+  const outline = isBack ? shape.back : shape.front
   return (
     <svg viewBox="0 0 48 48" className={className} aria-hidden="true" focusable="false">
       <path d={outline} fill="#fff" stroke={STROKE} strokeWidth={1.5} strokeLinejoin="round" fillRule="evenodd" />
@@ -95,21 +91,17 @@ export default function AreaIcon({ area, product, className = 'w-10 h-10' }: { a
 
 // Area-button layout: large areas (front/back) on the first row, chest logos
 // on one compact row in reading order ימין → אמצעי → שמאל (RTL puts ימין right),
-// the shoulder prints on a compact row of their own in the same order, and the
-// long-sleeve tee's along-the-sleeve prints on a fourth. A product without
-// shoulders/sleeves simply yields an empty row, which is dropped.
+// and the shoulder prints on a compact row of their own in the same order. A
+// product without shoulders simply yields an empty row, which is dropped.
 const CHEST_ORDER = ['chest_logo', 'chest_logo_center', 'chest_logo_right']
 const SHOULDER_ORDER = ['shoulder_right', 'shoulder_left']
-const SLEEVE_ORDER = ['sleeve_right', 'sleeve_left']
 export const isChestArea = (id: string) => id.startsWith('chest_logo')
 export const isShoulderArea = (id: string) => id.startsWith('shoulder_')
-export const isSleeveArea = (id: string) => id.startsWith('sleeve_')
-// Small prints (chest logos + shoulders + sleeves) get the shorter button.
-export const isCompactArea = (id: string) => isChestArea(id) || isShoulderArea(id) || isSleeveArea(id)
+// Small prints (chest logos + shoulders) get the shorter button.
+export const isCompactArea = (id: string) => isChestArea(id) || isShoulderArea(id)
 export const AREA_ROW_COLS = ['', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3']
 export function areaRows<T extends { id: string }>(areas: readonly T[]): T[][] {
   const chest = areas.filter(a => isChestArea(a.id)).sort((a, b) => CHEST_ORDER.indexOf(a.id) - CHEST_ORDER.indexOf(b.id))
   const shoulders = areas.filter(a => isShoulderArea(a.id)).sort((a, b) => SHOULDER_ORDER.indexOf(a.id) - SHOULDER_ORDER.indexOf(b.id))
-  const sleeves = areas.filter(a => isSleeveArea(a.id)).sort((a, b) => SLEEVE_ORDER.indexOf(a.id) - SLEEVE_ORDER.indexOf(b.id))
-  return [areas.filter(a => !isCompactArea(a.id)), chest, shoulders, sleeves].filter(row => row.length > 0)
+  return [areas.filter(a => !isCompactArea(a.id)), chest, shoulders].filter(row => row.length > 0)
 }

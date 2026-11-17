@@ -8,7 +8,7 @@ export type ProductType = 'tshirt' | 'sweatshirt' | 'buff' | 'cap' | 'apron' | '
 
 export type FabricType = 'cotton' | 'dri-fit' | 'polo' | 'oversized' | 'long-sleeve'
 
-export type DesignAreaType = 'front_full' | 'back' | 'chest_logo' | 'chest_logo_right' | 'chest_logo_center' | 'shoulder_right' | 'shoulder_left' | 'sleeve_right' | 'sleeve_left' | 'center' | 'center_wide'
+export type DesignAreaType = 'front_full' | 'back' | 'chest_logo' | 'chest_logo_right' | 'chest_logo_center' | 'shoulder_right' | 'shoulder_left' | 'center' | 'center_wide'
 
 export interface DesignArea {
   area: DesignAreaType

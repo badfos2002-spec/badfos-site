@@ -22,13 +22,10 @@ export interface ViewerAngle {
   angle: number
 }
 
-/** A shoulder — or a long-sleeve forearm print (TICKET-018) — is only worth a
- *  button when something is actually printed on it. */
-const ARM_AREAS: readonly { area: string; label: string }[] = [
+/** A shoulder is only worth a button when something is actually printed on it. */
+const SHOULDERS: readonly { area: string; label: string }[] = [
   { area: 'shoulder_right', label: 'כתף ימין' },
   { area: 'shoulder_left', label: 'כתף שמאל' },
-  { area: 'sleeve_right', label: 'שרוול ימין' },
-  { area: 'sleeve_left', label: 'שרוול שמאל' },
 ]
 
 /** The item's 3D variant — the same mapping the designers use. */
@@ -38,7 +35,7 @@ function variantOf(item: OrderItem): ShirtVariant | undefined {
 
 /**
  * Front and back always (a garment has two sides to check), plus a quarter turn
- * for each shoulder or sleeve that carries a print. The angles are NEVER derived here:
+ * for each shoulder that carries a print. The angles are NEVER derived here:
  * `angleForArea` owns the relation between a placement's projector rotation and
  * the turntable, so a shoulder's sign can only ever be wrong in one place.
  */
@@ -49,9 +46,9 @@ export function anglesForItem(item: OrderItem): ViewerAngle[] {
     { area: 'front_full', label: 'קדימה', angle: angleForArea(variant, 'front_full') },
     { area: 'back', label: 'גב', angle: angleForArea(variant, 'back') },
   ]
-  for (const arm of ARM_AREAS) {
-    if (designs.some(d => d?.area === arm.area)) {
-      angles.push({ ...arm, angle: angleForArea(variant, arm.area) })
+  for (const shoulder of SHOULDERS) {
+    if (designs.some(d => d?.area === shoulder.area)) {
+      angles.push({ ...shoulder, angle: angleForArea(variant, shoulder.area) })
     }
   }
   return angles

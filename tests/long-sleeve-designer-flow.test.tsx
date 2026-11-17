@@ -55,13 +55,15 @@ describe('TshirtDesigner — long-sleeve flow', () => {
     expect(screen.queryByRole('button', { name: 'נייבי' })).toBeNull()
   })
 
-  it('long-sleeve on the design step: the 3D stage (TICKET-018) and the sleeve areas', () => {
+  it('long-sleeve on the design step: the 3D stage (TICKET-018) and the cotton areas, no sleeve area', () => {
     seed(3, 'long-sleeve')
     render(<TshirtDesigner use3DPreview />)
     expect(screen.getAllByTestId('stage').length).toBeGreaterThan(0)
     expect(screen.queryByRole('button', { name: 'חזית' })).toBeNull()
-    expect(screen.getAllByText('שרוול ימין').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('שרוול שמאל').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('כתף ימין').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('סמל אמצעי').length).toBeGreaterThan(0)
+    expect(screen.queryByText('שרוול ימין')).toBeNull()
+    expect(screen.queryByText('שרוול שמאל')).toBeNull()
   })
 
   it('cotton on the design step keeps the 3D stage and offers no sleeve area', () => {

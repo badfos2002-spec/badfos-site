@@ -4,7 +4,6 @@ import {
   FABRIC_COLOR_FILTER,
   TSHIRT_AREA_FILTER,
   TSHIRT_DESIGN_AREAS,
-  LONG_SLEEVE_ONLY_AREAS,
   getFabricType,
   getModel3D,
   getBasePrice,
@@ -17,8 +16,8 @@ import { typeOptions, sizeOptions, areaOptions, colorOptions } from '@/lib/manua
 import type { DesignArea, DesignAreaType, ProductConfig } from '@/lib/types'
 
 // TICKET-017: «חולצת שרוול ארוך» — a cotton sleeve variant. +₪5 over cotton,
-// white/black only, XS–XXL, and two print areas of its own (שרוול ימין/שמאל)
-// that no other fabric offers. The 3D model landed in TICKET-018.
+// white/black only, XS–XXL, and exactly cotton's print areas (the user dropped
+// the along-the-sleeve prints in TICKET-018). The 3D model landed in TICKET-018.
 
 afterEach(() => applyPricingOverrides({}))
 
@@ -26,7 +25,6 @@ function design(area: DesignAreaType): DesignArea {
   return { area, areaName: area, imageUrl: 'https://example.com/art.png', fileName: 'art.png' }
 }
 
-const SLEEVES = ['sleeve_right', 'sleeve_left']
 const CLASSIC_AREAS = ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'chest_logo_center', 'shoulder_right', 'shoulder_left']
 
 describe('FABRIC_TYPES — long-sleeve', () => {
@@ -53,24 +51,18 @@ describe('FABRIC_TYPES — long-sleeve', () => {
   })
 })
 
-describe('sleeve print areas', () => {
-  it('the t-shirt area list has שרוול ימין / שרוול שמאל at ₪5', () => {
-    const right = TSHIRT_DESIGN_AREAS.find(a => a.id === 'sleeve_right')
-    const left = TSHIRT_DESIGN_AREAS.find(a => a.id === 'sleeve_left')
-    expect(right).toMatchObject({ name: 'שרוול ימין', description: 'הדפס לאורך השרוול', price: 5 })
-    expect(left).toMatchObject({ name: 'שרוול שמאל', description: 'הדפס לאורך השרוול', price: 5 })
+describe('print areas — no sleeve prints anywhere', () => {
+  it('the t-shirt area list is exactly the seven classic areas', () => {
+    expect(TSHIRT_DESIGN_AREAS.map(a => a.id).sort()).toEqual([...CLASSIC_AREAS].sort())
+    expect(TSHIRT_DESIGN_AREAS.map(a => a.id as string)).not.toContain('sleeve_right')
   })
 
-  it('LONG_SLEEVE_ONLY_AREAS lists the two sleeves', () => {
-    expect([...LONG_SLEEVE_ONLY_AREAS].sort()).toEqual([...SLEEVES].sort())
+  it('long-sleeve offers exactly what cotton has', () => {
+    expect([...TSHIRT_AREA_FILTER['long-sleeve']].sort()).toEqual([...TSHIRT_AREA_FILTER.cotton].sort())
+    expect([...TSHIRT_AREA_FILTER['long-sleeve']].sort()).toEqual([...CLASSIC_AREAS].sort())
   })
 
-  it('long-sleeve offers everything cotton has plus both sleeves', () => {
-    const ids = TSHIRT_AREA_FILTER['long-sleeve']
-    expect([...ids].sort()).toEqual([...CLASSIC_AREAS, ...SLEEVES].sort())
-  })
-
-  it('cotton, dri-fit and oversized offer every classic area and no sleeve', () => {
+  it('cotton, dri-fit and oversized offer every classic area', () => {
     for (const fabric of ['cotton', 'dri-fit', 'oversized']) {
       expect([...TSHIRT_AREA_FILTER[fabric]].sort()).toEqual([...CLASSIC_AREAS].sort())
     }
@@ -80,9 +72,9 @@ describe('sleeve print areas', () => {
     expect(TSHIRT_AREA_FILTER.polo).toEqual(['front_full', 'back', 'chest_logo', 'chest_logo_right', 'shoulder_right', 'shoulder_left'])
   })
 
-  it('sleeve areas are not enlargeable', () => {
-    expect(canEnlarge('tshirt', 'sleeve_right')).toBe(false)
-    expect(canEnlarge('tshirt', 'sleeve_left')).toBe(false)
+  it('only front_full / back are enlargeable on the long-sleeve tee', () => {
+    expect(canEnlarge('tshirt', 'back')).toBe(true)
+    expect(canEnlarge('tshirt', 'shoulder_right')).toBe(false)
   })
 })
 
@@ -99,8 +91,8 @@ describe('long-sleeve pricing', () => {
     expect(calculateItemPrice(config([]))).toBe(42)
   })
 
-  it('long-sleeve + שרוול ימין + גב: 37 + 5 + 5 + 10 = 57 per unit', () => {
-    expect(calculateItemPrice(config(['sleeve_right', 'back']))).toBe(57)
+  it('long-sleeve + גב: 37 + 5 + 10 = 52 per unit', () => {
+    expect(calculateItemPrice(config(['back']))).toBe(52)
   })
 
   it('a saved v2 price doc without a long-sleeve key prices it as cotton + 5, never as plain cotton', () => {
@@ -119,13 +111,10 @@ describe('long-sleeve pricing', () => {
     expect(getFabricType('long-sleeve')?.surcharge).toBe(7)
   })
 
-  it('admin pricing defaults carry the long-sleeve price and both sleeve areas', () => {
+  it('admin pricing defaults carry the long-sleeve price and no sleeve areas', () => {
     const t = codeDefaults().tshirt
     expect(t.base['long-sleeve']).toBe(42)
-    expect(t.areas.sleeve_right).toBe(5)
-    expect(t.areas.sleeve_left).toBe(5)
-    // sweatshirts have no sleeve prints
-    expect(codeDefaults().sweatshirt.areas.sleeve_right).toBeUndefined()
+    expect(Object.keys(t.areas).sort()).toEqual([...CLASSIC_AREAS].sort())
   })
 })
 
@@ -146,12 +135,11 @@ describe('manual order — long-sleeve', () => {
     expect(typeOptions('tshirt').some(o => o.id === 'long-sleeve' && o.name === 'חולצת שרוול ארוך')).toBe(true)
   })
 
-  it('white/black only, XS–XXL only (no 3XL/4XL, no kids), sleeves offered', () => {
+  it('white/black only, XS–XXL only (no 3XL/4XL, no kids), cotton areas, no sleeve', () => {
     expect(colorOptions('tshirt', 'long-sleeve').map(o => o.id)).toEqual(['white', 'black'])
     expect(sizeOptions('tshirt', 'long-sleeve', 'white').map(o => o.id)).toEqual(['XS', 'S', 'M', 'L', 'XL', 'XXL'])
     const areas = areaOptions('tshirt', 'long-sleeve').map(o => o.id)
-    expect(areas).toContain('sleeve_right')
-    expect(areas).toContain('sleeve_left')
-    expect(areaOptions('tshirt', 'cotton').map(o => o.id)).not.toContain('sleeve_right')
+    expect([...areas].sort()).toEqual([...CLASSIC_AREAS].sort())
+    expect(areas).not.toContain('sleeve_right')
   })
 })

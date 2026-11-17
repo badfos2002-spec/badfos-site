@@ -4,8 +4,8 @@ import { angleForArea } from '@/components/designer/three/placements'
 import type { DesignArea, OrderItem } from '@/lib/types'
 
 // TICKET-018: the admin order card's 3D viewer must show a long-sleeve item on
-// its own model and give the producer a button for each printed sleeve, at the
-// turntable angle `angleForArea` owns (never re-derived here).
+// its own model and give the producer a button for each printed shoulder, at
+// the turntable angle `angleForArea` owns (never re-derived here).
 
 function design(area: string): DesignArea {
   return { area, areaName: area, imageUrl: `https://example.com/${area}.png`, fileName: `${area}.png` } as DesignArea
@@ -24,23 +24,20 @@ function item(designs: DesignArea[]): OrderItem {
 }
 
 describe('anglesForItem — long-sleeve', () => {
-  it('a right-sleeve print adds שרוול ימין at the longsleeve sleeve angle', () => {
-    const angles = anglesForItem(item([design('front_full'), design('sleeve_right')]))
-    expect(angles.map(a => a.label)).toEqual(['קדימה', 'גב', 'שרוול ימין'])
-    expect(angles[2].area).toBe('sleeve_right')
-    expect(angles[2].angle).toBe(angleForArea('longsleeve' as never, 'sleeve_right'))
+  it('a right-shoulder print adds כתף ימין at the longsleeve shoulder angle', () => {
+    const angles = anglesForItem(item([design('front_full'), design('shoulder_right')]))
+    expect(angles.map(a => a.label)).toEqual(['קדימה', 'גב', 'כתף ימין'])
+    expect(angles[2].angle).toBe(angleForArea('longsleeve' as never, 'shoulder_right'))
     expect(angles[2].angle).toBeCloseTo(Math.PI / 2, 10)
   })
 
-  it('both sleeves and both shoulders: six buttons, sleeves after shoulders, mirrored', () => {
-    const angles = anglesForItem(item([
-      design('sleeve_left'), design('shoulder_right'), design('sleeve_right'), design('shoulder_left'),
-    ]))
-    expect(angles.map(a => a.label)).toEqual(['קדימה', 'גב', 'כתף ימין', 'כתף שמאל', 'שרוול ימין', 'שרוול שמאל'])
-    expect(angles[4].angle).toBeCloseTo(-angles[5].angle, 10)
+  it('both shoulders: four buttons, mirrored; no sleeve buttons exist', () => {
+    const angles = anglesForItem(item([design('shoulder_left'), design('shoulder_right'), design('sleeve_right')]))
+    expect(angles.map(a => a.label)).toEqual(['קדימה', 'גב', 'כתף ימין', 'כתף שמאל'])
+    expect(angles[2].angle).toBeCloseTo(-angles[3].angle, 10)
   })
 
-  it('no sleeve print → no sleeve button', () => {
+  it('no shoulder print → front and back only', () => {
     expect(anglesForItem(item([design('back')])).map(a => a.area)).toEqual(['front_full', 'back'])
   })
 })

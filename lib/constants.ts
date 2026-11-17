@@ -285,33 +285,19 @@ export const TSHIRT_DESIGN_AREAS = [
     description: 'הדפסה קטנה על השרוול, כתף שמאל',
     price: 5,
   },
-  {
-    id: 'sleeve_right' as DesignAreaType,
-    name: 'שרוול ימין',
-    description: 'הדפס לאורך השרוול',
-    price: 5,
-  },
-  {
-    id: 'sleeve_left' as DesignAreaType,
-    name: 'שרוול שמאל',
-    description: 'הדפס לאורך השרוול',
-    price: 5,
-  },
 ] as const
 
-// Prints along the sleeve exist only on the long-sleeve tee.
-export const LONG_SLEEVE_ONLY_AREAS: readonly string[] = ['sleeve_right', 'sleeve_left']
-const CLASSIC_TSHIRT_AREAS: string[] = TSHIRT_DESIGN_AREAS.map(a => a.id).filter(id => !LONG_SLEEVE_ONLY_AREAS.includes(id))
+const CLASSIC_TSHIRT_AREAS: string[] = TSHIRT_DESIGN_AREAS.map(a => a.id)
 
-// Print areas per t-shirt fabric — explicit for every fabric, because the
-// sleeve prints must stay off every fabric but the long-sleeve tee. The polo
-// has no centre-chest logo — the button placket runs down the centre.
+// Print areas per t-shirt fabric. The long-sleeve tee offers exactly the
+// cotton areas (the user dropped the along-the-sleeve prints, TICKET-018). The
+// polo has no centre-chest logo — the button placket runs down the centre.
 export const TSHIRT_AREA_FILTER: Record<string, string[]> = {
   cotton: CLASSIC_TSHIRT_AREAS,
   'dri-fit': CLASSIC_TSHIRT_AREAS,
   oversized: CLASSIC_TSHIRT_AREAS,
   polo: ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'shoulder_right', 'shoulder_left'],
-  'long-sleeve': TSHIRT_DESIGN_AREAS.map(a => a.id),
+  'long-sleeve': CLASSIC_TSHIRT_AREAS,
 }
 
 /** The t-shirt areas a fabric offers (no fabric yet → the classic areas). */

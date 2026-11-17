@@ -27,9 +27,9 @@ vi.mock('next/image', () => ({
 // the 2D fallback and the design-mockup email.
 
 const PUBLIC = join(process.cwd(), 'public')
-const NINE = [
+const SEVEN = [
   'front_full', 'back', 'chest_logo', 'chest_logo_right', 'chest_logo_center',
-  'shoulder_right', 'shoulder_left', 'sleeve_right', 'sleeve_left',
+  'shoulder_right', 'shoulder_left',
 ] as const
 
 describe('getModel3D — long-sleeve maps to its own model', () => {
@@ -102,23 +102,22 @@ describe('per-colour renders — white and black, front and back', () => {
 })
 
 describe('overlay boxes on the long-sleeve renders', () => {
-  it('every one of the nine areas has its own box', () => {
-    for (const a of NINE) {
+  it('every one of the seven areas has its own box, and nothing else', () => {
+    expect(Object.keys(LONG_SLEEVE_AREA_OVERRIDES).sort()).toEqual([...SEVEN].sort())
+    for (const a of SEVEN) {
       expect(LONG_SLEEVE_AREA_OVERRIDES[a], a).toBeDefined()
       expect(LONG_SLEEVE_AREA_OVERRIDES[a].width, a).toMatch(/%$/)
       expect(LONG_SLEEVE_AREA_OVERRIDES[a].top, a).toMatch(/%$/)
     }
   })
 
-  it('every one of the nine areas still has a front/back view in the shared map', () => {
-    for (const a of NINE) expect(DESIGN_AREA_OVERLAYS[a]?.view, a).toMatch(/^(front|back)$/)
-    expect(DESIGN_AREA_OVERLAYS.sleeve_right.view).toBe('front')
-    expect(DESIGN_AREA_OVERLAYS.sleeve_left.view).toBe('front')
+  it('every one of the seven areas still has a front/back view in the shared map', () => {
+    for (const a of SEVEN) expect(DESIGN_AREA_OVERLAYS[a]?.view, a).toMatch(/^(front|back)$/)
   })
 
   it('arm boxes mirror: left(right) + width + left(left) = 100', () => {
     const pct = (s: string) => parseFloat(s)
-    for (const [r, l] of [['shoulder_right', 'shoulder_left'], ['sleeve_right', 'sleeve_left']]) {
+    for (const [r, l] of [['shoulder_right', 'shoulder_left']]) {
       const R = LONG_SLEEVE_AREA_OVERRIDES[r], L = LONG_SLEEVE_AREA_OVERRIDES[l]
       expect(pct(R.left) + pct(R.width) + pct(L.left)).toBeCloseTo(100, 5)
       expect(R.top).toBe(L.top)
@@ -127,16 +126,8 @@ describe('overlay boxes on the long-sleeve renders', () => {
     }
   })
 
-  it('the sleeve boxes are tall and narrow, below the shoulder boxes', () => {
-    const s = LONG_SLEEVE_AREA_OVERRIDES.sleeve_right, sh = LONG_SLEEVE_AREA_OVERRIDES.shoulder_right
-    expect(parseFloat(s.top)).toBeGreaterThan(parseFloat(sh.top))
-    expect(s.aspectRatio).toBeDefined()
-    const [w, h] = s.aspectRatio.split('/').map(Number)
-    expect(h / w).toBeGreaterThanOrEqual(2.5)
-  })
-
   it('overlayStyle: long-sleeve → the render box; other fabrics → the shared box', () => {
-    expect(overlayStyle('sleeve_right', 'long-sleeve')).toBe(LONG_SLEEVE_AREA_OVERRIDES.sleeve_right)
+    expect(overlayStyle('shoulder_right', 'long-sleeve')).toBe(LONG_SLEEVE_AREA_OVERRIDES.shoulder_right)
     expect(overlayStyle('front_full', 'long-sleeve')).toBe(LONG_SLEEVE_AREA_OVERRIDES.front_full)
     expect(overlayStyle('front_full', 'cotton')).toBe(DESIGN_AREA_OVERLAYS.front_full.style)
     expect(overlayStyle('shoulder_right')).toBe(DESIGN_AREA_OVERLAYS.shoulder_right.style)
@@ -164,7 +155,7 @@ describe('consumers pick the long-sleeve image', () => {
     const design = (area: DesignAreaType): DesignArea => ({ area, areaName: area, imageUrl: 'https://example.com/a.png', fileName: 'a.png' })
     const html = DesignMockupEmail({
       customer: { firstName: 'דנה', lastName: 'כהן', email: 'd@example.com', phone: '0500000000' } as never,
-      items: [{ productType: 'tshirt', fabricType: 'long-sleeve', color: 'black', designs: [design('sleeve_right'), design('back')], totalQuantity: 2 }],
+      items: [{ productType: 'tshirt', fabricType: 'long-sleeve', color: 'black', designs: [design('shoulder_right'), design('back')], totalQuantity: 2 }],
       siteUrl: 'https://badfos.co.il',
     })
     expect(html).toContain(`https://badfos.co.il${longSleeveMockups.black}`)
