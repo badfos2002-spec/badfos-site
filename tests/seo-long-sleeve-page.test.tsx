@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { render, screen } from '@testing-library/react'
 import { SEO_PAGES, getSeoPage } from '@/lib/seo-pages'
 import { getBasePrice, applyPricingOverrides } from '@/lib/constants'
@@ -50,6 +52,12 @@ describe('registry entry', () => {
     expect(p.galleryImages.length).toBeGreaterThan(0)
     expect(p.related).toEqual(['הדפסה-על-סווטשרטים', 'הדפסת-חולצות-לעסקים', 'חולצות-ליום-גיבוש'])
     for (const r of p.related) expect(getSeoPage(r)).toBeTruthy()
+  })
+
+  it('every gallery image exists under public/', () => {
+    for (const src of page().galleryImages) {
+      expect(existsSync(join(__dirname, '..', 'public', decodeURIComponent(src))), src).toBe(true)
+    }
   })
 
   it('sits right after the sweatshirt page (footer order)', () => {
