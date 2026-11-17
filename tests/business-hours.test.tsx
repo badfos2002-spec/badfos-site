@@ -135,6 +135,7 @@ describe('contact page hours card', () => {
     cleanup()
     vi.unstubAllGlobals()
     vi.useRealTimers()
+    vi.restoreAllMocks()
   })
   it('server render (before mount) shows the hours but no open/closed badge', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))))
