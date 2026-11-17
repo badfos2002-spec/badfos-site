@@ -774,6 +774,7 @@ export function preloadAllModels(): void {
   useGLTF.preload('/models/tshirt-web.glb');
   useGLTF.preload('/models/polo-web.glb');
   useGLTF.preload('/models/oversized-web.glb');
+  useGLTF.preload('/models/longsleeve-web.glb');
   useGLTF.preload('/models/cap-web.glb');
   useGLTF.preload('/models/sweatshirt-web.glb');
   useGLTF.preload('/models/hoodie-web.glb');

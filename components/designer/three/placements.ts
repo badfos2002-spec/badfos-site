@@ -86,6 +86,48 @@ const TSHIRT_GUIDES: Record<string, GuideBox> = {
   shoulder_left: { w: 0.17, h: 0.17, label: 'כתף שמאל' },
 };
 
+// LONG-SLEEVE COTTON TEE (TICKET-018) — the CLO "Long Sleeve T-Shirt" model,
+// outer shell only, joined into ONE body mesh like the tee (front +z, max-dim
+// 2.0: 1 unit ≈ 0.365 m, the tee's is ≈ 0.339 m, so the chest/back boxes keep
+// the tee's physical size). The arms hang straight down beside the body: the
+// sleeve runs from the shoulder seam (y≈0.76) to the rib cuff (y −0.79…−1.0).
+//  - Shoulders: the upper arm where a short sleeve would end (TICKET-007's rule
+//    «ממש מעל לסוף השרוול», carried over to a long sleeve the way the hoodie
+//    family did) — about a short sleeve's length below the seam. Rolled like
+//    the tee (TICKET-009 sign: positive on the right).
+//  - Sleeves (TICKET-017's new areas): a tall narrow print down the outside of
+//    the forearm, top toward the elbow, bottom just above the cuff. The forearm
+//    leans forward going down, so the projector rolls the same way as the
+//    shoulder (counter-clockwise seen from outside the right arm).
+// Every number started from the outer-wall patch of the GLB (x = the wall, y/z
+// the median of the sideways-facing band) and was nudged on screen. `depth`
+// stays shallow: the arm is a thin tube right beside the body, and a deep
+// projector would also paint the inner wall / the body's side.
+const ROLL_LONGSLEEVE_SHOULDER = 0.12;
+const ROLL_LONGSLEEVE_SLEEVE = 0.16;
+const LONGSLEEVE_AREAS: Record<string, Placement> = {
+  front_full: { position: [0, 0.13, 0.35], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
+  back: { position: [0, 0.1, -0.33], rotation: [0, Math.PI, 0], size: 0.84, depth: 0.55 },
+  chest_logo: { position: [-0.25, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  chest_logo_right: { position: [0.25, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  chest_logo_center: { position: [0, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
+  shoulder_right: { position: [-0.64, 0.4, -0.07], rotation: [0, -Math.PI / 2, ROLL_LONGSLEEVE_SHOULDER], size: 0.16, depth: 0.22 },
+  shoulder_left: { position: [0.64, 0.4, -0.07], rotation: [0, Math.PI / 2, -ROLL_LONGSLEEVE_SHOULDER], size: 0.16, depth: 0.22 },
+  sleeve_right: { position: [-0.74, -0.43, -0.01], rotation: [0, -Math.PI / 2, ROLL_LONGSLEEVE_SLEEVE], size: 0.52, depth: 0.22 },
+  sleeve_left: { position: [0.74, -0.43, -0.01], rotation: [0, Math.PI / 2, -ROLL_LONGSLEEVE_SLEEVE], size: 0.52, depth: 0.22 },
+};
+const LONGSLEEVE_GUIDES: Record<string, GuideBox> = {
+  front_full: { w: 0.5, h: 0.56, label: 'קדמי מלא' },
+  back: { w: 0.51, h: 0.67, label: 'גב' },
+  chest_logo: { w: 0.16, h: 0.16, label: 'סמל ימין' },
+  chest_logo_right: { w: 0.16, h: 0.16, label: 'סמל שמאל' },
+  chest_logo_center: { w: 0.16, h: 0.16, label: 'סמל אמצעי' },
+  shoulder_right: { w: 0.16, h: 0.16, label: 'כתף ימין' },
+  shoulder_left: { w: 0.16, h: 0.16, label: 'כתף שמאל' },
+  sleeve_right: { w: 0.16, h: 0.52, label: 'שרוול ימין' },
+  sleeve_left: { w: 0.16, h: 0.52, label: 'שרוול שמאל' },
+};
+
 // POLO — separate front panel (local z ∈ [-0.15,0.46]) and back panel
 // (local z ∈ [-0.46,0]). Front artwork projects +z onto the front panel,
 // back artwork projects −z onto the back panel.
@@ -303,6 +345,7 @@ const MESHCAP_GUIDES: Record<string, GuideBox> = {
 
 export const VARIANTS = {
   tshirt: { areas: TSHIRT_AREAS, guides: TSHIRT_GUIDES, panels: false },
+  longsleeve: { areas: LONGSLEEVE_AREAS, guides: LONGSLEEVE_GUIDES, panels: false },
   tote: { areas: TOTE_AREAS, guides: TOTE_GUIDES, panels: false },
   // NOTE: no normal map — the source texture's reflective-stripe regions
   // produce ugly speckles at web resolution; the quilted geometry carries
