@@ -64,6 +64,9 @@ export const capMockups: Record<string, Record<string, string>> = {
   },
 }
 
+// TICKET-019: every back box (tee, long-sleeve, sweatshirt) is 5% wider than
+// first measured, same aspect; top moved up by half the height gain so it stays
+// centred.
 export const DESIGN_AREA_OVERLAYS: Record<string, {
   view: 'front' | 'back'
   label: string
@@ -77,7 +80,7 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
   back: {
     view: 'back',
     label: 'הדפסה אחורית',
-    style: { width: '45%', aspectRatio: '180 / 200', top: '25%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
+    style: { width: '47.25%', aspectRatio: '180 / 200', top: '24.06%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
   },
   chest_logo: {
     view: 'front',
@@ -151,7 +154,7 @@ export const DESIGN_AREA_OVERLAYS: Record<string, {
 // TICKET-007: the sleeve box moved down (was 40%) to the same arm height as the
 // lowered t-shirt box.
 export const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
-  back: { width: '36%', aspectRatio: '180 / 200', top: '33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
+  back: { width: '37.8%', aspectRatio: '180 / 200', top: '32.17%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
   shoulder_right: { width: '5%', aspectRatio: '1', top: '42%', left: '16.7%', borderRadius: '4px', transform: 'rotate(8deg)' },
   shoulder_left: { width: '5%', aspectRatio: '1', top: '42%', left: '78.3%', borderRadius: '4px', transform: 'rotate(-8deg)' },
 }
@@ -165,7 +168,7 @@ export const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }
 // viewer's left; the shoulders mirror exactly.
 export const LONG_SLEEVE_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
   front_full: { width: '22.5%', aspectRatio: '270 / 302', top: '37%', left: '50%', transform: 'translateX(-50%)', borderRadius: '10px' },
-  back: { width: '23.1%', aspectRatio: '277 / 364', top: '35.9%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
+  back: { width: '24.255%', aspectRatio: '277 / 364', top: '35.33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
   chest_logo: { width: '7.2%', aspectRatio: '1', top: '27.3%', left: '35.4%', borderRadius: '6px' },
   chest_logo_right: { width: '7.2%', aspectRatio: '1', top: '27.3%', right: '35.4%', borderRadius: '6px' },
   chest_logo_center: { width: '7.2%', aspectRatio: '1', top: '27.3%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },

@@ -58,9 +58,12 @@ const ROLL_POLO = 0.1;
 const ROLL_HOODIE = 0.17; // shared by hoodie, crewneck and zip hoodie
 
 // TSHIRT — a single body mesh (front +z / back −z live on the same mesh).
+// Back prints of the seven shirt/sweatshirt variants are 5% larger than first
+// tuned (TICKET-019): guide w/h drive the visible print (contain-fit), `size`
+// follows for consistency.
 const TSHIRT_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.68, depth: 0.55 },
-  back: { position: [0, 0.14, -0.3], rotation: [0, Math.PI, 0], size: 0.92, depth: 0.55 },
+  back: { position: [0, 0.14, -0.3], rotation: [0, Math.PI, 0], size: 0.966, depth: 0.55 },
   chest_logo: { position: [-0.27, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.27, 0.58, 0.28], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   // Same row as the side logos (matches the 2D overlay); centre neckline is at y≈0.84, well clear.
@@ -78,7 +81,7 @@ const TSHIRT_AREAS: Record<string, Placement> = {
 };
 const TSHIRT_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.54, h: 0.6, label: 'קדמי מלא' },
-  back: { w: 0.55, h: 0.72, label: 'גב' },
+  back: { w: 0.5775, h: 0.756, label: 'גב' },
   chest_logo: { w: 0.17, h: 0.17, label: 'סמל ימין' },
   chest_logo_right: { w: 0.17, h: 0.17, label: 'סמל שמאל' },
   chest_logo_center: { w: 0.17, h: 0.17, label: 'סמל אמצעי' },
@@ -103,7 +106,8 @@ const TSHIRT_GUIDES: Record<string, GuideBox> = {
 const ROLL_LONGSLEEVE_SHOULDER = 0.12;
 const LONGSLEEVE_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.13, 0.35], rotation: [0, 0, 0], size: 0.62, depth: 0.55 },
-  back: { position: [0, 0.1, -0.33], rotation: [0, Math.PI, 0], size: 0.84, depth: 0.55 },
+  // Back lifted 0.10 → 0.15 (TICKET-019; tee 0.14, hoodie 0.16).
+  back: { position: [0, 0.15, -0.33], rotation: [0, Math.PI, 0], size: 0.882, depth: 0.55 },
   chest_logo: { position: [-0.25, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.25, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_center: { position: [0, 0.6, 0.32], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
@@ -112,7 +116,7 @@ const LONGSLEEVE_AREAS: Record<string, Placement> = {
 };
 const LONGSLEEVE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.5, h: 0.56, label: 'קדמי מלא' },
-  back: { w: 0.51, h: 0.67, label: 'גב' },
+  back: { w: 0.5355, h: 0.7035, label: 'גב' },
   chest_logo: { w: 0.16, h: 0.16, label: 'סמל ימין' },
   chest_logo_right: { w: 0.16, h: 0.16, label: 'סמל שמאל' },
   chest_logo_center: { w: 0.16, h: 0.16, label: 'סמל אמצעי' },
@@ -125,7 +129,7 @@ const LONGSLEEVE_GUIDES: Record<string, GuideBox> = {
 // back artwork projects −z onto the back panel.
 const POLO_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.08, 0.36], rotation: [0, 0, 0], size: 0.52, depth: 0.5, panel: 'front' },
-  back: { position: [0, 0.12, -0.36], rotation: [0, Math.PI, 0], size: 0.71, depth: 0.5, panel: 'back' },
+  back: { position: [0, 0.12, -0.36], rotation: [0, Math.PI, 0], size: 0.7455, depth: 0.5, panel: 'back' },
   chest_logo: { position: [-0.24, 0.44, 0.34], rotation: [0, 0, 0], size: 0.22, depth: 0.4, panel: 'front' },
   chest_logo_right: { position: [0.24, 0.44, 0.34], rotation: [0, 0, 0], size: 0.22, depth: 0.4, panel: 'front' },
   // The polo's sleeves are their OWN primitives (xc ≈ ∓0.59), so each shoulder
@@ -137,7 +141,7 @@ const POLO_AREAS: Record<string, Placement> = {
 };
 const POLO_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.4, h: 0.5, label: 'קדמי מלא' },
-  back: { w: 0.575, h: 0.71, label: 'גב' },
+  back: { w: 0.60375, h: 0.7455, label: 'גב' },
   chest_logo: { w: 0.2, h: 0.2, label: 'סמל ימין' },
   chest_logo_right: { w: 0.2, h: 0.2, label: 'סמל שמאל' },
   shoulder_right: { w: 0.2, h: 0.2, label: 'כתף ימין' },
@@ -148,7 +152,7 @@ const POLO_GUIDES: Record<string, GuideBox> = {
 // but baggier, so artwork sits a touch lower/larger and logos spread wider.
 const OVERSIZED_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.13, 0.3], rotation: [0, 0, 0], size: 0.66, depth: 0.55 },
-  back: { position: [0, 0.11, -0.3], rotation: [0, Math.PI, 0], size: 0.74, depth: 0.55 },
+  back: { position: [0, 0.11, -0.3], rotation: [0, Math.PI, 0], size: 0.777, depth: 0.55 },
   // Chest row at 0.55 so its bottom edge (guide h 0.18 → 0.46) clears front_full's top (0.13 + 0.64/2 = 0.45).
   chest_logo: { position: [-0.3, 0.55, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
   chest_logo_right: { position: [0.3, 0.55, 0.28], rotation: [0, 0, 0], size: 0.17, depth: 0.45 },
@@ -164,7 +168,7 @@ const OVERSIZED_AREAS: Record<string, Placement> = {
 };
 const OVERSIZED_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.54, h: 0.64, label: 'קדמי מלא' },
-  back: { w: 0.6, h: 0.74, label: 'גב' },
+  back: { w: 0.63, h: 0.777, label: 'גב' },
   chest_logo: { w: 0.18, h: 0.18, label: 'סמל ימין' },
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
   chest_logo_center: { w: 0.18, h: 0.18, label: 'סמל אמצעי' },
@@ -188,7 +192,7 @@ const CAP_GUIDES: Record<string, GuideBox> = {
 // A hood sits high on the back; artwork stays on the chest/back panel.
 const HOODIE_AREAS: Record<string, Placement> = {
   front_full: { position: [0, 0.06, 0.33], rotation: [0, 0, 0], size: 0.56, depth: 0.55 },
-  back: { position: [0, 0.01, -0.33], rotation: [0, Math.PI, 0], size: 0.64, depth: 0.55 },
+  back: { position: [0, 0.01, -0.33], rotation: [0, Math.PI, 0], size: 0.672, depth: 0.55 },
   chest_logo: { position: [-0.22, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   chest_logo_right: { position: [0.22, 0.46, 0.31], rotation: [0, 0, 0], size: 0.16, depth: 0.45 },
   // Same row as the side logos (matches the 2D overlay).
@@ -209,7 +213,7 @@ const HOODIE_AREAS: Record<string, Placement> = {
 };
 const HOODIE_GUIDES: Record<string, GuideBox> = {
   front_full: { w: 0.48, h: 0.58, label: 'קדמי מלא' },
-  back: { w: 0.55, h: 0.66, label: 'גב' },
+  back: { w: 0.5775, h: 0.693, label: 'גב' },
   chest_logo: { w: 0.18, h: 0.18, label: 'סמל ימין' },
   chest_logo_right: { w: 0.18, h: 0.18, label: 'סמל שמאל' },
   chest_logo_center: { w: 0.18, h: 0.18, label: 'סמל אמצעי' },
@@ -232,7 +236,7 @@ const longShoulders = (z: number): Record<'shoulder_right' | 'shoulder_left', Pl
 // back than the hoodie's, so the shoulder square moves back (TICKET-009).
 const SWEAT_AREAS: Record<string, Placement> = {
   ...HOODIE_AREAS,
-  back: { position: [0, 0.16, -0.33], rotation: [0, Math.PI, 0], size: 0.64, depth: 0.55 },
+  back: { position: [0, 0.16, -0.33], rotation: [0, Math.PI, 0], size: 0.672, depth: 0.55 },
   ...longShoulders(-0.05),
 };
 
