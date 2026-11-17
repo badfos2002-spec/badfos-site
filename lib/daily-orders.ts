@@ -8,6 +8,7 @@ import {
   BABY_SIZES,
   getColorLabel,
   getTypeLabel,
+  typeLabelAfterNoun,
   getProductLabel,
 } from './constants'
 
@@ -45,7 +46,7 @@ const PRODUCT_SINGULAR: Record<string, string> = {
 export function productTypeLabel(productType: string, fabricType?: string): string {
   const singular = PRODUCT_SINGULAR[productType] ?? productType
   if (!fabricType) return singular
-  const type = getTypeLabel(fabricType)
+  const type = typeLabelAfterNoun(fabricType)
   // "כובע טמבל" / "תיק קנבס" כבר כוללים את שם המוצר
   return type.startsWith(singular) ? type : `${singular} ${type}`
 }
@@ -211,7 +212,7 @@ const SUPPLIER_NAMES: Record<string, string> = {
 /** שם קצר לספק: "חולצות כותנה", "קפוצון קנגרו", "פוטר", "כובעי טמבל", "באפים". */
 function supplierName(productType: string, fabricType: string): string {
   const type = fabricType ? getTypeLabel(fabricType) : ''
-  if (productType === 'tshirt' && type) return `חולצות ${type}`
+  if (productType === 'tshirt' && type) return `חולצות ${typeLabelAfterNoun(fabricType, type)}`
   if (productType === 'sweatshirt' && type) return type.replace(/׳/g, '')
   if (productType === 'cap' && type) return type.replace(/^כובע /, 'כובעי ')
   if (productType === 'tote' && type) return type.replace(/^תיק /, 'תיקי ')
