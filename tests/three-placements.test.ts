@@ -142,8 +142,8 @@ describe('nothing but shirts prints on a shoulder', () => {
 // Back narrowed again to 0.55 × 0.72 after the renders: at 0.60 a wide/square
 // +3 print was 0.87 of the lower torso, at 0.55 it is ≈ 0.80.
 describe('t-shirt front/back guide boxes keep a wide +3 print inside the torso', () => {
-  it('back is 0.55 × 0.72, front_full 0.54 × 0.60', () => {
-    expect(guides('tshirt').back).toMatchObject({ w: 0.55, h: 0.72, label: 'גב' })
+  it('back is 0.5775 × 0.756 (TICKET-019: 0.55 × 0.72 +5%), front_full 0.54 × 0.60', () => {
+    expect(guides('tshirt').back).toMatchObject({ w: 0.5775, h: 0.756, label: 'גב' })
     expect(guides('tshirt').front_full).toMatchObject({ w: 0.54, h: 0.6, label: 'קדמי מלא' })
   })
 
@@ -154,9 +154,9 @@ describe('t-shirt front/back guide boxes keep a wide +3 print inside the torso',
   })
 
   it('the other variants and the t-shirt placements are untouched', () => {
-    expect(guides('polo').back!.w).toBe(0.575)
-    expect(guides('oversized').back!.w).toBe(0.6)
-    expect(areas('tshirt').back).toMatchObject({ position: [0, 0.14, -0.3], size: 0.92, depth: 0.55 })
+    expect(guides('polo').back!.w).toBe(0.60375) // TICKET-019: 0.575 +5%
+    expect(guides('oversized').back!.w).toBe(0.63) // TICKET-019: 0.6 +5%
+    expect(areas('tshirt').back).toMatchObject({ position: [0, 0.14, -0.3], size: 0.966, depth: 0.55 }) // TICKET-019: 0.92 +5%
     expect(areas('tshirt').front_full).toMatchObject({ position: [0, 0.13, 0.3], size: 0.68, depth: 0.55 })
   })
 })
