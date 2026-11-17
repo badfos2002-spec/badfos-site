@@ -75,7 +75,16 @@ export const PRODUCT_CATEGORIES = [
 // Fabric Types (T-Shirts only)
 // ============================================================================
 
-export const FABRIC_TYPES = [
+// `parent` marks a variant of another fabric: the long-sleeve tee is a cotton
+// tee, so step 1 shows it under «כותנה» (not as a card of its own) — every
+// other consumer treats it as a normal fabric.
+export const FABRIC_TYPES: readonly {
+  id: FabricType
+  name: string
+  description: string
+  surcharge: number
+  parent?: FabricType
+}[] = [
   {
     id: 'cotton' as FabricType,
     name: 'כותנה',
@@ -100,7 +109,14 @@ export const FABRIC_TYPES = [
     description: 'גזרה רחבה ונוחה',
     surcharge: 10,
   },
-] as const
+  {
+    id: 'long-sleeve' as FabricType,
+    name: 'חולצת שרוול ארוך',
+    description: 'כותנה עם שרוולים ארוכים',
+    surcharge: 5,
+    parent: 'cotton' as FabricType,
+  },
+]
 
 // ============================================================================
 // Colors by Product Type
@@ -126,6 +142,7 @@ export const FABRIC_COLOR_FILTER: Record<string, string[]> = {
   'dri-fit': ['white', 'black', 'gray', 'red', 'navy', 'beige', 'burgundy', 'olive'],
   oversized: ['white', 'black', 'beige'],
   polo: ['white', 'black', 'gray'],
+  'long-sleeve': ['white', 'black'],
 }
 
 export const SWEATSHIRT_COLORS = [
@@ -155,12 +172,6 @@ export const SWEATSHIRT_COLOR_FILTER: Record<string, string[]> = {
 // full-front print — the zipper runs down the centre.
 export const SWEATSHIRT_AREA_FILTER: Record<string, string[]> = {
   zip: ['back', 'chest_logo', 'chest_logo_right', 'shoulder_right', 'shoulder_left'],
-}
-
-// Print areas per t-shirt fabric (undefined = all areas). The polo has no
-// centre-chest logo — the button placket runs down the centre.
-export const TSHIRT_AREA_FILTER: Record<string, string[]> = {
-  polo: ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'shoulder_right', 'shoulder_left'],
 }
 
 export const BUFF_COLORS = [
@@ -274,7 +285,39 @@ export const TSHIRT_DESIGN_AREAS = [
     description: 'הדפסה קטנה על השרוול, כתף שמאל',
     price: 5,
   },
+  {
+    id: 'sleeve_right' as DesignAreaType,
+    name: 'שרוול ימין',
+    description: 'הדפס לאורך השרוול',
+    price: 5,
+  },
+  {
+    id: 'sleeve_left' as DesignAreaType,
+    name: 'שרוול שמאל',
+    description: 'הדפס לאורך השרוול',
+    price: 5,
+  },
 ] as const
+
+// Prints along the sleeve exist only on the long-sleeve tee.
+export const LONG_SLEEVE_ONLY_AREAS: readonly string[] = ['sleeve_right', 'sleeve_left']
+const CLASSIC_TSHIRT_AREAS: string[] = TSHIRT_DESIGN_AREAS.map(a => a.id).filter(id => !LONG_SLEEVE_ONLY_AREAS.includes(id))
+
+// Print areas per t-shirt fabric — explicit for every fabric, because the
+// sleeve prints must stay off every fabric but the long-sleeve tee. The polo
+// has no centre-chest logo — the button placket runs down the centre.
+export const TSHIRT_AREA_FILTER: Record<string, string[]> = {
+  cotton: CLASSIC_TSHIRT_AREAS,
+  'dri-fit': CLASSIC_TSHIRT_AREAS,
+  oversized: CLASSIC_TSHIRT_AREAS,
+  polo: ['front_full', 'back', 'chest_logo', 'chest_logo_right', 'shoulder_right', 'shoulder_left'],
+  'long-sleeve': TSHIRT_DESIGN_AREAS.map(a => a.id),
+}
+
+/** The t-shirt areas a fabric offers (no fabric yet → the classic areas). */
+export function getTshirtAreaIds(fabricType?: string): string[] {
+  return TSHIRT_AREA_FILTER[fabricType || ''] ?? CLASSIC_TSHIRT_AREAS
+}
 
 export const SWEATSHIRT_DESIGN_AREAS = [
   {
@@ -849,6 +892,8 @@ export function getModel3D(productType: string, fabricType?: string): { variant:
   if (productType === 'tshirt') {
     if (fabricType === 'polo') return { variant: 'polo', url: '/models/polo-web.glb' }
     if (fabricType === 'oversized') return { variant: 'oversized', url: '/models/oversized-web.glb' }
+    // TICKET-018 wires the long-sleeve model; until then the designers show 2D.
+    if (fabricType === 'long-sleeve') return null
     return { variant: 'tshirt', url: '/models/tshirt-web.glb' }
   }
   if (productType === 'sweatshirt') {
@@ -908,6 +953,10 @@ export function getBasePrice(productType: ProductType, subType?: string): number
   const v2 = _pricingOverrides.products?.[productType]?.base
   if (v2) {
     if (subType && v2[subType] !== undefined) return v2[subType]
+    // A fabric variant added after the doc was saved (long-sleeve): its
+    // parent's saved price + the code surcharge — never an arbitrary first key.
+    const variant = productType === 'tshirt' && subType ? FABRIC_TYPES.find(f => f.id === subType) : undefined
+    if (variant?.parent && v2[variant.parent] !== undefined) return v2[variant.parent] + variant.surcharge
     if (v2.default !== undefined) return v2.default
     const first = Object.values(v2)[0]
     if (first !== undefined) return first

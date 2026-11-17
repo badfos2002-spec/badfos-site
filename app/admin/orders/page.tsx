@@ -44,6 +44,7 @@ const fabricLabels: Record<string, string> = {
   'dri-fit': 'דרייפיט',
   polo: 'פולו',
   oversized: 'אוברסייז',
+  'long-sleeve': 'חולצת שרוול ארוך',
   mesh: 'רשת',
   tembel: 'טמבל',
   kangaroo: 'קפוצ׳ון קנגרו',

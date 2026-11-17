@@ -34,7 +34,7 @@
  */
 
 import { useState, useRef, useEffect, useSyncExternalStore } from 'react'
-import { TSHIRT_DESIGN_AREAS, TSHIRT_AREA_FILTER, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
+import { TSHIRT_DESIGN_AREAS, getTshirtAreaIds, getDesignAreasByProductType, subscribePricing, getPricingVersion } from '@/lib/constants'
 import type { DesignArea } from '@/lib/types'
 import { confirmDesignReplace } from '@/lib/utils'
 import { uploadDesignFile, generateUniqueFileName } from '@/lib/storage'
@@ -45,7 +45,7 @@ import AreaIcon, { areaRows, isCompactArea, AREA_ROW_COLS } from '@/components/d
 
 interface DesignStepProps {
   designs: DesignArea[]
-  /** Hides areas the fabric doesn't offer (TSHIRT_AREA_FILTER). */
+  /** Hides areas the fabric doesn't offer (TSHIRT_AREA_FILTER via getTshirtAreaIds). */
   fabricType?: string
   onUpdate: (designs: DesignArea[]) => void
   onAreaFocus?: (areaId: string) => void
@@ -245,8 +245,8 @@ export default function DesignStep({ designs, fabricType, onUpdate, onAreaFocus,
   const liveAreas = getDesignAreasByProductType('tshirt')
   const livePrice = (id: string) => liveAreas.find(a => a.id === id)?.price ?? TSHIRT_DESIGN_AREAS.find(a => a.id === id)?.price ?? 0
   const [selectedAreaId, setSelectedAreaId] = useState<string>(TSHIRT_DESIGN_AREAS[0].id)
-  const allowedAreas = TSHIRT_AREA_FILTER[fabricType || '']
-  const availableAreas = TSHIRT_DESIGN_AREAS.filter(a => !allowedAreas || allowedAreas.includes(a.id))
+  const allowedAreas = getTshirtAreaIds(fabricType)
+  const availableAreas = TSHIRT_DESIGN_AREAS.filter(a => allowedAreas.includes(a.id))
   const [busyAreas, setBusyAreas] = useState<string[]>([])
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const sessionId = useState(() => `tshirt-${Date.now()}`)[0]
