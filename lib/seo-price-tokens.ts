@@ -185,6 +185,8 @@ export function validatePriceText(text: string): void {
 /** Shape validateSeoPage needs (structural — avoids a lib/seo-pages import cycle). */
 interface TokenCheckedPage {
   slug: string
+  productType?: ProductType
+  fabric?: string
   heroText: string
   benefits: { text: string }[]
   paragraphs: { text: string }[]
@@ -214,6 +216,8 @@ export function validateSeoPage(page: TokenCheckedPage, usesDefaultLayout: boole
     throw new Error(`${where}: price tokens / faq aLive are rendered by DefaultLayout only`)
   }
   tokenFields.forEach(validatePriceText)
+  // The pricing strip renders {{base:<productType>:<fabric>}} — a typo must fail the build
+  if (page.fabric !== undefined) parsePriceToken(`base:${page.productType}:${page.fabric}`)
 
   const rest = JSON.stringify({
     ...page,

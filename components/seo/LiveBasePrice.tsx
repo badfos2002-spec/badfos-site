@@ -5,6 +5,6 @@
 import type { ProductType } from '@/lib/types'
 import LivePriceToken from './LivePriceToken'
 
-export default function LiveBasePrice({ productType }: { productType: ProductType }) {
-  return <LivePriceToken token={`base:${productType}`} />
+export default function LiveBasePrice({ productType, subType }: { productType: ProductType; subType?: string }) {
+  return <LivePriceToken token={subType ? `base:${productType}:${subType}` : `base:${productType}`} />
 }
