@@ -104,7 +104,7 @@ describe('2D back boxes: width ×1.05, same aspect, still centred', () => {
   const pct = (s: string) => parseFloat(s)
   const CASES = [
     { name: 'tee photos', style: DESIGN_AREA_OVERLAYS.back.style, width: 45, aspect: '180 / 200', top: '24.06%' },
-    { name: 'long-sleeve renders', style: LONG_SLEEVE_AREA_OVERRIDES.back, width: 23.1, aspect: '277 / 364', top: '35.33%' },
+    { name: 'long-sleeve renders', style: LONG_SLEEVE_AREA_OVERRIDES.back, width: 23.1, aspect: '277 / 364', top: '33.63%' },
     { name: 'sweatshirt photos', style: SWEATSHIRT_AREA_OVERRIDES.back, width: 36, aspect: '180 / 200', top: '32.17%' },
   ]
   for (const c of CASES) {

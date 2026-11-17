@@ -168,7 +168,7 @@ export const SWEATSHIRT_AREA_OVERRIDES: Record<string, { [key: string]: string }
 // viewer's left; the shoulders mirror exactly.
 export const LONG_SLEEVE_AREA_OVERRIDES: Record<string, { [key: string]: string }> = {
   front_full: { width: '22.5%', aspectRatio: '270 / 302', top: '37%', left: '50%', transform: 'translateX(-50%)', borderRadius: '10px' },
-  back: { width: '24.255%', aspectRatio: '277 / 364', top: '35.33%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
+  back: { width: '24.255%', aspectRatio: '277 / 364', top: '33.63%', left: '50%', transform: 'translateX(-50%)', borderRadius: '12px' },
   chest_logo: { width: '7.2%', aspectRatio: '1', top: '27.3%', left: '35.4%', borderRadius: '6px' },
   chest_logo_right: { width: '7.2%', aspectRatio: '1', top: '27.3%', right: '35.4%', borderRadius: '6px' },
   chest_logo_center: { width: '7.2%', aspectRatio: '1', top: '27.3%', left: '50%', transform: 'translateX(-50%)', borderRadius: '6px' },
