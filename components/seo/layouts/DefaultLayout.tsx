@@ -42,8 +42,9 @@ const PRINTED_NOUN: Record<ProductType, string> = {
 export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
   // Product pages send visitors straight to their designer; audience pages keep
   // the original targets (homepage hero CTA, t-shirt designer in the strip).
-  const ctaHref = page.productType ? `/designer/${page.productType}` : '/'
-  const designerHref = page.productType ? `/designer/${page.productType}` : '/designer/tshirt'
+  const fabricQuery = page.fabric ? `?fabric=${page.fabric}` : ''
+  const ctaHref = page.productType ? `/designer/${page.productType}${fabricQuery}` : '/'
+  const designerHref = page.productType ? `/designer/${page.productType}${fabricQuery}` : '/designer/tshirt'
   const relatedPages = page.related
     .map((slug) => getSeoPage(slug))
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
@@ -256,7 +257,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
               </p>
               {page.productType && (
                 <p className="text-[#1e293b] font-extrabold mt-2">
-                  מחיר בסיס: <LiveBasePrice productType={page.productType} /> ליחידה + תוספת הדפסה לפי אזור
+                  מחיר בסיס: <LiveBasePrice productType={page.productType} subType={page.fabric} /> ליחידה + תוספת הדפסה לפי אזור
                 </p>
               )}
             </div>
