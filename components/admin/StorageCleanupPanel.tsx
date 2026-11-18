@@ -24,7 +24,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { auth } from '@/lib/firebase'
-import { formatBytes, FILE_LEVEL_MODES, type CleanupMode } from '@/lib/storage-cleanup'
+import { formatBytes, FILE_LEVEL_MODES, MAX_DELETIONS_PER_RUN, type CleanupMode } from '@/lib/storage-cleanup'
 
 /**
  * "1.18 GB" inside a Hebrew sentence gets its pieces reordered by the BiDi
@@ -123,6 +123,32 @@ const STATUS_LABEL: Record<string, string> = {
 
 const isFileLevel = (m: CleanupMode) => FILE_LEVEL_MODES.includes(m)
 
+const prefixOf = (path: string) => path.slice(0, path.lastIndexOf('/') + 1)
+
+/**
+ * ברירת המחדל לבחירה במצבי התיקיות (יתומים / שאריות בדיקות): לפי סדר הרשימה,
+ * כל עוד סך הקבצים לא עובר את המקסימום לריצה. תיקייה שהייתה חוצה את המקסימום
+ * מדולגת, וממשיכים — תיקיות קטנות אחריה עוד יכולות להיכנס. בשאריות הבדיקות
+ * תבנית ששמה זהה לשמות שהאתר החי מייצר ללקוחות אמיתיים לא נבחרת אוטומטית.
+ */
+function cappedSelection(data: PreviewPayload): Set<string> {
+  const filesByPrefix = new Map<string, number>()
+  for (const c of data.candidates) {
+    const p = prefixOf(c.path)
+    filesByPrefix.set(p, (filesByPrefix.get(p) ?? 0) + 1)
+  }
+  const picked = new Set<string>()
+  let total = 0
+  for (const g of data.groups) {
+    if (data.mode !== 'orphans' && g.ambiguous) continue
+    const files = filesByPrefix.get(g.prefix) ?? 0
+    if (total + files > MAX_DELETIONS_PER_RUN) continue
+    picked.add(g.prefix)
+    total += files
+  }
+  return picked
+}
+
 async function callApi(body: Record<string, unknown>) {
   const token = await auth?.currentUser?.getIdToken()
   if (!token) throw new Error('נדרשת התחברות מחדש')
@@ -180,17 +206,12 @@ export default function StorageCleanupPanel() {
       try {
         const json = (await callApi({ action: 'preview', mode: nextMode })) as PreviewPayload
         setData(json)
-        // ברירת המחדל לבחירה: הכל ביתומים, ורק התבניות החד-משמעיות בשאריות
-        // הבדיקות. תבנית ששמה זהה לשמות שהאתר החי מייצר ללקוחות אמיתיים
-        // נשארת לא מסומנת עד שאדם מסמן אותה בעצמו.
-        const auto = new Set<string>()
         // במצבי הקבצים (הזמנות סגורות / סקיצות) הסבב הוא הכל-או-כלום: השרת
         // מסמן את ההזמנות לפי הסבב המלא, ובחירה חלקית הייתה מסמנת הזמנה
-        // שהקבצים שלה נשארו.
-        for (const g of json.groups) {
-          if (nextMode === 'orphans' || isFileLevel(nextMode) || !g.ambiguous) auto.add(g.prefix)
-        }
-        setSelected(auto)
+        // שהקבצים שלה נשארו. במצבי התיקיות — עד המקסימום לריצה.
+        setSelected(
+          isFileLevel(nextMode) ? new Set(json.groups.map((g) => g.prefix)) : cappedSelection(json)
+        )
       } catch (e) {
         setError(e instanceof Error ? e.message : 'הסריקה נכשלה')
       } finally {
@@ -222,15 +243,15 @@ export default function StorageCleanupPanel() {
   const selectedPaths = data
     ? isFileLevel(data.mode)
       ? data.candidates
-      : data.candidates.filter((c) => {
-        const prefix = c.path.slice(0, c.path.lastIndexOf('/') + 1)
-        return selected.has(prefix)
-      })
+      : data.candidates.filter((c) => selected.has(prefixOf(c.path)))
     : []
   const selectedBytes = selectedPaths.reduce((sum, c) => sum + c.sizeBytes, 0)
+  const prefixMode = !!data && !isFileLevel(data.mode)
+  // השרת דוחה בקשה מעל המקסימום — לא נותנים לפתוח את חלון האישור בכלל
+  const overCap = prefixMode && selectedPaths.length > MAX_DELETIONS_PER_RUN
 
   const handleDelete = async () => {
-    if (!data || confirmText !== CONFIRM_PHRASE) return
+    if (!data || overCap || confirmText !== CONFIRM_PHRASE) return
     setDeleting(true)
     setError(null)
     try {
@@ -254,7 +275,10 @@ export default function StorageCleanupPanel() {
           (json.oversized ? ` · ${ltr(json.oversized)} הזמנות חריגות בגודלן דולגו` : '') +
           (json.rejected?.length ? ` · ${ltr(json.rejected.length)} נדחו ולא נמחקו` : '') +
           (json.errors ? ` · ${ltr(json.errors)} שגיאות` : '') +
-          (json.logged === false ? ' · רישום ביומן נכשל' : ''),
+          (json.logged === false ? ' · רישום ביומן נכשל' : '') +
+          (prefixMode && data.totalFiles - (json.deleted ?? 0) > 0
+            ? ` · נותרו ~${ltr((data.totalFiles - (json.deleted ?? 0)).toLocaleString('he-IL'))} קבצים — לסרוק שוב לסבב הבא`
+            : ''),
       })
       setConfirmOpen(false)
       setConfirmText('')
@@ -402,6 +426,12 @@ export default function StorageCleanupPanel() {
             />
           </div>
 
+          {prefixMode && data.totalFiles > MAX_DELETIONS_PER_RUN && (
+            <p className="text-xs sm:text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-relaxed">
+              {`סבב זה: ${ltr(selectedPaths.length.toLocaleString('he-IL'))} קבצים (${fmtBytes(selectedBytes)}) מתוך ${ltr(data.totalFiles.toLocaleString('he-IL'))} מועמדים · המקסימום לריצה הוא ${ltr(MAX_DELETIONS_PER_RUN.toLocaleString('he-IL'))} · אחרי המחיקה לסרוק שוב לסבב הבא`}
+            </p>
+          )}
+
           {/* ── פילוח לפי קבוצה (מצבי קבצים) ───────────────────────── */}
           {data.fileLevel && (
             <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
@@ -480,9 +510,29 @@ export default function StorageCleanupPanel() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 text-sm font-semibold text-gray-800">
-                {data.groups.length.toLocaleString('he-IL')}{' '}
-                {data.mode === 'old-orders' ? 'הזמנות בסבב' : 'תיקיות מועמדות'}
+              <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-gray-800 ml-auto">
+                  {data.groups.length.toLocaleString('he-IL')}{' '}
+                  {data.mode === 'old-orders' ? 'הזמנות בסבב' : 'תיקיות מועמדות'}
+                </span>
+                {prefixMode && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(cappedSelection(data))}
+                      className="min-h-[44px] px-3 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200"
+                    >
+                      בחר עד המקסימום
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(new Set())}
+                      className="min-h-[44px] px-3 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200"
+                    >
+                      נקה בחירה
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-100">
                 {data.groups.map((g) => (
@@ -528,10 +578,17 @@ export default function StorageCleanupPanel() {
             </div>
           )}
 
+          {overCap && (
+            <p role="alert" className="text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 leading-relaxed">
+              {`נבחרו ${ltr(selectedPaths.length.toLocaleString('he-IL'))} קבצים — המקסימום לריצה הוא ${ltr(MAX_DELETIONS_PER_RUN.toLocaleString('he-IL'))}. בטלו סימון של תיקיות או לחצו "בחר עד המקסימום"`}
+            </p>
+          )}
+
           {selectedPaths.length > 0 && (
             <Button
-              onClick={() => setConfirmOpen(true)}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => !overCap && setConfirmOpen(true)}
+              disabled={overCap}
+              className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40"
             >
               <Trash2 className="w-4 h-4 ml-2" />
               מחק {selectedPaths.length.toLocaleString('he-IL')} קבצים ({fmtBytes(selectedBytes)})
@@ -541,7 +598,7 @@ export default function StorageCleanupPanel() {
       )}
 
       {/* ── אישור מחיקה ────────────────────────────────────────────── */}
-      {confirmOpen && data && (
+      {confirmOpen && data && !overCap && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div dir="rtl" className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4">
             <div className="flex items-center gap-2 text-red-700">
