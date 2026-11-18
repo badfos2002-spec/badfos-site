@@ -603,6 +603,13 @@ export type CleanupMode = 'orphans' | 'test-junk' | 'old-orders' | 'sketch-orpha
 /** Modes whose plan is file-level and capped per run (lib/storage-cleanup-run.ts). */
 export const FILE_LEVEL_MODES: readonly CleanupMode[] = ['old-orders', 'sketch-orphans']
 
+/**
+ * Hard ceiling on objects removed in one call, so a single click is bounded.
+ * Here (no firebase-admin imports) so the client panel can cap its selection;
+ * lib/storage-cleanup-run.ts re-exports it and enforces it server-side.
+ */
+export const MAX_DELETIONS_PER_RUN = 2_000
+
 export interface StorageObject {
   path: string
   sizeBytes: number

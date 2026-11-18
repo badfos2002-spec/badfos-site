@@ -23,6 +23,7 @@ import {
   planStorageCleanup,
   FILE_LEVEL_MODES,
   FileLevelPlan,
+  MAX_DELETIONS_PER_RUN,
   sessionPrefixOf,
   CleanupMode,
   CleanupPlan,
@@ -40,8 +41,8 @@ import {
  */
 const MAX_DOCS_PER_COLLECTION = 20_000
 
-/** Hard ceiling on objects removed in one call, so a single click is bounded. */
-export const MAX_DELETIONS_PER_RUN = 2_000
+/** Lives in lib/storage-cleanup.ts so the client panel can import it; one source of truth. */
+export { MAX_DELETIONS_PER_RUN }
 
 /** Firestore collection holding the audit trail. Admin SDK only; no rules change. */
 export const CLEANUP_LOG_COLLECTION = 'storage_cleanup_log'
