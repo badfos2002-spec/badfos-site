@@ -21,6 +21,7 @@ vi.mock('@/lib/firebase-admin', () => ({
 
 import { POST } from '@/app/api/admin/deals/route'
 import { GET } from '@/app/api/deals/route'
+import { getHeroDeal } from '@/lib/deals-server'
 
 const ADMIN = { email: 'badfos2002@gmail.com', email_verified: true }
 
@@ -143,12 +144,49 @@ describe('POST /api/admin/deals — delete / reorder', () => {
 
 describe('GET /api/deals (public)', () => {
   it('returns only live deals, sorted, with the cache header and no extra fields', async () => {
-    const res = await GET()
+    const res = await GET(new Request('https://badfos.co.il/api/deals'))
     expect(res.status).toBe(200)
     expect(res.headers.get('cache-control')).toBe('s-maxage=60, stale-while-revalidate=300')
     const { deals } = await res.json()
     expect(deals.map((d: { id: string }) => d.id)).toEqual(['live2', 'live1'])
     expect(deals[1]).not.toHaveProperty('secretAdminNote')
     expect(deals[1].order).toEqual({ href: '/designer/sweatshirt', label: 'להזמנת סווטשרט', couponCode: 'WINTER20' })
+  })
+})
+
+describe('hero deal (Addendum A)', () => {
+  it('getHeroDeal returns the first LIVE deal with hero.enabled (inactive ones skipped)', async () => {
+    const d = await getHeroDeal()
+    expect(d?.id).toBe('live2')
+    expect(d?.hero).toEqual({ enabled: true, title: 'כובעים בהירו', text: 'טקסט הירו', ctaLabel: 'לכובעים' })
+  })
+  it('getHeroDeal returns null when no live deal is in the hero', async () => {
+    h.fake = createFakeDb({ live1: FIXTURE_DEALS.live1, inactive: FIXTURE_DEALS.inactive })
+    expect(await getHeroDeal()).toBeNull()
+  })
+  it('saving a deal with hero.enabled turns the hero off on every other deal', async () => {
+    const res = await post({ action: 'save', deal: { ...validDeal, id: 'live1', slug: 'מבצע-חורף', hero: { enabled: true, title: 'חורף בהירו' } } })
+    expect(res.status).toBe(200)
+    expect((h.fake.store.get('live1')?.hero as { enabled: boolean }).enabled).toBe(true)
+    expect((h.fake.store.get('live2')?.hero as { enabled: boolean }).enabled).toBe(false)
+    expect((h.fake.store.get('inactive')?.hero as { enabled: boolean }).enabled).toBe(false)
+    expect((await getHeroDeal())?.id).toBe('live1')
+  })
+  it('saving a deal without the hero leaves the current hero deal alone', async () => {
+    await post({ action: 'save', deal: { ...validDeal, id: 'live1', slug: 'מבצע-חורף' } })
+    expect((h.fake.store.get('live2')?.hero as { enabled: boolean }).enabled).toBe(true)
+  })
+  it('rejects hero overrides over the limits', async () => {
+    const res = await post({ action: 'save', deal: { ...validDeal, hero: { enabled: true, title: 'א'.repeat(61), text: 'ב'.repeat(161) } } })
+    expect(res.status).toBe(400)
+    const { errors } = await res.json()
+    expect(errors.heroTitle).toBeTruthy()
+    expect(errors.heroText).toBeTruthy()
+  })
+  it('GET /api/deals?hero=1 returns the single hero deal', async () => {
+    const res = await GET(new Request('https://badfos.co.il/api/deals?hero=1'))
+    const body = await res.json()
+    expect(body.deal.id).toBe('live2')
+    expect(body.deals).toBeUndefined()
   })
 })

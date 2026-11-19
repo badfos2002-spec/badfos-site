@@ -158,3 +158,27 @@ describe('admin deals — form', () => {
     previews.forEach((p) => expect(within(p).getByText('תצוגה')).toBeInTheDocument())
   })
 })
+
+describe('admin deals — hero (Addendum A)', () => {
+  it('the hero toggle + overrides are sent with save, and the preview shows the hero variant', async () => {
+    await openNew()
+    fireEvent.change(screen.getByLabelText('כותרת'), { target: { value: 'מבצע הירו' } })
+    fireEvent.change(screen.getByLabelText('טקסט קצר'), { target: { value: 'טקסט' } })
+    fireEvent.click(screen.getByLabelText('הצג את המבצע בהירו של דף הבית'))
+    fireEvent.change(screen.getByLabelText(/כותרת בהירו/), { target: { value: 'כותרת גדולה' } })
+    fireEvent.change(screen.getByLabelText(/טקסט בהירו/), { target: { value: 'טקסט הירו' } })
+    expect(within(screen.getByTestId('hero-preview')).getByText('כותרת גדולה')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'שמור' }))
+    await waitFor(() => expect(calls.some((c) => c.action === 'save')).toBe(true))
+    expect(calls.find((c) => c.action === 'save')!.deal.hero).toEqual({ enabled: true, title: 'כותרת גדולה', text: 'טקסט הירו', ctaLabel: '' })
+  })
+
+  it('marks the hero deal in the list', async () => {
+    DEALS[0].hero = { enabled: true }
+    render(<AdminDealsPage />)
+    const rows = await screen.findAllByTestId('admin-deal-row')
+    expect(within(rows[0]).getByText('בהירו')).toBeInTheDocument()
+    expect(within(rows[1]).queryByText('בהירו')).not.toBeInTheDocument()
+    delete DEALS[0].hero
+  })
+})
