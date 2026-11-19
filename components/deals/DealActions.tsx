@@ -31,17 +31,17 @@ export default function DealActions({ deal, inert }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
-      <a
-        href={dealWhatsAppLink(deal)}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={block ?? (() => trackWhatsAppClick('deal'))}
-        className={`${btn} w-full bg-[#25D366] text-white hover:bg-[#1ebe5b]`}
-      >
-        <MessageCircle className="h-5 w-5" aria-hidden="true" />
-        וואטסאפ
-      </a>
-      <div className={`grid gap-2 ${order ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      <div className="grid grid-cols-[2fr_1fr] gap-2">
+        <a
+          href={dealWhatsAppLink(deal)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={block ?? (() => trackWhatsAppClick('deal'))}
+          className={`${btn} bg-[#25D366] text-white hover:bg-[#1ebe5b]`}
+        >
+          <MessageCircle className="h-5 w-5" aria-hidden="true" />
+          וואטסאפ
+        </a>
         <a
           href={dealPhoneLink()}
           onClick={block ?? (() => trackPhoneClick())}
@@ -50,17 +50,17 @@ export default function DealActions({ deal, inert }: Props) {
           <Phone className="h-5 w-5" aria-hidden="true" />
           חיוג
         </a>
-        {order && (
-          <Link
-            href={order.href}
-            onClick={block}
-            className={`${btn} bg-[#ffc32e] text-[#3b2600] hover:bg-[#f5b51c]`}
-          >
-            <ShoppingBag className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
-            <span className="truncate">{order.label || 'להזמנה'}</span>
-          </Link>
-        )}
       </div>
+      {order && (
+        <Link
+          href={order.href}
+          onClick={block}
+          className={`${btn} w-full bg-[#ffc32e] text-[#3b2600] hover:bg-[#f5b51c]`}
+        >
+          <ShoppingBag className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+          <span className="truncate">{order.label || 'להזמנה'}</span>
+        </Link>
+      )}
       {order?.couponCode && (
         <div className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-yellow-400 bg-yellow-50 px-3 py-1.5 text-sm">
           <span className="text-gray-700">
