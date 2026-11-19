@@ -145,7 +145,7 @@ describe('ORDER_TARGETS', () => {
 
 describe('isAllowedDealImage', () => {
   it('allows Firebase Storage URLs under site-images/deals and site-relative paths', () => {
-    expect(isAllowedDealImage('https://firebasestorage.googleapis.com/v0/b/x.appspot.com/o/site-images%2Fdeals%2F1-a.jpg?alt=media&token=t')).toBe(true)
+    expect(isAllowedDealImage('https://firebasestorage.googleapis.com/v0/b/badfos-28b67.firebasestorage.app/o/site-images%2Fdeals%2F1-a.jpg?alt=media&token=t')).toBe(true)
     expect(isAllowedDealImage('/images/deals/a.jpg')).toBe(true)
   })
   it('rejects other hosts, other folders, http and protocol-relative', () => {
@@ -153,6 +153,13 @@ describe('isAllowedDealImage', () => {
     expect(isAllowedDealImage('https://evil.example/site-images%2Fdeals%2Fa.jpg')).toBe(false)
     expect(isAllowedDealImage('http://firebasestorage.googleapis.com/v0/b/x/o/site-images%2Fdeals%2Fa.jpg')).toBe(false)
     expect(isAllowedDealImage('//evil.example/a.jpg')).toBe(false)
+    expect(isAllowedDealImage('/\\evil.example/a.jpg')).toBe(false)
+    expect(isAllowedDealImage('\\evil.example/a.jpg')).toBe(false)
+  })
+  it('only our bucket, only the /o/site-images%2Fdeals%2F object path', () => {
+    expect(isAllowedDealImage('https://firebasestorage.googleapis.com/v0/b/other-bucket.appspot.com/o/site-images%2Fdeals%2Fa.jpg')).toBe(false)
+    expect(isAllowedDealImage('https://firebasestorage.googleapis.com/v0/b/x.appspot.com/o/designs%2Fsite-images%2Fdeals%2Fa.jpg')).toBe(false)
+    expect(isAllowedDealImage('https://firebasestorage.googleapis.com/v0/b/badfos-28b67.firebasestorage.app/o/site-images%2Fdeals%2F1-a.jpg?alt=media')).toBe(true)
   })
 })
 

@@ -8,6 +8,7 @@ export function createFakeDb(seed: Record<string, Data> = {}) {
   const store = new Map<string, Data>(Object.entries(seed).map(([k, v]) => [k, { ...v }]))
   let autoId = 0
   const writes: { op: string; id: string; data?: Data }[] = []
+  const commits: { op: string; id: string }[][] = []
 
   const docRef = (id: string) => ({
     id,
@@ -43,8 +44,17 @@ export function createFakeDb(seed: Record<string, Data> = {}) {
 
   const batch = () => {
     const ops: (() => void)[] = []
+    const log: { op: string; id: string }[] = []
     return {
+      set(ref: { id: string }, data: Data) {
+        log.push({ op: 'set', id: ref.id })
+        ops.push(() => {
+          writes.push({ op: 'set', id: ref.id, data })
+          store.set(ref.id, { ...data })
+        })
+      },
       update(ref: { id: string }, data: Data) {
+        log.push({ op: 'update', id: ref.id })
         ops.push(() => {
           if (!store.has(ref.id)) throw new Error('NOT_FOUND')
           writes.push({ op: 'update', id: ref.id, data })
@@ -52,12 +62,13 @@ export function createFakeDb(seed: Record<string, Data> = {}) {
         })
       },
       async commit() {
+        commits.push(log)
         ops.forEach((op) => op())
       },
     }
   }
 
-  return { db: { collection, batch }, store, writes }
+  return { db: { collection, batch }, store, writes, commits }
 }
 
 export const FIXTURE_DEALS: Record<string, Data> = {

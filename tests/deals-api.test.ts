@@ -190,3 +190,25 @@ describe('hero deal (Addendum A)', () => {
     expect(body.deals).toBeUndefined()
   })
 })
+
+describe('hardening (review)', () => {
+  it('save with hero on writes the deal and turns the others off in ONE batch commit', async () => {
+    await post({ action: 'save', deal: { ...validDeal, id: 'live1', slug: 'מבצע-חורף', hero: { enabled: true } } })
+    expect(h.fake.commits).toHaveLength(1)
+    expect(h.fake.commits[0]).toEqual(
+      expect.arrayContaining([{ op: 'set', id: 'live1' }, { op: 'update', id: 'live2' }, { op: 'update', id: 'inactive' }])
+    )
+  })
+  it('delete of an unknown id is 404 and writes nothing', async () => {
+    const res = await post({ action: 'delete', id: 'ghost' })
+    expect(res.status).toBe(404)
+    expect(h.fake.writes).toHaveLength(0)
+  })
+  it('reorder dedupes ids before writing', async () => {
+    const res = await post({ action: 'reorder', ids: ['live1', 'live2', 'live1'] })
+    expect(res.status).toBe(200)
+    expect(h.fake.commits[0]).toEqual([{ op: 'update', id: 'live1' }, { op: 'update', id: 'live2' }])
+    expect(h.fake.store.get('live1')?.sortOrder).toBe(0)
+    expect(h.fake.store.get('live2')?.sortOrder).toBe(1)
+  })
+})

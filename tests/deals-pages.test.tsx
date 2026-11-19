@@ -149,3 +149,14 @@ describe('sitemap', () => {
     expect(urls).not.toContain(`https://badfos.co.il/deals/${enc('כבוי')}`)
   })
 })
+
+describe('coupon copy fallback', () => {
+  it('when the clipboard fails, shows the fallback message and selects the code', async () => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn(async () => { throw new Error('denied') }) } })
+    render(await DealsPage())
+    const winter = screen.getAllByTestId('deal-card')[1]
+    fireEvent.click(within(winter).getByRole('button', { name: /העתק/ }))
+    expect(await within(winter).findByText('לא ניתן להעתיק — סמנו את הקוד')).toBeInTheDocument()
+    expect(window.getSelection()?.toString()).toBe('WINTER20')
+  })
+})

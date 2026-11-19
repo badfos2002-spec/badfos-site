@@ -95,6 +95,9 @@ describe('NewHeroSection with a hero deal', () => {
     expect(box.closest('a') ?? box.querySelector('a')).toHaveAttribute('href', `/deals/${enc('מבצע-חורף')}`)
     expect(box.querySelector('picture source')).toHaveAttribute('srcset', '/images/deals/d.jpg')
     expect(box.querySelector('picture img')).toHaveAttribute('src', '/images/deals/m.jpg')
+    // LCP image: eager + high fetch priority
+    expect(box.querySelector('picture img')).toHaveAttribute('loading', 'eager')
+    expect(box.querySelector('picture img')).toHaveAttribute('fetchpriority', 'high')
   })
 })
 

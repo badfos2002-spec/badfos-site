@@ -10,7 +10,7 @@ vi.mock('@/lib/firebase', () => ({
   auth: { currentUser: { getIdToken: async () => 'test-token' } },
 }))
 const { uploadSiteImage } = vi.hoisted(() => ({
-  uploadSiteImage: vi.fn(async (_f: File, _c: string, name: string) => `https://firebasestorage.googleapis.com/v0/b/b/o/site-images%2Fdeals%2F${name}?alt=media`),
+  uploadSiteImage: vi.fn(async (_f: File, _c: string, name: string) => `https://firebasestorage.googleapis.com/v0/b/badfos-28b67.firebasestorage.app/o/site-images%2Fdeals%2F${name}?alt=media`),
 }))
 vi.mock('@/lib/storage', () => ({ uploadSiteImage }))
 
@@ -180,5 +180,24 @@ describe('admin deals — hero (Addendum A)', () => {
     expect(within(rows[0]).getByText('בהירו')).toBeInTheDocument()
     expect(within(rows[1]).queryByText('בהירו')).not.toBeInTheDocument()
     delete DEALS[0].hero
+  })
+})
+
+describe('admin deals — delete failure (review H5)', () => {
+  it('keeps the row and shows an error when the API refuses the delete', async () => {
+    const alert = vi.fn()
+    vi.stubGlobal('alert', alert)
+    const base = globalThis.fetch as unknown as (u: string, i: RequestInit) => Promise<Response>
+    vi.stubGlobal('fetch', vi.fn(async (u: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body))
+      if (body.action === 'delete') return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 })
+      return base(u, init)
+    }))
+    render(<AdminDealsPage />)
+    const rows = await screen.findAllByTestId('admin-deal-row')
+    fireEvent.click(within(rows[1]).getByRole('button', { name: /מחק/ }))
+    await waitFor(() => expect(alert).toHaveBeenCalledWith('שגיאה במחיקה'))
+    expect(screen.getAllByTestId('admin-deal-row')).toHaveLength(3)
+    expect(screen.getByText('מבצע כבוי')).toBeInTheDocument()
   })
 })
