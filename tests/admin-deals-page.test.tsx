@@ -9,7 +9,9 @@ import type { Deal } from '@/lib/types'
 vi.mock('@/lib/firebase', () => ({
   auth: { currentUser: { getIdToken: async () => 'test-token' } },
 }))
-const uploadSiteImage = vi.fn(async (_f: File, _c: string, name: string) => `https://firebasestorage.googleapis.com/v0/b/b/o/site-images%2Fdeals%2F${name}?alt=media`)
+const { uploadSiteImage } = vi.hoisted(() => ({
+  uploadSiteImage: vi.fn(async (_f: File, _c: string, name: string) => `https://firebasestorage.googleapis.com/v0/b/b/o/site-images%2Fdeals%2F${name}?alt=media`),
+}))
 vi.mock('@/lib/storage', () => ({ uploadSiteImage }))
 
 import AdminDealsPage from '@/app/admin/deals/page'
@@ -107,10 +109,10 @@ describe('admin deals — form', () => {
     const big = new File(['x'], 'big.jpg', { type: 'image/jpeg' })
     Object.defineProperty(big, 'size', { value: 6 * 1024 * 1024 })
     fireEvent.change(input, { target: { files: [big] } })
-    expect(await screen.findByText(/עד 5MB/)).toBeInTheDocument()
+    expect(await screen.findByText(/הקובץ גדול מדי/)).toBeInTheDocument()
     const pdf = new File(['x'], 'a.pdf', { type: 'application/pdf' })
     fireEvent.change(input, { target: { files: [pdf] } })
-    expect(await screen.findByText(/JPG, PNG או WebP/)).toBeInTheDocument()
+    expect(await screen.findByText(/רק קבצי JPG, PNG או WebP/)).toBeInTheDocument()
     expect(uploadSiteImage).not.toHaveBeenCalled()
   })
 
