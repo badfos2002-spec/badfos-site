@@ -20,7 +20,10 @@ function slugOf(params: Props['params']): string {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const deal = await getLiveDealBySlug(slugOf(params))
-  if (!deal) return {}
+  // Unknown, inactive or expired: the page 404s, so the title must say so
+  // («העמוד לא נמצא», like app/not-found.tsx) instead of inheriting the root
+  // layout's real title — and carry no canonical, no og card and no image.
+  if (!deal) return { title: 'העמוד לא נמצא | בדפוס' }
   const title = `${deal.title} | מבצע בבדפוס`
   const img = dealImage(deal, 'desktop')
   const image = img ? abs(img) : `${SITE_URL}/logo.png`
