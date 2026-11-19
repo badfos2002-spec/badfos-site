@@ -131,7 +131,7 @@ describe('rendered page', () => {
 describe('discoverability', () => {
   it('sitemap lists the encoded slug', async () => {
     const { default: sitemap } = await import('@/app/sitemap')
-    expect(sitemap().map((e) => e.url)).toContain(`https://badfos.co.il/${encodeURIComponent(SLUG)}`)
+    expect((await sitemap()).map((e) => e.url)).toContain(`https://badfos.co.il/${encodeURIComponent(SLUG)}`)
   })
   it('footer «המוצרים שלנו» links the page', async () => {
     const { default: Footer } = await import('@/components/layout/Footer')

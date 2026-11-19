@@ -8,6 +8,7 @@ import EventLinksSection from '@/components/home/EventLinksSection'
 
 const SectionLoader = () => <div className="min-h-[200px]" />
 
+const NewDealsSection = dynamic(() => import('@/components/home/NewDealsSection'))
 const NewHowItWorksSection = dynamic(() => import('@/components/home/NewHowItWorksSection'), { loading: SectionLoader })
 const NewContactFormSection = dynamic(() => import('@/components/home/NewContactFormSection'), { loading: SectionLoader })
 const NewTestimonialsSection = dynamic(() => import('@/components/home/NewTestimonialsSection'), { loading: SectionLoader })
@@ -21,6 +22,7 @@ export default function RootPage() {
         <NewHeroSection />
         <NewWhyChooseSection />
         <NewPackagesSection />
+        <NewDealsSection />
         <NewHowItWorksSection />
         <EventLinksSection />
         <NewContactFormSection />

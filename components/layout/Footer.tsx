@@ -44,7 +44,12 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/packages" className="hover:text-yellow-400 transition-colors">
-                  חבילות ומבצעים
+                  חבילות
+                </Link>
+              </li>
+              <li>
+                <Link href="/deals" className="hover:text-yellow-400 transition-colors">
+                  מבצעים
                 </Link>
               </li>
               <li>

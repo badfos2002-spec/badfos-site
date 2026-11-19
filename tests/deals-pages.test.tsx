@@ -137,3 +137,15 @@ describe('/deals/[slug] detail', () => {
     await expect(DealPage({ params: { slug: 'nope' } })).rejects.toThrow('NEXT_NOT_FOUND')
   })
 })
+
+describe('sitemap', () => {
+  it('lists /deals and every live deal (encoded), not expired or inactive ones', async () => {
+    const { default: sitemap } = await import('@/app/sitemap')
+    const urls = (await sitemap()).map((e) => e.url)
+    expect(urls).toContain('https://badfos.co.il/deals')
+    expect(urls).toContain(`https://badfos.co.il/deals/${enc('מבצע-חורף')}`)
+    expect(urls).toContain(`https://badfos.co.il/deals/${enc('כובעים')}`)
+    expect(urls).not.toContain(`https://badfos.co.il/deals/${enc('נגמר')}`)
+    expect(urls).not.toContain(`https://badfos.co.il/deals/${enc('כבוי')}`)
+  })
+})
