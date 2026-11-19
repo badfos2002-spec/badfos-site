@@ -95,9 +95,16 @@ describe('no Suspense boundary above a notFound() route (TICKET-023 soft 404)', 
 describe('the loading spinner still exists where it matters', () => {
   afterEach(() => cleanup())
 
-  for (const segment of ['designer', 'cart']) {
+  // Static import paths: a template literal makes vite's dynamic-import-vars
+  // plugin warn on every run.
+  const SPINNERS = [
+    ['designer', () => import('@/app/designer/loading')],
+    ['cart', () => import('@/app/cart/loading')],
+  ] as const
+
+  for (const [segment, load] of SPINNERS) {
     it(`app/${segment}/loading.tsx renders the «טוען...» spinner`, async () => {
-      const { default: Loading } = await import(`@/app/${segment}/loading`)
+      const { default: Loading } = await load()
       render(<Loading />)
       expect(screen.getByText('טוען...')).toBeInTheDocument()
     })
