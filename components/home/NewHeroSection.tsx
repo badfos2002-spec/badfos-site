@@ -147,18 +147,6 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
               </>}
             </p>
 
-            {deal && (
-              <a
-                href={dealWhatsAppLink(deal)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackWhatsAppClick('hero_deal')}
-                className="order-6 md:order-none inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 text-base font-bold text-white shadow-md hover:bg-[#1ebe5b] md:hidden"
-              >
-                <MessageCircle className="w-5 h-5" aria-hidden="true" />
-                וואטסאפ
-              </a>
-            )}
 
             {/* CTA — always visible, never JS-dependent */}
             {deal ? (
@@ -214,7 +202,7 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
           </div>
 
           {/* Carousel + Mobile Button */}
-          <div className="order-5 md:order-none relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mb-10 md:mb-0 mt-2">
+          <div className={deal ? "order-5 md:order-none relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mt-2" : "order-5 md:order-none relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mb-10 md:mb-0 mt-2"}>
             {/* Richer halo behind the carousel card */}
             <div className="absolute inset-0 -z-0 mx-auto my-auto w-[88%] h-[88%] bg-gradient-radial from-[#ffc32e]/35 via-[#fef08a]/20 to-transparent rounded-[2.5rem] blur-2xl pointer-events-none will-change-transform"></div>
 
@@ -232,13 +220,7 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
               </div>
             </div>
 
-            {deal ? (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 md:hidden">
-                <Link href={ctaHref} className="inline-flex min-h-[44px] items-center justify-center whitespace-nowrap bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-base font-bold px-6 rounded-full shadow-lg">
-                  {ctaText}
-                </Link>
-              </div>
-            ) : (
+            {!deal && (
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 w-40 md:hidden">
               <Link href="/designer">
                 <Button className="w-full bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-base font-bold h-10 rounded-full shadow-lg transition-transform hover:scale-105">
@@ -248,6 +230,25 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
             </div>
             )}
           </div>
+
+          {/* Mobile, hero deal: both actions directly under the image (desktop keeps its CTA row) */}
+          {deal && (
+            <div data-testid="hero-deal-mobile-actions" className="order-5 md:hidden flex w-full flex-wrap gap-3 px-1">
+              <Link href={ctaHref} className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center rounded-full bg-[#fbbf24] hover:bg-[#f59e0b] px-3 text-center text-base font-bold leading-tight text-white shadow-lg">
+                {ctaText}
+              </Link>
+              <a
+                href={dealWhatsAppLink(deal)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackWhatsAppClick('hero_deal')}
+                className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] px-3 text-base font-bold text-white shadow-lg"
+              >
+                <MessageCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                וואטסאפ
+              </a>
+            </div>
+          )}
 
         </div>
       </div>

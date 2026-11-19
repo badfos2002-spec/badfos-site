@@ -49,8 +49,28 @@ describe('NewDealsSection', () => {
     expect(within(cards[0]).getByText('₪31')).toBeInTheDocument()
     expect(cards[0].closest('a') ?? cards[0].querySelector('a')).toHaveAttribute('href', '/deals/deal-1')
     expect(screen.queryByText('מבצע 4')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /לכל המבצעים/ })).toHaveAttribute('href', '/deals')
+    const all = screen.getAllByRole('link', { name: /לכל המבצעים/ })
+    expect(all).toHaveLength(2)
+    all.forEach((a) => expect(a).toHaveAttribute('href', '/deals'))
     expect(fetchSpy).toHaveBeenCalledWith('/api/deals')
+  })
+
+  it('«לכל המבצעים»: header-row link is desktop-only; the mobile one is full width and the last element, after the cards', async () => {
+    payload = { deals: [d(1), d(2)] }
+    const { container } = render(<NewDealsSection />)
+    const cards = await screen.findAllByTestId('home-deal-card')
+    const [headerLink, mobileLink] = screen.getAllByRole('link', { name: /לכל המבצעים/ })
+    expect(headerLink.className).toMatch(/(^|\s)hidden(\s|$)/)
+    expect(headerLink.className).toContain('md:inline-flex')
+    expect(mobileLink).toHaveAttribute('data-testid', 'home-deals-all-mobile')
+    expect(mobileLink.className).toContain('w-full')
+    expect(mobileLink.className).toContain('md:hidden')
+    expect(mobileLink.className).toContain('min-h-[44px]')
+    expect(mobileLink.querySelector('svg')).not.toBeNull()
+    // DOM order: every card comes before the mobile link, which closes the section
+    cards.forEach((c) => expect(c.compareDocumentPosition(mobileLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy())
+    const inner = container.querySelector('section > div')!
+    expect(inner.lastElementChild).toBe(mobileLink)
   })
 
   it('renders nothing when there are no live deals', async () => {

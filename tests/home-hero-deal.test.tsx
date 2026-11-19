@@ -53,6 +53,35 @@ describe('NewHeroSection with a hero deal', () => {
     expect(screen.getByTestId('product-river')).toBeInTheDocument()
   })
 
+  it('mobile: both buttons sit in one row right after the image, before the description; no button overlaps the image', () => {
+    render(<NewHeroSection heroDeal={DEAL} />)
+    const image = screen.getByTestId('hero-deal-image')
+    const row = screen.getByTestId('hero-deal-mobile-actions')
+    const desc = screen.getByText('סווטשרטים במחיר מיוחד')
+    // the row is md:hidden (desktop keeps its CTA row), a wrapping flex row, order right after the image
+    expect(row.className).toContain('md:hidden')
+    expect(row.className).toContain('flex-wrap')
+    expect(row.className).toContain('order-5')
+    expect(desc.className).toContain('order-6')
+    expect(image.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const links = row.querySelectorAll('a')
+    expect(links).toHaveLength(2)
+    expect(links[0]).toHaveTextContent('לפרטי המבצע')
+    expect(links[0]).toHaveAttribute('href', `/deals/${enc('מבצע-חורף')}`)
+    expect(links[1]).toHaveTextContent('וואטסאפ')
+    links.forEach((a) => {
+      expect(a.className).toContain('min-h-[48px]')
+      expect(a.className).toContain('flex-1')
+      expect(a.className).toContain('basis-0')
+    })
+    // no absolutely positioned CTA hanging over the image edge
+    const imageBlock = image.closest('.order-5')!
+    expect(imageBlock.querySelector('.absolute.bottom-0')).toBeNull()
+    // exactly one mobile WhatsApp button (the old standalone one after the description is gone)
+    const mobileWa = screen.getAllByRole('link', { name: /וואטסאפ/ }).filter((a) => a.className.includes('md:hidden') || row.contains(a))
+    expect(mobileWa).toHaveLength(1)
+  })
+
   it('uses the hero overrides when set', () => {
     render(<NewHeroSection heroDeal={{ ...DEAL, hero: { enabled: true, title: 'כותרת הירו', text: 'טקסט הירו', ctaLabel: 'לפרטים' } }} />)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('כותרת הירו')

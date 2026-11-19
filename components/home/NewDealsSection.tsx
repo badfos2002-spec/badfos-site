@@ -39,7 +39,7 @@ export default function NewDealsSection() {
           </div>
           <Link
             href="/deals"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-yellow-300 bg-white px-5 font-bold text-yellow-700 hover:bg-yellow-50"
+            className="hidden md:inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-yellow-300 bg-white px-5 font-bold text-yellow-700 hover:bg-yellow-50"
           >
             לכל המבצעים
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -66,6 +66,16 @@ export default function NewDealsSection() {
             </Link>
           ))}
         </div>
+
+        {/* Mobile: the «all deals» link sits below the cards (desktop keeps it in the header row) */}
+        <Link
+          href="/deals"
+          data-testid="home-deals-all-mobile"
+          className="mt-6 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-yellow-300 bg-white px-5 font-bold text-yellow-700 hover:bg-yellow-50 md:hidden"
+        >
+          לכל המבצעים
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </div>
     </section>
   )
