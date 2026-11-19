@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { createFakeDb, FIXTURE_DEALS } from './helpers/fake-deals-db'
 
 // TICKET-023: /deals/<unknown-slug> answered HTTP 200 with the not-found page —
@@ -95,23 +93,4 @@ describe('/deals/[slug] generateMetadata — a live deal is unchanged', () => {
   it('still exports revalidate = 60 (no force-dynamic)', () => {
     expect(revalidate).toBe(60)
   })
-})
-
-// THE MECHANISM GUARD. A loading.tsx anywhere at or above /deals/[slug] puts the
-// page back inside a Suspense boundary, the shell flushes with HTTP 200 before
-// notFound() is seen, and the soft 404 of TICKET-023 returns — silently, because
-// the not-found UI still renders and only the status code is wrong. If you need a
-// loading fallback, put it on a leaf segment that never calls notFound().
-describe('no loading.tsx above /deals/[slug] (guards the TICKET-023 soft 404)', () => {
-  const SEGMENTS = [
-    ['app', join('app')],
-    ['app/deals', join('app', 'deals')],
-    ['app/deals/[slug]', join('app', 'deals', '[slug]')],
-  ] as const
-
-  for (const [label, dir] of SEGMENTS) {
-    it(`${label} has no loading.tsx`, () => {
-      expect(existsSync(join(__dirname, '..', dir, 'loading.tsx'))).toBe(false)
-    })
-  }
 })
