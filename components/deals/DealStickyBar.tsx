@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { MessageCircle, Phone } from 'lucide-react'
 import { dealPhoneLink, dealWhatsAppLink } from '@/lib/deals'
 import { trackPhoneClick, trackWhatsAppClick } from '@/lib/tracking'
-import { setWaCtaVisible } from '@/lib/wa-cta-visibility'
+import { setFixedBottomBar, setWaCtaVisible } from '@/lib/wa-cta-visibility'
 import type { Deal } from '@/lib/types'
 
 /** Mobile-only bottom bar (WhatsApp + call) on the deal page; hides the floating bubble while mounted. */
@@ -13,7 +13,11 @@ export default function DealStickyBar({ deal }: { deal: Pick<Deal, 'title' | 'sl
   useEffect(() => {
     const k = key.current
     setWaCtaVisible(k, true)
-    return () => setWaCtaVisible(k, false)
+    setFixedBottomBar(k, true)
+    return () => {
+      setWaCtaVisible(k, false)
+      setFixedBottomBar(k, false)
+    }
   }, [])
 
   return (

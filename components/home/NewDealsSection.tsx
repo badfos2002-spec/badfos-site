@@ -1,6 +1,3 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Tag } from 'lucide-react'
 import DealPicture from '@/components/deals/DealPicture'
@@ -9,21 +6,9 @@ import type { Deal } from '@/lib/types'
 
 const MAX_DEALS = 3
 
-/** Home: up to 3 live deals from /api/deals + «לכל המבצעים»; renders nothing when there are none (TICKET-022). */
-export default function NewDealsSection() {
-  const [deals, setDeals] = useState<Deal[]>([])
-
-  useEffect(() => {
-    let alive = true
-    fetch('/api/deals')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (alive && Array.isArray(data?.deals)) setDeals(data.deals.slice(0, MAX_DEALS))
-      })
-      .catch(() => {})
-    return () => { alive = false }
-  }, [])
-
+/** Home: up to 3 live deals (read on the server by app/page.tsx) + «לכל המבצעים»; nothing when there are none (TICKET-022). */
+export default function NewDealsSection({ deals: all }: { deals: Deal[] }) {
+  const deals = all.slice(0, MAX_DEALS)
   if (deals.length === 0) return null
 
   return (

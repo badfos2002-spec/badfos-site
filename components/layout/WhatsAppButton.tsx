@@ -5,7 +5,7 @@ import { MessageCircle, Accessibility, X, Type, Contrast, MousePointer, Underlin
 import { CONTACT_INFO } from '@/lib/constants'
 import { trackWhatsAppClick } from '@/lib/tracking'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
-import { subscribeWaCta, getWaCtaVisible, getWaCtaVisibleServer } from '@/lib/wa-cta-visibility'
+import { subscribeWaCta, getWaCtaVisible, getWaCtaVisibleServer, subscribeFixedBar, getFixedBarMounted, getFixedBarMountedServer } from '@/lib/wa-cta-visibility'
 
 const A11Y_KEY = 'badfos-a11y'
 /** Read persisted accessibility settings (client only) */
@@ -32,6 +32,8 @@ export default function WhatsAppButton() {
   // Its slot collapses too, so the accessibility button (always visible) drops to the
   // lowest corner position and clears the hero CTA row.
   const inlineCtaVisible = useSyncExternalStore(subscribeWaCta, getWaCtaVisible, getWaCtaVisibleServer)
+  // A fixed bottom bar (deal page, below lg) is mounted → lift the floating stack above it.
+  const fixedBarMounted = useSyncExternalStore(subscribeFixedBar, getFixedBarMounted, getFixedBarMountedServer)
 
   useFocusTrap(panelRef, showAccessibility, () => setShowAccessibility(false))
 
@@ -240,7 +242,7 @@ export default function WhatsAppButton() {
       )}
 
       {/* Floating Buttons */}
-      <div className="fixed bottom-4 right-2 sm:bottom-6 sm:right-6 z-[9999] flex flex-col gap-2 sm:gap-3">
+      <div className={`fixed ${fixedBarMounted ? 'bottom-[calc(env(safe-area-inset-bottom)+88px)] lg:bottom-6' : 'bottom-4 sm:bottom-6'} right-2 sm:right-6 z-[9999] flex flex-col gap-2 sm:gap-3`}>
         <button
           onClick={() => setShowAccessibility(true)}
           className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:scale-110 transition-transform"

@@ -106,10 +106,13 @@ export function isSafeSlug(slug: string): boolean {
   return slug.length > 0 && slug.length <= DEAL_LIMITS.slug && /^[\p{L}\p{N}]+(-[\p{L}\p{N}]+)*$/u.test(slug)
 }
 
-/** Firebase Storage under site-images/deals/, or a site-relative path. */
+/** Our Storage bucket (env, falling back to the production bucket). */
+export const DEALS_BUCKET = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'badfos-28b67.firebasestorage.app'
+
+/** Firebase Storage objects under OUR bucket's site-images/deals/, or a plain site-relative path. */
 export function isAllowedDealImage(url: string): boolean {
-  if (url.startsWith('/') && !url.startsWith('//')) return true
-  return url.startsWith('https://firebasestorage.googleapis.com/') && url.includes('/o/site-images%2Fdeals%2F')
+  if (url.startsWith('/')) return !url.startsWith('//') && !url.startsWith('/\\') && !url.includes('\\')
+  return url.startsWith(`https://firebasestorage.googleapis.com/v0/b/${DEALS_BUCKET}/o/site-images%2Fdeals%2F`)
 }
 
 export const COUPON_RE = /^[A-Z0-9-]{1,30}$/

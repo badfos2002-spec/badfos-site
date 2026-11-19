@@ -29,6 +29,7 @@ export default function DealPicture({ deal, variant, aspect, className = '', eag
             src={src}
             alt={deal.title}
             loading={eager ? 'eager' : 'lazy'}
+            fetchPriority={eager ? 'high' : undefined}
             decoding="async"
             className="absolute inset-0 h-full w-full object-cover object-center"
           />

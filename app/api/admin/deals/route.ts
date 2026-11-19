@@ -62,23 +62,24 @@ export async function POST(request: NextRequest) {
       const now = new Date().toISOString()
       const doc = { ...input, slug, createdAt: existing?.createdAt || now, updatedAt: now }
       const ref = id ? col.doc(id) : col.doc()
-      // set (not merge): optional fields cleared in the form must disappear from the doc
-      await ref.set(doc)
-      // Only one deal may drive the home hero: turning it on here turns it off everywhere else.
+      // One atomic batch: the deal itself (set, not merge — optional fields cleared in the
+      // form must disappear) and, when it takes the home hero, hero off on every other
+      // deal. A failure can never leave two hero deals.
+      const batch = adminDb.batch()
+      batch.set(ref, doc)
       if (doc.hero?.enabled) {
-        const others = all.filter((d) => d.id !== ref.id && d.hero?.enabled)
-        if (others.length > 0) {
-          const batch = adminDb.batch()
-          others.forEach((d) => batch.update(col.doc(d.id), { hero: { ...d.hero, enabled: false }, updatedAt: now }))
-          await batch.commit()
-        }
+        all
+          .filter((d) => d.id !== ref.id && d.hero?.enabled)
+          .forEach((d) => batch.update(col.doc(d.id), { hero: { ...d.hero, enabled: false }, updatedAt: now }))
       }
+      await batch.commit()
       return NextResponse.json({ deal: toDeal(ref.id, doc) })
     }
 
     if (action === 'delete') {
       const id = typeof body?.id === 'string' ? body.id : ''
       if (!id) return NextResponse.json({ error: 'bad_params' }, { status: 400 })
+      if (!(await getAllDeals()).some((d) => d.id === id)) return NextResponse.json({ error: 'not_found' }, { status: 404 })
       await col.doc(id).delete()
       return NextResponse.json({ ok: true })
     }
@@ -89,10 +90,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'bad_params' }, { status: 400 })
       }
       const known = new Set((await getAllDeals()).map((d) => d.id))
-      if (ids.some((x: string) => !known.has(x))) return NextResponse.json({ error: 'bad_params' }, { status: 400 })
+      const unique = [...new Set(ids as string[])]
+      if (unique.some((x) => !known.has(x))) return NextResponse.json({ error: 'bad_params' }, { status: 400 })
       const batch = adminDb.batch()
       const now = new Date().toISOString()
-      ids.forEach((dealId: string, i: number) => batch.update(col.doc(dealId), { sortOrder: i, updatedAt: now }))
+      unique.forEach((dealId: string, i: number) => batch.update(col.doc(dealId), { sortOrder: i, updatedAt: now }))
       await batch.commit()
       return NextResponse.json({ ok: true })
     }

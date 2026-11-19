@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { MessageCircle, Phone, ShoppingBag, Copy, Check } from 'lucide-react'
 import { dealPhoneLink, dealWhatsAppLink } from '@/lib/deals'
@@ -17,16 +17,31 @@ const btn = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-
 
 export default function DealActions({ deal, inert }: Props) {
   const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
+  const codeRef = useRef<HTMLSpanElement>(null)
   const order = deal.order
   const block = inert ? (e: React.MouseEvent) => e.preventDefault() : undefined
 
   const copy = async () => {
     if (!order?.couponCode) return
     try {
-      await navigator.clipboard?.writeText(order.couponCode)
+      if (!navigator.clipboard) throw new Error('no clipboard')
+      await navigator.clipboard.writeText(order.couponCode)
+      setCopyFailed(false)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch { /* clipboard unavailable — the code is visible anyway */ }
+    } catch {
+      // Clipboard blocked/unavailable: select the code so it can be copied by hand.
+      setCopyFailed(true)
+      const el = codeRef.current
+      const sel = typeof window !== 'undefined' ? window.getSelection() : null
+      if (el && sel) {
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
+    }
   }
 
   return (
@@ -64,7 +79,7 @@ export default function DealActions({ deal, inert }: Props) {
       {order?.couponCode && (
         <div className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-yellow-400 bg-yellow-50 px-3 py-1.5 text-sm">
           <span className="text-gray-700">
-            קוד קופון: <span dir="ltr" className="font-mono font-bold text-gray-900">{order.couponCode}</span>
+            קוד קופון: <span ref={codeRef} dir="ltr" className="select-all font-mono font-bold text-gray-900">{order.couponCode}</span>
           </span>
           <button
             type="button"
@@ -75,6 +90,9 @@ export default function DealActions({ deal, inert }: Props) {
             {copied ? 'הועתק' : 'העתק'}
           </button>
         </div>
+      )}
+      {order?.couponCode && copyFailed && (
+        <p role="status" className="text-sm text-gray-600">לא ניתן להעתיק — סמנו את הקוד</p>
       )}
     </div>
   )

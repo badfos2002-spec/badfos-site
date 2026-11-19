@@ -193,9 +193,12 @@ export default function DealsManager() {
     setBusy(true)
     try {
       const { ok } = await api({ action: 'delete', id: d.id })
-      if (!ok) alert('שגיאה במחיקה')
+      if (!ok) { alert('שגיאה במחיקה'); return }
       setDeals((prev) => prev.filter((x) => x.id !== d.id))
       if (form?.id === d.id) setForm(null)
+    } catch (e) {
+      console.error(e)
+      alert('שגיאה במחיקה')
     } finally {
       setBusy(false)
     }
