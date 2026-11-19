@@ -152,10 +152,10 @@ export default function PackagesPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center px-4 py-2 bg-yellow-100 border border-yellow-200 rounded-full text-yellow-700 text-sm font-medium shadow-sm mb-4">
             <Gift className="w-4 h-4 ml-2" />
-            חבילות ומבצעים
+            חבילות הדפסה משתלמות
           </div>
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-            חבילות הדפסה משתלמות
+            חבילות
           </h1>
           <p className="text-gray-600">
             בחרו את החבילה המתאימה לכם, עם ליווי גרפי צמוד וקבלת עיצוב עד אישור סופי.

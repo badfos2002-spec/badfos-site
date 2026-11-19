@@ -1,116 +1,66 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Tag, ArrowLeft, Check } from 'lucide-react'
 import Link from 'next/link'
+import { ArrowLeft, Tag } from 'lucide-react'
+import DealPicture from '@/components/deals/DealPicture'
+import { dealPath } from '@/lib/deals'
+import type { Deal } from '@/lib/types'
 
-interface DealSettings {
-  isActive: boolean
-  title: string
-  subtitle: string
-  tagText: string
-  ctaText: string
-  showBenefits: boolean
-}
+const MAX_DEALS = 3
 
-const defaults: DealSettings = {
-  isActive: true,
-  title: 'מבצע מיוחד',
-  subtitle: 'חסכו על ההזמנה הבאה שלכם',
-  tagText: 'מבצע',
-  ctaText: 'לפרטים נוספים',
-  showBenefits: true,
-}
-
-const BENEFITS = [
-  'הדפסה איכותית שנשמרת לאורך זמן',
-  'משלוח מהיר עד הבית',
-  'גרפיקאי חינם בהזמנות גדולות',
-  'ייעוץ אישי ללא עלות',
-]
-
-export default function NewDealsSection() {
-  const [settings, setSettings] = useState<DealSettings | null>(null)
-
-  useEffect(() => {
-    import('@/lib/firebase').then(({ db }) => {
-      if (!db) { setSettings(defaults); return }
-      import('firebase/firestore').then(({ doc, getDoc }) => {
-        getDoc(doc(db, 'settings', 'deals'))
-          .then((snap) => {
-            const data = snap.exists() ? { ...defaults, ...snap.data() } : defaults
-            setSettings(data as DealSettings)
-          })
-          .catch(() => setSettings(defaults))
-      })
-    }).catch(() => setSettings(defaults))
-  }, [])
-
-  if (!settings || !settings.isActive) return null
+/** Home: up to 3 live deals (read on the server by app/page.tsx) + «לכל המבצעים»; nothing when there are none (TICKET-022). */
+export default function NewDealsSection({ deals: all }: { deals: Deal[] }) {
+  const deals = all.slice(0, MAX_DEALS)
+  if (deals.length === 0) return null
 
   return (
-    <section className="py-20 bg-gradient-to-br from-yellow-500 via-orange-500 to-red-500" dir="rtl">
+    <section className="bg-gradient-to-b from-white to-yellow-50 py-14 md:py-20" dir="rtl">
       <div className="mx-auto max-w-[1536px] px-4 md:px-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Text */}
-          <div className="text-white">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-              <Tag className="w-4 h-4" />
-              <span className="text-sm font-bold">{settings.tagText}</span>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#ffc32e] px-4 py-1.5 text-sm font-extrabold text-[#3b2600]">
+              <Tag className="h-4 w-4" aria-hidden="true" />
+              מבצעים
             </div>
-            <h2 className="text-4xl lg:text-5xl font-black mb-4 leading-tight">
-              {settings.title}
-            </h2>
-            <p className="text-xl text-white/90 mb-8">
-              {settings.subtitle}
-            </p>
-
-            {settings.showBenefits && (
-              <ul className="space-y-3 mb-10">
-                {BENEFITS.map((benefit, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Check className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-white/90">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <Link href="/packages">
-              <button className="inline-flex items-center gap-2 bg-white text-orange-600 font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all">
-                {settings.ctaText}
-                <ArrowLeft className="w-5 h-5 rotate-180" />
-              </button>
-            </Link>
+            <h2 className="text-3xl font-black text-[#1e293b] lg:text-4xl">המבצעים שלנו עכשיו</h2>
           </div>
-
-          {/* Promo Card */}
-          <div className="flex justify-center">
-            <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center">
-              <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 mb-2">
-                5%
-              </div>
-              <p className="text-2xl font-bold text-gray-900 mb-2">הנחה</p>
-              <p className="text-gray-600 mb-6">בהזמנה של 15 חולצות ומעלה</p>
-              <div className="border-t border-gray-100 pt-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-500 text-sm">הדפסה + גרפיקה</span>
-                  <span className="font-bold text-green-600">✓ כלול</span>
-                </div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-500 text-sm">משלוח מהיר</span>
-                  <span className="font-bold text-green-600">✓ זמין</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">ייעוץ אישי</span>
-                  <span className="font-bold text-green-600">✓ חינם</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Link
+            href="/deals"
+            className="hidden md:inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-yellow-300 bg-white px-5 font-bold text-yellow-700 hover:bg-yellow-50"
+          >
+            לכל המבצעים
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
         </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+          {deals.map((deal) => (
+            <Link key={deal.id} href={dealPath(deal.slug)} className="group block">
+              <article
+                data-testid="home-deal-card"
+                className="flex items-center gap-4 overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-md transition-shadow group-hover:shadow-xl md:flex-col md:items-stretch md:gap-0 md:p-0"
+              >
+                <div className="w-24 flex-shrink-0 overflow-hidden rounded-xl md:w-full md:rounded-none">
+                  <DealPicture deal={deal} aspect="aspect-square md:aspect-[16/10]" />
+                </div>
+                <div className="min-w-0 flex-1 md:p-4">
+                  <h3 className="line-clamp-2 text-lg font-bold text-gray-900 group-hover:text-yellow-600">{deal.title}</h3>
+                  {deal.priceText && (
+                    <span className="mt-2 inline-block rounded-full bg-yellow-100 px-3 py-0.5 text-sm font-extrabold text-yellow-800">{deal.priceText}</span>
+                  )}
+                </div>
+              </article>
+            </Link>
+          ))}
+        </div>
+
+        {/* Mobile: the «all deals» link sits below the cards (desktop keeps it in the header row) */}
+        <Link
+          href="/deals"
+          data-testid="home-deals-all-mobile"
+          className="mt-6 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-yellow-300 bg-white px-5 font-bold text-yellow-700 hover:bg-yellow-50 md:hidden"
+        >
+          לכל המבצעים
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </div>
     </section>
   )

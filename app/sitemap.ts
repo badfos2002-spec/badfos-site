@@ -1,7 +1,11 @@
 import { MetadataRoute } from 'next'
 import { SEO_PAGES } from '@/lib/seo-pages'
+import { getLiveDeals } from '@/lib/deals-server'
+import { dealUrl } from '@/lib/deals'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 3600
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://badfos.co.il'
 
   // SEO landing pages (Hebrew slugs — URL-encoded)
@@ -10,6 +14,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: '2026-10-21',
     changeFrequency: 'monthly',
     priority: 0.8,
+  }))
+
+  // Live deals (admin-managed, read via adminDb; empty when the SDK is unavailable)
+  const dealPages: MetadataRoute.Sitemap = (await getLiveDeals()).map((deal) => ({
+    url: dealUrl(deal.slug),
+    lastModified: deal.updatedAt?.slice(0, 10) || undefined,
+    changeFrequency: 'weekly',
+    priority: 0.6,
   }))
 
   return [
@@ -80,6 +92,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/deals`,
+      lastModified: '2026-11-19',
+      changeFrequency: 'daily',
+      priority: 0.7,
+    },
+    {
       url: `${baseUrl}/gallery`,
       lastModified: '2026-07-10',
       changeFrequency: 'weekly',
@@ -128,5 +146,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     ...seoLandingPages,
+    ...dealPages,
   ]
 }

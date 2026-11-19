@@ -2,11 +2,11 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   alternates: { canonical: '/packages' },
-  title: 'חבילות ומבצעים | בדפוס',
+  title: 'חבילות | בדפוס',
   description: 'חבילות הדפסת חולצות במחירים מיוחדים. חבילות לאירועים, קבוצות, חברות ועסקים. משלוח מהיר לכל הארץ.',
   keywords: 'חבילות הדפסה, מבצע חולצות, חולצות לאירועים, הדפסה בכמויות, חולצות לעסקים',
   openGraph: {
-    title: 'חבילות ומבצעים | בדפוס',
+    title: 'חבילות | בדפוס',
     description: 'חבילות הדפסה במחירים מיוחדים לאירועים, קבוצות ועסקים',
     url: 'https://badfos.co.il/packages',
     siteName: 'בדפוס',
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'חבילות ומבצעים | בדפוס',
+    title: 'חבילות | בדפוס',
     description: 'חבילות הדפסה במחירים מיוחדים לאירועים, קבוצות ועסקים',
     images: ['https://badfos.co.il/logo.png'],
   },

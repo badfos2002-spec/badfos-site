@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Menu, Home, Shirt, Package, Star, Info, Phone, HelpCircle, Images } from 'lucide-react'
+import { ShoppingCart, Menu, Home, Shirt, Package, Tag, Star, Info, Phone, HelpCircle, Images } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useCart } from '@/hooks/useCart'
@@ -83,10 +83,11 @@ export default function Header() {
               </Link>
               <Link href="/packages" className={navLinkClass('/packages')}>
                 <Package className="w-4 h-4 flex-shrink-0" />
-                <span className="font-medium">
-                  <span className="xl:hidden">חבילות</span>
-                  <span className="hidden xl:inline">חבילות ומבצעים</span>
-                </span>
+                <span className="font-medium">חבילות</span>
+              </Link>
+              <Link href="/deals" className={navLinkClass('/deals')}>
+                <Tag className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium">מבצעים</span>
               </Link>
               <Link href="/about" className={navLinkClass('/about')}>
                 <Info className="w-4 h-4 flex-shrink-0" />

@@ -350,6 +350,26 @@ export interface Package {
 }
 
 // ============================================================================
+// Deals (TICKET-022) — admin-managed, written only via /api/admin/deals
+// ============================================================================
+
+export interface Deal {
+  id: string                 // Firestore doc id
+  slug: string               // URL segment, Hebrew allowed, unique; admin-editable, auto from title
+  title: string
+  shortText: string          // 1–3 lines on the card and under the title
+  priceText?: string         // free text, e.g. «₪35 לחולצה» / «20% הנחה»
+  imageMobile?: string       // https URL in site-images/deals/… (portrait/square)
+  imageDesktop?: string      // https URL (wide); if only one of the two exists it is used everywhere
+  endsAt?: string            // ISO date (end of that day, Asia/Jerusalem); missing = open-ended
+  isActive: boolean
+  sortOrder: number
+  order?: { href: string; label?: string; couponCode?: string }  // optional «להזמנה» button
+  hero?: { enabled: boolean; title?: string; text?: string; ctaLabel?: string }  // home hero (only one deal at a time)
+  createdAt: string; updatedAt: string
+}
+
+// ============================================================================
 // Package Orders
 // ============================================================================
 

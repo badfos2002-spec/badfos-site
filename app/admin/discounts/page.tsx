@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Percent, Plus, Trash2, Loader2, ToggleLeft, ToggleRight, Save, Tag, Megaphone } from 'lucide-react'
+import { Percent, Plus, Trash2, Loader2, ToggleLeft, ToggleRight, Save, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getAllDocuments, createDocument, updateDocument, deleteDocument } from '@/lib/db'
@@ -44,26 +44,6 @@ const BANNER_DEFAULTS: BannerSettings = {
   showInDesigner: true,
 }
 
-// ── Deals (homepage section) settings ───────────────────────────────────────
-
-interface DealSettings {
-  isActive: boolean
-  title: string
-  subtitle: string
-  tagText: string
-  ctaText: string
-  showBenefits: boolean
-}
-
-const DEAL_DEFAULTS: DealSettings = {
-  isActive: true,
-  title: 'מבצע מיוחד',
-  subtitle: 'חסכו על ההזמנה הבאה שלכם',
-  tagText: 'מבצע',
-  ctaText: 'לפרטים נוספים',
-  showBenefits: true,
-}
-
 // ── Toggle component ────────────────────────────────────────────────────────
 
 function Toggle({ checked, onChange, size = 'md' }: { checked: boolean; onChange: () => void; size?: 'sm' | 'md' }) {
@@ -100,14 +80,8 @@ export default function AdminDiscountsPage() {
   const [savingBanner, setSavingBanner] = useState(false)
   const [savedBanner, setSavedBanner] = useState(false)
 
-  // Deals state
-  const [deals, setDeals] = useState<DealSettings>(DEAL_DEFAULTS)
-  const [loadingDeals, setLoadingDeals] = useState(true)
-  const [savingDeals, setSavingDeals] = useState(false)
-  const [savedDeals, setSavedDeals] = useState(false)
-
   // Active tab
-  const [activeTab, setActiveTab] = useState<'rules' | 'banner' | 'deals'>('rules')
+  const [activeTab, setActiveTab] = useState<'rules' | 'banner'>('rules')
 
   // ── Load data ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -116,17 +90,13 @@ export default function AdminDiscountsPage() {
       .catch(console.error)
       .finally(() => setLoadingDiscounts(false))
 
-    if (!db) { setLoadingBanner(false); setLoadingDeals(false); return }
+    if (!db) { setLoadingBanner(false); return }
 
     getDoc(doc(db, 'settings', 'couponBanner'))
       .then(snap => { if (snap.exists()) setBanner({ ...BANNER_DEFAULTS, ...snap.data() as BannerSettings }) })
       .catch(console.error)
       .finally(() => setLoadingBanner(false))
 
-    getDoc(doc(db, 'settings', 'deals'))
-      .then(snap => { if (snap.exists()) setDeals({ ...DEAL_DEFAULTS, ...snap.data() as DealSettings }) })
-      .catch(console.error)
-      .finally(() => setLoadingDeals(false))
   }, [])
 
   // ── Discount CRUD ───────────────────────────────────────────────────────
@@ -185,26 +155,13 @@ export default function AdminDiscountsPage() {
     finally { setSavingBanner(false) }
   }
 
-  // ── Deals save ──────────────────────────────────────────────────────────
-  const handleSaveDeals = async () => {
-    if (!db) return
-    setSavingDeals(true)
-    try {
-      await setDoc(doc(db, 'settings', 'deals'), deals)
-      setSavedDeals(true)
-      setTimeout(() => setSavedDeals(false), 2500)
-    } catch { alert('שגיאה בשמירה') }
-    finally { setSavingDeals(false) }
-  }
-
   // ── Tabs ────────────────────────────────────────────────────────────────
   const tabs = [
     { key: 'rules' as const, label: 'הנחות כמות', icon: Percent },
     { key: 'banner' as const, label: 'באנר מבצעים', icon: Tag },
-    { key: 'deals' as const, label: 'אזור מבצעים', icon: Megaphone },
   ]
 
-  const loading = loadingDiscounts || loadingBanner || loadingDeals
+  const loading = loadingDiscounts || loadingBanner
 
   return (
     <div dir="rtl">
@@ -372,61 +329,6 @@ export default function AdminDiscountsPage() {
             </div>
           )}
 
-          {/* ═══════════════ TAB 3: Deals (Homepage Section) ═══════════════ */}
-          {activeTab === 'deals' && (
-            <div className="max-w-2xl">
-              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 space-y-6">
-                {/* Active toggle */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div>
-                    <p className="font-bold text-gray-900">הפעל אזור מבצעים</p>
-                    <p className="text-sm text-gray-500">הצגה בעמוד הבית</p>
-                  </div>
-                  <Toggle checked={deals.isActive} onChange={() => setDeals(prev => ({ ...prev, isActive: !prev.isActive }))} />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">כותרת ראשית</label>
-                  <Input value={deals.title} onChange={e => setDeals(prev => ({ ...prev, title: e.target.value }))} />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">כותרת משנית</label>
-                  <Input value={deals.subtitle} onChange={e => setDeals(prev => ({ ...prev, subtitle: e.target.value }))} />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">טקסט לתג</label>
-                  <Input value={deals.tagText} onChange={e => setDeals(prev => ({ ...prev, tagText: e.target.value }))} />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">טקסט כפתור (CTA)</label>
-                  <Input value={deals.ctaText} onChange={e => setDeals(prev => ({ ...prev, ctaText: e.target.value }))} />
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div>
-                    <p className="font-medium text-gray-900">הצג יתרונות</p>
-                    <p className="text-sm text-gray-500">רשימת יתרונות באזור המבצעים</p>
-                  </div>
-                  <Toggle size="sm" checked={deals.showBenefits} onChange={() => setDeals(prev => ({ ...prev, showBenefits: !prev.showBenefits }))} />
-                </div>
-
-                {/* Save */}
-                <div className="pt-2 border-t">
-                  <Button
-                    onClick={handleSaveDeals}
-                    disabled={savingDeals}
-                    className={`px-10 text-white ${savedDeals ? 'bg-green-500 hover:bg-green-500' : 'bg-yellow-500 hover:bg-yellow-600'}`}
-                  >
-                    {savingDeals ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Save className="w-4 h-4 ml-2" />}
-                    {savedDeals ? 'נשמר!' : 'שמור'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </>
       )}
 
