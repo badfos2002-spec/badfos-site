@@ -365,6 +365,7 @@ export interface Deal {
   isActive: boolean
   sortOrder: number
   order?: { href: string; label?: string; couponCode?: string }  // optional «להזמנה» button
+  hero?: { enabled: boolean; title?: string; text?: string; ctaLabel?: string }  // home hero (only one deal at a time)
   createdAt: string; updatedAt: string
 }
 

@@ -8,7 +8,9 @@ import { CONTACT_INFO } from '@/lib/constants'
 export const SITE_URL = 'https://badfos.co.il'
 export const DEALS_TZ = 'Asia/Jerusalem'
 
-export const DEAL_LIMITS = { title: 80, shortText: 300, priceText: 40, slug: 80, orderLabel: 40, couponCode: 30 } as const
+export const DEAL_LIMITS = { title: 80, shortText: 300, priceText: 40, slug: 80, orderLabel: 40, couponCode: 30, heroTitle: 60, heroText: 160, heroCta: 30 } as const
+
+export const HERO_CTA_DEFAULT = 'לפרטי המבצע'
 
 /** The only paths the optional «להזמנה» button may point to (internal, validated server-side). */
 export const ORDER_TARGETS = [
@@ -113,7 +115,7 @@ export function isAllowedDealImage(url: string): boolean {
 export const COUPON_RE = /^[A-Z0-9-]{1,30}$/
 
 export type DealInput = Omit<Deal, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
-export type DealErrors = Partial<Record<'title' | 'shortText' | 'priceText' | 'slug' | 'endsAt' | 'imageMobile' | 'imageDesktop' | 'order' | 'orderLabel' | 'couponCode' | 'sortOrder', string>>
+export type DealErrors = Partial<Record<'title' | 'shortText' | 'priceText' | 'slug' | 'endsAt' | 'imageMobile' | 'imageDesktop' | 'order' | 'orderLabel' | 'couponCode' | 'sortOrder' | 'heroTitle' | 'heroText' | 'heroCta', string>>
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 
@@ -154,6 +156,18 @@ export function validateDealInput(raw: unknown): { ok: true; value: DealInput } 
     order = { href, ...(label ? { label } : {}), ...(couponCode ? { couponCode } : {}) }
   }
 
+  let hero: DealInput['hero']
+  if (r.hero && typeof r.hero === 'object') {
+    const hr = r.hero as Record<string, unknown>
+    const hTitle = str(hr.title)
+    const hText = str(hr.text)
+    const hCta = str(hr.ctaLabel)
+    if (hTitle.length > DEAL_LIMITS.heroTitle) errors.heroTitle = `כותרת בהירו עד ${DEAL_LIMITS.heroTitle} תווים`
+    if (hText.length > DEAL_LIMITS.heroText) errors.heroText = `טקסט בהירו עד ${DEAL_LIMITS.heroText} תווים`
+    if (hCta.length > DEAL_LIMITS.heroCta) errors.heroCta = `טקסט כפתור ההירו עד ${DEAL_LIMITS.heroCta} תווים`
+    hero = { enabled: hr.enabled === true, ...(hTitle ? { title: hTitle } : {}), ...(hText ? { text: hText } : {}), ...(hCta ? { ctaLabel: hCta } : {}) }
+  }
+
   if (Object.keys(errors).length > 0) return { ok: false, errors }
 
   const id = str(r.id)
@@ -169,6 +183,7 @@ export function validateDealInput(raw: unknown): { ok: true; value: DealInput } 
     isActive: r.isActive === true,
     sortOrder: Math.round(sortOrder),
     ...(order ? { order } : {}),
+    ...(hero ? { hero } : {}),
   }
   return { ok: true, value }
 }
@@ -178,6 +193,7 @@ export function toDeal(id: string, data: Record<string, unknown>): Deal {
   const s = (v: unknown) => (typeof v === 'string' && v ? v : undefined)
   const o = data.order && typeof data.order === 'object' ? (data.order as Record<string, unknown>) : null
   const href = o ? s(o.href) : undefined
+  const hr = data.hero && typeof data.hero === 'object' ? (data.hero as Record<string, unknown>) : null
   return {
     id,
     slug: s(data.slug) ?? id,
@@ -192,7 +208,19 @@ export function toDeal(id: string, data: Record<string, unknown>): Deal {
     ...(o && href && isOrderTarget(href)
       ? { order: { href, ...(s(o.label) ? { label: s(o.label) } : {}), ...(s(o.couponCode) ? { couponCode: s(o.couponCode) } : {}) } }
       : {}),
+    ...(hr
+      ? { hero: { enabled: hr.enabled === true, ...(s(hr.title) ? { title: s(hr.title) } : {}), ...(s(hr.text) ? { text: s(hr.text) } : {}), ...(s(hr.ctaLabel) ? { ctaLabel: s(hr.ctaLabel) } : {}) } }
+      : {}),
     createdAt: s(data.createdAt) ?? '',
     updatedAt: s(data.updatedAt) ?? '',
+  }
+}
+
+/** Hero copy for a deal: overrides, else the deal's own title/shortText. */
+export function dealHeroCopy(deal: Pick<Deal, 'title' | 'shortText' | 'hero'>) {
+  return {
+    title: deal.hero?.title || deal.title,
+    text: deal.hero?.text || deal.shortText,
+    ctaLabel: deal.hero?.ctaLabel || HERO_CTA_DEFAULT,
   }
 }

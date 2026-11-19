@@ -28,3 +28,8 @@ export async function getLiveDeals(now: Date = new Date()): Promise<Deal[]> {
 export async function getLiveDealBySlug(slug: string, now: Date = new Date()): Promise<Deal | null> {
   return (await getLiveDeals(now)).find((d) => d.slug === slug) ?? null
 }
+
+/** The deal shown in the home hero: first live deal (by sort order) with hero.enabled, or null. */
+export async function getHeroDeal(now: Date = new Date()): Promise<Deal | null> {
+  return (await getLiveDeals(now)).find((d) => d.hero?.enabled) ?? null
+}

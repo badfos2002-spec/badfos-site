@@ -5,11 +5,13 @@ import { Megaphone, Plus, Pencil, Trash2, ArrowUp, ArrowDown, Loader2, Save, X, 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import DealCard from '@/components/deals/DealCard'
+import DealPicture from '@/components/deals/DealPicture'
 import { adminFetch } from '@/lib/admin-fetch'
 import { uploadSiteImage } from '@/lib/storage'
 import {
   DEAL_LIMITS,
   ORDER_TARGETS,
+  dealHeroCopy,
   dealPath,
   formatDealDate,
   isDealExpired,
@@ -40,17 +42,23 @@ type Form = {
   orderHref: string
   orderLabel: string
   couponCode: string
+  heroOn: boolean
+  heroTitle: string
+  heroText: string
+  heroCta: string
 }
 
 const emptyForm = (sortOrder: number): Form => ({
   title: '', slug: '', shortText: '', priceText: '', endsAt: '', isActive: true, sortOrder,
   imageMobile: '', imageDesktop: '', orderOn: false, orderHref: ORDER_TARGETS[0].href, orderLabel: '', couponCode: '',
+  heroOn: false, heroTitle: '', heroText: '', heroCta: '',
 })
 
 const formFromDeal = (d: Deal): Form => ({
   id: d.id, title: d.title, slug: d.slug, shortText: d.shortText, priceText: d.priceText ?? '', endsAt: d.endsAt ?? '',
   isActive: d.isActive, sortOrder: d.sortOrder, imageMobile: d.imageMobile ?? '', imageDesktop: d.imageDesktop ?? '',
   orderOn: !!d.order, orderHref: d.order?.href ?? ORDER_TARGETS[0].href, orderLabel: d.order?.label ?? '', couponCode: d.order?.couponCode ?? '',
+  heroOn: !!d.hero?.enabled, heroTitle: d.hero?.title ?? '', heroText: d.hero?.text ?? '', heroCta: d.hero?.ctaLabel ?? '',
 })
 
 function payload(f: Form) {
@@ -59,6 +67,9 @@ function payload(f: Form) {
     title: f.title, slug: f.slug, shortText: f.shortText, priceText: f.priceText, endsAt: f.endsAt,
     isActive: f.isActive, sortOrder: f.sortOrder, imageMobile: f.imageMobile, imageDesktop: f.imageDesktop,
     ...(f.orderOn ? { order: { href: f.orderHref, label: f.orderLabel, couponCode: f.couponCode } } : {}),
+    ...(f.heroOn || f.heroTitle || f.heroText || f.heroCta
+      ? { hero: { enabled: f.heroOn, title: f.heroTitle, text: f.heroText, ctaLabel: f.heroCta } }
+      : {}),
   }
 }
 
@@ -69,6 +80,7 @@ function previewDeal(f: Form): Deal {
     priceText: t(f.priceText), imageMobile: t(f.imageMobile), imageDesktop: t(f.imageDesktop), endsAt: t(f.endsAt),
     isActive: f.isActive, sortOrder: f.sortOrder,
     order: f.orderOn ? { href: f.orderHref, label: t(f.orderLabel), couponCode: t(f.couponCode.toUpperCase()) } : undefined,
+    hero: { enabled: f.heroOn, title: t(f.heroTitle), text: t(f.heroText), ctaLabel: t(f.heroCta) },
     createdAt: '', updatedAt: '',
   }
 }
@@ -354,6 +366,34 @@ export default function DealsManager() {
               )}
             </div>
 
+            <div className="space-y-3 rounded-xl border border-yellow-300 bg-yellow-50/50 p-3">
+              <p className="text-sm font-bold text-gray-900">הירו בדף הבית</p>
+              <label htmlFor="deal-hero-on" className="flex min-h-[44px] items-center gap-3">
+                <input id="deal-hero-on" type="checkbox" checked={form.heroOn} onChange={(e) => set('heroOn', e.target.checked)} className="h-5 w-5 accent-yellow-500" />
+                <span className="text-sm font-medium text-gray-700">הצג את המבצע בהירו של דף הבית</span>
+              </label>
+              <p className="text-xs text-gray-500">רק מבצע אחד בכל פעם — שמירה עם הסימון מורידה אותו מהמבצע שהיה בהירו. מבצע לא פעיל או שפג תוקפו לא יוצג.</p>
+              {form.heroOn && (
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="deal-hero-title" className={label}>כותרת בהירו (לא חובה — ברירת מחדל: כותרת המבצע)</label>
+                    <Input id="deal-hero-title" value={form.heroTitle} onChange={(e) => set('heroTitle', e.target.value)} />
+                    <Err msg={errors.heroTitle} />
+                  </div>
+                  <div>
+                    <label htmlFor="deal-hero-text" className={label}>טקסט בהירו (לא חובה — ברירת מחדל: הטקסט הקצר)</label>
+                    <textarea id="deal-hero-text" rows={2} value={form.heroText} onChange={(e) => set('heroText', e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                    <Err msg={errors.heroText} />
+                  </div>
+                  <div>
+                    <label htmlFor="deal-hero-cta" className={label}>טקסט הכפתור בהירו (ברירת מחדל: «לפרטי המבצע»)</label>
+                    <Input id="deal-hero-cta" value={form.heroCta} onChange={(e) => set('heroCta', e.target.value)} />
+                    <Err msg={errors.heroCta} />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 border-t pt-4">
               <Button className="min-h-[44px] flex-1 bg-yellow-500 text-white hover:bg-yellow-600" onClick={save} disabled={saving}>
                 {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
@@ -376,6 +416,27 @@ export default function DealsManager() {
                 <DealCard deal={previewDeal(form)} preview="desktop" />
               </div>
             </div>
+            {form.heroOn && (() => {
+              const pd = previewDeal(form)
+              const hc = dealHeroCopy(pd)
+              return (
+                <div data-testid="hero-preview" className="rounded-2xl bg-[#fffdf5] p-4 shadow">
+                  <p className="mb-2 text-xs font-medium text-gray-500">הירו בדף הבית</p>
+                  <div className="flex flex-col items-center gap-4 sm:flex-row-reverse">
+                    <div className="w-40 flex-shrink-0 overflow-hidden rounded-2xl bg-white p-1.5">
+                      <div className="overflow-hidden rounded-xl"><DealPicture deal={pd} aspect="aspect-square" /></div>
+                    </div>
+                    <div className="flex-1 text-center">
+                      <span className="inline-block rounded-full bg-[#ffc32e] px-3 py-0.5 text-xs font-extrabold text-[#3b2600]">מבצע</span>
+                      <p className="mt-2 text-2xl font-extrabold leading-tight text-[#1e293b]">{hc.title || 'כותרת'}</p>
+                      {pd.priceText && <p className="text-lg font-semibold text-[#f59e0b]">{pd.priceText}</p>}
+                      <p className="mt-1 text-sm text-gray-500">{hc.text}</p>
+                      <span className="mt-3 inline-block rounded-full bg-[#fbbf24] px-5 py-2 text-sm font-bold text-white">{hc.ctaLabel}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </div>
       ) : loading ? (
@@ -402,6 +463,7 @@ export default function DealsManager() {
                   <p className="truncate font-bold text-gray-900">{d.title}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                     <span className={`rounded-full px-2 py-0.5 font-medium ${s.cls}`}>{s.label}</span>
+                    {d.hero?.enabled && <span className="rounded-full bg-yellow-200 px-2 py-0.5 font-bold text-yellow-900">בהירו</span>}
                     <span>{d.endsAt ? `עד ${formatDealDate(d.endsAt)}` : 'ללא תאריך סיום'}</span>
                     <span>סדר: {d.sortOrder}</span>
                     {d.priceText && <span className="font-medium text-gray-700">{d.priceText}</span>}

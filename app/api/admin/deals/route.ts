@@ -64,6 +64,15 @@ export async function POST(request: NextRequest) {
       const ref = id ? col.doc(id) : col.doc()
       // set (not merge): optional fields cleared in the form must disappear from the doc
       await ref.set(doc)
+      // Only one deal may drive the home hero: turning it on here turns it off everywhere else.
+      if (doc.hero?.enabled) {
+        const others = all.filter((d) => d.id !== ref.id && d.hero?.enabled)
+        if (others.length > 0) {
+          const batch = adminDb.batch()
+          others.forEach((d) => batch.update(col.doc(d.id), { hero: { ...d.hero, enabled: false }, updatedAt: now }))
+          await batch.commit()
+        }
+      }
       return NextResponse.json({ deal: toDeal(ref.id, doc) })
     }
 
