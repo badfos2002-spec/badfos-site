@@ -150,7 +150,7 @@ export default function NewPackagesSection() {
               </Reveal>
 
               <RevealText
-                text="חבילות ומבצעים"
+                text="חבילות"
                 as="h2"
                 trigger="scroll"
                 className="text-4xl lg:text-6xl font-black text-[#1e293b] mb-5 tracking-tight"

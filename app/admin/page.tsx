@@ -253,7 +253,7 @@ export default function AdminPage() {
           buttonLabel: 'צפה באנליטיקות',
         },
         {
-          title: 'ניהול חבילות ומבצעים',
+          title: 'ניהול חבילות',
           href: '/admin/packages',
           icon: Gift,
           iconColor: 'text-yellow-600',
