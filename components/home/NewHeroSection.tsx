@@ -196,11 +196,13 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
                 </div>
 
                 {/* The deal has no second title line — the slot still reserves it.
-                    md:mt-3 cancels the span's -mt-3 from md up, where the wrapper's
-                    space-y-5 outranks it in production. */}
-                <div className={`order-3 md:order-none md:mt-3 ${COPY_SLOT}`}>
+                    In production the wrapper's md:space-y-5 outranks the span's
+                    -mt-3 (0,3,0 vs 0,1,0) so the desktop gap is the full 20 px;
+                    nested in a cell that -mt-3 would come back to life, so it is
+                    cancelled on the cell — the one place nothing outranks. */}
+                <div className={`order-3 md:order-none ${COPY_SLOT}`}>
                   <CopyState active={dealActive}>{null}</CopyState>
-                  <CopyState active={!dealActive}>{defaultTitle2()}</CopyState>
+                  <CopyState active={!dealActive} className="md:mt-3">{defaultTitle2()}</CopyState>
                 </div>
 
                 <div ref={subtitleRef} className={`order-4 md:order-none ${COPY_SLOT}`}>
@@ -366,11 +368,11 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
  * the carousel's 500 ms crossfade) and is unfocusable once hidden. Both states
  * stay mounted, so the RevealText entrance plays once on mount and never again.
  */
-function CopyState({ active, children }: { active: boolean; children: React.ReactNode }) {
+function CopyState({ active, className = '', children }: { active: boolean; className?: string; children: React.ReactNode }) {
   return (
     <div
       aria-hidden={!active || undefined}
-      className={`col-start-1 row-start-1 transition-[opacity,visibility] duration-[400ms] ${active ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+      className={`col-start-1 row-start-1 transition-[opacity,visibility] duration-[400ms] ${active ? 'opacity-100 visible' : 'opacity-0 invisible'} ${className}`.trimEnd()}
     >
       {children}
     </div>
