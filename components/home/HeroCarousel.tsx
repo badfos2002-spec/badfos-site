@@ -110,7 +110,7 @@ export default function HeroCarousel({ leadSlide, onChange }: Props = {}) {
       {/* The visible dot stays 10×10, inside a 44×44 tap target (TICKET-025
           Addendum B). The row itself passes taps through, so only the targets
           take clicks away from the slide's link. */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
+      <div className="absolute bottom-[15px] left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
         {slides.map((_, i) => (
           <button
             key={i}
