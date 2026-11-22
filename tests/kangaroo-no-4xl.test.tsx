@@ -1,0 +1,283 @@
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import SizeQuantityStep from '@/components/designer/SizeQuantityStep'
+import { sizeOptions } from '@/lib/manual-order'
+import { validateSeoPage } from '@/lib/seo-price-tokens'
+import { getSeoPage } from '@/lib/seo-pages'
+import type { ProductConfig, SizeQuantity } from '@/lib/types'
+
+// TICKET-026: the kangaroo hoodie has no 4XL (XS–3XL only, 3XL keeps +₪12).
+// putter and zip stay XS–4XL, t-shirt rules unchanged. The rule lives in four
+// mirrors that must stay identical — the sweatshirt designer's own step-4 grid
+// (app/designer/sweatshirt/page.tsx, the one a kangaroo buyer actually sees),
+// SizeQuantityStep, the admin manual order and the SEO price-token guard — and
+// the sweatshirt SEO copy must say so.
+
+vi.mock('@/components/common/AnnouncementBar', () => ({ default: () => null }))
+vi.mock('next/dynamic', () => ({ default: () => function StageStub() { return <div data-testid="stage" /> } }))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: () => {}, replace: () => {}, back: () => {} }),
+  usePathname: () => '/designer/sweatshirt',
+}))
+vi.mock('@/lib/storage', () => ({
+  uploadDesignFile: async () => 'https://storage.example.com/designs/s1/art.png',
+  generateUniqueFileName: (name: string) => name,
+}))
+vi.mock('@/lib/print-image', () => ({
+  preparePrintFile: async (file: File) => file,
+  printUploadErrorMessage: () => 'שגיאה',
+}))
+
+afterEach(cleanup)
+
+function renderStep(
+  config: { productType: string; fabricType?: string; color?: string },
+  sizes: SizeQuantity[] = [],
+  onUpdate = vi.fn(),
+) {
+  render(
+    <SizeQuantityStep
+      sizes={sizes}
+      onUpdate={onUpdate}
+      config={{ color: 'black', designs: [], sizes, ...config } as unknown as ProductConfig}
+    />,
+  )
+  return onUpdate
+}
+
+const listedSizes = () =>
+  screen.getAllByLabelText(/^כמות למידה /).map(el => el.getAttribute('aria-label')!.replace('כמות למידה ', ''))
+
+const ALL_STANDARD = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']
+
+describe('SizeQuantityStep — kangaroo sweatshirt', () => {
+  it('lists XS…3XL, no 4XL control', () => {
+    renderStep({ productType: 'sweatshirt', fabricType: 'kangaroo' })
+    expect(listedSizes()).toEqual(['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'])
+  })
+
+  it('putter and zip still list 4XL (unchanged)', () => {
+    renderStep({ productType: 'sweatshirt', fabricType: 'putter' })
+    expect(listedSizes()).toEqual(ALL_STANDARD)
+    cleanup()
+    renderStep({ productType: 'sweatshirt', fabricType: 'zip' })
+    expect(listedSizes()).toEqual(ALL_STANDARD)
+  })
+
+  it('drops a 4XL row carried over from putter/zip, keeps the rest', () => {
+    const onUpdate = renderStep({ productType: 'sweatshirt', fabricType: 'kangaroo' }, [
+      { size: 'M', quantity: 2 },
+      { size: '4XL', quantity: 3 },
+      { size: '3XL', quantity: 1 },
+    ])
+    expect(onUpdate).toHaveBeenCalledWith([
+      { size: 'M', quantity: 2 },
+      { size: '3XL', quantity: 1 },
+    ])
+  })
+
+  it('keeps a 4XL row on putter', () => {
+    const onUpdate = renderStep({ productType: 'sweatshirt', fabricType: 'putter' }, [
+      { size: '4XL', quantity: 3 },
+    ])
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+})
+
+// The stale-row cleanup is generalised to "any size the fabric doesn't offer".
+// These pin what it must NOT touch, plus the oversized rows it now covers too.
+describe('SizeQuantityStep — the generalised stale-row cleanup', () => {
+  it('leaves kid rows alone on cotton white (they are not standard sizes)', () => {
+    const onUpdate = renderStep({ productType: 'tshirt', fabricType: 'cotton', color: 'white' }, [
+      { size: 'M', quantity: 1 },
+      { size: '4', quantity: 2 },
+    ])
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('leaves the buff quantity row alone', () => {
+    const onUpdate = renderStep({ productType: 'buff' }, [{ size: 'one-size', quantity: 50 }])
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('drops XS/3XL/4XL rows on oversized, like dri-fit and long-sleeve', () => {
+    const onUpdate = renderStep({ productType: 'tshirt', fabricType: 'oversized' }, [
+      { size: 'XS', quantity: 1 },
+      { size: 'L', quantity: 2 },
+      { size: '3XL', quantity: 1 },
+      { size: '4XL', quantity: 1 },
+    ])
+    expect(onUpdate).toHaveBeenCalledWith([{ size: 'L', quantity: 2 }])
+  })
+})
+
+// The route a kangaroo buyer actually uses: app/designer/sweatshirt/page.tsx
+// renders its OWN step-4 grid straight off STANDARD_SIZES — SizeQuantityStep is
+// only ever mounted by the t-shirt designer — so the rule has to hold here too.
+describe('the sweatshirt designer — step 4 grid', () => {
+  /** The mobile and the desktop layout are both mounted (CSS hides one), so the
+   *  size cards are collected per grid container and every grid must agree. */
+  const sizeGrids = () => {
+    const grids = new Map<Element, (string | null)[]>()
+    for (const input of document.querySelectorAll<HTMLInputElement>('input[type="number"]')) {
+      const card = input.parentElement!
+      const grid = card.parentElement!
+      if (!grids.has(grid)) grids.set(grid, [])
+      grids.get(grid)!.push(card.querySelector('span')!.textContent)
+    }
+    return [...grids.values()]
+  }
+
+  const expectGrids = (sizes: string[]) => {
+    const grids = sizeGrids()
+    expect(grids.length).toBeGreaterThan(0)
+    for (const grid of grids) expect(grid).toEqual(sizes)
+  }
+  const KANGAROO = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
+
+  async function toStep4(user: ReturnType<typeof userEvent.setup>, type: RegExp) {
+    const { default: SweatshirtDesignerPage } = await import('@/app/designer/sweatshirt/page')
+    render(<SweatshirtDesignerPage />)
+    await user.click(screen.getAllByRole('button', { name: type })[0])
+    await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'שחור' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'המשך בלי עיצוב' })[0])
+  }
+
+  const back = async (user: ReturnType<typeof userEvent.setup>, times: number) => {
+    for (let i = 0; i < times; i++) await user.click(screen.getAllByRole('button', { name: 'הקודם' })[0])
+  }
+  const forward = async (user: ReturnType<typeof userEvent.setup>, times: number) => {
+    for (let i = 0; i < times; i++) await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+  }
+
+  it('kangaroo: XS…3XL, no 4XL input', async () => {
+    const user = userEvent.setup()
+    await toStep4(user, /קנגרו/)
+    expectGrids(KANGAROO)
+  })
+
+  it('putter: all eight sizes (unchanged)', async () => {
+    const user = userEvent.setup()
+    await toStep4(user, /פוטר/)
+    expectGrids(ALL_STANDARD)
+  })
+
+  it('a 4XL quantity typed on putter is cleared when switching to kangaroo', async () => {
+    const user = userEvent.setup()
+    await toStep4(user, /פוטר/)
+    const fourXl = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'))
+      .find(i => i.parentElement!.querySelector('span')!.textContent === '4XL')!
+    await user.type(fourXl, '2')
+    expect(screen.getAllByText('×2').length).toBeGreaterThan(0)
+
+    await back(user, 3)
+    await user.click(screen.getAllByRole('button', { name: /קנגרו/ })[0])
+    await forward(user, 3)
+    await user.click(screen.getAllByRole('button', { name: 'המשך בלי עיצוב' })[0])
+
+    expectGrids(KANGAROO)
+    expect(screen.queryAllByText('×2')).toHaveLength(0)
+    expect(screen.getAllByText('* בחרו לפחות יחידה אחת להמשך').length).toBeGreaterThan(0)
+  })
+
+  // דניאל (Reviewer): the 4XL also lives in the `quantities` maps, not only in
+  // the rendered grid. The grid is where a quantity is typed and the cart is
+  // where it would do damage, so this pins the cart boundary itself: nothing a
+  // visitor can do on putter may put a 4XL kangaroo line into the cart.
+  it('no 4XL can reach the cart after a switch to kangaroo', async () => {
+    const user = userEvent.setup()
+    const { useCart } = await import('@/hooks/useCart')
+    useCart.setState({ items: [] })
+
+    await toStep4(user, /פוטר/)
+    const input = (size: string) =>
+      Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'))
+        .find(i => i.parentElement!.querySelector('span')!.textContent === size)!
+    await user.type(input('4XL'), '2')
+
+    await back(user, 3)
+    await user.click(screen.getAllByRole('button', { name: /קנגרו/ })[0])
+    await forward(user, 3)
+    await user.click(screen.getAllByRole('button', { name: 'המשך בלי עיצוב' })[0])
+    await user.type(input('3XL'), '1')
+    await user.click(screen.getAllByRole('button', { name: /הוסף לעגלה/ })[0])
+
+    const [item] = useCart.getState().items
+    expect(item.fabricType).toBe('kangaroo')
+    expect(item.sizes).toEqual([{ size: '3XL', quantity: 1 }])
+    useCart.setState({ items: [] })
+  })
+})
+
+describe('manual order — sizeOptions', () => {
+  it('kangaroo has no 4XL, putter and zip do', () => {
+    expect(sizeOptions('sweatshirt', 'kangaroo', 'black').map(o => o.id)).toEqual([
+      'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL',
+    ])
+    expect(sizeOptions('sweatshirt', 'putter', 'black').map(o => o.id)).toEqual(ALL_STANDARD)
+    expect(sizeOptions('sweatshirt', 'zip', 'black').map(o => o.id)).toEqual(ALL_STANDARD)
+  })
+
+  it('t-shirt sizes are untouched', () => {
+    expect(sizeOptions('tshirt', 'cotton', 'gray').map(o => o.id)).toEqual(ALL_STANDARD)
+  })
+})
+
+describe('SEO price-token guard — a page can never quote a size that is not sold', () => {
+  const page = (example: { fabric: string; size: string }) => ({
+    slug: 'בדיקה',
+    productType: 'sweatshirt' as const,
+    heroText: '',
+    benefits: [],
+    paragraphs: [],
+    faq: [],
+    priceExamples: [
+      {
+        label: 'קפוצ׳ון',
+        productType: 'sweatshirt' as const,
+        fabric: example.fabric,
+        areas: ['front_full'],
+        quantity: 15,
+        size: example.size,
+      },
+    ],
+  })
+
+  it('kangaroo + 4XL throws «not offered»', () => {
+    expect(() => validateSeoPage(page({ fabric: 'kangaroo', size: '4XL' }), true)).toThrow(/not offered/)
+  })
+
+  it('kangaroo + 3XL passes, and putter + 4XL passes', () => {
+    expect(() => validateSeoPage(page({ fabric: 'kangaroo', size: '3XL' }), true)).not.toThrow()
+    expect(() => validateSeoPage(page({ fabric: 'putter', size: '4XL' }), true)).not.toThrow()
+  })
+})
+
+describe('the sweatshirt SEO page copy', () => {
+  const sweatshirt = () => getSeoPage('הדפסה-על-סווטשרטים')!
+  const sizeBenefit = () => sweatshirt().benefits.find(b => b.title.includes('מידה לכל אחד'))!
+  const sizeFaq = () => sweatshirt().faq.find(f => f.q === 'אילו מידות יש?')!
+
+  it('says kangaroo goes up to 3XL in the metaDescription and in the intro', () => {
+    expect(sweatshirt().metaDescription).toContain('קנגרו עד 3XL')
+    expect(sweatshirt().heroText).toContain('קנגרו עד 3XL')
+  })
+
+  // Lead's ruling on TICKET-026 item 4: every claim about the range on THIS
+  // page must be true, so the size benefit's title and the sizes FAQ get the
+  // same qualifier.
+  it('says it in the size benefit title and in the sizes FAQ too', () => {
+    expect(sizeBenefit().title).toContain('קנגרו עד 3XL')
+    expect(sizeFaq().a).toContain('קנגרו עד 3XL')
+  })
+
+  it('leaves the surcharge sentences alone — 3XL/4XL still carry the surcharge on putter and zip', () => {
+    expect(sizeBenefit().text).toContain('מידות 3XL ו־4XL בתוספת {{size:3XL}} בלבד.')
+    expect(sizeFaq().a).toContain('מידות 3XL ו־4XL בתוספת קטנה ליחידה.')
+    expect(sizeFaq().aLive).toBe('התוספת כרגע: {{size:3XL}} ליחידה.')
+  })
+})
