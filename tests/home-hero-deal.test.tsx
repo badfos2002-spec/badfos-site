@@ -86,6 +86,7 @@ describe('NewHeroSection with a hero deal', () => {
     render(<NewHeroSection heroDeal={DEAL} />)
     expect(activeTitle()).toHaveTextContent('מבצע חורף')
     expect(screen.getByText('סווטשרטים במחיר מיוחד')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('20% הנחה') // the priceText line (§B.7)
     expect(screen.getByTestId('hero-deal-badge')).toHaveTextContent('מבצע')
     const ctas = screen.getAllByRole('link', { name: 'לפרטי המבצע' })
     expect(ctas.length).toBeGreaterThan(0)
@@ -203,6 +204,22 @@ describe('NewHeroSection with a hero deal', () => {
     const dealCta = screen.getAllByRole('link', { name: 'לפרטי המבצע' })[0].closest('[class*="col-start-1"]')!
     const designerCta = screen.getAllByText(/התחילו לעצב/)[0].closest('[class*="col-start-1"]')!
     expect(dealCta.parentElement).toBe(designerCta.parentElement)
+  })
+
+  it('the swap never remounts the copy, so the RevealText entrance plays once on mount', () => {
+    // RevealText is mocked here, so this asserts the structural guarantee behind
+    // it: both copy states stay mounted — not keyed by the slide, never
+    // conditionally rendered — so React keeps the very same elements.
+    vi.useFakeTimers()
+    render(<NewHeroSection heroDeal={DEAL} />)
+    const before = Array.from(document.querySelectorAll('h1'))
+    expect(before).toHaveLength(2) // the deal title + the default title (the sizer)
+    expect(before[0]).toHaveTextContent('מבצע חורף')
+    toProductSlide()
+    const after = Array.from(document.querySelectorAll('h1'))
+    expect(after).toHaveLength(2)
+    expect(after[0]).toBe(before[0])
+    expect(after[1]).toBe(before[1])
   })
 
   it('uses the hero overrides when set', () => {
