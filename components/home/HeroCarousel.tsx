@@ -1,32 +1,60 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Tag } from 'lucide-react'
 
-interface Slide {
+export interface HeroSlide {
   id: string
-  image: string
+  /** Missing (a hero deal with no graphic at all) → the deal placeholder box. */
+  image?: string
+  alt: string
   link?: string
+  /** How long this slide stays before the crossfade starts. */
+  dwellMs: number
 }
 
-const SLIDES: Slide[] = [
-  { id: '1', image: '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp' },
-  { id: '2', image: '/assets/64ab08d41_IMG_3252.webp' },
-  { id: '3', image: '/assets/a189e74e3_IMG_0490.webp' },
-  { id: '4', image: '/assets/c4660170b_IMG_6179.webp' },
-  { id: '5', image: '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.webp' },
+const PRODUCT_ALT = 'בדפוס - הדפסת חולצות בעיצוב אישי'
+const PRODUCT_DWELL_MS = 5000
+
+const PRODUCT_SLIDES: HeroSlide[] = [
+  { id: '1', image: '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp', alt: PRODUCT_ALT, dwellMs: PRODUCT_DWELL_MS },
+  { id: '2', image: '/assets/64ab08d41_IMG_3252.webp', alt: PRODUCT_ALT, dwellMs: PRODUCT_DWELL_MS },
+  { id: '3', image: '/assets/a189e74e3_IMG_0490.webp', alt: PRODUCT_ALT, dwellMs: PRODUCT_DWELL_MS },
+  { id: '4', image: '/assets/c4660170b_IMG_6179.webp', alt: PRODUCT_ALT, dwellMs: PRODUCT_DWELL_MS },
+  { id: '5', image: '/assets/fdd643e9f_D747B5AC-1217-4D1F-A7B1-61C6EDE52659.webp', alt: PRODUCT_ALT, dwellMs: PRODUCT_DWELL_MS },
 ]
 
-export default function HeroCarousel() {
+type Props = {
+  /** TICKET-025B: the hero deal joins the rotation as slide 0 with its own
+      dwell (8000 ms), the 5 product photos follow. Its Storage graphic renders
+      as a plain eager `<img>` like `DealPicture`, not through `next/image`.
+      Without it this is today's 5-photo hero, unchanged. */
+  leadSlide?: HeroSlide | null
+  /** Fires with the new index when the active slide starts changing, so the
+      hero copy can crossfade together with the image. */
+  onChange?: (index: number) => void
+}
+
+export default function HeroCarousel({ leadSlide, onChange }: Props = {}) {
   const [current, setCurrent] = useState(0)
   const [next, setNext] = useState<number | null>(null)
   const [fading, setFading] = useState(false)
+
+  const slides = leadSlide ? [leadSlide, ...PRODUCT_SLIDES] : PRODUCT_SLIDES
+
+  // onChange lives in a ref so the auto-advance clock below restarts only when
+  // the slide really changes — never because the parent re-rendered with a
+  // fresh callback (the hero re-renders on every slide change).
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
 
   const goTo = useCallback((i: number) => {
     if (i === current || fading) return
     setNext(i)
     setFading(true)
+    onChangeRef.current?.(i)
     setTimeout(() => {
       setCurrent(i)
       setNext(null)
@@ -34,17 +62,21 @@ export default function HeroCarousel() {
     }, 500)
   }, [current, fading])
 
+  const count = slides.length
+  const dwellMs = slides[current].dwellMs
   useEffect(() => {
     // Respect prefers-reduced-motion — skip auto-advance for users who opt out of motion
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const id = setInterval(() => {
-      goTo((current + 1) % SLIDES.length)
-    }, 5000)
-    return () => clearInterval(id)
-  }, [current, goTo])
+    const id = setTimeout(() => {
+      goTo((current + 1) % count)
+    }, dwellMs)
+    return () => clearTimeout(id)
+  }, [current, count, dwellMs, goTo])
 
-  const slide = SLIDES[current]
-  const nextSlide = next !== null ? SLIDES[next] : null
+  const slide = slides[current]
+  const nextSlide = next !== null ? slides[next] : null
+  /** Only the lead slide is a remote deal graphic; the products stay on next/image. */
+  const isLead = (i: number) => Boolean(leadSlide) && i === 0
 
   return (
     <div
@@ -58,6 +90,7 @@ export default function HeroCarousel() {
         <SlideImage
           key={slide.id}
           slide={slide}
+          plain={isLead(current)}
           className={`transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}
           priority={current === 0}
         />
@@ -67,35 +100,60 @@ export default function HeroCarousel() {
           <SlideImage
             key={nextSlide.id}
             slide={nextSlide}
+            plain={isLead(next!)}
             className={`transition-opacity duration-500 ${fading ? 'opacity-100' : 'opacity-0'}`}
             priority={false}
           />
         )}
       </div>
 
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20">
-        {SLIDES.map((_, i) => (
+      {/* The visible dot stays 10×10, inside a 44×44 tap target (TICKET-025
+          Addendum B). The row itself passes taps through, so only the targets
+          take clicks away from the slide's link. */}
+      <div className="absolute bottom-[15px] left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
+        {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
-            className={`transition-all duration-300 rounded-full ${
-              i === current
-                ? 'bg-white w-2.5 h-2.5 scale-110 shadow-sm'
-                : 'bg-white/50 w-2.5 h-2.5'
-            }`}
+            className="w-11 h-11 flex items-center justify-center pointer-events-auto"
             aria-label={`עבור לתמונה ${i + 1}`}
-          />
+          >
+            <span
+              className={`transition-all duration-300 rounded-full ${
+                i === current
+                  ? 'bg-white w-2.5 h-2.5 scale-110 shadow-sm'
+                  : 'bg-white/50 w-2.5 h-2.5'
+              }`}
+            />
+          </button>
         ))}
       </div>
     </div>
   )
 }
 
-function SlideImage({ slide, className, priority }: { slide: Slide; className: string; priority: boolean }) {
-  const img = (
+function SlideImage({ slide, plain, className, priority }: { slide: HeroSlide; plain: boolean; className: string; priority: boolean }) {
+  const img = !slide.image ? (
+    // A hero deal with no image at all — the same placeholder box the deal components use.
+    <div className={`absolute inset-0 bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center ${className}`}>
+      <Tag className="h-12 w-12 text-yellow-500/60" aria-hidden="true" />
+    </div>
+  ) : plain ? (
+    // The deal's Storage graphic, like DealPicture: a plain eager <img>, so the
+    // LCP candidate does not wait for next/image's optimizer.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={slide.image}
+      alt={slide.alt}
+      loading={priority ? 'eager' : 'lazy'}
+      fetchPriority={priority ? 'high' : undefined}
+      decoding="async"
+      className={`object-cover rounded-[1.5rem] absolute inset-0 h-full w-full ${className}`}
+    />
+  ) : (
     <Image
       src={slide.image}
-      alt="בדפוס - הדפסת חולצות בעיצוב אישי"
+      alt={slide.alt}
       fill
       sizes="(max-width: 768px) 100vw, 550px"
       className={`object-cover rounded-[1.5rem] absolute inset-0 ${className}`}
