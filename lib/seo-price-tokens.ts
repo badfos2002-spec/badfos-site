@@ -250,12 +250,14 @@ export function validateSeoPage(page: TokenCheckedPage, usesDefaultLayout: boole
     if (ex.size !== undefined) {
       parsePriceToken(`size:${ex.size}`)
       // Mirrors the designers: only t-shirts/sweatshirts take STANDARD_SIZES (the only sizes
-      // with surcharges); oversized has no XS/3XL/4XL, dri-fit no 4XL, long-sleeve no 3XL/4XL (SizeQuantityStep)
+      // with surcharges); oversized has no XS/3XL/4XL, dri-fit no 4XL, long-sleeve no 3XL/4XL,
+      // the kangaroo hoodie no 4XL (SizeQuantityStep)
       const offered =
         (ex.productType === 'tshirt' || ex.productType === 'sweatshirt') &&
         !(ex.fabric === 'oversized' && ['XS', '3XL', '4XL'].includes(ex.size)) &&
         !(ex.fabric === 'dri-fit' && ex.size === '4XL') &&
-        !(ex.fabric === 'long-sleeve' && ['3XL', '4XL'].includes(ex.size))
+        !(ex.fabric === 'long-sleeve' && ['3XL', '4XL'].includes(ex.size)) &&
+        !(ex.fabric === 'kangaroo' && ex.size === '4XL')
       if (!offered) throw bad(`size "${ex.size}" is not offered for ${ex.productType}${ex.fabric ? `/${ex.fabric}` : ''}`)
     }
   }

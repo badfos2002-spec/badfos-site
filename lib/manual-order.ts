@@ -127,7 +127,7 @@ export function colorOptions(productType: string, fabricType: string): Option[] 
 /**
  * מידות חוקיות למוצר+סוג+צבע — אותם כללים כמו SizeQuantityStep ושאר המעצבים:
  * ילדים רק לכותנה לבן/שחור, אוברסייז בלי XS/3XL/4XL, דרייפיט בלי 4XL, שרוול ארוך XS–XXL,
- * תינוקות — מידות תינוק, מוצרים בלי מידות — ONE_SIZE (כמו במעצבים).
+ * קפוצ׳ון קנגרו בלי 4XL, תינוקות — מידות תינוק, מוצרים בלי מידות — ONE_SIZE (כמו במעצבים).
  */
 export function sizeOptions(productType: string, fabricType: string, color: string): Option[] {
   const std = STANDARD_SIZES.map(s => ({ id: s.id, name: s.name }))
@@ -142,6 +142,7 @@ export function sizeOptions(productType: string, fabricType: string, color: stri
       return std
     }
     case 'sweatshirt':
+      if (fabricType === 'kangaroo') return std.filter(s => s.id !== '4XL')
       return std
     case 'baby':
       return BABY_SIZES.map(s => ({ id: s.id, name: s.name }))
