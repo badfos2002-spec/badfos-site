@@ -27,22 +27,24 @@ const PRODUCT_SLIDES: HeroSlide[] = [
 ]
 
 type Props = {
-  /** TICKET-025B: the hero deal joins the rotation as slide 0 with its own
-      dwell (8000 ms), the 5 product photos follow. Its Storage graphic renders
-      as a plain eager `<img>` like `DealPicture`, not through `next/image`.
-      Without it this is today's 5-photo hero, unchanged. */
-  leadSlide?: HeroSlide | null
+  /** TICKET-029: every deal marked «בהירו» joins the rotation first —
+      consecutively, in the admin's sort order, each with its own dwell
+      (8000 ms) and its own alt/link/image — and the 5 product photos follow.
+      Their Storage graphics render as plain `<img>` like `DealPicture`, not
+      through `next/image`; only index 0 is the eager fetchPriority="high" LCP
+      candidate. Empty or missing → today's 5-photo hero, unchanged. */
+  leadSlides?: HeroSlide[]
   /** Fires with the new index when the active slide starts changing, so the
       hero copy can crossfade together with the image. */
   onChange?: (index: number) => void
 }
 
-export default function HeroCarousel({ leadSlide, onChange }: Props = {}) {
+export default function HeroCarousel({ leadSlides, onChange }: Props = {}) {
   const [current, setCurrent] = useState(0)
   const [next, setNext] = useState<number | null>(null)
   const [fading, setFading] = useState(false)
 
-  const slides = leadSlide ? [leadSlide, ...PRODUCT_SLIDES] : PRODUCT_SLIDES
+  const slides = leadSlides?.length ? [...leadSlides, ...PRODUCT_SLIDES] : PRODUCT_SLIDES
 
   // onChange lives in a ref so the auto-advance clock below restarts only when
   // the slide really changes — never because the parent re-rendered with a
@@ -75,8 +77,8 @@ export default function HeroCarousel({ leadSlide, onChange }: Props = {}) {
 
   const slide = slides[current]
   const nextSlide = next !== null ? slides[next] : null
-  /** Only the lead slide is a remote deal graphic; the products stay on next/image. */
-  const isLead = (i: number) => Boolean(leadSlide) && i === 0
+  /** Only the lead slides are remote deal graphics; the products stay on next/image. */
+  const isLead = (i: number) => i < (leadSlides?.length ?? 0)
 
   return (
     <div

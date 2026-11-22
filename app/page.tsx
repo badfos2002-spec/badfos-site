@@ -8,7 +8,7 @@ import EventLinksSection from '@/components/home/EventLinksSection'
 import NewDealsSection from '@/components/home/NewDealsSection'
 import { getLiveDeals } from '@/lib/deals-server'
 
-// The hero follows the deal marked «בהירו» (TICKET-022 Addendum A) — read on the server, no client flash.
+// The hero carousel opens with every deal marked «בהירו» (TICKET-029) — read on the server, no client flash.
 export const revalidate = 60
 
 const SectionLoader = () => <div className="min-h-[200px]" />
@@ -19,14 +19,15 @@ const NewTestimonialsSection = dynamic(() => import('@/components/home/NewTestim
 const NewFinalCTASection = dynamic(() => import('@/components/home/NewFinalCTASection'), { loading: SectionLoader })
 
 export default async function RootPage() {
-  // One server read feeds both the hero (Addendum A) and the deals row (max 3).
+  // One server read feeds both the hero (every deal marked «בהירו», in sort
+  // order) and the deals row (max 3).
   const deals = await getLiveDeals()
-  const heroDeal = deals.find((d) => d.hero?.enabled) ?? null
+  const heroDeals = deals.filter((d) => d.hero?.enabled)
   return (
     <div>
       <IntroOverlay />
       <SmoothScrollProvider>
-        <NewHeroSection heroDeal={heroDeal} />
+        <NewHeroSection heroDeals={heroDeals} />
         <NewWhyChooseSection />
         <NewPackagesSection />
         <NewDealsSection deals={deals.slice(0, 3)} />

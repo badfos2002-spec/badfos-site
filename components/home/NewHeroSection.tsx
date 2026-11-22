@@ -39,40 +39,48 @@ const COPY_SLOT = 'grid justify-items-center items-center'
     16 px between lines on mobile, 20 px on desktop. */
 const COPY_BLOCK = 'flex flex-col items-center gap-4 md:gap-5'
 
-/** `heroDeal` (TICKET-022 Addendum A): the hero shows that deal; without it the hero is unchanged. */
-export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } = {}) {
+/** `heroDeals` (TICKET-029): every live deal marked «בהירו» opens the carousel,
+    each with its own copy; without any of them the hero is unchanged. */
+export default function NewHeroSection({ heroDeals }: { heroDeals?: Deal[] } = {}) {
   const [c, setC] = useState(D)
-  const deal = heroDeal ?? null
-  const dc = deal ? dealHeroCopy(deal) : null
-  const ctaHref = deal ? dealPath(deal.slug) : '/designer'
-  const ctaText = dc ? dc.ctaLabel : c.hero_ctaText
+  /** One entry per hero deal, in the order the server read them (sortDeals). */
+  const dealStates = (heroDeals ?? []).map((deal) => ({
+    deal,
+    copy: dealHeroCopy(deal),
+    path: dealPath(deal.slug),
+    waHref: dealWhatsAppLink(deal),
+    image: dealImage(deal, 'square'),
+  }))
+  const hasDeals = dealStates.length > 0
   const badgeRef = useRef<HTMLDivElement>(null)
   const subtitleRef = useRef<HTMLHeadingElement>(null)
   const descRef = useRef<HTMLParagraphElement>(null)
   const carouselRef = useRef<HTMLDivElement>(null)
 
-  // TICKET-025B: the deal joins the carousel as slide 0 and the copy follows the
-  // active slide. SSR renders index 0 — the deal state — so there is no
-  // hydration mismatch.
+  // TICKET-029: the deals open the carousel consecutively and the copy follows
+  // the active slide — deal k owns it while `slide === k`, the default copy once
+  // the deal slides are past. SSR renders index 0 — the first deal's state — so
+  // there is no hydration mismatch.
   const [slide, setSlide] = useState(0)
-  const dealActive = dc !== null && slide === 0
-  const leadSlide: HeroSlide | null = deal && dc ? {
+  const defaultActive = slide >= dealStates.length
+  const leadSlides: HeroSlide[] = dealStates.map(({ deal, copy, path, image }) => ({
     id: `deal-${deal.id}`,
-    image: dealImage(deal, 'square'),
-    alt: dc.title,
-    link: ctaHref,
+    image,
+    alt: copy.title,
+    link: path,
     dwellMs: DEAL_DWELL_MS,
-  } : null
+  }))
 
   // 3D tilt on the carousel card (desktop + non-reduced-motion only; no-op otherwise).
   const tiltRef = useTilt<HTMLDivElement>({ maxTilt: 7, scale: 1.02, perspective: 900 })
 
   // Bold mount entrance. CRITICAL: only badge/subtitle/paragraph + carousel are touched here.
   // The CTA button and rating row are NEVER animated and never start hidden.
-  // With a hero deal the three refs land on the deal state's own badge / price /
-  // text — the state that is painted at mount (SSR = slide 0) — so nothing is
-  // animated twice and nothing ends up permanently hidden. The h1s stay out of
-  // the array: RevealText owns the titles.
+  // With hero deals the three refs land on the FIRST deal's own badge / price /
+  // text and on no other deal's: SSR renders slide 0, so deal 0's state is the
+  // one painted at mount, and the entrance must animate exactly the elements the
+  // visitor sees — never an invisible sizer. The h1s stay out of the array:
+  // RevealText owns the titles.
   useGSAP(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
@@ -179,12 +187,15 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
 
           {/* Text Content */}
           <div className="text-center w-full px-4 md:space-y-5 contents md:flex md:flex-col md:items-center hero-text-rounded min-h-[320px] md:min-h-[380px]">
-            {dc ? (
+            {hasDeals ? (
               <>
                 {/* TICKET-027: two cells, not one per copy element. Each holds
-                    both states as a whole block, so the cell is as tall as the
-                    taller block and the shorter one is centred — the leftover
+                    every state as a whole block, so the cell is as tall as the
+                    tallest block and the shorter ones are centred — the leftover
                     sits above and below the block, never between its lines.
+                    TICKET-029: one block per hero deal, in deals order, and the
+                    default state LAST — the order is load-bearing, the tests
+                    read the blocks positionally.
                     The order-* classes of the shared elements are untouched:
                     inside a block they sort ascending and change nothing, while
                     the cells carry the mobile ladder (above the carousel, below
@@ -192,26 +203,31 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
                     mobile-scoped, so without it the «below» cell would sort
                     after the desktop CTA row, the chips and the rating. */}
                 <div data-testid="hero-copy-above" className={`order-1 md:order-none ${COPY_SLOT}`}>
-                  <CopyState active={dealActive} className={COPY_BLOCK}>
-                    <div ref={badgeRef} data-testid="hero-deal-badge" className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#ffc32e] rounded-full text-[#3b2600] text-sm font-extrabold border border-[#fbbf24] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
-                      מבצע
-                      <Tag className="w-3.5 h-3.5" />
-                    </div>
-                    <RevealText
-                      as="h1"
-                      trigger="mount"
-                      text={dc.title}
-                      y={36}
-                      stagger={0.09}
-                      className="order-2 md:order-none text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
-                    />
-                    {deal!.priceText && (
-                      <h2 ref={subtitleRef} className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
-                        {deal!.priceText}
-                      </h2>
-                    )}
-                  </CopyState>
-                  <CopyState active={!dealActive} className={COPY_BLOCK}>
+                  {dealStates.map(({ deal, copy }, k) => (
+                    <CopyState key={deal.id} active={slide === k} className={COPY_BLOCK}>
+                      {/* The three GSAP refs land on deal 0 only — the state SSR
+                          paints at mount. A later deal's block is an invisible
+                          sizer there, and the entrance must never animate one. */}
+                      <div ref={k === 0 ? badgeRef : undefined} data-testid="hero-deal-badge" className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#ffc32e] rounded-full text-[#3b2600] text-sm font-extrabold border border-[#fbbf24] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
+                        מבצע
+                        <Tag className="w-3.5 h-3.5" />
+                      </div>
+                      <RevealText
+                        as="h1"
+                        trigger="mount"
+                        text={copy.title}
+                        y={36}
+                        stagger={0.09}
+                        className="order-2 md:order-none text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
+                      />
+                      {deal.priceText && (
+                        <h2 ref={k === 0 ? subtitleRef : undefined} className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
+                          {deal.priceText}
+                        </h2>
+                      )}
+                    </CopyState>
+                  ))}
+                  <CopyState active={defaultActive} className={COPY_BLOCK}>
                     {defaultBadge()}
                     {defaultTitle1()}
                     {/* In production the wrapper's md:space-y-5 outranks the
@@ -225,35 +241,39 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
                 </div>
 
                 <div data-testid="hero-copy-below" className={`order-6 md:order-none ${COPY_SLOT}`}>
-                  <CopyState active={dealActive} className={COPY_BLOCK}>
-                    <p ref={descRef} className="order-6 md:order-none text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
-                      {dc.text}
-                    </p>
-                  </CopyState>
-                  <CopyState active={!dealActive} className={COPY_BLOCK}>{defaultDesc()}</CopyState>
+                  {dealStates.map(({ deal, copy }, k) => (
+                    <CopyState key={deal.id} active={slide === k} className={COPY_BLOCK}>
+                      <p ref={k === 0 ? descRef : undefined} className="order-6 md:order-none text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
+                        {copy.text}
+                      </p>
+                    </CopyState>
+                  ))}
+                  <CopyState active={defaultActive} className={COPY_BLOCK}>{defaultDesc()}</CopyState>
                 </div>
 
-                {/* Desktop CTA — both states in one cell, so the trust chips and
+                {/* Desktop CTA — every state in one cell, so the trust chips and
                     the rating row below them never move. */}
                 <div className={`hidden md:grid mt-6 justify-items-center items-center`}>
-                  <CopyState active={dealActive}>
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                      <Link href={ctaHref} className="bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-xl font-bold py-3.5 px-12 rounded-full shadow-xl transition-all hover:scale-105 hover:shadow-2xl min-w-[280px] inline-flex items-center justify-center gap-2">
-                        {ctaText}
-                      </Link>
-                      <a
-                        href={dealWhatsAppLink(deal!)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => trackWhatsAppClick('hero_deal')}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] text-white text-lg font-bold py-3.5 px-8 shadow-lg"
-                      >
-                        <MessageCircle className="w-5 h-5" aria-hidden="true" />
-                        וואטסאפ
-                      </a>
-                    </div>
-                  </CopyState>
-                  <CopyState active={!dealActive}>{designerCta()}</CopyState>
+                  {dealStates.map(({ deal, copy, path, waHref }, k) => (
+                    <CopyState key={deal.id} active={slide === k}>
+                      <div className="flex flex-wrap items-center justify-center gap-3">
+                        <Link href={path} className="bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-xl font-bold py-3.5 px-12 rounded-full shadow-xl transition-all hover:scale-105 hover:shadow-2xl min-w-[280px] inline-flex items-center justify-center gap-2">
+                          {copy.ctaLabel}
+                        </Link>
+                        <a
+                          href={waHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => trackWhatsAppClick('hero_deal')}
+                          className="inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] text-white text-lg font-bold py-3.5 px-8 shadow-lg"
+                        >
+                          <MessageCircle className="w-5 h-5" aria-hidden="true" />
+                          וואטסאפ
+                        </a>
+                      </div>
+                    </CopyState>
+                  ))}
+                  <CopyState active={defaultActive}>{designerCta()}</CopyState>
                 </div>
               </>
             ) : (
@@ -301,21 +321,21 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
           </div>
 
           {/* Carousel + Mobile Button */}
-          <div className={deal ? "order-5 md:order-none relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mt-2" : "order-5 md:order-none relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mb-10 md:mb-0 mt-2"}>
+          <div className={hasDeals ? "order-5 md:order-none relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mt-2" : "order-5 md:order-none relative w-full flex justify-center md:block md:w-[83%] md:mx-auto mb-10 md:mb-0 mt-2"}>
             {/* Richer halo behind the carousel card */}
             <div className="absolute inset-0 -z-0 mx-auto my-auto w-[88%] h-[88%] bg-gradient-radial from-[#ffc32e]/35 via-[#fef08a]/20 to-transparent rounded-[2.5rem] blur-2xl pointer-events-none will-change-transform"></div>
 
             <div ref={carouselRef} className="relative w-full will-change-transform">
               <div ref={tiltRef} className="w-full will-change-transform">
-                {deal ? (
-                  <HeroCarousel leadSlide={leadSlide} onChange={setSlide} />
+                {hasDeals ? (
+                  <HeroCarousel leadSlides={leadSlides} onChange={setSlide} />
                 ) : (
                 <HeroCarousel />
                 )}
               </div>
             </div>
 
-            {!deal && (
+            {!hasDeals && (
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 w-40 md:hidden">
               <Link href="/designer">
                 <Button className="w-full bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-base font-bold h-10 rounded-full shadow-lg transition-transform hover:scale-105">
@@ -326,29 +346,31 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
             )}
           </div>
 
-          {/* Mobile, hero deal: the actions sit directly under the image on every
-              slide — the deal pair, or the designer button on a product slide
-              (desktop keeps its CTA row). */}
-          {deal && (
+          {/* Mobile, hero deals: the actions sit directly under the image on every
+              slide — the active deal's pair, or the designer button on a product
+              slide (desktop keeps its CTA row). */}
+          {hasDeals && (
             <div data-testid="hero-deal-mobile-actions" className="order-5 md:hidden grid w-full px-1">
-              <CopyState active={dealActive}>
-                <div className="flex flex-wrap gap-3">
-                  <Link href={ctaHref} className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center rounded-full bg-[#fbbf24] hover:bg-[#f59e0b] px-3 text-center text-base font-bold leading-tight text-white shadow-lg">
-                    {ctaText}
-                  </Link>
-                  <a
-                    href={dealWhatsAppLink(deal)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackWhatsAppClick('hero_deal')}
-                    className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] px-3 text-base font-bold text-white shadow-lg"
-                  >
-                    <MessageCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                    וואטסאפ
-                  </a>
-                </div>
-              </CopyState>
-              <CopyState active={!dealActive}>
+              {dealStates.map(({ deal, copy, path, waHref }, k) => (
+                <CopyState key={deal.id} active={slide === k}>
+                  <div className="flex flex-wrap gap-3">
+                    <Link href={path} className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center rounded-full bg-[#fbbf24] hover:bg-[#f59e0b] px-3 text-center text-base font-bold leading-tight text-white shadow-lg">
+                      {copy.ctaLabel}
+                    </Link>
+                    <a
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackWhatsAppClick('hero_deal')}
+                      className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] px-3 text-base font-bold text-white shadow-lg"
+                    >
+                      <MessageCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                      וואטסאפ
+                    </a>
+                  </div>
+                </CopyState>
+              ))}
+              <CopyState active={defaultActive}>
                 <div className="flex">
                   <Link href="/designer" className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#fbbf24] hover:bg-[#f59e0b] px-3 text-base font-bold text-white shadow-lg">
                     {c.hero_ctaText}
@@ -369,11 +391,11 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
 }
 
 /**
- * One copy state inside a slot. Both states share the same grid cell, so the
- * cell keeps the height of the taller one and a slide change moves nothing.
+ * One copy state inside a slot. All the states share the same grid cell, so the
+ * cell keeps the height of the tallest one and a slide change moves nothing.
  * The inactive one is an invisible aria-hidden sizer: `visibility` is part of
  * the transition, so it stays painted while it fades out — in step with the
- * carousel's 500 ms slide fade — and is unfocusable once hidden. Both states
+ * carousel's 500 ms slide fade — and is unfocusable once hidden. All the states
  * stay mounted, so the RevealText entrance plays once on mount and never again.
  * The duration must be a theme value: tailwindcss-animate overrides
  * duration/delay and drops arbitrary ones, so `duration-[400ms]` would compile
