@@ -58,6 +58,13 @@ const stepConfig = [
 const STEP_NAMES = ['סוג', 'צבע', 'עיצוב', 'מידות']
 const totalSteps = 4
 
+// Sizes a cut is actually made in: the kangaroo hoodie has no 4XL, putter and
+// zip have all of them. The same rule lives in SizeQuantityStep (the t-shirt
+// designer), sizeOptions() in lib/manual-order.ts (admin manual order) and the
+// offered guard in lib/seo-price-tokens.ts — all four must say the same thing.
+const sizesForType = (typeId: string) =>
+  typeId === 'kangaroo' ? STANDARD_SIZES.filter(s => s.id !== '4XL') : STANDARD_SIZES
+
 
 export default function SweatshirtDesignerPage() {
   const router = useRouter()
@@ -70,6 +77,7 @@ export default function SweatshirtDesignerPage() {
   const [selectedColor, setSelectedColor] = useState('')
   const availableColors = SWEATSHIRT_COLORS.filter(c => (SWEATSHIRT_COLOR_FILTER[selectedType] || []).includes(c.id))
   const availableAreas = SWEATSHIRT_DESIGN_AREAS.filter(a => !SWEATSHIRT_AREA_FILTER[selectedType] || SWEATSHIRT_AREA_FILTER[selectedType].includes(a.id))
+  const availableSizes = sizesForType(selectedType)
   // Current type for async callbacks — an upload that lands after a type switch
   // must not re-add an area the new type doesn't offer (zip: no front/centre).
   const selectedTypeRef = useRef(selectedType)
@@ -82,6 +90,10 @@ export default function SweatshirtDesignerPage() {
     const allowedAreas = SWEATSHIRT_AREA_FILTER[typeId]
     if (allowedAreas && !allowedAreas.includes(selectedAreaId)) setSelectedAreaId(allowedAreas[0])
     if (allowedAreas) setDesigns(prev => prev.filter(d => allowedAreas.includes(d.area)))
+    // A quantity picked on a cut that offers the size must not survive a switch
+    // to one that doesn't (4XL on putter → kangaroo) — it would reach the cart.
+    const offeredSizes = new Set<string>(sizesForType(typeId).map(s => s.id))
+    setQuantities(prev => Object.fromEntries(Object.entries(prev).map(([size, q]) => [size, offeredSizes.has(size) ? q : 0])))
   }
   const [designs, setDesigns] = useState<DesignArea[]>([])
   // TICKET-011: the mobile preview placeholder the docked compact bar follows.
@@ -463,7 +475,7 @@ export default function SweatshirtDesignerPage() {
         return (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-              {STANDARD_SIZES.map((size) => {
+              {availableSizes.map((size) => {
                 const qty = quantities[size.id] || 0
                 return (
                   <div
