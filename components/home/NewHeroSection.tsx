@@ -364,15 +364,18 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
  * One copy state inside a slot. Both states share the same grid cell, so the
  * cell keeps the height of the taller one and a slide change moves nothing.
  * The inactive one is an invisible aria-hidden sizer: `visibility` is part of
- * the transition, so it stays painted while it fades out (400 ms, together with
- * the carousel's 500 ms crossfade) and is unfocusable once hidden. Both states
+ * the transition, so it stays painted while it fades out — in step with the
+ * carousel's 500 ms slide fade — and is unfocusable once hidden. Both states
  * stay mounted, so the RevealText entrance plays once on mount and never again.
+ * The duration must be a theme value: tailwindcss-animate overrides
+ * duration/delay and drops arbitrary ones, so `duration-[400ms]` would compile
+ * to nothing and the swap would be instant.
  */
 function CopyState({ active, className = '', children }: { active: boolean; className?: string; children: React.ReactNode }) {
   return (
     <div
       aria-hidden={!active || undefined}
-      className={`col-start-1 row-start-1 transition-[opacity,visibility] duration-[400ms] ${active ? 'opacity-100 visible' : 'opacity-0 invisible'} ${className}`.trimEnd()}
+      className={`col-start-1 row-start-1 transition-[opacity,visibility] duration-500 ${active ? 'opacity-100 visible' : 'opacity-0 invisible'} ${className}`.trimEnd()}
     >
       {children}
     </div>
