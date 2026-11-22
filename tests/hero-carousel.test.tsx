@@ -130,7 +130,10 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
     expect(onChange).not.toHaveBeenCalled()
     adv(3000) // the fade starts here; the copy crossfade runs with the image
     expect(onChange).toHaveBeenCalledWith(1)
-    adv(500 + 5000 + 500)
+    // One step per state change: React re-runs the dwell effect between act()
+    // calls, not inside a single advanceTimersByTime loop.
+    adv(500) // the crossfade ends, the product dwell starts
+    adv(5000)
     expect(onChange).toHaveBeenLastCalledWith(2)
     expect(onChange).toHaveBeenCalledTimes(2)
   })
