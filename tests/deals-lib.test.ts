@@ -154,6 +154,30 @@ describe('imageShapeWarning', () => {
     expect(imageShapeWarning('desktop', 1000, 1350)).toBe('התמונה שהועלתה אינה רחבה (16:10) — תיחתך מהמרכז')
   })
 
+  // Reviewer nit: pin each threshold from both sides. Not AT the boundary on purpose —
+  // a ratio of exactly target ± tolerance is not representable (1080/1000 − 1 is
+  // 0.08000000000000007 > 0.08), so an "exact boundary" case would pin a float artefact.
+  it('near-boundary: square warns from ~0.09 off, stays silent at ~0.07', () => {
+    expect(imageShapeWarning('square', 1070, 1000)).toBeNull() // 1.07
+    expect(imageShapeWarning('square', 1000, 1070)).toBeNull() // 0.935
+    expect(imageShapeWarning('square', 1090, 1000)).toBe('התמונה שהועלתה שוכבת ולא ריבועית — תיחתך מהמרכז') // 1.09
+    expect(imageShapeWarning('square', 1000, 1090)).toBe('התמונה שהועלתה לאורך ולא ריבועית — תיחתך מהמרכז') // 0.917
+  })
+
+  it('near-boundary: mobile 4:5 ± 0.08', () => {
+    expect(imageShapeWarning('mobile', 1000, 1370)).toBeNull() // 0.730
+    expect(imageShapeWarning('mobile', 870, 1000)).toBeNull() // 0.87
+    expect(imageShapeWarning('mobile', 710, 1000)).toBe('התמונה שהועלתה אינה ביחס 4:5 — תיחתך מהמרכז') // 0.71
+    expect(imageShapeWarning('mobile', 890, 1000)).toBe('התמונה שהועלתה אינה ביחס 4:5 — תיחתך מהמרכז') // 0.89
+  })
+
+  it('near-boundary: desktop 16:10 ± 0.15', () => {
+    expect(imageShapeWarning('desktop', 1460, 1000)).toBeNull() // 1.46
+    expect(imageShapeWarning('desktop', 1740, 1000)).toBeNull() // 1.74
+    expect(imageShapeWarning('desktop', 1440, 1000)).toBe('התמונה שהועלתה אינה רחבה (16:10) — תיחתך מהמרכז') // 1.44
+    expect(imageShapeWarning('desktop', 1760, 1000)).toBe('התמונה שהועלתה אינה רחבה (16:10) — תיחתך מהמרכז') // 1.76
+  })
+
   it('null for a size we could not measure', () => {
     expect(imageShapeWarning('square', 0, 0)).toBeNull()
     expect(imageShapeWarning('square', NaN, NaN)).toBeNull()

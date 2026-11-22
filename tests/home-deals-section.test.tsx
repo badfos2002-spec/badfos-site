@@ -72,6 +72,26 @@ describe('NewDealsSection', () => {
     expect(inner.lastElementChild).toBe(mobileLink)
   })
 
+  // TICKET-025A: the small 1:1 thumbnail on phones takes the square chain,
+  // the wide box from md keeps the desktop chain. The boxes themselves do not change.
+  it('the phone thumbnail is the square image, the md source is the desktop one', () => {
+    render(<NewDealsSection deals={[{ ...d(1), imageSquare: '/images/deals/s.jpg', imageMobile: '/images/deals/m.jpg', imageDesktop: '/images/deals/d.jpg' }]} />)
+    const card = screen.getByTestId('home-deal-card')
+    const img = card.querySelector('picture img')
+    expect(img).toHaveAttribute('src', '/images/deals/s.jpg')
+    const source = card.querySelector('picture source')
+    expect(source).toHaveAttribute('srcset', '/images/deals/d.jpg')
+    expect(source).toHaveAttribute('media', '(min-width: 768px)')
+    const box = img!.closest('div')!
+    expect(box.className).toContain('aspect-square')
+    expect(box.className).toContain('md:aspect-[16/10]')
+  })
+
+  it('without a square image the phone thumbnail falls back to the mobile one', () => {
+    render(<NewDealsSection deals={[{ ...d(1), imageMobile: '/images/deals/m.jpg', imageDesktop: '/images/deals/d.jpg' }]} />)
+    expect(screen.getByTestId('home-deal-card').querySelector('picture img')).toHaveAttribute('src', '/images/deals/m.jpg')
+  })
+
   it('renders nothing when there are no live deals', () => {
     const { container } = render(<NewDealsSection deals={[]} />)
     expect(container).toBeEmptyDOMElement()
