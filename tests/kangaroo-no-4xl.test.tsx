@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import SizeQuantityStep from '@/components/designer/SizeQuantityStep'
 import { sizeOptions } from '@/lib/manual-order'
 import { validateSeoPage } from '@/lib/seo-price-tokens'
@@ -7,11 +8,26 @@ import { getSeoPage } from '@/lib/seo-pages'
 import type { ProductConfig, SizeQuantity } from '@/lib/types'
 
 // TICKET-026: the kangaroo hoodie has no 4XL (XS–3XL only, 3XL keeps +₪12).
-// putter and zip stay XS–4XL, t-shirt rules unchanged. The rule lives in three
-// mirrors that must stay identical — the designer grid, the admin manual order
-// and the SEO price-token guard — and the sweatshirt SEO copy must say so.
+// putter and zip stay XS–4XL, t-shirt rules unchanged. The rule lives in four
+// mirrors that must stay identical — the sweatshirt designer's own step-4 grid
+// (app/designer/sweatshirt/page.tsx, the one a kangaroo buyer actually sees),
+// SizeQuantityStep, the admin manual order and the SEO price-token guard — and
+// the sweatshirt SEO copy must say so.
 
 vi.mock('@/components/common/AnnouncementBar', () => ({ default: () => null }))
+vi.mock('next/dynamic', () => ({ default: () => function StageStub() { return <div data-testid="stage" /> } }))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: () => {}, replace: () => {}, back: () => {} }),
+  usePathname: () => '/designer/sweatshirt',
+}))
+vi.mock('@/lib/storage', () => ({
+  uploadDesignFile: async () => 'https://storage.example.com/designs/s1/art.png',
+  generateUniqueFileName: (name: string) => name,
+}))
+vi.mock('@/lib/print-image', () => ({
+  preparePrintFile: async (file: File) => file,
+  printUploadErrorMessage: () => 'שגיאה',
+}))
 
 afterEach(cleanup)
 
@@ -93,6 +109,79 @@ describe('SizeQuantityStep — the generalised stale-row cleanup', () => {
       { size: '4XL', quantity: 1 },
     ])
     expect(onUpdate).toHaveBeenCalledWith([{ size: 'L', quantity: 2 }])
+  })
+})
+
+// The route a kangaroo buyer actually uses: app/designer/sweatshirt/page.tsx
+// renders its OWN step-4 grid straight off STANDARD_SIZES — SizeQuantityStep is
+// only ever mounted by the t-shirt designer — so the rule has to hold here too.
+describe('the sweatshirt designer — step 4 grid', () => {
+  /** The mobile and the desktop layout are both mounted (CSS hides one), so the
+   *  size cards are collected per grid container and every grid must agree. */
+  const sizeGrids = () => {
+    const grids = new Map<Element, (string | null)[]>()
+    for (const input of document.querySelectorAll<HTMLInputElement>('input[type="number"]')) {
+      const card = input.parentElement!
+      const grid = card.parentElement!
+      if (!grids.has(grid)) grids.set(grid, [])
+      grids.get(grid)!.push(card.querySelector('span')!.textContent)
+    }
+    return [...grids.values()]
+  }
+
+  const expectGrids = (sizes: string[]) => {
+    const grids = sizeGrids()
+    expect(grids.length).toBeGreaterThan(0)
+    for (const grid of grids) expect(grid).toEqual(sizes)
+  }
+  const KANGAROO = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
+
+  async function toStep4(user: ReturnType<typeof userEvent.setup>, type: RegExp) {
+    const { default: SweatshirtDesignerPage } = await import('@/app/designer/sweatshirt/page')
+    render(<SweatshirtDesignerPage />)
+    await user.click(screen.getAllByRole('button', { name: type })[0])
+    await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'שחור' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'המשך בלי עיצוב' })[0])
+  }
+
+  const back = async (user: ReturnType<typeof userEvent.setup>, times: number) => {
+    for (let i = 0; i < times; i++) await user.click(screen.getAllByRole('button', { name: 'הקודם' })[0])
+  }
+  const forward = async (user: ReturnType<typeof userEvent.setup>, times: number) => {
+    for (let i = 0; i < times; i++) await user.click(screen.getAllByRole('button', { name: 'הבא' })[0])
+  }
+
+  it('kangaroo: XS…3XL, no 4XL input', async () => {
+    const user = userEvent.setup()
+    await toStep4(user, /קנגרו/)
+    expectGrids(KANGAROO)
+  })
+
+  it('putter: all eight sizes (unchanged)', async () => {
+    const user = userEvent.setup()
+    await toStep4(user, /פוטר/)
+    expectGrids(ALL_STANDARD)
+  })
+
+  it('a 4XL quantity typed on putter is cleared when switching to kangaroo', async () => {
+    const user = userEvent.setup()
+    await toStep4(user, /פוטר/)
+    const fourXl = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'))
+      .find(i => i.parentElement!.querySelector('span')!.textContent === '4XL')!
+    await user.type(fourXl, '2')
+    expect(screen.getAllByText('×2').length).toBeGreaterThan(0)
+
+    await back(user, 3)
+    await user.click(screen.getAllByRole('button', { name: /קנגרו/ })[0])
+    await forward(user, 3)
+    await user.click(screen.getAllByRole('button', { name: 'המשך בלי עיצוב' })[0])
+
+    expectGrids(KANGAROO)
+    expect(screen.queryAllByText('×2')).toHaveLength(0)
+    expect(screen.getAllByText('* בחרו לפחות יחידה אחת להמשך').length).toBeGreaterThan(0)
   })
 })
 
