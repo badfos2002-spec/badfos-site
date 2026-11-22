@@ -54,9 +54,35 @@ export function sortDeals<T extends Pick<Deal, 'sortOrder' | 'createdAt'>>(deals
   return [...deals].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 }
 
-/** Image for a breakpoint; when only one of the two exists it is used everywhere. */
-export function dealImage(deal: Pick<Deal, 'imageMobile' | 'imageDesktop'>, variant: 'mobile' | 'desktop'): string | undefined {
-  return variant === 'mobile' ? deal.imageMobile || deal.imageDesktop : deal.imageDesktop || deal.imageMobile
+export type DealImageVariant = 'square' | 'mobile' | 'desktop'
+
+/**
+ * The image whose shape matches the box; when that slot is empty, the nearest shape
+ * (a square crops less than a portrait in a wide box, and vice versa). TICKET-025A.
+ */
+export function dealImage(deal: Pick<Deal, 'imageSquare' | 'imageMobile' | 'imageDesktop'>, variant: DealImageVariant): string | undefined {
+  const { imageSquare: s, imageMobile: m, imageDesktop: d } = deal
+  return variant === 'square' ? s || m || d : variant === 'mobile' ? m || s || d : d || s || m
+}
+
+/** Target width/height per slot, and how far off it may be before we warn. */
+const SHAPE_RATIO: Record<DealImageVariant, { ratio: number; tolerance: number }> = {
+  square: { ratio: 1, tolerance: 0.08 },
+  mobile: { ratio: 0.8, tolerance: 0.08 },
+  desktop: { ratio: 1.6, tolerance: 0.15 },
+}
+
+/**
+ * Soft warning for an uploaded image whose shape does not match its slot — it is
+ * centre-cropped, never rejected. `null` when it fits (or could not be measured).
+ */
+export function imageShapeWarning(variant: DealImageVariant, w: number, h: number): string | null {
+  if (!(w > 0) || !(h > 0)) return null
+  const { ratio, tolerance } = SHAPE_RATIO[variant]
+  if (Math.abs(w / h - ratio) <= tolerance) return null
+  if (variant === 'mobile') return 'התמונה שהועלתה אינה ביחס 4:5 — תיחתך מהמרכז'
+  if (variant === 'desktop') return 'התמונה שהועלתה אינה רחבה (16:10) — תיחתך מהמרכז'
+  return w > h ? 'התמונה שהועלתה שוכבת ולא ריבועית — תיחתך מהמרכז' : 'התמונה שהועלתה לאורך ולא ריבועית — תיחתך מהמרכז'
 }
 
 export function dealUrl(slug: string): string {
@@ -118,7 +144,7 @@ export function isAllowedDealImage(url: string): boolean {
 export const COUPON_RE = /^[A-Z0-9-]{1,30}$/
 
 export type DealInput = Omit<Deal, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
-export type DealErrors = Partial<Record<'title' | 'shortText' | 'priceText' | 'slug' | 'endsAt' | 'imageMobile' | 'imageDesktop' | 'order' | 'orderLabel' | 'couponCode' | 'sortOrder' | 'heroTitle' | 'heroText' | 'heroCta', string>>
+export type DealErrors = Partial<Record<'title' | 'shortText' | 'priceText' | 'slug' | 'endsAt' | 'imageSquare' | 'imageMobile' | 'imageDesktop' | 'order' | 'orderLabel' | 'couponCode' | 'sortOrder' | 'heroTitle' | 'heroText' | 'heroCta', string>>
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 
@@ -132,6 +158,7 @@ export function validateDealInput(raw: unknown): { ok: true; value: DealInput } 
   const priceText = str(r.priceText)
   const slug = str(r.slug)
   const endsAt = str(r.endsAt)
+  const imageSquare = str(r.imageSquare)
   const imageMobile = str(r.imageMobile)
   const imageDesktop = str(r.imageDesktop)
   const sortOrder = typeof r.sortOrder === 'number' ? r.sortOrder : Number(r.sortOrder ?? 0)
@@ -143,6 +170,7 @@ export function validateDealInput(raw: unknown): { ok: true; value: DealInput } 
   if (priceText.length > DEAL_LIMITS.priceText) errors.priceText = `מחיר/הנחה עד ${DEAL_LIMITS.priceText} תווים`
   if (slug && !isSafeSlug(slug)) errors.slug = 'כתובת לא תקינה — רק אותיות, ספרות ומקפים'
   if (endsAt && (!/^\d{4}-\d{2}-\d{2}$/.test(endsAt) || Number.isNaN(Date.parse(endsAt)))) errors.endsAt = 'תאריך לא תקין'
+  if (imageSquare && !isAllowedDealImage(imageSquare)) errors.imageSquare = 'כתובת תמונה לא מורשית'
   if (imageMobile && !isAllowedDealImage(imageMobile)) errors.imageMobile = 'כתובת תמונה לא מורשית'
   if (imageDesktop && !isAllowedDealImage(imageDesktop)) errors.imageDesktop = 'כתובת תמונה לא מורשית'
   if (!Number.isFinite(sortOrder)) errors.sortOrder = 'סדר תצוגה חייב להיות מספר'
@@ -180,6 +208,7 @@ export function validateDealInput(raw: unknown): { ok: true; value: DealInput } 
     title,
     shortText,
     ...(priceText ? { priceText } : {}),
+    ...(imageSquare ? { imageSquare } : {}),
     ...(imageMobile ? { imageMobile } : {}),
     ...(imageDesktop ? { imageDesktop } : {}),
     ...(endsAt ? { endsAt } : {}),
@@ -203,6 +232,7 @@ export function toDeal(id: string, data: Record<string, unknown>): Deal {
     title: s(data.title) ?? '',
     shortText: s(data.shortText) ?? '',
     ...(s(data.priceText) ? { priceText: s(data.priceText) } : {}),
+    ...(s(data.imageSquare) ? { imageSquare: s(data.imageSquare) } : {}),
     ...(s(data.imageMobile) ? { imageMobile: s(data.imageMobile) } : {}),
     ...(s(data.imageDesktop) ? { imageDesktop: s(data.imageDesktop) } : {}),
     ...(s(data.endsAt) ? { endsAt: s(data.endsAt) } : {}),

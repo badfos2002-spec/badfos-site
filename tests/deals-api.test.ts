@@ -122,6 +122,27 @@ describe('POST /api/admin/deals — save', () => {
   })
 })
 
+// TICKET-025A: the square slot needs no route change — it rides on
+// validateDealInput / toDeal. These two cases prove it.
+describe('POST /api/admin/deals — the square image slot', () => {
+  const SQUARE = 'https://firebasestorage.googleapis.com/v0/b/badfos-28b67.firebasestorage.app/o/site-images%2Fdeals%2F1-square.jpg?alt=media'
+
+  it('save stores imageSquare', async () => {
+    const res = await post({ action: 'save', deal: { ...validDeal, imageSquare: SQUARE } })
+    expect(res.status).toBe(200)
+    const { deal } = await res.json()
+    expect(deal.imageSquare).toBe(SQUARE)
+    expect(h.fake.store.get(deal.id)?.imageSquare).toBe(SQUARE)
+  })
+
+  it('rejects a disallowed imageSquare with 400 and writes nothing', async () => {
+    const res = await post({ action: 'save', deal: { ...validDeal, imageSquare: 'https://evil.example/a.jpg' } })
+    expect(res.status).toBe(400)
+    expect((await res.json()).errors.imageSquare).toBeTruthy()
+    expect(h.fake.writes).toHaveLength(0)
+  })
+})
+
 describe('POST /api/admin/deals — delete / reorder', () => {
   it('deletes by id', async () => {
     const res = await post({ action: 'delete', id: 'expired' })

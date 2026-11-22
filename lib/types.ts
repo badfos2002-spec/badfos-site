@@ -359,8 +359,9 @@ export interface Deal {
   title: string
   shortText: string          // 1–3 lines on the card and under the title
   priceText?: string         // free text, e.g. «₪35 לחולצה» / «20% הנחה»
-  imageMobile?: string       // https URL in site-images/deals/… (portrait/square)
-  imageDesktop?: string      // https URL (wide); if only one of the two exists it is used everywhere
+  imageSquare?: string       // https URL in site-images/deals/… (square 1:1)
+  imageMobile?: string       // https URL in site-images/deals/… (portrait 4:5)
+  imageDesktop?: string      // https URL in site-images/deals/… (wide 16:10); an empty slot falls back to the nearest shape
   endsAt?: string            // ISO date (end of that day, Asia/Jerusalem); missing = open-ended
   isActive: boolean
   sortOrder: number

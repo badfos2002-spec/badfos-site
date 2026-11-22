@@ -11,6 +11,8 @@ import {
   isOrderTarget,
   isAllowedDealImage,
   validateDealInput,
+  toDeal,
+  imageShapeWarning,
 } from '@/lib/deals'
 import type { Deal } from '@/lib/types'
 
@@ -79,6 +81,107 @@ describe('dealImage fallback', () => {
   ])('%o → mobile %s / desktop %s', (imgs, mobile, desktop) => {
     expect(dealImage(deal(imgs), 'mobile')).toBe(mobile)
     expect(dealImage(deal(imgs), 'desktop')).toBe(desktop)
+  })
+})
+
+// TICKET-025A: a third, square slot. Each box gets the image whose shape matches,
+// and when that slot is empty the nearest one.
+describe('dealImage with a square slot', () => {
+  const S = 'https://x/s.jpg'
+  const M = 'https://x/m.jpg'
+  const D = 'https://x/d.jpg'
+
+  it.each([
+    [{ imageSquare: S }, S],
+    [{ imageMobile: M }, M],
+    [{ imageDesktop: D }, D],
+    [{ imageSquare: S, imageMobile: M }, S],
+    [{ imageSquare: S, imageDesktop: D }, S],
+    [{ imageMobile: M, imageDesktop: D }, M],
+    [{ imageSquare: S, imageMobile: M, imageDesktop: D }, S],
+  ])('square chain square→mobile→desktop: %o → %s', (imgs, expected) => {
+    expect(dealImage(deal(imgs), 'square')).toBe(expected)
+  })
+
+  it('no image at all → undefined for every variant', () => {
+    expect(dealImage(deal(), 'square')).toBeUndefined()
+    expect(dealImage(deal(), 'mobile')).toBeUndefined()
+    expect(dealImage(deal(), 'desktop')).toBeUndefined()
+  })
+
+  it('mobile chain is mobile→square→desktop', () => {
+    expect(dealImage(deal({ imageMobile: M, imageSquare: S, imageDesktop: D }), 'mobile')).toBe(M)
+    expect(dealImage(deal({ imageSquare: S, imageDesktop: D }), 'mobile')).toBe(S)
+    expect(dealImage(deal({ imageDesktop: D }), 'mobile')).toBe(D)
+  })
+
+  it('desktop chain is desktop→square→mobile', () => {
+    expect(dealImage(deal({ imageMobile: M, imageSquare: S, imageDesktop: D }), 'desktop')).toBe(D)
+    expect(dealImage(deal({ imageSquare: S, imageMobile: M }), 'desktop')).toBe(S)
+    expect(dealImage(deal({ imageMobile: M }), 'desktop')).toBe(M)
+  })
+})
+
+describe('toDeal', () => {
+  it('keeps a non-empty imageSquare and drops an empty or non-string one', () => {
+    const SQ = 'https://x/s.jpg'
+    expect(toDeal('d1', { imageSquare: SQ }).imageSquare).toBe(SQ)
+    expect(toDeal('d1', { imageSquare: '' })).not.toHaveProperty('imageSquare')
+    expect(toDeal('d1', { imageSquare: 123 })).not.toHaveProperty('imageSquare')
+    expect(toDeal('d1', {})).not.toHaveProperty('imageSquare')
+  })
+})
+
+describe('imageShapeWarning', () => {
+  it('square: null inside the threshold, landscape vs portrait wording outside it', () => {
+    expect(imageShapeWarning('square', 1080, 1080)).toBeNull()
+    expect(imageShapeWarning('square', 1040, 1000)).toBeNull() // ratio 1.04
+    expect(imageShapeWarning('square', 1200, 800)).toBe('התמונה שהועלתה שוכבת ולא ריבועית — תיחתך מהמרכז')
+    expect(imageShapeWarning('square', 800, 1200)).toBe('התמונה שהועלתה לאורך ולא ריבועית — תיחתך מהמרכז')
+  })
+
+  it('mobile: null for 4:5, a warning outside the threshold', () => {
+    expect(imageShapeWarning('mobile', 1080, 1350)).toBeNull()
+    expect(imageShapeWarning('mobile', 1000, 1250)).toBeNull()
+    expect(imageShapeWarning('mobile', 1000, 1000)).toBe('התמונה שהועלתה אינה ביחס 4:5 — תיחתך מהמרכז')
+    expect(imageShapeWarning('mobile', 1600, 1000)).toBe('התמונה שהועלתה אינה ביחס 4:5 — תיחתך מהמרכז')
+  })
+
+  it('desktop: null for 16:10, a warning outside the threshold', () => {
+    expect(imageShapeWarning('desktop', 1600, 1000)).toBeNull()
+    expect(imageShapeWarning('desktop', 1500, 1000)).toBeNull() // ratio 1.5
+    expect(imageShapeWarning('desktop', 1000, 1000)).toBe('התמונה שהועלתה אינה רחבה (16:10) — תיחתך מהמרכז')
+    expect(imageShapeWarning('desktop', 1000, 1350)).toBe('התמונה שהועלתה אינה רחבה (16:10) — תיחתך מהמרכז')
+  })
+
+  // Reviewer nit: pin each threshold from both sides. Not AT the boundary on purpose —
+  // a ratio of exactly target ± tolerance is not representable (1080/1000 − 1 is
+  // 0.08000000000000007 > 0.08), so an "exact boundary" case would pin a float artefact.
+  it('near-boundary: square warns from ~0.09 off, stays silent at ~0.07', () => {
+    expect(imageShapeWarning('square', 1070, 1000)).toBeNull() // 1.07
+    expect(imageShapeWarning('square', 1000, 1070)).toBeNull() // 0.935
+    expect(imageShapeWarning('square', 1090, 1000)).toBe('התמונה שהועלתה שוכבת ולא ריבועית — תיחתך מהמרכז') // 1.09
+    expect(imageShapeWarning('square', 1000, 1090)).toBe('התמונה שהועלתה לאורך ולא ריבועית — תיחתך מהמרכז') // 0.917
+  })
+
+  it('near-boundary: mobile 4:5 ± 0.08', () => {
+    expect(imageShapeWarning('mobile', 1000, 1370)).toBeNull() // 0.730
+    expect(imageShapeWarning('mobile', 870, 1000)).toBeNull() // 0.87
+    expect(imageShapeWarning('mobile', 710, 1000)).toBe('התמונה שהועלתה אינה ביחס 4:5 — תיחתך מהמרכז') // 0.71
+    expect(imageShapeWarning('mobile', 890, 1000)).toBe('התמונה שהועלתה אינה ביחס 4:5 — תיחתך מהמרכז') // 0.89
+  })
+
+  it('near-boundary: desktop 16:10 ± 0.15', () => {
+    expect(imageShapeWarning('desktop', 1460, 1000)).toBeNull() // 1.46
+    expect(imageShapeWarning('desktop', 1740, 1000)).toBeNull() // 1.74
+    expect(imageShapeWarning('desktop', 1440, 1000)).toBe('התמונה שהועלתה אינה רחבה (16:10) — תיחתך מהמרכז') // 1.44
+    expect(imageShapeWarning('desktop', 1760, 1000)).toBe('התמונה שהועלתה אינה רחבה (16:10) — תיחתך מהמרכז') // 1.76
+  })
+
+  it('null for a size we could not measure', () => {
+    expect(imageShapeWarning('square', 0, 0)).toBeNull()
+    expect(imageShapeWarning('square', NaN, NaN)).toBeNull()
+    expect(imageShapeWarning('mobile', -100, 200)).toBeNull()
   })
 })
 
@@ -191,6 +294,24 @@ describe('validateDealInput', () => {
     const r3 = validateDealInput({ ...base, order: { href: '/designer/cap', couponCode: 'SAVE10-AB12', label: 'להזמנת כובע' } })
     expect(r3.ok).toBe(true)
   })
+  it('accepts an allowed imageSquare, rejects a foreign one and drops an empty one', () => {
+    const SQ = 'https://firebasestorage.googleapis.com/v0/b/badfos-28b67.firebasestorage.app/o/site-images%2Fdeals%2F1-square.jpg?alt=media'
+    const r1 = validateDealInput({ ...base, imageSquare: ` ${SQ} ` })
+    expect(r1.ok).toBe(true)
+    if (r1.ok) expect(r1.value.imageSquare).toBe(SQ)
+
+    const r2 = validateDealInput({ ...base, imageSquare: 'https://evil.example/a.jpg' })
+    expect(r2.ok).toBe(false)
+    if (!r2.ok) {
+      expect(Object.keys(r2.errors)).toEqual(['imageSquare'])
+      expect(r2.errors.imageSquare).toBe('כתובת תמונה לא מורשית')
+    }
+
+    const r3 = validateDealInput({ ...base, imageSquare: '   ' })
+    expect(r3.ok).toBe(true)
+    if (r3.ok) expect(r3.value).not.toHaveProperty('imageSquare')
+  })
+
   it('rejects a bad image URL, an unsafe slug and a bad date', () => {
     const r = validateDealInput({ ...base, imageMobile: 'https://evil.example/a.jpg', slug: 'a/b', endsAt: '19.11.2026' })
     expect(r.ok).toBe(false)
