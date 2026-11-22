@@ -183,6 +183,34 @@ describe('the sweatshirt designer — step 4 grid', () => {
     expect(screen.queryAllByText('×2')).toHaveLength(0)
     expect(screen.getAllByText('* בחרו לפחות יחידה אחת להמשך').length).toBeGreaterThan(0)
   })
+
+  // דניאל (Reviewer): the 4XL also lives in the `quantities` maps, not only in
+  // the rendered grid. The grid is where a quantity is typed and the cart is
+  // where it would do damage, so this pins the cart boundary itself: nothing a
+  // visitor can do on putter may put a 4XL kangaroo line into the cart.
+  it('no 4XL can reach the cart after a switch to kangaroo', async () => {
+    const user = userEvent.setup()
+    const { useCart } = await import('@/hooks/useCart')
+    useCart.setState({ items: [] })
+
+    await toStep4(user, /פוטר/)
+    const input = (size: string) =>
+      Array.from(document.querySelectorAll<HTMLInputElement>('input[type="number"]'))
+        .find(i => i.parentElement!.querySelector('span')!.textContent === size)!
+    await user.type(input('4XL'), '2')
+
+    await back(user, 3)
+    await user.click(screen.getAllByRole('button', { name: /קנגרו/ })[0])
+    await forward(user, 3)
+    await user.click(screen.getAllByRole('button', { name: 'המשך בלי עיצוב' })[0])
+    await user.type(input('3XL'), '1')
+    await user.click(screen.getAllByRole('button', { name: /הוסף לעגלה/ })[0])
+
+    const [item] = useCart.getState().items
+    expect(item.fabricType).toBe('kangaroo')
+    expect(item.sizes).toEqual([{ size: '3XL', quantity: 1 }])
+    useCart.setState({ items: [] })
+  })
 })
 
 describe('manual order — sizeOptions', () => {
