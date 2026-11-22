@@ -15,10 +15,11 @@ const { uploadSiteImage } = vi.hoisted(() => ({
 vi.mock('@/lib/storage', () => ({ uploadSiteImage }))
 
 import AdminDealsPage from '@/app/admin/deals/page'
+import DealsManager from '@/components/admin/DealsManager'
 
 const DEALS: Deal[] = [
-  { id: 'a', slug: 'מבצע-חורף', title: 'מבצע חורף', shortText: 'x', isActive: true, sortOrder: 0, createdAt: '2026-11-01T00:00:00.000Z', updatedAt: '' },
-  { id: 'b', slug: 'כבוי', title: 'מבצע כבוי', shortText: 'x', isActive: false, sortOrder: 1, createdAt: '2026-11-01T00:00:00.000Z', updatedAt: '' },
+  { id: 'a', slug: 'מבצע-חורף', title: 'מבצע חורף', shortText: 'x', imageSquare: '/images/deals/s.jpg', imageMobile: '/images/deals/m.jpg', imageDesktop: '/images/deals/d.jpg', isActive: true, sortOrder: 0, createdAt: '2026-11-01T00:00:00.000Z', updatedAt: '' },
+  { id: 'b', slug: 'כבוי', title: 'מבצע כבוי', shortText: 'x', imageMobile: '/images/deals/only-m.jpg', isActive: false, sortOrder: 1, createdAt: '2026-11-01T00:00:00.000Z', updatedAt: '' },
   { id: 'c', slug: 'נגמר', title: 'מבצע שנגמר', shortText: 'x', isActive: true, endsAt: '2020-01-01', sortOrder: 2, createdAt: '2026-11-01T00:00:00.000Z', updatedAt: '' },
 ]
 
@@ -180,6 +181,96 @@ describe('admin deals — hero (Addendum A)', () => {
     expect(within(rows[0]).getByText('בהירו')).toBeInTheDocument()
     expect(within(rows[1]).queryByText('בהירו')).not.toBeInTheDocument()
     delete DEALS[0].hero
+  })
+})
+
+// TICKET-025A: a third, square slot — three uploaders in a fixed order, the square
+// chain in the list thumbnail and the hero preview, and a soft (never blocking)
+// shape warning measured in the browser (stubbed here through the `measure` prop).
+describe('admin deals — the square image slot', () => {
+  const openEditFirst = async (measure?: (url: string) => Promise<{ width: number; height: number }>) => {
+    render(measure ? <DealsManager measure={measure} /> : <AdminDealsPage />)
+    const rows = await screen.findAllByTestId('admin-deal-row')
+    fireEvent.click(within(rows[0]).getByRole('button', { name: /עריכה/ }))
+  }
+
+  it('three uploaders — square, mobile, desktop — in that order, with the new hints', async () => {
+    await openNew()
+    expect([...document.querySelectorAll('input[type="file"]')].map((i) => i.id)).toEqual([
+      'deal-image-square',
+      'deal-image-mobile',
+      'deal-image-desktop',
+    ])
+    expect(screen.getByLabelText('תמונה ריבועית')).toBeInTheDocument()
+    expect(screen.getByText('לקרוסלה בדף הבית. ריבוע 1:1, מומלץ 1080×1080. JPG/PNG/WebP עד 5MB.')).toBeInTheDocument()
+    expect(screen.getByLabelText('תמונה למובייל')).toBeInTheDocument()
+    expect(screen.getByText('לעמוד המבצע ולכרטיסים בטלפון. לאורך 4:5, מומלץ 1080×1350.')).toBeInTheDocument()
+    expect(screen.getByLabelText('תמונה לדסקטופ')).toBeInTheDocument()
+    expect(screen.getByText('לעמוד המבצע ולכרטיסים במחשב. רחבה 16:10, מומלץ 1600×1000. אם חסרה תמונה למשבצת — תוצג הקרובה ביותר מהאחרות.')).toBeInTheDocument()
+  })
+
+  it('a square upload lands in site-images/deals as «…-square.ext» and is saved as imageSquare', async () => {
+    await openNew()
+    fireEvent.change(screen.getByLabelText('תמונה ריבועית'), { target: { files: [new File(['x'], 'sq.png', { type: 'image/png' })] } })
+    await waitFor(() => expect(uploadSiteImage).toHaveBeenCalledTimes(1))
+    expect(uploadSiteImage.mock.calls[0][1]).toBe('deals')
+    expect(uploadSiteImage.mock.calls[0][2]).toMatch(/^\d+-square\.png$/)
+    const url = await uploadSiteImage.mock.results[0].value
+    await waitFor(() => expect(screen.getByAltText('תצוגה מקדימה — ריבועית')).toHaveAttribute('src', url))
+
+    fireEvent.change(screen.getByLabelText('כותרת'), { target: { value: 'מבצע ריבוע' } })
+    fireEvent.change(screen.getByLabelText('טקסט קצר'), { target: { value: 'טקסט' } })
+    fireEvent.click(screen.getByRole('button', { name: 'שמור' }))
+    await waitFor(() => expect(calls.some((c) => c.action === 'save')).toBe(true))
+    expect(calls.find((c) => c.action === 'save')!.deal.imageSquare).toBe(url)
+  })
+
+  it('warns about a landscape upload in the square slot and clears it on a square one', async () => {
+    const measure = vi
+      .fn()
+      .mockResolvedValueOnce({ width: 1600, height: 900 })
+      .mockResolvedValueOnce({ width: 1080, height: 1080 })
+    render(<DealsManager measure={measure} />)
+    await screen.findByText('מבצע חורף')
+    fireEvent.click(screen.getByRole('button', { name: /מבצע חדש/ }))
+    const input = screen.getByLabelText('תמונה ריבועית')
+
+    fireEvent.change(input, { target: { files: [new File(['x'], 'wide.png', { type: 'image/png' })] } })
+    expect(await screen.findByTestId('deal-image-warning-square')).toHaveTextContent('התמונה שהועלתה שוכבת ולא ריבועית — תיחתך מהמרכז')
+    // never blocking: the field is set and saving is still available
+    expect(screen.getByRole('button', { name: 'שמור' })).toBeEnabled()
+
+    fireEvent.change(input, { target: { files: [new File(['x'], 'ok.png', { type: 'image/png' })] } })
+    await waitFor(() => expect(screen.queryByTestId('deal-image-warning-square')).not.toBeInTheDocument())
+  })
+
+  it('measures a slot that already holds a URL when the form opens, and «הסר תמונה» clears only its own slot', async () => {
+    const measure = vi.fn(async (url: string) => (url.endsWith('s.jpg') ? { width: 1600, height: 900 } : { width: 0, height: 0 }))
+    await openEditFirst(measure)
+    expect(await screen.findByTestId('deal-image-warning-square')).toHaveTextContent('התמונה שהועלתה שוכבת ולא ריבועית — תיחתך מהמרכז')
+    expect(screen.queryByTestId('deal-image-warning-mobile')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('deal-image-warning-desktop')).not.toBeInTheDocument()
+    expect(measure.mock.calls.map((c) => c[0])).toEqual(['/images/deals/s.jpg', '/images/deals/m.jpg', '/images/deals/d.jpg'])
+
+    fireEvent.click(within(screen.getByTestId('deal-uploader-square')).getByRole('button', { name: 'הסר תמונה' }))
+    await waitFor(() => expect(screen.queryByTestId('deal-image-warning-square')).not.toBeInTheDocument())
+    expect(screen.queryByAltText('תצוגה מקדימה — ריבועית')).not.toBeInTheDocument()
+    expect(screen.getByAltText('תצוגה מקדימה — מובייל')).toHaveAttribute('src', '/images/deals/m.jpg')
+    expect(screen.getByAltText('תצוגה מקדימה — דסקטופ')).toHaveAttribute('src', '/images/deals/d.jpg')
+  })
+
+  it('the list thumbnail prefers the square image and falls back to the nearest one', async () => {
+    render(<AdminDealsPage />)
+    const rows = await screen.findAllByTestId('admin-deal-row')
+    expect(rows[0].querySelector('img')).toHaveAttribute('src', '/images/deals/s.jpg')
+    expect(rows[1].querySelector('img')).toHaveAttribute('src', '/images/deals/only-m.jpg')
+  })
+
+  it('the hero preview shows the square image, not the landscape one', async () => {
+    await openEditFirst()
+    fireEvent.click(screen.getByLabelText('הצג את המבצע בהירו של דף הבית'))
+    const hero = screen.getByTestId('hero-preview')
+    expect(hero.querySelector('picture img')).toHaveAttribute('src', '/images/deals/s.jpg')
   })
 })
 
