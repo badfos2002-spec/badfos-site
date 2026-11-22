@@ -107,18 +107,25 @@ export default function HeroCarousel({ leadSlide, onChange }: Props = {}) {
         )}
       </div>
 
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20">
+      {/* The visible dot stays 10×10, inside a 44×44 tap target (TICKET-025
+          Addendum B). The row itself passes taps through, so only the targets
+          take clicks away from the slide's link. */}
+      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
         {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
-            className={`transition-all duration-300 rounded-full ${
-              i === current
-                ? 'bg-white w-2.5 h-2.5 scale-110 shadow-sm'
-                : 'bg-white/50 w-2.5 h-2.5'
-            }`}
+            className="w-11 h-11 flex items-center justify-center pointer-events-auto"
             aria-label={`עבור לתמונה ${i + 1}`}
-          />
+          >
+            <span
+              className={`transition-all duration-300 rounded-full ${
+                i === current
+                  ? 'bg-white w-2.5 h-2.5 scale-110 shadow-sm'
+                  : 'bg-white/50 w-2.5 h-2.5'
+              }`}
+            />
+          </button>
         ))}
       </div>
     </div>
