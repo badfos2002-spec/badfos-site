@@ -8,6 +8,10 @@ import type { HeroSlide } from '@/components/home/HeroCarousel'
 // (8000 ms) and the copy follows the active slide. Both copy states stay in the
 // DOM, stacked in one grid cell, the inactive one an invisible aria-hidden
 // sizer, so nothing moves on the swap. Without a heroDeal: today's hero.
+// TICKET-027: the reservation moved from per element to per block — two cells
+// (hero-copy-above / hero-copy-below), each holding both states as one block,
+// so the leftover height is split above/below the shorter block and never
+// between its lines.
 
 vi.mock('@gsap/react', () => ({ useGSAP: () => {} }))
 vi.mock('@/components/common/useTilt', () => ({ useTilt: () => ({ current: null }) }))
@@ -80,6 +84,11 @@ const toProductSlide = () => { adv(8000); adv(500) }
 const slideImg = () => screen.getByTestId('hero-carousel').querySelector('img')
 /** Only the active copy state is in the a11y tree — the sizer is aria-hidden. */
 const activeTitle = () => screen.getByRole('heading', { level: 1 })
+/** TICKET-027: the two block-level copy cells. Scoped on purpose — the desktop
+    CTA cell holds two states as well, so a document-wide count would be wrong. */
+const copyCells = () => [screen.getByTestId('hero-copy-above'), screen.getByTestId('hero-copy-below')]
+/** The two state blocks of a copy cell: deal state first, default state second. */
+const blocksIn = (cell: HTMLElement) => Array.from(cell.children) as HTMLElement[]
 
 describe('NewHeroSection with a hero deal', () => {
   it('defaults: deal title as h1, shortText, «מבצע» badge, CTA «לפרטי המבצע» → deal page, WhatsApp', () => {
@@ -184,31 +193,70 @@ describe('NewHeroSection with a hero deal', () => {
     expect(activeTitle()).toHaveTextContent('מבצע חורף')
   })
 
-  it('both copy states share one grid cell, so the swap moves nothing', () => {
+  it('both copy states share one grid cell per block, so the swap moves nothing', () => {
     render(<NewHeroSection heroDeal={DEAL} />)
-    const active = activeTitle().parentElement!
-    const sizer = screen.getByText('הפכו את הרעיונות שלכם').parentElement!
-    expect(active.parentElement).toBe(sizer.parentElement)
-    expect(active.parentElement!.className).toContain('grid')
-    for (const cell of [active, sizer]) {
-      expect(cell.className).toContain('col-start-1')
-      expect(cell.className).toContain('row-start-1')
-      // The copy crossfade must use a theme duration: tailwindcss-animate
-      // overrides duration/delay and drops arbitrary values, so `duration-[400ms]`
-      // compiles to nothing at all and the swap would be instant (checked with
-      // the tailwind CLI against this project's config). 500 ms = the slide fade.
-      expect(cell.className).not.toMatch(/duration-\[/)
-      expect(cell.className).toContain('duration-500')
+    // The h1 and the default title now live inside their state block, and both
+    // blocks share the «above» cell — one cell per block, not one per element.
+    const dealBlock = activeTitle().parentElement!
+    const defaultBlock = screen.getByText('הפכו את הרעיונות שלכם').parentElement!
+    expect(dealBlock.parentElement).toBe(defaultBlock.parentElement)
+    expect(dealBlock.parentElement).toBe(screen.getByTestId('hero-copy-above'))
+    for (const cell of copyCells()) {
+      expect(cell.className).toContain('grid')
+      for (const block of blocksIn(cell)) {
+        expect(block.className).toContain('col-start-1')
+        expect(block.className).toContain('row-start-1')
+        // The copy crossfade must use a theme duration: tailwindcss-animate
+        // overrides duration/delay and drops arbitrary values, so `duration-[400ms]`
+        // compiles to nothing at all and the swap would be instant (checked with
+        // the tailwind CLI against this project's config). 500 ms = the slide fade.
+        expect(block.className).not.toMatch(/duration-\[/)
+        expect(block.className).toContain('duration-500')
+      }
+      const [onDeal, onProduct] = blocksIn(cell)
+      expect(onDeal).not.toHaveAttribute('aria-hidden')
+      expect(onDeal.className).toContain('opacity-100')
+      expect(onProduct).toHaveAttribute('aria-hidden', 'true')
+      expect(onProduct.className).toContain('invisible')
     }
-    expect(sizer).toHaveAttribute('aria-hidden', 'true')
-    expect(sizer.className).toContain('invisible')
-    expect(active).not.toHaveAttribute('aria-hidden')
-    expect(active.className).toContain('opacity-100')
     // the CTA pair and the designer button share a cell too, so the chips and
     // the rating row below them never move
     const dealCta = screen.getAllByRole('link', { name: 'לפרטי המבצע' })[0].closest('[class*="col-start-1"]')!
     const designerCta = screen.getAllByText(/התחילו לעצב/)[0].closest('[class*="col-start-1"]')!
     expect(dealCta.parentElement).toBe(designerCta.parentElement)
+  })
+
+  it('exactly two copy cells — «above» (order-1) and «below» (order-6) the carousel — with two state blocks each', () => {
+    render(<NewHeroSection heroDeal={DEAL} />)
+    // The five per-element slots are replaced by two block-level cells.
+    expect(document.querySelectorAll('[data-testid^="hero-copy-"]')).toHaveLength(2)
+    const [above, below] = copyCells()
+    // The mobile ladder: above(1) → carousel + actions(5) → below(6) → rating(7).
+    // md:order-none is load-bearing — order-* is not mobile-scoped, so without it
+    // the «below» cell would sort after the desktop CTA/chips/rating.
+    expect(above.className).toContain('order-1')
+    expect(above.className).toContain('md:order-none')
+    expect(below.className).toContain('order-6')
+    expect(below.className).toContain('md:order-none')
+    expect(screen.getByTestId('hero-carousel').closest('.order-5')).toBeTruthy()
+    // scoped per cell: the desktop CTA cell holds two states too
+    expect(blocksIn(above)).toHaveLength(2)
+    expect(blocksIn(below)).toHaveLength(2)
+  })
+
+  it('inside a state block the lines are adjacent, and no block is an empty reservation', () => {
+    render(<NewHeroSection heroDeal={DEAL} />)
+    // The deal state: badge → title → price, nothing reserved in between.
+    expect(activeTitle().nextElementSibling).toHaveTextContent('20% הנחה')
+    // The default state: title2 directly under title1 (its -mt-3 can bite again).
+    const title1 = screen.getByText('הפכו את הרעיונות שלכם')
+    expect(title1.nextElementSibling).toHaveTextContent('לבגדים מדהימים')
+    // No `<CopyState>{null}</CopyState>` anywhere: every block carries copy.
+    for (const cell of copyCells()) {
+      for (const block of blocksIn(cell)) {
+        expect(block.children.length).toBeGreaterThan(0)
+      }
+    }
   })
 
   it('the swap never remounts the copy, so the RevealText entrance plays once on mount', () => {
@@ -227,18 +275,29 @@ describe('NewHeroSection with a hero deal', () => {
     expect(after[1]).toBe(before[1])
   })
 
-  it('the second title line keeps production’s desktop spacing', () => {
+  it('the copy rhythm is carried by the state blocks, not by per-element cells', () => {
     render(<NewHeroSection heroDeal={DEAL} />)
+    // Every state block reproduces the no-deal hero's rhythm: 16 px on mobile,
+    // 20 px on desktop, between each of its own lines.
+    for (const cell of copyCells()) {
+      for (const block of blocksIn(cell)) {
+        for (const token of ['flex', 'flex-col', 'items-center', 'gap-4', 'md:gap-5']) {
+          expect(block.classList.contains(token)).toBe(true)
+        }
+      }
+    }
+    // title2 pulls back under title1 on mobile (16 − 12 = 4 px) and lets the
+    // block's md:gap-5 stand on desktop (20 px). Nested in a block the -mt-3 is
+    // no longer outranked by the wrapper's md:space-y-5, so it is cancelled on
+    // the element itself — the one place nothing outranks it.
     const title2 = screen.getByText('לבגדים מדהימים')
-    expect(title2.className).toContain('-mt-3') // production's markup, untouched
-    // In production `md:space-y-5` on the text wrapper outranks that -mt-3
-    // (0,3,0 vs 0,1,0) so the desktop gap is the full 20 px. Inside a slot the
-    // -mt-3 is nested and nothing overrides it, so the cancelling md:mt-3 must
-    // sit on the state cell — on the slot it would be outranked in turn.
-    const state = title2.parentElement!
-    expect(state.className).toContain('col-start-1')
-    expect(state.className).toContain('md:mt-3')
-    expect(state.parentElement!.className).not.toContain('md:mt-3')
+    expect(title2.classList.contains('-mt-3')).toBe(true)
+    expect(title2.classList.contains('md:mt-0')).toBe(true)
+    // and the old cancelling md:mt-3 on a state cell is gone with the slots
+    for (const cell of copyCells()) {
+      expect(cell.classList.contains('md:mt-3')).toBe(false)
+      for (const block of blocksIn(cell)) expect(block.classList.contains('md:mt-3')).toBe(false)
+    }
   })
 
   it('uses the hero overrides when set', () => {
