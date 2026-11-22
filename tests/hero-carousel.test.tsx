@@ -5,7 +5,8 @@ import { render, screen, cleanup, act } from '@testing-library/react'
 // instead of the fixed 5 s interval, an optional lead slide (the hero deal) at
 // index 0 whose Storage graphic is a plain eager <img>, and onChange so the
 // hero copy can follow the slide. With no props the output must stay
-// byte-identical to production — the snapshot here records today's markup.
+// byte-identical to production — the snapshot here records that markup; the
+// dots' 44×44 tap area (TICKET-025 Addendum B) is the one sanctioned change.
 
 // next/image and next/link are stubbed so jsdom renders a plain <img>/<a>
 // without the App Router context Next 14 expects. The Next-only props land as
@@ -55,8 +56,15 @@ afterEach(() => {
 /** Fake-timer step inside act() so React flushes the state updates it causes. */
 const adv = (ms: number) => act(() => { vi.advanceTimersByTime(ms) })
 const dots = () => screen.getAllByRole('button')
+/** The visible 10×10 dot inside its tap target (TICKET-025 Addendum B). */
+const dotMark = (b: HTMLElement) => b.querySelector('span')!
 /** The dot the carousel marks as active (the only one with scale-110). */
-const activeDot = () => dots().findIndex((b) => b.className.includes('scale-110'))
+const activeDot = () => dots().findIndex((b) => dotMark(b).className.includes('scale-110'))
+/** Tailwind's spacing scale: `w-11` → 11 × 0.25rem → 44 px, `w-2.5` → 10 px. */
+const sizePx = (el: HTMLElement, axis: 'w' | 'h') => {
+  const m = el.className.match(new RegExp(`(?:^| )${axis}-(\\d+(?:\\.\\d+)?)(?: |$)`))
+  return m ? parseFloat(m[1]) * 4 : 0
+}
 const imgs = () => Array.from(document.querySelectorAll('img'))
 
 describe('HeroCarousel without props — today’s 5-photo hero', () => {
@@ -85,9 +93,30 @@ describe('HeroCarousel without props — today’s 5-photo hero', () => {
     expect(imgs()[0]).toHaveAttribute('src', PRODUCT_2)
   })
 
-  it('markup is byte-identical to production', () => {
+  // TICKET-025 Addendum B (user: «תסדר»): every dot is a real tap target.
+  it('every dot is a ≥44×44 tap target holding the unchanged 10×10 dot', () => {
+    render(<HeroCarousel />)
+    for (const b of dots()) {
+      expect(sizePx(b, 'w')).toBeGreaterThanOrEqual(44)
+      expect(sizePx(b, 'h')).toBeGreaterThanOrEqual(44)
+      expect(sizePx(dotMark(b), 'w')).toBe(10)
+      expect(sizePx(dotMark(b), 'h')).toBe(10)
+    }
+    // same colours, opacity, active scale and aria-label pattern as production
+    expect(dotMark(dots()[0]).className).toContain('bg-white w-2.5 h-2.5 scale-110 shadow-sm')
+    expect(dotMark(dots()[1]).className).toContain('bg-white/50 w-2.5 h-2.5')
+    expect(dots()[3]).toHaveAttribute('aria-label', 'עבור לתמונה 4')
+    // the row stays centred at bottom-8 and only the targets take the taps, so
+    // the enlarged band does not swallow clicks meant for the slide's link
+    const row = dots()[0].parentElement!
+    expect(row.className).toContain('absolute bottom-8 left-0 right-0 flex justify-center')
+    expect(row.className).toContain('pointer-events-none')
+    expect(dots()[0].className).toContain('pointer-events-auto')
+  })
+
+  it('markup is production’s, the dots’ tap area the only change (Addendum B)', () => {
     const { container } = render(<HeroCarousel />)
-    expect(container.innerHTML).toMatchInlineSnapshot(`"<div class="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem] relative" style="box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);"><div class="relative w-full md:w-[550px] aspect-square mx-auto overflow-hidden rounded-[2rem]"><div class="absolute inset-0"><img data-fill="true" data-priority="true" src="/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp" alt="בדפוס - הדפסת חולצות בעיצוב אישי" sizes="(max-width: 768px) 100vw, 550px" class="object-cover rounded-[1.5rem] absolute inset-0 transition-opacity duration-500 opacity-100"></div></div><div class="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20"><button class="transition-all duration-300 rounded-full bg-white w-2.5 h-2.5 scale-110 shadow-sm" aria-label="עבור לתמונה 1"></button><button class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5" aria-label="עבור לתמונה 2"></button><button class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5" aria-label="עבור לתמונה 3"></button><button class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5" aria-label="עבור לתמונה 4"></button><button class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5" aria-label="עבור לתמונה 5"></button></div></div>"`)
+    expect(container.innerHTML).toMatchInlineSnapshot(`"<div class="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem] relative" style="box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);"><div class="relative w-full md:w-[550px] aspect-square mx-auto overflow-hidden rounded-[2rem]"><div class="absolute inset-0"><img data-fill="true" data-priority="true" src="/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp" alt="בדפוס - הדפסת חולצות בעיצוב אישי" sizes="(max-width: 768px) 100vw, 550px" class="object-cover rounded-[1.5rem] absolute inset-0 transition-opacity duration-500 opacity-100"></div></div><div class="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none"><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 1"><span class="transition-all duration-300 rounded-full bg-white w-2.5 h-2.5 scale-110 shadow-sm"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 2"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 3"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 4"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 5"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button></div></div>"`)
   })
 })
 
