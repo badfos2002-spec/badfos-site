@@ -108,4 +108,31 @@ describe('RevealText direction runs inside an RTL heading', () => {
     expect(h1.querySelector('[dir]')).toBeNull()
     expect(words(h1)).toEqual(['₪1500', '20%'])
   })
+
+  // The run-boundary space. Measured on the real route with the real Rubik:
+  // leaving the run-final word's U+00A0 inside the isolate renders it at the
+  // isolate's LTR-internal end — the wrong side — giving a doubled gap on one
+  // side of the run (2 × 11.17 px desktop) and zero on the other. The space
+  // therefore leaves the wrapper and is emitted after it, where the RTL flow
+  // puts it between the run and the next word. It is a plain ' ' and not
+  // another U+00A0: both measure 11.17 px in Rubik, but a U+00A0 is not
+  // collapsible, so when the title wraps exactly at that boundary it hangs at
+  // the start of the wrapped line and pushes the centred h1 off-centre by a
+  // full space width.
+  it('(g) the run-boundary space sits outside the LTR run, and no title gains or loses a space', () => {
+    const h1 = heading(MIXED)
+    const run = h1.querySelector('[dir="ltr"]')
+    expect(run).not.toBeNull()
+    // the run's own text ends on its last word, never on a separator
+    expect(run!.textContent).toBe('BLACK\u00A0FRIDAY')
+    // ...and exactly one plain space follows the wrapper
+    const next = run!.nextSibling
+    expect(next).not.toBeNull()
+    expect(next!.nodeType).toBe(Node.TEXT_NODE)
+    expect(next!.textContent).toBe(' ')
+    // nothing dropped and nothing added, in every title
+    for (const text of [LATIN, HEBREW, MIXED, NEUTRAL_FIRST, ALL_NEUTRAL]) {
+      expect((heading(text).textContent || '').replace(/\u00A0/g, ' ')).toBe(text)
+    }
+  })
 })
