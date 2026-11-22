@@ -12,6 +12,10 @@ import type { HeroSlide } from '@/components/home/HeroCarousel'
 // (hero-copy-above / hero-copy-below), each holding both states as one block,
 // so the leftover height is split above/below the shorter block and never
 // between its lines.
+// TICKET-029: `heroDeal` becomes `heroDeals: Deal[]` — every live deal marked
+// «בהירו» opens the carousel, and the copy follows the slide per deal: deal k is
+// the active state while slide === k, the default copy once the deal slides are
+// past. Every stacked cell holds one state per deal plus the default state LAST.
 
 vi.mock('@gsap/react', () => ({ useGSAP: () => {} }))
 vi.mock('@/components/common/useTilt', () => ({ useTilt: () => ({ current: null }) }))
@@ -22,7 +26,7 @@ vi.mock('@/components/home/HeroCarousel', async () => {
   const actual = await vi.importActual<typeof import('@/components/home/HeroCarousel')>('@/components/home/HeroCarousel')
   const RealCarousel = actual.default
   return {
-    default: (props: { leadSlide?: HeroSlide | null; onChange?: (index: number) => void }) => (
+    default: (props: { leadSlides?: HeroSlide[]; onChange?: (index: number) => void }) => (
       <div data-testid="hero-carousel"><RealCarousel {...props} /></div>
     ),
   }
@@ -71,6 +75,20 @@ const DEAL: Deal = {
   createdAt: '',
   updatedAt: '',
 }
+/** TICKET-029: a second deal marked «בהירו» — its own copy, price, image and slug. */
+const DEAL_B: Deal = {
+  id: 'b',
+  slug: 'מבצע-קבוצות',
+  title: 'מבצע קבוצות',
+  shortText: '10 חולצות ו-10 קפוצ׳ונים לכל הקבוצה',
+  priceText: '₪1500',
+  imageSquare: '/images/deals/b-s.jpg',
+  isActive: true,
+  sortOrder: 1,
+  hero: { enabled: true },
+  createdAt: '',
+  updatedAt: '',
+}
 const enc = encodeURIComponent
 
 const PRODUCT_1 = '/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp'
@@ -89,10 +107,14 @@ const activeTitle = () => screen.getByRole('heading', { level: 1 })
 const copyCells = () => [screen.getByTestId('hero-copy-above'), screen.getByTestId('hero-copy-below')]
 /** The two state blocks of a copy cell: deal state first, default state second. */
 const blocksIn = (cell: HTMLElement) => Array.from(cell.children) as HTMLElement[]
+/** Every h1 that is NOT inside an aria-hidden sizer — there must be exactly one. */
+const visibleTitles = () =>
+  Array.from(document.querySelectorAll('h1')).filter((h) => !h.closest('[aria-hidden="true"]'))
+const hrefsIn = (el: HTMLElement) => Array.from(el.querySelectorAll('a')).map((a) => a.getAttribute('href'))
 
 describe('NewHeroSection with a hero deal', () => {
   it('defaults: deal title as h1, shortText, «מבצע» badge, CTA «לפרטי המבצע» → deal page, WhatsApp', () => {
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     expect(activeTitle()).toHaveTextContent('מבצע חורף')
     expect(screen.getByText('סווטשרטים במחיר מיוחד')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('20% הנחה') // the priceText line (§B.7)
@@ -112,7 +134,7 @@ describe('NewHeroSection with a hero deal', () => {
   })
 
   it('slide 0 is the deal: the square image as a plain eager <img> linking to the deal', () => {
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     const img = slideImg()!
     expect(img).toHaveAttribute('src', '/images/deals/s.jpg') // the square slot, not the 4:5 one
     expect(img).toHaveAttribute('alt', 'מבצע חורף')
@@ -126,13 +148,13 @@ describe('NewHeroSection with a hero deal', () => {
   })
 
   it('falls back to the nearest shape when the deal has no square image', () => {
-    render(<NewHeroSection heroDeal={{ ...DEAL, imageSquare: undefined }} />)
+    render(<NewHeroSection heroDeals={[{ ...DEAL, imageSquare: undefined }]} />)
     expect(slideImg()).toHaveAttribute('src', '/images/deals/m.jpg')
   })
 
   it('after the deal dwell the copy is today’s default and the CTA is /designer', () => {
     vi.useFakeTimers()
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     expect(activeTitle()).toHaveTextContent('מבצע חורף')
     toProductSlide()
     expect(slideImg()).toHaveAttribute('src', PRODUCT_1)
@@ -148,7 +170,7 @@ describe('NewHeroSection with a hero deal', () => {
 
   it('after a product dwell the next product photo shows and the copy stays the default', () => {
     vi.useFakeTimers()
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     toProductSlide()
     adv(5000)
     adv(500)
@@ -158,7 +180,7 @@ describe('NewHeroSection with a hero deal', () => {
 
   it('mobile: the actions row is there on every slide — two buttons on the deal, one on a product', () => {
     vi.useFakeTimers()
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     const row = screen.getByTestId('hero-deal-mobile-actions')
     expect(row.className).toContain('order-5')
     expect(row.className).toContain('md:hidden')
@@ -187,14 +209,14 @@ describe('NewHeroSection with a hero deal', () => {
   it('prefers-reduced-motion: the hero rests on the deal slide with the deal copy', () => {
     reducedMotion = true
     vi.useFakeTimers()
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     adv(30000)
     expect(slideImg()).toHaveAttribute('src', '/images/deals/s.jpg')
     expect(activeTitle()).toHaveTextContent('מבצע חורף')
   })
 
   it('both copy states share one grid cell per block, so the swap moves nothing', () => {
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     // The h1 and the default title now live inside their state block, and both
     // blocks share the «above» cell — one cell per block, not one per element.
     const dealBlock = activeTitle().parentElement!
@@ -227,7 +249,7 @@ describe('NewHeroSection with a hero deal', () => {
   })
 
   it('exactly two copy cells — «above» (order-1) and «below» (order-6) the carousel — with two state blocks each', () => {
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     // The five per-element slots are replaced by two block-level cells.
     expect(document.querySelectorAll('[data-testid^="hero-copy-"]')).toHaveLength(2)
     const [above, below] = copyCells()
@@ -245,7 +267,7 @@ describe('NewHeroSection with a hero deal', () => {
   })
 
   it('inside a state block the lines are adjacent, and no block is an empty reservation', () => {
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     // The deal state: badge → title → price, nothing reserved in between.
     expect(activeTitle().nextElementSibling).toHaveTextContent('20% הנחה')
     // The default state: title2 directly under title1 (its -mt-3 can bite again).
@@ -264,7 +286,7 @@ describe('NewHeroSection with a hero deal', () => {
     // it: both copy states stay mounted — not keyed by the slide, never
     // conditionally rendered — so React keeps the very same elements.
     vi.useFakeTimers()
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     const before = Array.from(document.querySelectorAll('h1'))
     expect(before).toHaveLength(2) // the deal title + the default title (the sizer)
     expect(before[0]).toHaveTextContent('מבצע חורף')
@@ -276,7 +298,7 @@ describe('NewHeroSection with a hero deal', () => {
   })
 
   it('the copy rhythm is carried by the state blocks, not by per-element cells', () => {
-    render(<NewHeroSection heroDeal={DEAL} />)
+    render(<NewHeroSection heroDeals={[DEAL]} />)
     // Every state block reproduces the no-deal hero's rhythm: 16 px on mobile,
     // 20 px on desktop, between each of its own lines.
     for (const cell of copyCells()) {
@@ -301,11 +323,164 @@ describe('NewHeroSection with a hero deal', () => {
   })
 
   it('uses the hero overrides when set', () => {
-    render(<NewHeroSection heroDeal={{ ...DEAL, hero: { enabled: true, title: 'כותרת הירו', text: 'טקסט הירו', ctaLabel: 'לפרטים' } }} />)
+    render(<NewHeroSection heroDeals={[{ ...DEAL, hero: { enabled: true, title: 'כותרת הירו', text: 'טקסט הירו', ctaLabel: 'לפרטים' } }]} />)
     expect(activeTitle()).toHaveTextContent('כותרת הירו')
     expect(screen.getByText('טקסט הירו')).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: 'לפרטים' })[0]).toHaveAttribute('href', `/deals/${enc('מבצע-חורף')}`)
     expect(slideImg()).toHaveAttribute('alt', 'כותרת הירו')
+  })
+})
+
+// TICKET-029 (user: «שים לב אם יש שני מבצעים אני רוצה שגם הם יופיעו ביחד
+// בקרוסלת ההירו»): deal k owns the copy while the carousel shows slide k.
+describe('NewHeroSection with two hero deals', () => {
+  const BOTH = [DEAL, DEAL_B]
+  const pathA = `/deals/${enc('מבצע-חורף')}`
+  const pathB = `/deals/${enc('מבצע-קבוצות')}`
+  /** One deal slide forward: its 8000 ms dwell + the 500 ms crossfade. */
+  const step = () => { adv(8000); adv(500) }
+
+  it('at t0 the hero is the first deal: its badge, h1, price, CTA hrefs and WhatsApp', () => {
+    render(<NewHeroSection heroDeals={BOTH} />)
+    expect(slideImg()).toHaveAttribute('src', '/images/deals/s.jpg')
+    expect(activeTitle()).toHaveTextContent('מבצע חורף')
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('20% הנחה')
+    expect(screen.getAllByTestId('hero-deal-badge')[0]).toHaveTextContent('מבצע')
+    const ctas = screen.getAllByRole('link', { name: 'לפרטי המבצע' })
+    expect(ctas.length).toBeGreaterThan(0)
+    ctas.forEach((a) => expect(a).toHaveAttribute('href', pathA))
+    screen.getAllByRole('link', { name: /וואטסאפ/ }).forEach((a) => {
+      expect(a.getAttribute('href')).toContain(enc('«מבצע חורף»'))
+    })
+    // deal B's copy is mounted but only as an invisible sizer
+    const sizer = screen.getByText('10 חולצות ו-10 קפוצ׳ונים לכל הקבוצה').closest('[aria-hidden="true"]')
+    expect(sizer).toBeTruthy()
+    expect(sizer!.className).toContain('invisible')
+    // one badge per deal — the multi-deal tests use getAllByTestId
+    expect(screen.getAllByTestId('hero-deal-badge')).toHaveLength(2)
+  })
+
+  it('the copy follows the slide: deal A → deal B → today’s default copy', () => {
+    vi.useFakeTimers()
+    render(<NewHeroSection heroDeals={BOTH} />)
+    expect(activeTitle()).toHaveTextContent('מבצע חורף')
+
+    step() // slide 1 — the second deal, not a product photo
+    expect(slideImg()).toHaveAttribute('src', '/images/deals/b-s.jpg')
+    expect(activeTitle()).toHaveTextContent('מבצע קבוצות')
+    expect(screen.getByText('10 חולצות ו-10 קפוצ׳ונים לכל הקבוצה')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('₪1500')
+    const ctasB = screen.getAllByRole('link', { name: 'לפרטי המבצע' })
+    expect(ctasB.length).toBeGreaterThan(0)
+    ctasB.forEach((a) => expect(a).toHaveAttribute('href', pathB))
+    screen.getAllByRole('link', { name: /וואטסאפ/ }).forEach((a) => {
+      expect(a.getAttribute('href')).toContain(enc('«מבצע קבוצות»'))
+    })
+    // deal A is the sizer now
+    expect(screen.getByText('סווטשרטים במחיר מיוחד').closest('[aria-hidden="true"]')).toBeTruthy()
+
+    step() // slide 2 — the first product photo, so the default copy takes over
+    expect(slideImg()).toHaveAttribute('src', PRODUCT_1)
+    expect(activeTitle()).toHaveTextContent('הפכו את הרעיונות שלכם')
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('דיוק • איכות • מיתוג')
+    const designer = screen.getAllByRole('link', { name: /התחילו לעצב/ })
+    expect(designer.length).toBeGreaterThan(0)
+    designer.forEach((a) => expect(a).toHaveAttribute('href', '/designer'))
+    expect(screen.queryByRole('link', { name: 'לפרטי המבצע' })).not.toBeInTheDocument()
+  })
+
+  it('exactly one visible h1 at every step — the other two are aria-hidden sizers', () => {
+    vi.useFakeTimers()
+    render(<NewHeroSection heroDeals={BOTH} />)
+    expect(document.querySelectorAll('h1')).toHaveLength(3) // deal A + deal B + the default
+    expect(visibleTitles().map((h) => h.textContent)).toEqual(['מבצע חורף'])
+    step()
+    expect(visibleTitles().map((h) => h.textContent)).toEqual(['מבצע קבוצות'])
+    step()
+    expect(visibleTitles().map((h) => h.textContent)).toEqual(['הפכו את הרעיונות שלכם'])
+  })
+
+  it('every stacked cell holds one state per deal in deals order, with the default LAST', () => {
+    render(<NewHeroSection heroDeals={BOTH} />)
+    const [above, below] = copyCells()
+    const desktopCta = screen.getAllByRole('link', { name: 'לפרטי המבצע' })[0]
+      .closest('[class*="col-start-1"]')!.parentElement as HTMLElement
+    const mobile = screen.getByTestId('hero-deal-mobile-actions')
+
+    // The order is load-bearing: TICKET-027's block reservation keeps the cell as
+    // tall as the tallest state, and the existing one-deal tests read the blocks
+    // positionally (deal first, default second).
+    for (const [cell, texts] of [
+      [above, ['מבצע חורף', 'מבצע קבוצות', 'הפכו את הרעיונות שלכם']],
+      [below, ['סווטשרטים במחיר מיוחד', '10 חולצות ו-10 קפוצ׳ונים לכל הקבוצה', 'חולצות, קפוצ׳ונים, כובעים']],
+    ] as [HTMLElement, string[]][]) {
+      const blocks = blocksIn(cell)
+      expect(blocks).toHaveLength(3)
+      blocks.forEach((b, i) => expect(b).toHaveTextContent(texts[i]))
+    }
+    // the CTA cells are told apart by their hrefs, not their label
+    for (const cell of [desktopCta, mobile]) {
+      const blocks = blocksIn(cell)
+      expect(blocks).toHaveLength(3)
+      expect(hrefsIn(blocks[0])[0]).toBe(pathA)
+      expect(hrefsIn(blocks[0])[1]).toContain(enc('«מבצע חורף»'))
+      expect(hrefsIn(blocks[1])[0]).toBe(pathB)
+      expect(hrefsIn(blocks[1])[1]).toContain(enc('«מבצע קבוצות»'))
+      expect(hrefsIn(blocks[2])).toEqual(['/designer'])
+    }
+    // all three states stay mounted, only deal A's is visible at mount (SSR = slide 0)
+    for (const cell of [above, below, desktopCta, mobile]) {
+      const [a, b, d] = blocksIn(cell)
+      expect(a).not.toHaveAttribute('aria-hidden')
+      expect(a.className).toContain('opacity-100')
+      for (const sizer of [b, d]) {
+        expect(sizer).toHaveAttribute('aria-hidden', 'true')
+        expect(sizer.className).toContain('invisible')
+        expect(sizer.className).toContain('duration-500')
+        expect(sizer.className).not.toMatch(/duration-\[/)
+      }
+    }
+  })
+
+  it('the mobile actions row shows each deal’s pair, then the single designer button', () => {
+    vi.useFakeTimers()
+    render(<NewHeroSection heroDeals={BOTH} />)
+    const row = screen.getByTestId('hero-deal-mobile-actions')
+
+    let links = within(row).getAllByRole('link')
+    expect(links).toHaveLength(2)
+    expect(links[0]).toHaveTextContent('לפרטי המבצע')
+    expect(links[0]).toHaveAttribute('href', pathA)
+    expect(links[1]).toHaveTextContent('וואטסאפ')
+    expect(links[1].getAttribute('href')).toContain(enc('«מבצע חורף»'))
+
+    step()
+    links = within(row).getAllByRole('link')
+    expect(links).toHaveLength(2)
+    expect(links[0]).toHaveAttribute('href', pathB)
+    expect(links[1].getAttribute('href')).toContain(enc('«מבצע קבוצות»'))
+
+    step()
+    links = within(row).getAllByRole('link')
+    expect(links).toHaveLength(1)
+    expect(links[0]).toHaveTextContent('התחילו לעצב')
+    expect(links[0]).toHaveAttribute('href', '/designer')
+    expect(links[0].className).toContain('w-full')
+  })
+
+  it('prefers-reduced-motion: the hero rests on the first deal with its copy', () => {
+    reducedMotion = true
+    vi.useFakeTimers()
+    render(<NewHeroSection heroDeals={BOTH} />)
+    adv(30000)
+    expect(slideImg()).toHaveAttribute('src', '/images/deals/s.jpg')
+    expect(activeTitle()).toHaveTextContent('מבצע חורף')
+    expect(visibleTitles()).toHaveLength(1)
+  })
+
+  it('one dot per slide: a dot for every deal plus the 5 product photos', () => {
+    render(<NewHeroSection heroDeals={BOTH} />)
+    expect(within(screen.getByTestId('hero-carousel')).getAllByRole('button')).toHaveLength(7)
   })
 })
 
@@ -317,5 +492,16 @@ describe('NewHeroSection without a hero deal', () => {
     expect(screen.queryByTestId('hero-deal-badge')).not.toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /התחילו לעצב/ })[0]).toHaveAttribute('href', '/designer')
     expect(within(document.body).queryByTestId('hero-deal-image')).not.toBeInTheDocument()
+  })
+
+  // TICKET-029 gate: no live deal is marked «בהירו» → the page passes an empty
+  // array, which must be the very same hero as passing nothing at all.
+  it('heroDeals={[]} renders exactly the same markup as no props at all', () => {
+    const empty = render(<NewHeroSection heroDeals={[]} />).container.innerHTML
+    cleanup()
+    const none = render(<NewHeroSection />).container.innerHTML
+    expect(empty).toBe(none)
+    expect(screen.queryByTestId('hero-deal-mobile-actions')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('hero-copy-above')).not.toBeInTheDocument()
   })
 })
