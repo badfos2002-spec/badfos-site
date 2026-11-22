@@ -284,6 +284,19 @@ describe('admin deals — the square image slot', () => {
       expect(screen.queryByTestId('deal-image-warning-square')).not.toBeInTheDocument()
     })
 
+    it('does not carry a warning from a closed form into a freshly opened one', async () => {
+      const pending: ((s: { width: number; height: number }) => void)[] = []
+      const measure = vi.fn(() => new Promise<{ width: number; height: number }>((res) => pending.push(res)))
+      await openWith(measure)
+      uploadInto('תמונה ריבועית', 'wide.png')
+      await waitFor(() => expect(measure).toHaveBeenCalledTimes(1))
+
+      fireEvent.click(screen.getByRole('button', { name: 'ביטול' }))
+      fireEvent.click(screen.getByRole('button', { name: /מבצע חדש/ }))
+      await act(async () => pending[0]({ width: 1600, height: 900 }))
+      expect(screen.queryByTestId('deal-image-warning-square')).not.toBeInTheDocument()
+    })
+
     it('does not let an older measurement override the file that replaced it', async () => {
       const pending: ((s: { width: number; height: number }) => void)[] = []
       const measure = vi.fn(() => new Promise<{ width: number; height: number }>((res) => pending.push(res)))
