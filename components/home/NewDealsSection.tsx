@@ -39,7 +39,7 @@ export default function NewDealsSection({ deals: all }: { deals: Deal[] }) {
                 className="flex items-center gap-4 overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-md transition-shadow group-hover:shadow-xl md:flex-col md:items-stretch md:gap-0 md:p-0"
               >
                 <div className="w-24 flex-shrink-0 overflow-hidden rounded-xl md:w-full md:rounded-none">
-                  <DealPicture deal={deal} aspect="aspect-square md:aspect-[16/10]" />
+                  <DealPicture deal={deal} shapes={{ base: 'square', md: 'desktop' }} aspect="aspect-square md:aspect-[16/10]" />
                 </div>
                 <div className="min-w-0 flex-1 md:p-4">
                   <h3 className="line-clamp-2 text-lg font-bold text-gray-900 group-hover:text-yellow-600">{deal.title}</h3>
