@@ -193,7 +193,12 @@ describe('NewHeroSection with a hero deal', () => {
     for (const cell of [active, sizer]) {
       expect(cell.className).toContain('col-start-1')
       expect(cell.className).toContain('row-start-1')
-      expect(cell.className).toContain('duration-[400ms]') // the copy crossfade
+      // The copy crossfade must use a theme duration: tailwindcss-animate
+      // overrides duration/delay and drops arbitrary values, so `duration-[400ms]`
+      // compiles to nothing at all and the swap would be instant (checked with
+      // the tailwind CLI against this project's config). 500 ms = the slide fade.
+      expect(cell.className).not.toMatch(/duration-\[/)
+      expect(cell.className).toContain('duration-500')
     }
     expect(sizer).toHaveAttribute('aria-hidden', 'true')
     expect(sizer.className).toContain('invisible')
