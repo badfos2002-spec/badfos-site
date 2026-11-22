@@ -294,7 +294,7 @@ export default function DealsManager({ measure = measureImageSize }: { measure?:
               className="block w-full text-sm file:ml-3 file:min-h-[44px] file:rounded-lg file:border-0 file:bg-yellow-100 file:px-3 file:font-medium file:text-yellow-800"
             />
             {url && (
-              <button type="button" onClick={() => { set(FIELD[variant], ''); checkShape(variant, '') }} className="self-start text-sm text-red-600 hover:underline">
+              <button type="button" onClick={() => { set(FIELD[variant], ''); checkShape(variant, '') }} className="inline-flex min-h-[44px] items-center self-start text-sm text-red-600 hover:underline">
                 הסר תמונה
               </button>
             )}
