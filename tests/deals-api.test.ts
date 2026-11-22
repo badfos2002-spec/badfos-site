@@ -21,7 +21,7 @@ vi.mock('@/lib/firebase-admin', () => ({
 
 import { POST } from '@/app/api/admin/deals/route'
 import { GET } from '@/app/api/deals/route'
-import { getHeroDeal } from '@/lib/deals-server'
+import { getHeroDeals } from '@/lib/deals-server'
 
 const ADMIN = { email: 'badfos2002@gmail.com', email_verified: true }
 
@@ -175,23 +175,34 @@ describe('GET /api/deals (public)', () => {
   })
 })
 
-describe('hero deal (Addendum A)', () => {
-  it('getHeroDeal returns the first LIVE deal with hero.enabled (inactive ones skipped)', async () => {
-    const d = await getHeroDeal()
-    expect(d?.id).toBe('live2')
-    expect(d?.hero).toEqual({ enabled: true, title: 'כובעים בהירו', text: 'טקסט הירו', ctaLabel: 'לכובעים' })
+// TICKET-029: `hero.enabled` is a plain per-deal flag — every live deal that
+// carries it rides in the hero carousel, in sortDeals order, and saving one deal
+// never touches another.
+describe('hero deals (TICKET-029)', () => {
+  /** The plain fixture plus a second hero deal: live1 (sortOrder 1) next to live2 (sortOrder 0). */
+  const twoHeroDeals = () =>
+    createFakeDb({ ...FIXTURE_DEALS, live1: { ...FIXTURE_DEALS.live1, hero: { enabled: true } } })
+
+  it('getHeroDeals returns every LIVE hero deal in sort order', async () => {
+    h.fake = twoHeroDeals()
+    expect((await getHeroDeals()).map((d) => d.id)).toEqual(['live2', 'live1'])
   })
-  it('getHeroDeal returns null when no live deal is in the hero', async () => {
+  it('getHeroDeals skips the inactive, the expired and the un-flagged live deals', async () => {
+    h.fake = createFakeDb({ ...FIXTURE_DEALS, expired: { ...FIXTURE_DEALS.expired, hero: { enabled: true } } })
+    const deals = await getHeroDeals()
+    expect(deals.map((d) => d.id)).toEqual(['live2'])
+    expect(deals[0].hero).toEqual({ enabled: true, title: 'כובעים בהירו', text: 'טקסט הירו', ctaLabel: 'לכובעים' })
+  })
+  it('getHeroDeals returns [] when no live deal is in the hero', async () => {
     h.fake = createFakeDb({ live1: FIXTURE_DEALS.live1, inactive: FIXTURE_DEALS.inactive })
-    expect(await getHeroDeal()).toBeNull()
+    expect(await getHeroDeals()).toEqual([])
   })
-  it('saving a deal with hero.enabled turns the hero off on every other deal', async () => {
+  it('saving a deal with hero.enabled leaves every other deal hero untouched', async () => {
     const res = await post({ action: 'save', deal: { ...validDeal, id: 'live1', slug: 'מבצע-חורף', hero: { enabled: true, title: 'חורף בהירו' } } })
     expect(res.status).toBe(200)
     expect((h.fake.store.get('live1')?.hero as { enabled: boolean }).enabled).toBe(true)
-    expect((h.fake.store.get('live2')?.hero as { enabled: boolean }).enabled).toBe(false)
-    expect((h.fake.store.get('inactive')?.hero as { enabled: boolean }).enabled).toBe(false)
-    expect((await getHeroDeal())?.id).toBe('live1')
+    expect((h.fake.store.get('live2')?.hero as { enabled: boolean }).enabled).toBe(true)
+    expect((h.fake.store.get('inactive')?.hero as { enabled: boolean }).enabled).toBe(true)
   })
   it('saving a deal without the hero leaves the current hero deal alone', async () => {
     await post({ action: 'save', deal: { ...validDeal, id: 'live1', slug: 'מבצע-חורף' } })
@@ -204,21 +215,32 @@ describe('hero deal (Addendum A)', () => {
     expect(errors.heroTitle).toBeTruthy()
     expect(errors.heroText).toBeTruthy()
   })
-  it('GET /api/deals?hero=1 returns the single hero deal', async () => {
+  it('GET /api/deals?hero=1 returns every hero deal as an array, in sort order', async () => {
+    h.fake = twoHeroDeals()
     const res = await GET(new Request('https://badfos.co.il/api/deals?hero=1'))
+    expect(res.headers.get('cache-control')).toBe('s-maxage=60, stale-while-revalidate=300')
     const body = await res.json()
-    expect(body.deal.id).toBe('live2')
-    expect(body.deals).toBeUndefined()
+    expect(body.deals.map((d: { id: string }) => d.id)).toEqual(['live2', 'live1'])
+    expect(body.deal).toBeUndefined()
+  })
+  it('GET /api/deals?hero=1 returns the one hero deal of the plain fixture', async () => {
+    const body = await (await GET(new Request('https://badfos.co.il/api/deals?hero=1'))).json()
+    expect(body.deals.map((d: { id: string }) => d.id)).toEqual(['live2'])
+  })
+  it('GET /api/deals?hero=1 returns an empty array when no live deal is in the hero', async () => {
+    h.fake = createFakeDb({ live1: FIXTURE_DEALS.live1, inactive: FIXTURE_DEALS.inactive })
+    const body = await (await GET(new Request('https://badfos.co.il/api/deals?hero=1'))).json()
+    expect(body.deals).toEqual([])
+    expect(body.deal).toBeUndefined()
   })
 })
 
 describe('hardening (review)', () => {
-  it('save with hero on writes the deal and turns the others off in ONE batch commit', async () => {
+  it('a save writes exactly one document and nothing else', async () => {
     await post({ action: 'save', deal: { ...validDeal, id: 'live1', slug: 'מבצע-חורף', hero: { enabled: true } } })
-    expect(h.fake.commits).toHaveLength(1)
-    expect(h.fake.commits[0]).toEqual(
-      expect.arrayContaining([{ op: 'set', id: 'live1' }, { op: 'update', id: 'live2' }, { op: 'update', id: 'inactive' }])
-    )
+    expect(h.fake.writes).toHaveLength(1)
+    expect(h.fake.writes[0]).toMatchObject({ op: 'set', id: 'live1' })
+    expect(h.fake.commits).toHaveLength(0)
   })
   it('delete of an unknown id is 404 and writes nothing', async () => {
     const res = await post({ action: 'delete', id: 'ghost' })
