@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent, waitFor, within, act } from '@testing-library/react'
 import type { Deal } from '@/lib/types'
 
 // TICKET-022: /admin/deals — list, add/edit, active toggle, sort order (up/down →
@@ -257,6 +257,46 @@ describe('admin deals — the square image slot', () => {
     expect(screen.queryByAltText('תצוגה מקדימה — ריבועית')).not.toBeInTheDocument()
     expect(screen.getByAltText('תצוגה מקדימה — מובייל')).toHaveAttribute('src', '/images/deals/m.jpg')
     expect(screen.getByAltText('תצוגה מקדימה — דסקטופ')).toHaveAttribute('src', '/images/deals/d.jpg')
+  })
+
+  // A measurement is async: whatever the admin does next must win over a late result.
+  describe('a measurement still in flight', () => {
+    const uploadInto = (slot: string, name: string) =>
+      fireEvent.change(screen.getByLabelText(slot), { target: { files: [new File(['x'], name, { type: 'image/png' })] } })
+
+    const openWith = async (measure: () => Promise<{ width: number; height: number }>) => {
+      render(<DealsManager measure={measure} />)
+      await screen.findByText('מבצע חורף')
+      fireEvent.click(screen.getByRole('button', { name: /מבצע חדש/ }))
+    }
+
+    it('does not paint a warning on a slot that was cleared meanwhile', async () => {
+      const pending: ((s: { width: number; height: number }) => void)[] = []
+      const measure = vi.fn(() => new Promise<{ width: number; height: number }>((res) => pending.push(res)))
+      await openWith(measure)
+      uploadInto('תמונה ריבועית', 'wide.png')
+      await waitFor(() => expect(measure).toHaveBeenCalledTimes(1))
+
+      fireEvent.click(within(screen.getByTestId('deal-uploader-square')).getByRole('button', { name: 'הסר תמונה' }))
+      await waitFor(() => expect(screen.queryByAltText('תצוגה מקדימה — ריבועית')).not.toBeInTheDocument())
+
+      await act(async () => pending[0]({ width: 1600, height: 900 }))
+      expect(screen.queryByTestId('deal-image-warning-square')).not.toBeInTheDocument()
+    })
+
+    it('does not let an older measurement override the file that replaced it', async () => {
+      const pending: ((s: { width: number; height: number }) => void)[] = []
+      const measure = vi.fn(() => new Promise<{ width: number; height: number }>((res) => pending.push(res)))
+      await openWith(measure)
+      uploadInto('תמונה ריבועית', 'wide.png')
+      await waitFor(() => expect(measure).toHaveBeenCalledTimes(1))
+      uploadInto('תמונה ריבועית', 'square.png')
+      await waitFor(() => expect(measure).toHaveBeenCalledTimes(2))
+
+      await act(async () => pending[1]({ width: 1080, height: 1080 })) // the file now in the slot: fine
+      await act(async () => pending[0]({ width: 1600, height: 900 })) // the replaced one: must be ignored
+      expect(screen.queryByTestId('deal-image-warning-square')).not.toBeInTheDocument()
+    })
   })
 
   it('the list thumbnail prefers the square image and falls back to the nearest one', async () => {
