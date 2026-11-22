@@ -7,13 +7,12 @@ import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { Button } from '@/components/ui/button'
 import { Sparkles, ShieldCheck, Truck, Tag, MessageCircle } from 'lucide-react'
-import HeroCarousel from './HeroCarousel'
+import HeroCarousel, { type HeroSlide } from './HeroCarousel'
 import RevealText from '@/components/common/RevealText'
 import { useTilt } from '@/components/common/useTilt'
 import { ProductRiver } from './ProductRiver'
 import { HOME_CAROUSEL_ITEMS } from '@/lib/home-carousel'
-import DealPicture from '@/components/deals/DealPicture'
-import { dealHeroCopy, dealPath, dealWhatsAppLink } from '@/lib/deals'
+import { dealHeroCopy, dealImage, dealPath, dealWhatsAppLink } from '@/lib/deals'
 import { trackWhatsAppClick } from '@/lib/tracking'
 import type { Deal } from '@/lib/types'
 
@@ -27,6 +26,13 @@ const D = {
   hero_ctaText: 'התחילו לעצב',
 }
 
+/** The deal slide rests longer than a product photo (TICKET-025 §B item 6). */
+const DEAL_DWELL_MS = 8000
+
+/** A copy slot: one grid cell holding both copy states, sized like today's flex
+    item (content width, centred) so the swap cannot move anything. */
+const COPY_SLOT = 'grid justify-items-center items-center'
+
 /** `heroDeal` (TICKET-022 Addendum A): the hero shows that deal; without it the hero is unchanged. */
 export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } = {}) {
   const [c, setC] = useState(D)
@@ -38,6 +44,19 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
   const subtitleRef = useRef<HTMLHeadingElement>(null)
   const descRef = useRef<HTMLParagraphElement>(null)
   const carouselRef = useRef<HTMLDivElement>(null)
+
+  // TICKET-025B: the deal joins the carousel as slide 0 and the copy follows the
+  // active slide. SSR renders index 0 — the deal state — so there is no
+  // hydration mismatch.
+  const [slide, setSlide] = useState(0)
+  const dealActive = dc !== null && slide === 0
+  const leadSlide: HeroSlide | null = deal && dc ? {
+    id: `deal-${deal.id}`,
+    image: dealImage(deal, 'square'),
+    alt: dc.title,
+    link: ctaHref,
+    dwellMs: DEAL_DWELL_MS,
+  } : null
 
   // 3D tilt on the carousel card (desktop + non-reduced-motion only; no-op otherwise).
   const tiltRef = useTilt<HTMLDivElement>({ maxTilt: 7, scale: 1.02, perspective: 900 })
@@ -82,6 +101,57 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
     return () => clearTimeout(timer)
   }, [])
 
+  // Today's copy. Shared by the no-deal hero (where these are the only copy and
+  // carry the refs) and by the deal hero, where the same elements sit in a copy
+  // slot as the product-slide state.
+  const defaultBadge = (ref?: React.Ref<HTMLDivElement>) => (
+    <div ref={ref} className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#fef9c3] rounded-full text-[#854d0e] text-sm font-medium border border-[#fde047] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
+      {c.hero_badge}
+      <Sparkles className="w-3.5 h-3.5" />
+    </div>
+  )
+  const defaultTitle1 = () => (
+    <RevealText
+      as="h1"
+      trigger="mount"
+      text={c.hero_title1}
+      y={36}
+      stagger={0.09}
+      className="order-2 md:order-none text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
+    />
+  )
+  const defaultTitle2 = () => (
+    <RevealText
+      as="span"
+      trigger="mount"
+      text={c.hero_title2}
+      y={36}
+      stagger={0.09}
+      delay={0.18}
+      className="order-3 md:order-none block -mt-3 text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#f59e0b] leading-[1.1] tracking-tight drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)]"
+    />
+  )
+  const defaultSubtitle = (ref?: React.Ref<HTMLHeadingElement>) => (
+    <h2 ref={ref} className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
+      {c.hero_subtitle}
+    </h2>
+  )
+  const defaultDesc = (ref?: React.Ref<HTMLParagraphElement>) => (
+    <p ref={ref} className="order-6 md:order-none text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
+      {c.hero_desc1}
+      <br className="hidden sm:block" />
+      {' '}{c.hero_desc2}
+    </p>
+  )
+  const designerCta = () => (
+    <Link href="/designer">
+      <Button className="bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-xl font-bold py-6 px-12 rounded-full shadow-xl transition-all hover:scale-105 hover:shadow-2xl min-w-[280px] inline-flex items-center justify-center gap-2">
+        {c.hero_ctaText}
+        <Sparkles className="w-5 h-5" />
+      </Button>
+    </Link>
+  )
+
   return (
     <section className="w-full bg-[#fffdf5] min-h-[600px] pt-3 pb-20 relative overflow-hidden" dir="rtl">
       {/* Ambient brand halos */}
@@ -98,82 +168,101 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
           {/* Text Content */}
           <div className="text-center w-full px-4 md:space-y-5 contents md:flex md:flex-col md:items-center hero-text-rounded min-h-[320px] md:min-h-[380px]">
             {dc ? (
-              <div ref={badgeRef} data-testid="hero-deal-badge" className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#ffc32e] rounded-full text-[#3b2600] text-sm font-extrabold border border-[#fbbf24] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
-                מבצע
-                <Tag className="w-3.5 h-3.5" />
-              </div>
+              <>
+                {/* Each of today's copy elements keeps its own slot, so the mobile
+                    order-* ladder and the gaps stay exactly as they are. */}
+                <div ref={badgeRef} className={`order-1 md:order-none ${COPY_SLOT}`}>
+                  <CopyState active={dealActive}>
+                    <div data-testid="hero-deal-badge" className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#ffc32e] rounded-full text-[#3b2600] text-sm font-extrabold border border-[#fbbf24] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
+                      מבצע
+                      <Tag className="w-3.5 h-3.5" />
+                    </div>
+                  </CopyState>
+                  <CopyState active={!dealActive}>{defaultBadge()}</CopyState>
+                </div>
+
+                <div className={`order-2 md:order-none ${COPY_SLOT}`}>
+                  <CopyState active={dealActive}>
+                    <RevealText
+                      as="h1"
+                      trigger="mount"
+                      text={dc.title}
+                      y={36}
+                      stagger={0.09}
+                      className="order-2 md:order-none text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
+                    />
+                  </CopyState>
+                  <CopyState active={!dealActive}>{defaultTitle1()}</CopyState>
+                </div>
+
+                {/* The deal has no second title line — the slot still reserves it.
+                    md:mt-3 cancels the span's -mt-3 from md up, where the wrapper's
+                    space-y-5 outranks it in production. */}
+                <div className={`order-3 md:order-none md:mt-3 ${COPY_SLOT}`}>
+                  <CopyState active={dealActive}>{null}</CopyState>
+                  <CopyState active={!dealActive}>{defaultTitle2()}</CopyState>
+                </div>
+
+                <div ref={subtitleRef} className={`order-4 md:order-none ${COPY_SLOT}`}>
+                  <CopyState active={dealActive}>
+                    {deal!.priceText && (
+                      <h2 className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
+                        {deal!.priceText}
+                      </h2>
+                    )}
+                  </CopyState>
+                  <CopyState active={!dealActive}>{defaultSubtitle()}</CopyState>
+                </div>
+
+                <div ref={descRef} className={`order-6 md:order-none ${COPY_SLOT}`}>
+                  <CopyState active={dealActive}>
+                    <p className="order-6 md:order-none text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
+                      {dc.text}
+                    </p>
+                  </CopyState>
+                  <CopyState active={!dealActive}>{defaultDesc()}</CopyState>
+                </div>
+
+                {/* Desktop CTA — both states in one cell, so the trust chips and
+                    the rating row below them never move. */}
+                <div className={`hidden md:grid mt-6 justify-items-center items-center`}>
+                  <CopyState active={dealActive}>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <Link href={ctaHref} className="bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-xl font-bold py-3.5 px-12 rounded-full shadow-xl transition-all hover:scale-105 hover:shadow-2xl min-w-[280px] inline-flex items-center justify-center gap-2">
+                        {ctaText}
+                      </Link>
+                      <a
+                        href={dealWhatsAppLink(deal!)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => trackWhatsAppClick('hero_deal')}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] text-white text-lg font-bold py-3.5 px-8 shadow-lg"
+                      >
+                        <MessageCircle className="w-5 h-5" aria-hidden="true" />
+                        וואטסאפ
+                      </a>
+                    </div>
+                  </CopyState>
+                  <CopyState active={!dealActive}>{designerCta()}</CopyState>
+                </div>
+              </>
             ) : (
-            <div ref={badgeRef} className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#fef9c3] rounded-full text-[#854d0e] text-sm font-medium border border-[#fde047] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
-              {c.hero_badge}
-              <Sparkles className="w-3.5 h-3.5" />
-            </div>
-            )}
+            <>
+            {defaultBadge(badgeRef)}
 
-            <RevealText
-              as="h1"
-              trigger="mount"
-              text={dc ? dc.title : c.hero_title1}
-              y={36}
-              stagger={0.09}
-              className="order-2 md:order-none text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
-            />
-            {!dc && <RevealText
-              as="span"
-              trigger="mount"
-              text={c.hero_title2}
-              y={36}
-              stagger={0.09}
-              delay={0.18}
-              className="order-3 md:order-none block -mt-3 text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#f59e0b] leading-[1.1] tracking-tight drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)]"
-            />}
+            {defaultTitle1()}
+            {defaultTitle2()}
 
-            {dc ? (
-              deal!.priceText && (
-                <h2 ref={subtitleRef} className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
-                  {deal!.priceText}
-                </h2>
-              )
-            ) : (
-            <h2 ref={subtitleRef} className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
-              {c.hero_subtitle}
-            </h2>
-            )}
+            {defaultSubtitle(subtitleRef)}
 
-            <p ref={descRef} className="order-6 md:order-none text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
-              {dc ? dc.text : <>
-              {c.hero_desc1}
-              <br className="hidden sm:block" />
-              {' '}{c.hero_desc2}
-              </>}
-            </p>
+            {defaultDesc(descRef)}
 
 
             {/* CTA — always visible, never JS-dependent */}
-            {deal ? (
-              <div className="hidden md:flex mt-6 flex-wrap items-center justify-center gap-3">
-                <Link href={ctaHref} className="bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-xl font-bold py-3.5 px-12 rounded-full shadow-xl transition-all hover:scale-105 hover:shadow-2xl min-w-[280px] inline-flex items-center justify-center gap-2">
-                  {ctaText}
-                </Link>
-                <a
-                  href={dealWhatsAppLink(deal)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackWhatsAppClick('hero_deal')}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] text-white text-lg font-bold py-3.5 px-8 shadow-lg"
-                >
-                  <MessageCircle className="w-5 h-5" aria-hidden="true" />
-                  וואטסאפ
-                </a>
-              </div>
-            ) : (
             <div className="hidden md:block mt-6">
-              <Link href="/designer">
-                <Button className="bg-[#fbbf24] hover:bg-[#f59e0b] text-white text-xl font-bold py-6 px-12 rounded-full shadow-xl transition-all hover:scale-105 hover:shadow-2xl min-w-[280px] inline-flex items-center justify-center gap-2">
-                  {c.hero_ctaText}
-                  <Sparkles className="w-5 h-5" />
-                </Button>
-              </Link>
+              {designerCta()}
             </div>
+            </>
             )}
 
             {/* Trust chips — premium, on-brand, always visible */}
@@ -209,11 +298,7 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
             <div ref={carouselRef} className="relative w-full will-change-transform">
               <div ref={tiltRef} className="w-full will-change-transform">
                 {deal ? (
-                  <div data-testid="hero-deal-image" className="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem] relative">
-                    <Link href={ctaHref} aria-label={dc!.title} className="relative block w-full md:w-[550px] aspect-square mx-auto overflow-hidden rounded-[2rem]">
-                      <DealPicture deal={deal} aspect="aspect-square" eager />
-                    </Link>
-                  </div>
+                  <HeroCarousel leadSlide={leadSlide} onChange={setSlide} />
                 ) : (
                 <HeroCarousel />
                 )}
@@ -231,22 +316,36 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
             )}
           </div>
 
-          {/* Mobile, hero deal: both actions directly under the image (desktop keeps its CTA row) */}
+          {/* Mobile, hero deal: the actions sit directly under the image on every
+              slide — the deal pair, or the designer button on a product slide
+              (desktop keeps its CTA row). */}
           {deal && (
-            <div data-testid="hero-deal-mobile-actions" className="order-5 md:hidden flex w-full flex-wrap gap-3 px-1">
-              <Link href={ctaHref} className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center rounded-full bg-[#fbbf24] hover:bg-[#f59e0b] px-3 text-center text-base font-bold leading-tight text-white shadow-lg">
-                {ctaText}
-              </Link>
-              <a
-                href={dealWhatsAppLink(deal)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackWhatsAppClick('hero_deal')}
-                className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] px-3 text-base font-bold text-white shadow-lg"
-              >
-                <MessageCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                וואטסאפ
-              </a>
+            <div data-testid="hero-deal-mobile-actions" className="order-5 md:hidden grid w-full px-1">
+              <CopyState active={dealActive}>
+                <div className="flex flex-wrap gap-3">
+                  <Link href={ctaHref} className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center rounded-full bg-[#fbbf24] hover:bg-[#f59e0b] px-3 text-center text-base font-bold leading-tight text-white shadow-lg">
+                    {ctaText}
+                  </Link>
+                  <a
+                    href={dealWhatsAppLink(deal)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackWhatsAppClick('hero_deal')}
+                    className="inline-flex min-h-[48px] flex-1 basis-0 whitespace-nowrap items-center justify-center gap-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] px-3 text-base font-bold text-white shadow-lg"
+                  >
+                    <MessageCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                    וואטסאפ
+                  </a>
+                </div>
+              </CopyState>
+              <CopyState active={!dealActive}>
+                <div className="flex">
+                  <Link href="/designer" className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#fbbf24] hover:bg-[#f59e0b] px-3 text-base font-bold text-white shadow-lg">
+                    {c.hero_ctaText}
+                    <Sparkles className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                  </Link>
+                </div>
+              </CopyState>
             </div>
           )}
 
@@ -256,5 +355,24 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
       {/* The river — two full-bleed product rows flowing below the hero copy */}
       <ProductRiver items={HOME_CAROUSEL_ITEMS} className="relative z-10 mt-10 md:mt-14" />
     </section>
+  )
+}
+
+/**
+ * One copy state inside a slot. Both states share the same grid cell, so the
+ * cell keeps the height of the taller one and a slide change moves nothing.
+ * The inactive one is an invisible aria-hidden sizer: `visibility` is part of
+ * the transition, so it stays painted while it fades out (400 ms, together with
+ * the carousel's 500 ms crossfade) and is unfocusable once hidden. Both states
+ * stay mounted, so the RevealText entrance plays once on mount and never again.
+ */
+function CopyState({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      aria-hidden={!active || undefined}
+      className={`col-start-1 row-start-1 transition-[opacity,visibility] duration-[400ms] ${active ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+    >
+      {children}
+    </div>
   )
 }
