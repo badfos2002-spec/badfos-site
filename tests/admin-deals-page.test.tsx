@@ -312,6 +312,18 @@ describe('admin deals — the square image slot', () => {
     })
   })
 
+  // Measured at 390×844 in the Playwright pass: the link was 64×20 px.
+  it('«הסר תמונה» is a ≥44px tap target in every slot', async () => {
+    const measure = async () => ({ width: 0, height: 0 })
+    render(<DealsManager measure={measure} />)
+    const rows = await screen.findAllByTestId('admin-deal-row')
+    fireEvent.click(within(rows[0]).getByRole('button', { name: /עריכה/ }))
+    for (const v of ['square', 'mobile', 'desktop']) {
+      const btn = within(screen.getByTestId(`deal-uploader-${v}`)).getByRole('button', { name: 'הסר תמונה' })
+      expect(btn.className).toContain('min-h-[44px]')
+    }
+  })
+
   it('the list thumbnail prefers the square image and falls back to the nearest one', async () => {
     render(<AdminDealsPage />)
     const rows = await screen.findAllByTestId('admin-deal-row')
