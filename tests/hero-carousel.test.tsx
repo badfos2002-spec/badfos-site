@@ -177,6 +177,25 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
     expect(imgs()[0]).toHaveAttribute('src', PRODUCT_1)
   })
 
+  it('the dots row passes taps through — the band over the image stays the slide link’s', () => {
+    const onChange = vi.fn()
+    render(<HeroCarousel leadSlide={DEAL_SLIDE} onChange={onChange} />)
+    const row = dots()[0].parentElement!
+    // The 44 px targets lie over the slide's link band, so the row must not
+    // take the taps that miss a dot (10 px before TICKET-025 Addendum B).
+    expect(row.className).toContain('pointer-events-none')
+    dots().forEach((b) => expect(b.className).toContain('pointer-events-auto'))
+    // nothing inside the row can shadow the link — the link is outside it
+    expect(row.querySelector('a')).toBeNull()
+    expect(imgs()[0].closest('a')).toHaveAttribute('href', '/deals/winter')
+    // a click on the row itself moves no slide and reports nothing. jsdom has
+    // no hit-testing, so the actual pass-through is measured in the browser
+    // pass with document.elementFromPoint over the band, outside a dot.
+    act(() => { row.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(onChange).not.toHaveBeenCalled()
+    expect(activeDot()).toBe(0)
+  })
+
   it('a dot click jumps to that slide and reports it', () => {
     const onChange = vi.fn()
     render(<HeroCarousel leadSlide={DEAL_SLIDE} onChange={onChange} />)

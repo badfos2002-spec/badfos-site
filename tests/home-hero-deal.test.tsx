@@ -222,6 +222,20 @@ describe('NewHeroSection with a hero deal', () => {
     expect(after[1]).toBe(before[1])
   })
 
+  it('the second title line keeps production’s desktop spacing', () => {
+    render(<NewHeroSection heroDeal={DEAL} />)
+    const title2 = screen.getByText('לבגדים מדהימים')
+    expect(title2.className).toContain('-mt-3') // production's markup, untouched
+    // In production `md:space-y-5` on the text wrapper outranks that -mt-3
+    // (0,3,0 vs 0,1,0) so the desktop gap is the full 20 px. Inside a slot the
+    // -mt-3 is nested and nothing overrides it, so the cancelling md:mt-3 must
+    // sit on the state cell — on the slot it would be outranked in turn.
+    const state = title2.parentElement!
+    expect(state.className).toContain('col-start-1')
+    expect(state.className).toContain('md:mt-3')
+    expect(state.parentElement!.className).not.toContain('md:mt-3')
+  })
+
   it('uses the hero overrides when set', () => {
     render(<NewHeroSection heroDeal={{ ...DEAL, hero: { enabled: true, title: 'כותרת הירו', text: 'טקסט הירו', ctaLabel: 'לפרטים' } }} />)
     expect(activeTitle()).toHaveTextContent('כותרת הירו')
