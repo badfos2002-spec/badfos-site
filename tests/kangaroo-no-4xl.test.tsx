@@ -142,9 +142,25 @@ describe('SEO price-token guard — a page can never quote a size that is not so
 
 describe('the sweatshirt SEO page copy', () => {
   const sweatshirt = () => getSeoPage('הדפסה-על-סווטשרטים')!
+  const sizeBenefit = () => sweatshirt().benefits.find(b => b.title.includes('מידה לכל אחד'))!
+  const sizeFaq = () => sweatshirt().faq.find(f => f.q === 'אילו מידות יש?')!
 
   it('says kangaroo goes up to 3XL in the metaDescription and in the intro', () => {
     expect(sweatshirt().metaDescription).toContain('קנגרו עד 3XL')
     expect(sweatshirt().heroText).toContain('קנגרו עד 3XL')
+  })
+
+  // Lead's ruling on TICKET-026 item 4: every claim about the range on THIS
+  // page must be true, so the size benefit's title and the sizes FAQ get the
+  // same qualifier.
+  it('says it in the size benefit title and in the sizes FAQ too', () => {
+    expect(sizeBenefit().title).toContain('קנגרו עד 3XL')
+    expect(sizeFaq().a).toContain('קנגרו עד 3XL')
+  })
+
+  it('leaves the surcharge sentences alone — 3XL/4XL still carry the surcharge on putter and zip', () => {
+    expect(sizeBenefit().text).toContain('מידות 3XL ו־4XL בתוספת {{size:3XL}} בלבד.')
+    expect(sizeFaq().a).toContain('מידות 3XL ו־4XL בתוספת קטנה ליחידה.')
+    expect(sizeFaq().aLive).toBe('התוספת כרגע: {{size:3XL}} ליחידה.')
   })
 })
