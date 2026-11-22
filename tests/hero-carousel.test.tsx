@@ -251,7 +251,7 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
 
   it('a parent re-render does not restart the dwell clock', () => {
     // Phase 2's hero re-renders on every slide change and on the 2 s settings
-    // fetch; a fresh leadSlide object or onChange identity must not reset the timer.
+    // fetch; a fresh leadSlides array or onChange identity must not reset the timer.
     const { rerender } = render(<HeroCarousel leadSlides={[DEAL_SLIDE]} onChange={() => {}} />)
     adv(7000)
     act(() => { rerender(<HeroCarousel leadSlides={[{ ...DEAL_SLIDE }]} onChange={() => {}} />) })
