@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Megaphone, Plus, Pencil, Trash2, ArrowUp, ArrowDown, Loader2, Save, X, ImagePlus, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -140,6 +140,8 @@ export default function DealsManager({ measure = measureImageSize }: { measure?:
   })
   /** Soft shape warnings per slot — measured in the browser, never blocking a save. */
   const [warnings, setWarnings] = useState<Record<Variant, string>>(NO_WARNINGS)
+  /** Per-slot measurement generation, so a late result can be dropped. */
+  const shapeRequest = useRef<Record<Variant, number>>({ square: 0, mobile: 0, desktop: 0 })
 
   const load = async () => {
     try {
@@ -156,13 +158,19 @@ export default function DealsManager({ measure = measureImageSize }: { measure?:
 
   const otherSlugs = (id?: string) => deals.filter((d) => d.id !== id).map((d) => d.slug)
 
-  /** Measure the slot's image and keep the warning for its shape (empty slot → no warning). */
+  /**
+   * Measure the slot's image and keep the warning for its shape (empty slot → no warning).
+   * A measurement is async: a result is dropped once a newer one for that slot started
+   * (the file was replaced or the slot was cleared meanwhile).
+   */
   const checkShape = async (variant: Variant, url: string) => {
+    const req = ++shapeRequest.current[variant]
     if (!url) {
       setWarnings((w) => ({ ...w, [variant]: '' }))
       return
     }
     const { width, height } = await measure(url)
+    if (shapeRequest.current[variant] !== req) return
     setWarnings((w) => ({ ...w, [variant]: imageShapeWarning(variant, width, height) ?? '' }))
   }
 
@@ -171,6 +179,7 @@ export default function DealsManager({ measure = measureImageSize }: { measure?:
     setSlugTouched(false)
     setErrors({})
     setWarnings(NO_WARNINGS)
+    VARIANTS.forEach((v) => checkShape(v, ''))
   }
   const openEdit = (d: Deal) => {
     setForm(formFromDeal(d))
