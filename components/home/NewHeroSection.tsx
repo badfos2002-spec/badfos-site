@@ -29,9 +29,15 @@ const D = {
 /** The deal slide rests longer than a product photo (TICKET-025 §B item 6). */
 const DEAL_DWELL_MS = 8000
 
-/** A copy slot: one grid cell holding both copy states, sized like today's flex
-    item (content width, centred) so the swap cannot move anything. */
+/** A copy cell: one grid cell holding both copy blocks, sized like today's flex
+    item (content width, centred) so the swap cannot move anything. TICKET-027:
+    the height is reserved per block, so `items-center` splits the leftover of
+    the shorter block half above / half below it — never between its lines. */
 const COPY_SLOT = 'grid justify-items-center items-center'
+
+/** One copy block inside a cell: today's no-deal rhythm, pixel for pixel —
+    16 px between lines on mobile, 20 px on desktop. */
+const COPY_BLOCK = 'flex flex-col items-center gap-4 md:gap-5'
 
 /** `heroDeal` (TICKET-022 Addendum A): the hero shows that deal; without it the hero is unchanged. */
 export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } = {}) {
@@ -63,6 +69,10 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
 
   // Bold mount entrance. CRITICAL: only badge/subtitle/paragraph + carousel are touched here.
   // The CTA button and rating row are NEVER animated and never start hidden.
+  // With a hero deal the three refs land on the deal state's own badge / price /
+  // text — the state that is painted at mount (SSR = slide 0) — so nothing is
+  // animated twice and nothing ends up permanently hidden. The h1s stay out of
+  // the array: RevealText owns the titles.
   useGSAP(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
@@ -120,7 +130,9 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
       className="order-2 md:order-none text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
     />
   )
-  const defaultTitle2 = () => (
+  // `extra` is empty for the no-deal hero, so its className stays byte-identical
+  // to production; the deal hero adds the md:mt-0 its copy block needs.
+  const defaultTitle2 = (extra = '') => (
     <RevealText
       as="span"
       trigger="mount"
@@ -128,7 +140,7 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
       y={36}
       stagger={0.09}
       delay={0.18}
-      className="order-3 md:order-none block -mt-3 text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#f59e0b] leading-[1.1] tracking-tight drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)]"
+      className={`order-3 md:order-none block -mt-3 text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#f59e0b] leading-[1.1] tracking-tight drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)] ${extra}`.trimEnd()}
     />
   )
   const defaultSubtitle = (ref?: React.Ref<HTMLHeadingElement>) => (
@@ -169,20 +181,22 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
           <div className="text-center w-full px-4 md:space-y-5 contents md:flex md:flex-col md:items-center hero-text-rounded min-h-[320px] md:min-h-[380px]">
             {dc ? (
               <>
-                {/* Each of today's copy elements keeps its own slot, so the mobile
-                    order-* ladder and the gaps stay exactly as they are. */}
-                <div ref={badgeRef} className={`order-1 md:order-none ${COPY_SLOT}`}>
-                  <CopyState active={dealActive}>
-                    <div data-testid="hero-deal-badge" className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#ffc32e] rounded-full text-[#3b2600] text-sm font-extrabold border border-[#fbbf24] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
+                {/* TICKET-027: two cells, not one per copy element. Each holds
+                    both states as a whole block, so the cell is as tall as the
+                    taller block and the shorter one is centred — the leftover
+                    sits above and below the block, never between its lines.
+                    The order-* classes of the shared elements are untouched:
+                    inside a block they sort ascending and change nothing, while
+                    the cells carry the mobile ladder (above the carousel, below
+                    it). md:order-none is load-bearing — order-* is not
+                    mobile-scoped, so without it the «below» cell would sort
+                    after the desktop CTA row, the chips and the rating. */}
+                <div data-testid="hero-copy-above" className={`order-1 md:order-none ${COPY_SLOT}`}>
+                  <CopyState active={dealActive} className={COPY_BLOCK}>
+                    <div ref={badgeRef} data-testid="hero-deal-badge" className="order-1 md:order-none inline-flex items-center gap-2 px-5 py-1.5 bg-[#ffc32e] rounded-full text-[#3b2600] text-sm font-extrabold border border-[#fbbf24] shadow-[0_2px_12px_-4px_rgba(245,158,11,0.4)]">
                       מבצע
                       <Tag className="w-3.5 h-3.5" />
                     </div>
-                  </CopyState>
-                  <CopyState active={!dealActive}>{defaultBadge()}</CopyState>
-                </div>
-
-                <div className={`order-2 md:order-none ${COPY_SLOT}`}>
-                  <CopyState active={dealActive}>
                     <RevealText
                       as="h1"
                       trigger="mount"
@@ -191,38 +205,32 @@ export default function NewHeroSection({ heroDeal }: { heroDeal?: Deal | null } 
                       stagger={0.09}
                       className="order-2 md:order-none text-[1.9rem] sm:text-[2.1rem] md:text-5xl lg:text-[4rem] font-extrabold text-[#1e293b] leading-[1.1] tracking-tight"
                     />
-                  </CopyState>
-                  <CopyState active={!dealActive}>{defaultTitle1()}</CopyState>
-                </div>
-
-                {/* The deal has no second title line — the slot still reserves it.
-                    In production the wrapper's md:space-y-5 outranks the span's
-                    -mt-3 (0,3,0 vs 0,1,0) so the desktop gap is the full 20 px;
-                    nested in a cell that -mt-3 would come back to life, so it is
-                    cancelled on the cell — the one place nothing outranks. */}
-                <div className={`order-3 md:order-none ${COPY_SLOT}`}>
-                  <CopyState active={dealActive}>{null}</CopyState>
-                  <CopyState active={!dealActive} className="md:mt-3">{defaultTitle2()}</CopyState>
-                </div>
-
-                <div ref={subtitleRef} className={`order-4 md:order-none ${COPY_SLOT}`}>
-                  <CopyState active={dealActive}>
                     {deal!.priceText && (
-                      <h2 className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
+                      <h2 ref={subtitleRef} className="order-4 md:order-none text-2xl md:text-3xl font-semibold text-[#f59e0b] tracking-wide">
                         {deal!.priceText}
                       </h2>
                     )}
                   </CopyState>
-                  <CopyState active={!dealActive}>{defaultSubtitle()}</CopyState>
+                  <CopyState active={!dealActive} className={COPY_BLOCK}>
+                    {defaultBadge()}
+                    {defaultTitle1()}
+                    {/* In production the wrapper's md:space-y-5 outranks the
+                        span's -mt-3 (0,3,0 vs 0,1,0) so the desktop gap is the
+                        full 20 px. Inside a block the -mt-3 comes back to life,
+                        so it is cancelled on the element itself — the one place
+                        nothing outranks it. */}
+                    {defaultTitle2('md:mt-0')}
+                    {defaultSubtitle()}
+                  </CopyState>
                 </div>
 
-                <div ref={descRef} className={`order-6 md:order-none ${COPY_SLOT}`}>
-                  <CopyState active={dealActive}>
-                    <p className="order-6 md:order-none text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
+                <div data-testid="hero-copy-below" className={`order-6 md:order-none ${COPY_SLOT}`}>
+                  <CopyState active={dealActive} className={COPY_BLOCK}>
+                    <p ref={descRef} className="order-6 md:order-none text-lg md:text-[22px] text-gray-500 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
                       {dc.text}
                     </p>
                   </CopyState>
-                  <CopyState active={!dealActive}>{defaultDesc()}</CopyState>
+                  <CopyState active={!dealActive} className={COPY_BLOCK}>{defaultDesc()}</CopyState>
                 </div>
 
                 {/* Desktop CTA — both states in one cell, so the trust chips and
