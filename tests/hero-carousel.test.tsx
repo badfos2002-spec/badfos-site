@@ -106,17 +106,27 @@ describe('HeroCarousel without props — today’s 5-photo hero', () => {
     expect(dotMark(dots()[0]).className).toContain('bg-white w-2.5 h-2.5 scale-110 shadow-sm')
     expect(dotMark(dots()[1]).className).toContain('bg-white/50 w-2.5 h-2.5')
     expect(dots()[3]).toHaveAttribute('aria-label', 'עבור לתמונה 4')
-    // the row stays centred at bottom-8 and only the targets take the taps, so
+    // the row stays horizontally centred and only the targets take the taps, so
     // the enlarged band does not swallow clicks meant for the slide's link
     const row = dots()[0].parentElement!
-    expect(row.className).toContain('absolute bottom-8 left-0 right-0 flex justify-center')
+    expect(row.className).toContain('absolute bottom-[15px] left-0 right-0 flex justify-center')
     expect(row.className).toContain('pointer-events-none')
     expect(dots()[0].className).toContain('pointer-events-auto')
   })
 
+  // The visible dot is unchanged — including where it sits. Production puts a
+  // 10 px dot in a bottom-8 row, so its centre is 37 px above the card's bottom
+  // edge; a 44 px target has to be offset by 15 px to keep that exact centre.
+  it('the visible dot centre stays 37 px above the card bottom, as in production', () => {
+    render(<HeroCarousel />)
+    const row = dots()[0].parentElement!
+    const offset = Number(row.className.match(/bottom-\[(\d+)px\]/)![1])
+    expect(offset + sizePx(dots()[0], 'h') / 2).toBe(32 + 10 / 2)
+  })
+
   it('markup is production’s, the dots’ tap area the only change (Addendum B)', () => {
     const { container } = render(<HeroCarousel />)
-    expect(container.innerHTML).toMatchInlineSnapshot(`"<div class="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem] relative" style="box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);"><div class="relative w-full md:w-[550px] aspect-square mx-auto overflow-hidden rounded-[2rem]"><div class="absolute inset-0"><img data-fill="true" data-priority="true" src="/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp" alt="בדפוס - הדפסת חולצות בעיצוב אישי" sizes="(max-width: 768px) 100vw, 550px" class="object-cover rounded-[1.5rem] absolute inset-0 transition-opacity duration-500 opacity-100"></div></div><div class="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none"><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 1"><span class="transition-all duration-300 rounded-full bg-white w-2.5 h-2.5 scale-110 shadow-sm"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 2"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 3"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 4"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 5"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button></div></div>"`)
+    expect(container.innerHTML).toMatchInlineSnapshot(`"<div class="w-full md:w-fit md:mx-auto bg-white p-3 rounded-[2.5rem] relative" style="box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);"><div class="relative w-full md:w-[550px] aspect-square mx-auto overflow-hidden rounded-[2rem]"><div class="absolute inset-0"><img data-fill="true" data-priority="true" src="/assets/17c316b38_a3e2972a-35b1-4c08-a15d-c61ebe4f68712.webp" alt="בדפוס - הדפסת חולצות בעיצוב אישי" sizes="(max-width: 768px) 100vw, 550px" class="object-cover rounded-[1.5rem] absolute inset-0 transition-opacity duration-500 opacity-100"></div></div><div class="absolute bottom-[15px] left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none"><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 1"><span class="transition-all duration-300 rounded-full bg-white w-2.5 h-2.5 scale-110 shadow-sm"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 2"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 3"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 4"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button><button class="w-11 h-11 flex items-center justify-center pointer-events-auto" aria-label="עבור לתמונה 5"><span class="transition-all duration-300 rounded-full bg-white/50 w-2.5 h-2.5"></span></button></div></div>"`)
   })
 })
 
