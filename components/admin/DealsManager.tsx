@@ -12,20 +12,41 @@ import {
   DEAL_LIMITS,
   ORDER_TARGETS,
   dealHeroCopy,
+  dealImage,
   dealPath,
   formatDealDate,
+  imageShapeWarning,
   isDealExpired,
   slugify,
   uniqueSlug,
   validateDealInput,
   type DealErrors,
+  type DealImageVariant,
 } from '@/lib/deals'
 import type { Deal } from '@/lib/types'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
-type Variant = 'mobile' | 'desktop'
+type Variant = DealImageVariant
+
+const VARIANTS: Variant[] = ['square', 'mobile', 'desktop']
+const FIELD: Record<Variant, 'imageSquare' | 'imageMobile' | 'imageDesktop'> = { square: 'imageSquare', mobile: 'imageMobile', desktop: 'imageDesktop' }
+const SLOT_NAME: Record<Variant, string> = { square: 'ריבועית', mobile: 'מובייל', desktop: 'דסקטופ' }
+const THUMB_BOX: Record<Variant, string> = { square: 'h-16 w-16', mobile: 'h-20 w-16', desktop: 'h-16 w-24' }
+const NO_WARNINGS: Record<Variant, string> = { square: '', mobile: '', desktop: '' }
+
+type ImageSize = { width: number; height: number }
+
+/** Natural size of an image URL — the one browser-only step, injectable so tests can stub it. */
+export function measureImageSize(url: string): Promise<ImageSize> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+    img.onerror = () => resolve({ width: 0, height: 0 })
+    img.src = url
+  })
+}
 
 type Form = {
   id?: string
@@ -36,6 +57,7 @@ type Form = {
   endsAt: string
   isActive: boolean
   sortOrder: number
+  imageSquare: string
   imageMobile: string
   imageDesktop: string
   orderOn: boolean
@@ -50,13 +72,13 @@ type Form = {
 
 const emptyForm = (sortOrder: number): Form => ({
   title: '', slug: '', shortText: '', priceText: '', endsAt: '', isActive: true, sortOrder,
-  imageMobile: '', imageDesktop: '', orderOn: false, orderHref: ORDER_TARGETS[0].href, orderLabel: '', couponCode: '',
+  imageSquare: '', imageMobile: '', imageDesktop: '', orderOn: false, orderHref: ORDER_TARGETS[0].href, orderLabel: '', couponCode: '',
   heroOn: false, heroTitle: '', heroText: '', heroCta: '',
 })
 
 const formFromDeal = (d: Deal): Form => ({
   id: d.id, title: d.title, slug: d.slug, shortText: d.shortText, priceText: d.priceText ?? '', endsAt: d.endsAt ?? '',
-  isActive: d.isActive, sortOrder: d.sortOrder, imageMobile: d.imageMobile ?? '', imageDesktop: d.imageDesktop ?? '',
+  isActive: d.isActive, sortOrder: d.sortOrder, imageSquare: d.imageSquare ?? '', imageMobile: d.imageMobile ?? '', imageDesktop: d.imageDesktop ?? '',
   orderOn: !!d.order, orderHref: d.order?.href ?? ORDER_TARGETS[0].href, orderLabel: d.order?.label ?? '', couponCode: d.order?.couponCode ?? '',
   heroOn: !!d.hero?.enabled, heroTitle: d.hero?.title ?? '', heroText: d.hero?.text ?? '', heroCta: d.hero?.ctaLabel ?? '',
 })
@@ -65,7 +87,7 @@ function payload(f: Form) {
   return {
     ...(f.id ? { id: f.id } : {}),
     title: f.title, slug: f.slug, shortText: f.shortText, priceText: f.priceText, endsAt: f.endsAt,
-    isActive: f.isActive, sortOrder: f.sortOrder, imageMobile: f.imageMobile, imageDesktop: f.imageDesktop,
+    isActive: f.isActive, sortOrder: f.sortOrder, imageSquare: f.imageSquare, imageMobile: f.imageMobile, imageDesktop: f.imageDesktop,
     ...(f.orderOn ? { order: { href: f.orderHref, label: f.orderLabel, couponCode: f.couponCode } } : {}),
     ...(f.heroOn || f.heroTitle || f.heroText || f.heroCta
       ? { hero: { enabled: f.heroOn, title: f.heroTitle, text: f.heroText, ctaLabel: f.heroCta } }
@@ -77,7 +99,7 @@ function previewDeal(f: Form): Deal {
   const t = (s: string) => s.trim() || undefined
   return {
     id: 'preview', slug: f.slug || 'preview', title: f.title.trim(), shortText: f.shortText.trim(),
-    priceText: t(f.priceText), imageMobile: t(f.imageMobile), imageDesktop: t(f.imageDesktop), endsAt: t(f.endsAt),
+    priceText: t(f.priceText), imageSquare: t(f.imageSquare), imageMobile: t(f.imageMobile), imageDesktop: t(f.imageDesktop), endsAt: t(f.endsAt),
     isActive: f.isActive, sortOrder: f.sortOrder,
     order: f.orderOn ? { href: f.orderHref, label: t(f.orderLabel), couponCode: t(f.couponCode.toUpperCase()) } : undefined,
     hero: { enabled: f.heroOn, title: t(f.heroTitle), text: t(f.heroText), ctaLabel: t(f.heroCta) },
@@ -103,7 +125,7 @@ async function api(body: Record<string, unknown>) {
 
 const Err = ({ msg }: { msg?: string }) => (msg ? <p className="mt-1 text-sm text-red-600">{msg}</p> : null)
 
-export default function DealsManager() {
+export default function DealsManager({ measure = measureImageSize }: { measure?: (url: string) => Promise<ImageSize> }) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<Form | null>(null)
@@ -112,9 +134,12 @@ export default function DealsManager() {
   const [saving, setSaving] = useState(false)
   const [busy, setBusy] = useState(false)
   const [upload, setUpload] = useState<Record<Variant, { busy: boolean; error: string }>>({
+    square: { busy: false, error: '' },
     mobile: { busy: false, error: '' },
     desktop: { busy: false, error: '' },
   })
+  /** Soft shape warnings per slot — measured in the browser, never blocking a save. */
+  const [warnings, setWarnings] = useState<Record<Variant, string>>(NO_WARNINGS)
 
   const load = async () => {
     try {
@@ -131,15 +156,28 @@ export default function DealsManager() {
 
   const otherSlugs = (id?: string) => deals.filter((d) => d.id !== id).map((d) => d.slug)
 
+  /** Measure the slot's image and keep the warning for its shape (empty slot → no warning). */
+  const checkShape = async (variant: Variant, url: string) => {
+    if (!url) {
+      setWarnings((w) => ({ ...w, [variant]: '' }))
+      return
+    }
+    const { width, height } = await measure(url)
+    setWarnings((w) => ({ ...w, [variant]: imageShapeWarning(variant, width, height) ?? '' }))
+  }
+
   const openNew = () => {
     setForm(emptyForm(deals.length))
     setSlugTouched(false)
     setErrors({})
+    setWarnings(NO_WARNINGS)
   }
   const openEdit = (d: Deal) => {
     setForm(formFromDeal(d))
     setSlugTouched(true)
     setErrors({})
+    setWarnings(NO_WARNINGS)
+    VARIANTS.forEach((v) => checkShape(v, d[FIELD[v]] ?? ''))
   }
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => (f ? { ...f, [key]: value } : f))
@@ -156,8 +194,9 @@ export default function DealsManager() {
     try {
       const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
       const url = await uploadSiteImage(file, 'deals', `${Date.now()}-${variant}.${ext}`)
-      set(variant === 'mobile' ? 'imageMobile' : 'imageDesktop', url)
+      set(FIELD[variant], url)
       setUpload((u) => ({ ...u, [variant]: { busy: false, error: '' } }))
+      await checkShape(variant, url)
     } catch (e) {
       console.error(e)
       fail('ההעלאה נכשלה, נסו שוב')
@@ -222,17 +261,17 @@ export default function DealsManager() {
   const label = 'block text-sm font-medium text-gray-700 mb-1'
 
   const uploader = (variant: Variant, title: string, hint: string) => {
-    const url = variant === 'mobile' ? form!.imageMobile : form!.imageDesktop
+    const url = form![FIELD[variant]]
     const id = `deal-image-${variant}`
     return (
-      <div className="rounded-xl border border-gray-200 p-3">
+      <div data-testid={`deal-uploader-${variant}`} className="rounded-xl border border-gray-200 p-3">
         <label htmlFor={id} className={label}>{title}</label>
         <p className="mb-2 text-xs text-gray-500">{hint}</p>
         <div className="flex items-center gap-3">
-          <div className={`flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 ${variant === 'mobile' ? 'h-20 w-16' : 'h-16 w-24'}`}>
+          <div className={`flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 ${THUMB_BOX[variant]}`}>
             {url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={url} alt={`תצוגה מקדימה — ${variant === 'mobile' ? 'מובייל' : 'דסקטופ'}`} className="h-full w-full object-cover" />
+              <img src={url} alt={`תצוגה מקדימה — ${SLOT_NAME[variant]}`} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center"><ImagePlus className="h-5 w-5 text-gray-400" aria-hidden="true" /></div>
             )}
@@ -246,14 +285,17 @@ export default function DealsManager() {
               className="block w-full text-sm file:ml-3 file:min-h-[44px] file:rounded-lg file:border-0 file:bg-yellow-100 file:px-3 file:font-medium file:text-yellow-800"
             />
             {url && (
-              <button type="button" onClick={() => set(variant === 'mobile' ? 'imageMobile' : 'imageDesktop', '')} className="self-start text-sm text-red-600 hover:underline">
+              <button type="button" onClick={() => { set(FIELD[variant], ''); checkShape(variant, '') }} className="self-start text-sm text-red-600 hover:underline">
                 הסר תמונה
               </button>
             )}
           </div>
         </div>
         {upload[variant].busy && <p className="mt-2 flex items-center gap-1 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />מעלה...</p>}
-        <Err msg={upload[variant].error || (variant === 'mobile' ? errors.imageMobile : errors.imageDesktop)} />
+        {warnings[variant] && (
+          <p data-testid={`deal-image-warning-${variant}`} className="mt-2 text-sm text-amber-700">{warnings[variant]}</p>
+        )}
+        <Err msg={upload[variant].error || errors[FIELD[variant]]} />
       </div>
     )
   }
@@ -331,8 +373,9 @@ export default function DealsManager() {
               </label>
             </div>
 
-            {uploader('mobile', 'תמונה למובייל', 'לאורך או ריבוע (מוצג 4:5, חיתוך מהמרכז). JPG/PNG/WebP עד 5MB.')}
-            {uploader('desktop', 'תמונה לדסקטופ', 'רחבה (מוצג 16:10, חיתוך מהמרכז). אם יש רק תמונה אחת — היא תוצג בכל המסכים.')}
+            {uploader('square', 'תמונה ריבועית', 'לקרוסלה בדף הבית. ריבוע 1:1, מומלץ 1080×1080. JPG/PNG/WebP עד 5MB.')}
+            {uploader('mobile', 'תמונה למובייל', 'לעמוד המבצע ולכרטיסים בטלפון. לאורך 4:5, מומלץ 1080×1350.')}
+            {uploader('desktop', 'תמונה לדסקטופ', 'לעמוד המבצע ולכרטיסים במחשב. רחבה 16:10, מומלץ 1600×1000. אם חסרה תמונה למשבצת — תוצג הקרובה ביותר מהאחרות.')}
 
             <div className="space-y-3 rounded-xl border border-gray-200 p-3">
               <label htmlFor="deal-order-on" className="flex min-h-[44px] items-center gap-3">
@@ -427,7 +470,7 @@ export default function DealsManager() {
                   <p className="mb-2 text-xs font-medium text-gray-500">הירו בדף הבית</p>
                   <div className="flex flex-col items-center gap-4 sm:flex-row-reverse">
                     <div className="w-40 flex-shrink-0 overflow-hidden rounded-2xl bg-white p-1.5">
-                      <div className="overflow-hidden rounded-xl"><DealPicture deal={pd} aspect="aspect-square" /></div>
+                      <div className="overflow-hidden rounded-xl"><DealPicture deal={pd} variant="square" /></div>
                     </div>
                     <div className="flex-1 text-center">
                       <span className="inline-block rounded-full bg-[#ffc32e] px-3 py-0.5 text-xs font-extrabold text-[#3b2600]">מבצע</span>
@@ -455,7 +498,7 @@ export default function DealsManager() {
         <ul className="space-y-3">
           {deals.map((d, i) => {
             const s = status(d)
-            const thumb = d.imageMobile || d.imageDesktop
+            const thumb = dealImage(d, 'square')
             return (
               <li key={d.id} data-testid="admin-deal-row" className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-3 shadow sm:flex-nowrap sm:p-4">
                 <div className="h-16 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
