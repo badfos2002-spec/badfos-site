@@ -160,18 +160,34 @@ describe('admin deals — form', () => {
   })
 })
 
-describe('admin deals — hero (Addendum A)', () => {
+describe('admin deals — hero (TICKET-029)', () => {
   it('the hero toggle + overrides are sent with save, and the preview shows the hero variant', async () => {
     await openNew()
     fireEvent.change(screen.getByLabelText('כותרת'), { target: { value: 'מבצע הירו' } })
     fireEvent.change(screen.getByLabelText('טקסט קצר'), { target: { value: 'טקסט' } })
-    fireEvent.click(screen.getByLabelText('הצג את המבצע בהירו של דף הבית'))
     fireEvent.change(screen.getByLabelText(/כותרת בהירו/), { target: { value: 'כותרת גדולה' } })
     fireEvent.change(screen.getByLabelText(/טקסט בהירו/), { target: { value: 'טקסט הירו' } })
     expect(within(screen.getByTestId('hero-preview')).getByText('כותרת גדולה')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'שמור' }))
     await waitFor(() => expect(calls.some((c) => c.action === 'save')).toBe(true))
     expect(calls.find((c) => c.action === 'save')!.deal.hero).toEqual({ enabled: true, title: 'כותרת גדולה', text: 'טקסט הירו', ctaLabel: '' })
+  })
+
+  it('a new deal is marked for the hero by default, with the new hint', async () => {
+    await openNew()
+    expect(screen.getByLabelText('הצג את המבצע בהירו של דף הבית')).toBeChecked()
+    expect(
+      screen.getByText('כל מבצע פעיל שמסומן מופיע בקרוסלת ההירו, לפי סדר התצוגה; מבצע לא פעיל או שפג תוקפו לא יוצג.')
+    ).toBeInTheDocument()
+  })
+
+  it('editing a deal whose hero is off keeps the checkbox unchecked', async () => {
+    DEALS[1].hero = { enabled: false }
+    render(<AdminDealsPage />)
+    const rows = await screen.findAllByTestId('admin-deal-row')
+    fireEvent.click(within(rows[1]).getByRole('button', { name: /עריכה/ }))
+    expect(screen.getByLabelText('הצג את המבצע בהירו של דף הבית')).not.toBeChecked()
+    delete DEALS[1].hero
   })
 
   it('marks the hero deal in the list', async () => {
@@ -181,6 +197,17 @@ describe('admin deals — hero (Addendum A)', () => {
     expect(within(rows[0]).getByText('בהירו')).toBeInTheDocument()
     expect(within(rows[1]).queryByText('בהירו')).not.toBeInTheDocument()
     delete DEALS[0].hero
+  })
+
+  it('marks every deal in the hero — two rows can both carry the chip', async () => {
+    DEALS[0].hero = { enabled: true }
+    DEALS[1].hero = { enabled: true }
+    render(<AdminDealsPage />)
+    const rows = await screen.findAllByTestId('admin-deal-row')
+    expect(within(rows[0]).getByText('בהירו')).toBeInTheDocument()
+    expect(within(rows[1]).getByText('בהירו')).toBeInTheDocument()
+    delete DEALS[0].hero
+    delete DEALS[1].hero
   })
 })
 

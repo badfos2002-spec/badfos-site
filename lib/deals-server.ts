@@ -29,7 +29,7 @@ export async function getLiveDealBySlug(slug: string, now: Date = new Date()): P
   return (await getLiveDeals(now)).find((d) => d.slug === slug) ?? null
 }
 
-/** The deal shown in the home hero: first live deal (by sort order) with hero.enabled, or null. */
-export async function getHeroDeal(now: Date = new Date()): Promise<Deal | null> {
-  return (await getLiveDeals(now)).find((d) => d.hero?.enabled) ?? null
+/** Every deal in the home hero carousel: all live deals with hero.enabled, in sort order ([] when none). */
+export async function getHeroDeals(now: Date = new Date()): Promise<Deal[]> {
+  return (await getLiveDeals(now)).filter((d) => d.hero?.enabled)
 }
