@@ -62,17 +62,10 @@ export async function POST(request: NextRequest) {
       const now = new Date().toISOString()
       const doc = { ...input, slug, createdAt: existing?.createdAt || now, updatedAt: now }
       const ref = id ? col.doc(id) : col.doc()
-      // One atomic batch: the deal itself (set, not merge — optional fields cleared in the
-      // form must disappear) and, when it takes the home hero, hero off on every other
-      // deal. A failure can never leave two hero deals.
-      const batch = adminDb.batch()
-      batch.set(ref, doc)
-      if (doc.hero?.enabled) {
-        all
-          .filter((d) => d.id !== ref.id && d.hero?.enabled)
-          .forEach((d) => batch.update(col.doc(d.id), { hero: { ...d.hero, enabled: false }, updatedAt: now }))
-      }
-      await batch.commit()
+      // Exactly one document: set, not merge — optional fields cleared in the form must
+      // disappear. hero.enabled is a plain per-deal flag (TICKET-029): a save never
+      // touches another deal.
+      await ref.set(doc)
       return NextResponse.json({ deal: toDeal(ref.id, doc) })
     }
 
