@@ -73,7 +73,7 @@ type Form = {
 const emptyForm = (sortOrder: number): Form => ({
   title: '', slug: '', shortText: '', priceText: '', endsAt: '', isActive: true, sortOrder,
   imageSquare: '', imageMobile: '', imageDesktop: '', orderOn: false, orderHref: ORDER_TARGETS[0].href, orderLabel: '', couponCode: '',
-  heroOn: false, heroTitle: '', heroText: '', heroCta: '',
+  heroOn: true, heroTitle: '', heroText: '', heroCta: '',
 })
 
 const formFromDeal = (d: Deal): Form => ({
@@ -427,7 +427,7 @@ export default function DealsManager({ measure = measureImageSize }: { measure?:
                 <input id="deal-hero-on" type="checkbox" checked={form.heroOn} onChange={(e) => set('heroOn', e.target.checked)} className="h-5 w-5 accent-yellow-500" />
                 <span className="text-sm font-medium text-gray-700">הצג את המבצע בהירו של דף הבית</span>
               </label>
-              <p className="text-xs text-gray-500">רק מבצע אחד בכל פעם — שמירה עם הסימון מורידה אותו מהמבצע שהיה בהירו. מבצע לא פעיל או שפג תוקפו לא יוצג.</p>
+              <p className="text-xs text-gray-500">כל מבצע פעיל שמסומן מופיע בקרוסלת ההירו, לפי סדר התצוגה; מבצע לא פעיל או שפג תוקפו לא יוצג.</p>
               {form.heroOn && (
                 <div className="space-y-3">
                   <div>
