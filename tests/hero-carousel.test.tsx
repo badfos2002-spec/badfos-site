@@ -7,6 +7,12 @@ import { render, screen, cleanup, act } from '@testing-library/react'
 // hero copy can follow the slide. With no props the output must stay
 // byte-identical to production — the snapshot here records that markup; the
 // dots' 44×44 tap area (TICKET-025 Addendum B) is the one sanctioned change.
+//
+// TICKET-029: one lead slide becomes `leadSlides: HeroSlide[]` — every live deal
+// marked «בהירו» opens the rotation, consecutively and in the admin's sort order,
+// then the 5 product photos. Each lead slide carries its own alt/link/image;
+// only index 0 is the eager fetchPriority="high" LCP candidate, every later deal
+// slide is a plain lazy <img>. Empty or missing → today's 5-photo hero, byte for byte.
 
 // next/image and next/link are stubbed so jsdom renders a plain <img>/<a>
 // without the App Router context Next 14 expects. The Next-only props land as
@@ -36,6 +42,15 @@ const DEAL_SLIDE: HeroSlide = {
   image: 'https://firebasestorage.googleapis.com/v0/b/badfos-28b67.firebasestorage.app/o/site-images%2Fdeals%2F1-square.jpg',
   alt: 'מבצע חורף',
   link: '/deals/winter',
+  dwellMs: 8000,
+}
+
+/** TICKET-029: a second deal marked «בהירו» — its own graphic, alt and link. */
+const DEAL_SLIDE_B: HeroSlide = {
+  id: 'deal-group',
+  image: 'https://firebasestorage.googleapis.com/v0/b/badfos-28b67.firebasestorage.app/o/site-images%2Fdeals%2F2-square.jpg',
+  alt: 'מבצע קבוצות',
+  link: '/deals/group',
   dwellMs: 8000,
 }
 
@@ -132,7 +147,7 @@ describe('HeroCarousel without props — today’s 5-photo hero', () => {
 
 describe('HeroCarousel with a lead slide — the hero deal joins the rotation', () => {
   it('puts the deal first: a plain eager <img> linking to the deal, one dot per slide', () => {
-    render(<HeroCarousel leadSlide={DEAL_SLIDE} />)
+    render(<HeroCarousel leadSlides={[DEAL_SLIDE]} />)
     expect(dots()).toHaveLength(6)
     expect(activeDot()).toBe(0)
     const img = imgs()
@@ -149,7 +164,7 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
   })
 
   it('honours the per-slide dwell: 8000 ms for the deal, 5000 ms for the products', () => {
-    render(<HeroCarousel leadSlide={DEAL_SLIDE} />)
+    render(<HeroCarousel leadSlides={[DEAL_SLIDE]} />)
     adv(5000) // a product dwell must NOT move the deal slide
     expect(activeDot()).toBe(0)
     expect(imgs()[0]).toHaveAttribute('src', DEAL_SLIDE.image!)
@@ -163,7 +178,7 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
 
   it('reports the active slide through onChange — at the fade start, never on mount', () => {
     const onChange = vi.fn()
-    render(<HeroCarousel leadSlide={DEAL_SLIDE} onChange={onChange} />)
+    render(<HeroCarousel leadSlides={[DEAL_SLIDE]} onChange={onChange} />)
     expect(onChange).not.toHaveBeenCalled()
     adv(5000)
     expect(onChange).not.toHaveBeenCalled()
@@ -178,7 +193,7 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
   })
 
   it('keeps the slides keyed: the previous <img> leaves the DOM instead of changing src', () => {
-    render(<HeroCarousel leadSlide={DEAL_SLIDE} />)
+    render(<HeroCarousel leadSlides={[DEAL_SLIDE]} />)
     const dealImg = imgs()[0]
     adv(8000 + 500)
     expect(document.body.contains(dealImg)).toBe(false)
@@ -189,7 +204,7 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
 
   it('the dots row passes taps through — the band over the image stays the slide link’s', () => {
     const onChange = vi.fn()
-    render(<HeroCarousel leadSlide={DEAL_SLIDE} onChange={onChange} />)
+    render(<HeroCarousel leadSlides={[DEAL_SLIDE]} onChange={onChange} />)
     const row = dots()[0].parentElement!
     // The 44 px targets lie over the slide's link band, so the row must not
     // take the taps that miss a dot (10 px before TICKET-025 Addendum B).
@@ -208,7 +223,7 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
 
   it('a dot click jumps to that slide and reports it', () => {
     const onChange = vi.fn()
-    render(<HeroCarousel leadSlide={DEAL_SLIDE} onChange={onChange} />)
+    render(<HeroCarousel leadSlides={[DEAL_SLIDE]} onChange={onChange} />)
     act(() => { dots()[3].click() })
     expect(onChange).toHaveBeenCalledWith(3)
     adv(500)
@@ -218,7 +233,7 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
   it('prefers-reduced-motion: no auto-advance, the hero rests on the deal slide', () => {
     reducedMotion = true
     const onChange = vi.fn()
-    render(<HeroCarousel leadSlide={DEAL_SLIDE} onChange={onChange} />)
+    render(<HeroCarousel leadSlides={[DEAL_SLIDE]} onChange={onChange} />)
     adv(30000)
     expect(activeDot()).toBe(0)
     expect(imgs()[0]).toHaveAttribute('src', DEAL_SLIDE.image!)
@@ -226,7 +241,7 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
   })
 
   it('a deal with no image at all: the deal placeholder box, no <img> with an empty src', () => {
-    render(<HeroCarousel leadSlide={{ ...DEAL_SLIDE, image: undefined }} />)
+    render(<HeroCarousel leadSlides={[{ ...DEAL_SLIDE, image: undefined }]} />)
     expect(imgs()).toHaveLength(0)
     const placeholder = document.querySelector('.from-yellow-100')
     expect(placeholder).toBeTruthy()
@@ -237,10 +252,115 @@ describe('HeroCarousel with a lead slide — the hero deal joins the rotation', 
   it('a parent re-render does not restart the dwell clock', () => {
     // Phase 2's hero re-renders on every slide change and on the 2 s settings
     // fetch; a fresh leadSlide object or onChange identity must not reset the timer.
-    const { rerender } = render(<HeroCarousel leadSlide={DEAL_SLIDE} onChange={() => {}} />)
+    const { rerender } = render(<HeroCarousel leadSlides={[DEAL_SLIDE]} onChange={() => {}} />)
     adv(7000)
-    act(() => { rerender(<HeroCarousel leadSlide={{ ...DEAL_SLIDE }} onChange={() => {}} />) })
+    act(() => { rerender(<HeroCarousel leadSlides={[{ ...DEAL_SLIDE }]} onChange={() => {}} />) })
     adv(1000 + 500)
     expect(activeDot()).toBe(1)
+  })
+})
+
+// TICKET-029 (user: «שים לב אם יש שני מבצעים אני רוצה שגם הם יופיעו ביחד
+// בקרוסלת ההירו»): the deal slides open the rotation consecutively, in the
+// admin's sort order, and only then come the 5 product photos.
+describe('HeroCarousel with two lead slides — both deals join the rotation', () => {
+  const BOTH = [DEAL_SLIDE, DEAL_SLIDE_B]
+
+  it('both deals open the rotation in order, one dot per slide', () => {
+    render(<HeroCarousel leadSlides={BOTH} />)
+    expect(dots()).toHaveLength(7) // 2 deals + the 5 product photos
+    expect(activeDot()).toBe(0)
+    expect(dots()[6]).toHaveAttribute('aria-label', 'עבור לתמונה 7')
+    const img = imgs()
+    expect(img).toHaveLength(1)
+    expect(img[0]).toHaveAttribute('src', DEAL_SLIDE.image!)
+    expect(img[0]).toHaveAttribute('alt', 'מבצע חורף')
+    expect(img[0].closest('a')).toHaveAttribute('href', '/deals/winter')
+  })
+
+  // The LCP rule: index 0 is the one candidate the browser must fetch first.
+  // Every later deal slide is still a plain <img> (not next/image) but lazy and
+  // without fetchPriority, so it never competes with the painted hero image.
+  it('slide 0 is eager/high; slide 1 is a plain lazy <img> with no fetchPriority, its own alt and link', () => {
+    render(<HeroCarousel leadSlides={BOTH} />)
+    const first = imgs()[0]
+    expect(first).toHaveAttribute('loading', 'eager')
+    expect(first).toHaveAttribute('fetchpriority', 'high')
+    expect(first).not.toHaveAttribute('data-fill') // a plain <img>, NOT next/image
+    adv(8000)
+    adv(500)
+    const second = imgs()[0]
+    expect(second).toHaveAttribute('src', DEAL_SLIDE_B.image!)
+    expect(second).toHaveAttribute('alt', 'מבצע קבוצות')
+    expect(second.closest('a')).toHaveAttribute('href', '/deals/group')
+    expect(second).toHaveAttribute('loading', 'lazy')
+    expect(second).not.toHaveAttribute('fetchpriority')
+    expect(second).not.toHaveAttribute('data-fill') // still a plain <img>, NOT next/image
+  })
+
+  it('every deal rests its own 8000 ms, then the products keep their 5000 ms', () => {
+    render(<HeroCarousel leadSlides={BOTH} />)
+    adv(5000) // a product dwell must NOT move deal A
+    expect(activeDot()).toBe(0)
+    adv(3000 + 500) // deal A's own 8000 ms + the crossfade
+    expect(activeDot()).toBe(1)
+    expect(imgs()[0]).toHaveAttribute('src', DEAL_SLIDE_B.image!)
+    adv(5000) // deal B rests 8000 ms too, not 5000
+    expect(activeDot()).toBe(1)
+    adv(3000 + 500)
+    expect(activeDot()).toBe(2)
+    expect(imgs()[0]).toHaveAttribute('src', PRODUCT_1)
+    adv(5000 + 500) // from there the products keep their 5000 ms
+    expect(activeDot()).toBe(3)
+    expect(imgs()[0]).toHaveAttribute('src', PRODUCT_2)
+  })
+
+  it('onChange walks the slides 0 → 1 → 2 — one call per step, never on mount', () => {
+    const onChange = vi.fn()
+    render(<HeroCarousel leadSlides={BOTH} onChange={onChange} />)
+    expect(activeDot()).toBe(0) // mount rests on deal A and reports nothing
+    expect(onChange).not.toHaveBeenCalled()
+    adv(5000) // a product dwell is not deal A's — nothing has moved yet
+    expect(onChange).not.toHaveBeenCalled()
+    adv(3000) // deal A's own 8000 ms: the fade to deal B starts here
+    expect(onChange.mock.calls).toEqual([[1]])
+    adv(500)
+    expect(imgs()[0]).toHaveAttribute('src', DEAL_SLIDE_B.image!)
+    adv(8000) // deal B's own 8000 ms → the first product photo
+    expect(onChange.mock.calls).toEqual([[1], [2]])
+    adv(500)
+    expect(imgs()[0]).toHaveAttribute('src', PRODUCT_1)
+  })
+
+  it('a second deal with no image keeps its own placeholder box and its own link', () => {
+    render(<HeroCarousel leadSlides={[DEAL_SLIDE, { ...DEAL_SLIDE_B, image: undefined }]} />)
+    expect(imgs()[0]).toHaveAttribute('src', DEAL_SLIDE.image!)
+    adv(8000)
+    adv(500)
+    expect(imgs()).toHaveLength(0)
+    const placeholder = document.querySelector('.from-yellow-100')
+    expect(placeholder).toBeTruthy()
+    expect(placeholder!.querySelector('svg')).toBeTruthy() // the Tag icon
+    expect(placeholder!.closest('a')).toHaveAttribute('href', '/deals/group')
+  })
+
+  it('prefers-reduced-motion: no auto-advance, the hero rests on the first deal', () => {
+    reducedMotion = true
+    const onChange = vi.fn()
+    render(<HeroCarousel leadSlides={BOTH} onChange={onChange} />)
+    adv(30000)
+    expect(activeDot()).toBe(0)
+    expect(imgs()[0]).toHaveAttribute('src', DEAL_SLIDE.image!)
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  // No hero deal at all reaches the carousel as an empty array, so it must be
+  // the same component as today's — not merely «close enough».
+  it('leadSlides={[]} renders exactly the same markup as no props at all', () => {
+    const empty = render(<HeroCarousel leadSlides={[]} />).container.innerHTML
+    cleanup()
+    const none = render(<HeroCarousel />).container.innerHTML
+    expect(empty).toBe(none)
+    expect(dots()).toHaveLength(5)
   })
 })
