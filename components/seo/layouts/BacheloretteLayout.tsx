@@ -128,7 +128,7 @@ export default function BacheloretteLayout({ page, waUrl }: SeoLayoutProps) {
           <IdeaStickers
             title={page.ideas.title}
             emoji={page.accent?.emoji}
-            subtitle="קחו השראה — כל כיתוב כזה מעצבים אונליין תוך דקות, עם תצוגה מקדימה חיה."
+            subtitle="קחו השראה — כל כיתוב כזה מעצבים אונליין בקלות, עם תצוגה מקדימה חיה."
             items={page.ideas.items}
             stickerClasses={STICKER_CLASSES}
           />
@@ -240,7 +240,7 @@ export default function BacheloretteLayout({ page, waUrl }: SeoLayoutProps) {
         <CtaBanner
           bgClass="bg-gradient-to-br from-pink-500 to-rose-600"
           headline="מוכנות להתחיל לעצב?"
-          sub="מעצבות יחד אונליין, רואות תצוגה מקדימה חיה ומקבלות מהר — גם כשנזכרתן ברגע האחרון."
+          sub="מעצבות יחד אונליין, רואות תצוגה מקדימה חיה ומקבלות הצעה בוואטסאפ — גם כשנזכרתן ברגע האחרון."
         >
           <CtaButtons page={page} waUrl={waUrl} />
         </CtaBanner>
