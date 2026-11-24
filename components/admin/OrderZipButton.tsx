@@ -56,7 +56,7 @@ const DOWNLOAD_FAILED_ALERT = 'ההורדה נכשלה, נסה/י שוב בעו�
 const DONE_MS = 4000
 
 type FileOutcome =
-  | { kind: 'ok'; res: Response }
+  | { kind: 'ok'; res: Response; blob: Blob; crc: number }
   | { kind: 'missing' }
   | { kind: 'swept'; alert: string }
   | { kind: 'failed' }
@@ -94,6 +94,8 @@ export default function OrderZipButton({
   const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** reactStrictMode מפעיל אפקטים פעמיים בפיתוח — ההורדות ירוצו פעם אחת */
   const runningRef = useRef(false)
+  /** התוכנית כפי שנקבעה ברגע המעבר להורדות */
+  const planRef = useRef<ReturnType<typeof planZipEntries>>([])
 
   const keys = designKeys(order)
   const settled = settledKeys(order, claimedRef.current, preUpscalesRef.current).size
@@ -110,6 +112,16 @@ export default function OrderZipButton({
     finishJob()
   }
 
+  /**
+   * המעבר להורדות: התוכנית נקבעת כאן — ברגע הזה, מה-props העדכניים — ולכן
+   * גם המונה יודע מיד כמה קבצים יהיו, ולא מציג 0/0 עד הקובץ הראשון.
+   */
+  const startDownloading = () => {
+    planRef.current = planZipEntries(orderRef.current)
+    setProgress({ i: 0, n: planRef.current.length })
+    setPhase('downloading')
+  }
+
   const cancel = () => {
     abortRef.current?.abort()
     backToIdle()
@@ -118,7 +130,7 @@ export default function OrderZipButton({
   // ── ההמתנה: רגע שכל ההגדלות נרגעו — יורדים לקבצים. בלי טיימר ובלי תקרה.
   useEffect(() => {
     if (phase !== 'waiting') return
-    if (pendingCount(order, claimedRef.current, preUpscalesRef.current) === 0) setPhase('downloading')
+    if (pendingCount(order, claimedRef.current, preUpscalesRef.current) === 0) startDownloading()
   }, [phase, order, order.upscales])
 
   // ── העמוד ביטל את הג׳וב מבחוץ (zipOrderId התאפס) — עוצרים.
@@ -152,6 +164,13 @@ export default function OrderZipButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
+  /**
+   * ניסיון אחד להביא קובץ: הבקשה *וגם* קריאת הגוף. נפילה באמצע הזרימה היא
+   * «כשל אחר» בדיוק כמו נפילה של הבקשה, ולכן שתיהן חולקות את אותו תקציב של
+   * ניסיון חוזר אחד — ובקובץ של מאות מגה-בייט דווקא הנפילה באמצע שכיחה.
+   * כל המקטעים, ה-crc וה-Blob הם מקומיים לניסיון, ולכן ניסיון שנפל לא
+   * משאיר אחריו כלום.
+   */
   async function requestFile(
     itemIdx: number,
     area: string,
@@ -163,7 +182,10 @@ export default function OrderZipButton({
         `/api/admin/download-design?orderId=${encodeURIComponent(order.id)}&itemIdx=${itemIdx}&area=${encodeURIComponent(area)}&variant=${variant}`,
         { signal },
       )
-      if (res.ok) return { kind: 'ok', res }
+      if (res.ok) {
+        const { blob, crc } = await readFile(res)
+        return { kind: 'ok', res, blob, crc }
+      }
       const data = await res.json().catch(() => ({}))
       if (data?.error === 'file_swept_storage') return { kind: 'swept', alert: SWEPT_STORAGE_ALERT }
       if (data?.error === 'file_swept') return { kind: 'swept', alert: SWEPT_ALERT }
@@ -204,7 +226,7 @@ export default function OrderZipButton({
     const signal = abortRef.current?.signal
     if (!signal) return
     const current = orderRef.current
-    const plan = planZipEntries(current)
+    const plan = planRef.current
     const manual = isManualOrder(current)
     const taken = new Set<string>()
     const entries: ZipEntryInput[] = []
@@ -217,8 +239,11 @@ export default function OrderZipButton({
         setProgress({ i: i + 1, n: plan.length })
 
         let outcome = await requestFile(itemIdx, area, variant, signal)
-        // כל כשל אחר — ניסיון חוזר אחד מיד. ביטול הוא לא כשל.
-        if (outcome.kind === 'failed') outcome = await requestFile(itemIdx, area, variant, signal)
+        // כל כשל אחר — ניסיון חוזר אחד מיד, ורק אחד: הבקשה והגוף חולקים את
+        // אותו תקציב. ביטול הוא לא כשל, וגם ביטול שנחת בינתיים עוצר כאן.
+        if (outcome.kind === 'failed' && !signal.aborted) {
+          outcome = await requestFile(itemIdx, area, variant, signal)
+        }
         if (signal.aborted || outcome.kind === 'aborted') return
         if (outcome.kind === 'swept') {
           alert(outcome.alert)
@@ -235,8 +260,7 @@ export default function OrderZipButton({
           continue
         }
 
-        const { blob, crc } = await readFile(outcome.res)
-        if (signal.aborted) return
+        const { blob, crc } = outcome
         const base =
           filenameFromContentDisposition(outcome.res.headers.get('content-disposition')) ??
           buildDesignDownloadNames(
@@ -258,7 +282,12 @@ export default function OrderZipButton({
         if (variant === 'source' && !manual) fellBackToSource.push(designLabel(current, itemIdx, area))
       }
 
+      // בלי הוויתור הזה שני עדכוני המצב (packing ואז done) נופלים באותה
+      // משימה, React מאחד אותם לרנדר אחד, ו«🗜️ אורז זיפ…» לא מגיע ל-DOM
+      // בכלל — כלומר «ביטול» בזמן האריזה (Q3b) לא היה קיים.
       setPhase('packing')
+      await new Promise((r) => setTimeout(r, 0))
+      if (signal.aborted) return
       const zip = buildStoreZip(entries)
       if (signal.aborted) return
 
@@ -306,7 +335,7 @@ export default function OrderZipButton({
 
     // הזמנה ידנית לא עוברת הגדלה בכלל — ישר לקבצים
     if (isManualOrder(order)) {
-      setPhase('downloading')
+      startDownloading()
       return
     }
 
@@ -331,7 +360,7 @@ export default function OrderZipButton({
         }
         // ההזמנה לא שולמה — אין הגדלות ואין למה לחכות, אורזים מקורות
         if (data?.error === 'order_not_paid') {
-          setPhase('downloading')
+          startDownloading()
           return
         }
       } else {
