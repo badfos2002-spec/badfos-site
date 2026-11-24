@@ -105,12 +105,18 @@ function streamedRes(filename: string, chunks: Uint8Array<ArrayBuffer>[]): Respo
   })
 }
 
-/** תשובה תקינה (res.ok) שהגוף שלה נקטע באמצע — נפילת רשת בזמן הורדה */
+/**
+ * תשובה תקינה (res.ok) שהגוף שלה נקטע באמצע — נפילת רשת בזמן הורדה.
+ * ה-pull הוא העיקר: enqueue ואז error מיידי *מוחק* את התור לפי התקן, והקורא
+ * לא מקבל בתים בכלל. כאן המקטע הראשון באמת נמסר ורק הקריאה הבאה נדחית, וזה
+ * מה שמאפשר למקטע חלקי «לדלוף» אל ניסיון חוזר שלא מאפס את עצמו.
+ */
 function brokenStreamRes(filename: string, head: Uint8Array<ArrayBuffer>): Response {
+  let pulls = 0
   const body = new ReadableStream({
-    start(c) {
-      c.enqueue(head)
-      c.error(new Error('network glitch mid-stream'))
+    pull(c) {
+      if (pulls++ === 0) c.enqueue(head)
+      else c.error(new Error('network glitch mid-stream'))
     },
   })
   return new Response(body, {
@@ -189,13 +195,22 @@ async function bytesOf(blob: Blob): Promise<Uint8Array> {
 /** כל תווית שהכפתור הציג בפועל, לפי הסדר — כולל כאלה שלא שורדות רנדר אחד */
 function recordLabels() {
   const history: string[] = []
-  const push = () => {
-    const t = document.body.querySelector('button')?.textContent?.trim()
-    if (t && history[history.length - 1] !== t) history.push(t)
+  const push = (t?: string | null) => {
+    const v = t?.trim()
+    if (v && history[history.length - 1] !== v) history.push(v)
   }
-  push()
-  const mo = new MutationObserver(push)
-  mo.observe(document.body, { subtree: true, childList: true, characterData: true })
+  // חובה לקרוא את oldValue ולא רק את ה-DOM החי: כששני רנדרים נופלים לפני
+  // שה-callback רץ, המצב האמצעי כבר לא נמצא ב-DOM — והוא בדיוק מה שנבדק כאן
+  const mo = new MutationObserver((records) => {
+    for (const r of records) if (r.type === 'characterData') push(r.oldValue)
+    push(document.body.querySelector('button')?.textContent)
+  })
+  mo.observe(document.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    characterDataOldValue: true,
+  })
   return history
 }
 
