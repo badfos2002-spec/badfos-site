@@ -55,6 +55,24 @@ beforeEach(() => {
   h.runUpscaleForOrder.mockReset()
 })
 
+// הטיקט לא נוגע בבלוק האימות של המסלול, אבל שום קובץ בדיקות אחר לא מכסה
+// אותו — ובזמן שהקובץ פתוח זה ארבע שורות.
+describe('POST /api/admin/retry-upscale — אימות', () => {
+  it('בלי טוקן או עם טוקן פסול — 401, ושום הגדלה לא מופעלת', async () => {
+    expect((await post({ orderId: 'order1' }, null)).status).toBe(401)
+    expect((await post({ orderId: 'order1' }, 'garbage')).status).toBe(401)
+    expect(h.runUpscaleForOrder).not.toHaveBeenCalled()
+  })
+
+  it('מישהו אחר או אימייל לא מאומת — 403', async () => {
+    h.verifyIdToken.mockImplementation(async () => ({ email: 'someone@example.com', email_verified: true }))
+    expect((await post({ orderId: 'order1' })).status).toBe(403)
+    h.verifyIdToken.mockImplementation(async () => ({ email: ADMIN.email, email_verified: false }))
+    expect((await post({ orderId: 'order1' })).status).toBe(403)
+    expect(h.runUpscaleForOrder).not.toHaveBeenCalled()
+  })
+})
+
 describe('POST /api/admin/retry-upscale — claimedKeys', () => {
   it('מחזיר את המפתחות שנשלחו מחדש להגדלה', async () => {
     h.runUpscaleForOrder.mockResolvedValue({

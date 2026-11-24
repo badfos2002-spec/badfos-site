@@ -110,7 +110,9 @@ describe('planZipEntries', () => {
     ])
   })
 
-  it('pending / failed / gave_up → מקור', () => {
+  // toEqual על כל הרשימה ולא every(): [].every() מחזיר true, ומימוש שמשמיט
+  // כל עיצוב שאינו done היה נשאר ירוק — בניגוד ל-Q1 (כל עיצוב בדיוק פעם אחת)
+  it('pending / failed / gave_up → מקור, ושלושתם נכנסים', () => {
     const items = [[{ area: 'front_full' }, { area: 'back' }, { area: 'chest_logo' }]]
     expect(
       planZipEntries(
@@ -122,8 +124,21 @@ describe('planZipEntries', () => {
             '0_chest_logo': { status: 'gave_up' },
           },
         }),
-      ).every((e) => e.variant === 'source'),
-    ).toBe(true)
+      ),
+    ).toEqual([
+      { itemIdx: 0, area: 'front_full', variant: 'source' },
+      { itemIdx: 0, area: 'back', variant: 'source' },
+      { itemIdx: 0, area: 'chest_logo', variant: 'source' },
+    ])
+  })
+
+  // הזמנות מלפני עידן ההגדלות — אין upscales בכלל
+  it('אין upscales בהזמנה — הכול מקור', () => {
+    expect(planZipEntries(order({ items: TWO_ITEMS })).map((e) => e.variant)).toEqual([
+      'source',
+      'source',
+      'source',
+    ])
   })
 
   it('הזמנה בלי עיצובים — רשימה ריקה', () => {
@@ -254,6 +269,24 @@ describe('settledKeys / pendingCount', () => {
     expect(settledKeys(changed, ['0_back'], pre).has('0_back')).toBe(true)
   })
 
+  // הדפוס הזה הוא תנועת ייצור אמיתית: לולאת התביעה תובעת גם מפתחות שלא
+  // הייתה להם רשומה בכלל — ההגדלה הראשונה של עיצוב דרך הכפתור. מימוש שידרוש
+  // ששתי המילישניות תהיינה לא-null היה תולה את ההמתנה לנצח (אין תקרת זמן).
+  it('מפתח נתבע בלי רשומה לפני הלחיצה — נרגע כשהרשומה מופיעה עם createdAt וסטטוס סופי', () => {
+    const appeared = order({
+      items,
+      upscales: { '0_front_full': { status: 'done', url: 'u', createdAt: new Date(5000) } },
+    })
+    expect(settledKeys(appeared, ['0_front_full'], {}).has('0_front_full')).toBe(true)
+    expect(pendingCount(appeared, ['0_front_full'], {})).toBe(0)
+  })
+
+  it('אין upscales בהזמנה — הכול רגוע, אין למה לחכות', () => {
+    const o = order({ items: TWO_ITEMS })
+    expect(settledKeys(o, [], undefined).size).toBe(3)
+    expect(pendingCount(o, [], undefined)).toBe(0)
+  })
+
   it('הזמנה ידנית — הכול רגוע מיד', () => {
     const o = order({ items, source: 'manual', upscales: { '0_front_full': { status: 'pending' } } })
     expect(settledKeys(o, ['0_front_full'], {}).size).toBe(2)
@@ -304,6 +337,7 @@ describe('buildStoreZip', () => {
     expect(u32(b, 0)).toBe(0x04034b50)
     expect(u16(b, 4)).toBe(20)
     expect(u16(b, 6) & 0x0800).toBe(0x0800)
+    expect(u16(b, 6) & 0x0008).toBe(0) // ביט 3 כבוי — אין data descriptor
     expect(u16(b, 8)).toBe(0)
     expect(u32(b, 14)).toBe(crc32(png))
     expect(u32(b, 18)).toBe(png.length) // compressed = uncompressed ב-STORE
@@ -326,6 +360,44 @@ describe('buildStoreZip', () => {
       expect((time >> 5) & 0x3f).toBe(NOW.getMinutes())
       expect((time & 0x1f) * 2).toBe(NOW.getSeconds() - (NOW.getSeconds() % 2))
     }
+  })
+
+  // fflate 0.8.3 לא מאמת crc בכלל (נבדק אמפירית ע"י דניאל: השחתת שני
+  // העתקי ה-crc נפתחת אצלו בלי תלונה), ולכן שדות המדריך המרכזי נבדקים כאן
+  // בבתים — אחרת שדה זבל שם היה מתגלה רק ב-Finder או ב-unzip -t.
+  it('המדריך המרכזי: חתימה, דגלים, שיטה, crc, גדלים והיסט הכותרת המקומית', async () => {
+    const first = entry('ישראל ישראלי גב (מקור).png', png)
+    const second = entry('ישראל ישראלי קידמי מלא.bin', bin)
+    const b = await bytesOf(buildStoreZip([first, second], NOW))
+    const eocd = b.length - 22
+
+    let at = u32(b, eocd + 16)
+    let localOffset = 0
+    for (const e of [first, second]) {
+      // אורך השם בבתים של UTF-8, נקרא מהכותרת — לא במספר תווים
+      const nameLen = u16(b, at + 28)
+      expect(u32(b, at)).toBe(0x02014b50)
+      expect(u16(b, at + 8) & 0x0800).toBe(0x0800)
+      expect(u16(b, at + 8) & 0x0008).toBe(0)
+      expect(u16(b, at + 10)).toBe(0)
+      expect(u32(b, at + 16)).toBe(e.crc)
+      expect(u32(b, at + 20)).toBe(e.size)
+      expect(u32(b, at + 24)).toBe(e.size)
+      expect(u32(b, at + 42)).toBe(localOffset)
+      expect(new TextDecoder().decode(b.subarray(at + 46, at + 46 + nameLen))).toBe(e.name)
+      // אותו שם ואותו crc בכותרת המקומית שההיסט מצביע עליה
+      expect(u16(b, localOffset + 26)).toBe(nameLen)
+      expect(u32(b, localOffset + 14)).toBe(e.crc)
+      at += 46 + nameLen
+      localOffset += 30 + nameLen + e.size
+    }
+    expect(at).toBe(eocd) // המדריך נגמר בדיוק ב-EOCD
+  })
+
+  it('גודל שלא תואם את הבתים של ה-Blob — נזרק, לא ארכיון מושחת', () => {
+    expect(() =>
+      buildStoreZip([{ name: 'a.png', blob: new Blob([png]), crc: crc32(png), size: png.length + 1 }], NOW),
+    ).toThrow('zip_size_mismatch')
   })
 
   it('EOCD סופר את הרשומות', async () => {
