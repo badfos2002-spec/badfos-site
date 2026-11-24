@@ -50,7 +50,7 @@ describe('registry entry', () => {
     expect(p.paragraphs).toHaveLength(4)
     expect(p.faq).toHaveLength(5)
     expect(p.galleryImages.length).toBeGreaterThan(0)
-    expect(p.related).toEqual(['הדפסה-על-סווטשרטים', 'הדפסת-חולצות-לעסקים', 'חולצות-ליום-גיבוש'])
+    expect(p.related).toEqual(['הדפסה-על-סווטשרטים', 'הדפסת-חולצות-לעסקים', 'חולצות-ליום-גיבוש', 'הדפסת-גלילי-dtf-לפי-מטר'])
     for (const r of p.related) expect(getSeoPage(r)).toBeTruthy()
   })
 
