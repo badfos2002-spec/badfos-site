@@ -99,6 +99,19 @@ function streamedRes(filename: string, chunks: Uint8Array<ArrayBuffer>[]): Respo
   })
 }
 
+/** תשובה תקינה (res.ok) שהגוף שלה נקטע באמצע — נפילת רשת בזמן הורדה */
+function brokenStreamRes(filename: string, head: Uint8Array<ArrayBuffer>): Response {
+  const body = new ReadableStream({
+    start(c) {
+      c.enqueue(head)
+      c.error(new Error('network glitch mid-stream'))
+    },
+  })
+  return new Response(body, {
+    headers: { 'content-disposition': contentDisposition({ filename, asciiFallback: 'design.png' }) },
+  })
+}
+
 function mockFetch(handlers: {
   retry?: (body: Record<string, unknown>) => Response | Promise<Response>
   download?: (q: URLSearchParams, nth: number) => Response | Promise<Response>
@@ -327,6 +340,10 @@ describe('OrderZipButton — הרטריי שלפני ההמתנה', () => {
     clickZip()
     await waitFor(() => expect(savedNames).toHaveLength(1))
     expect(retryCalls()).toHaveLength(0)
+    // א-סימטריה מכוונת: השם מקבל « (מקור)» לפי Q1, אבל ההודעה שותקת —
+    // בהזמנה ידנית אין הגדלות בכלל, המקור הוא קובץ הדפוס ולא נפילה
+    expect(Object.keys(unzipSync(await bytesOf(savedBlobs[0])))).toEqual(['ישראל ישראלי גב (מקור).png'])
+    expect(alertSpy).not.toHaveBeenCalled()
   })
 })
 
@@ -463,6 +480,51 @@ describe('OrderZipButton — ההורדה והאריזה', () => {
     const bytes = await bytesOf(savedBlobs[0])
     expect(localHeaderCrcs(bytes)).toEqual([crc32(whole), crc32(PNG_B)])
     expect(unzipSync(bytes)['ישראל ישראלי קידמי מלא (מקור).png']).toEqual(whole)
+  })
+
+  // בקובץ דפוס של מאות מגה-בייט נפילה באמצע הזרימה שכיחה יותר מכשל בבקשה
+  // עצמה, והיא מפילה בדיוק את ההמתנה הארוכה שהכפתור הזה בא לחסוך. ולכן
+  // קריאת הגוף היא חלק מאותה יחידת «ניסיון חוזר אחד» של הבקשה.
+  it('הגוף נקטע באמצע — ניסיון חוזר אחד, והזיפ יוצא שלם', async () => {
+    let first = true
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: (q) => {
+        if (q.get('area') === 'front_full' && first) {
+          first = false
+          return brokenStreamRes('ישראל ישראלי קידמי מלא.png', new Uint8Array([1, 2, 3]))
+        }
+        return q.get('area') === 'front_full'
+          ? fileRes('ישראל ישראלי קידמי מלא.png', PNG_A)
+          : fileRes('ישראל ישראלי גב.png', PNG_B)
+      },
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await waitFor(() => expect(savedNames).toHaveLength(1))
+
+    expect(downloadQueries()).toEqual(['0_front_full:source', '0_front_full:source', '0_back:upscale'])
+    const bytes = await bytesOf(savedBlobs[0])
+    const out = unzipSync(bytes)
+    // הניסיון השני מתחיל מאפס: אין מקטעים, crc או גודל ששרדו מהניסיון שנפל
+    expect(Object.keys(out)).toEqual(['ישראל ישראלי קידמי מלא (מקור).png', 'ישראל ישראלי גב.png'])
+    expect(out['ישראל ישראלי קידמי מלא (מקור).png']).toEqual(PNG_A)
+    expect(localHeaderCrcs(bytes)).toEqual([crc32(PNG_A), crc32(PNG_B)])
+    expect(alertSpy).not.toHaveBeenCalledWith(DOWNLOAD_FAILED_ALERT)
+  })
+
+  it('הגוף נקטע פעמיים — «ההורדה נכשלה», בלי זיפ', async () => {
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: () => brokenStreamRes('ישראל ישראלי קידמי מלא.png', new Uint8Array([1, 2, 3])),
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(DOWNLOAD_FAILED_ALERT))
+    expect(downloadCalls()).toHaveLength(2)
+    expect(savedNames).toHaveLength(0)
+    expect(zipButton()).toBeInTheDocument()
+    expect(onEnd).toHaveBeenCalledTimes(1)
   })
 
   it('404 file_missing בקובץ אחד — השאר נארזים וההודעה מפרטת אותו', async () => {
