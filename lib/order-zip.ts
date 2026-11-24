@@ -238,6 +238,9 @@ export function buildStoreZip(entries: ZipEntryInput[], now: Date = new Date()):
 
   entries.forEach((e, i) => {
     const name = names[i]
+    // כל שדה בכותרות נגזר מ-size, בזמן שהבתים עצמם מגיעים מה-Blob — פער
+    // ביניהם הוא ארכיון מושחת בשקט, שמתגלה רק אצל המדפיס. רועשים במקום.
+    if (e.blob.size !== e.size) throw new Error('zip_size_mismatch')
 
     const local = new Uint8Array(LOCAL_HEADER + name.length)
     const lv = new DataView(local.buffer)
