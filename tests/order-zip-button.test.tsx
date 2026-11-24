@@ -30,7 +30,8 @@ vi.mock('@/lib/order-zip', async (importOriginal) => {
   }
 })
 
-import { OrderZipTooLarge } from '@/lib/order-zip'
+// crc32 מגיע מהמימוש האמיתי דרך ה-pass-through שלמעלה
+import { crc32, OrderZipTooLarge } from '@/lib/order-zip'
 import OrderZipButton from '@/components/admin/OrderZipButton'
 
 const ORDER_ID = 'ord1'
@@ -85,6 +86,19 @@ function fileRes(filename: string, bytes: Uint8Array<ArrayBuffer>, status = 200)
   })
 }
 
+/** תשובה שהגוף שלה מגיע במקטעים, כמו קובץ אמיתי */
+function streamedRes(filename: string, chunks: Uint8Array<ArrayBuffer>[]): Response {
+  const body = new ReadableStream({
+    start(c) {
+      for (const chunk of chunks) c.enqueue(chunk)
+      c.close()
+    },
+  })
+  return new Response(body, {
+    headers: { 'content-disposition': contentDisposition({ filename, asciiFallback: 'design.png' }) },
+  })
+}
+
 function mockFetch(handlers: {
   retry?: (body: Record<string, unknown>) => Response | Promise<Response>
   download?: (q: URLSearchParams, nth: number) => Response | Promise<Response>
@@ -114,10 +128,31 @@ const downloadQueries = () =>
 
 function deferred<T>() {
   let resolve!: (v: T) => void
-  const promise = new Promise<T>((r) => {
-    resolve = r
+  let reject!: (e: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
+}
+
+const u16 = (b: Uint8Array, at: number) => b[at] | (b[at + 1] << 8)
+const u32 = (b: Uint8Array, at: number) =>
+  (b[at] | (b[at + 1] << 8) | (b[at + 2] << 16) | (b[at + 3] << 24)) >>> 0
+
+/**
+ * ה-crc של כל רשומה כמו שהוא נכתב בכותרת המקומית בזיפ שנשמר. fflate לא
+ * מאמת crc, ולכן רק קריאת הבתים האלה מוכיחה שהרכיב חישב את ה-crc על הבתים
+ * הנכונים — crc שגוי היה שותק בכל הבדיקות ונופל אצל בעל העסק.
+ */
+function localHeaderCrcs(b: Uint8Array): number[] {
+  const crcs: number[] = []
+  let at = 0
+  while (u32(b, at) === 0x04034b50) {
+    crcs.push(u32(b, at + 14))
+    at += 30 + u16(b, at + 26) + u16(b, at + 28) + u32(b, at + 18)
+  }
+  return crcs
 }
 
 /** ה-Blob של jsdom עשוי לא לחשוף arrayBuffer() — FileReader תמיד עובד שם */
@@ -211,6 +246,15 @@ describe('OrderZipButton — לפני הלחיצה', () => {
     expect(zipButton()).toBeInTheDocument()
   })
 
+  it('designsDeletedReason=closed_order — אותו אלרט, ואף קריאה לא יוצאת', async () => {
+    mockFetch({})
+    renderButton(makeOrder(undefined, { designsDeleted: true, designsDeletedReason: 'closed_order' }))
+    clickZip()
+    expect(alertSpy).toHaveBeenCalledWith(SWEPT_ALERT)
+    expect(h.adminFetch).not.toHaveBeenCalled()
+    expect(onStart).not.toHaveBeenCalled()
+  })
+
   it('designsDeletedReason=storage_limit — כן ממשיכים (ההגדלות משוחזרות)', async () => {
     mockFetch({ retry: () => json({ success: true, claimedKeys: [] }) })
     renderButton(
@@ -234,6 +278,8 @@ describe('OrderZipButton — הרטריי שלפני ההמתנה', () => {
     fireEvent.click(button)
     fireEvent.click(button) // אותו כפתור, כבר מושבת — אין רטריי שני
     await waitFor(() => expect(retryCalls()).toHaveLength(1))
+    // בזמן שהרטריי באוויר: תווית ההמתנה, והכפתור מושבת (אין «לחיצה שנייה»)
+    expect(screen.getByRole('button', { name: /ממתין להגדלה/ })).toBeDisabled()
     expect(retryCalls()[0][1]).toMatchObject({ method: 'POST' })
     expect(JSON.parse(String(retryCalls()[0][1].body))).toEqual({ orderId: ORDER_ID })
     expect(onStart).toHaveBeenCalledTimes(1)
@@ -359,10 +405,13 @@ describe('OrderZipButton — ההורדה והאריזה', () => {
     expect(savedNames[0]).toBe('הזמנה 1592 ישראל ישראלי.zip')
     expect(savedBlobs[0].type).toBe('application/zip')
 
-    const out = unzipSync(await bytesOf(savedBlobs[0]))
+    const bytes = await bytesOf(savedBlobs[0])
+    const out = unzipSync(bytes)
     expect(Object.keys(out)).toEqual(['ישראל ישראלי קידמי מלא (מקור).png', 'ישראל ישראלי גב.png'])
     expect(out['ישראל ישראלי קידמי מלא (מקור).png']).toEqual(PNG_A)
     expect(out['ישראל ישראלי גב.png']).toEqual(PNG_B)
+    // ה-crc שהרכיב חישב על הבתים ששהוא הזרים, כמו שנכתב בזיפ
+    expect(localHeaderCrcs(bytes)).toEqual([crc32(PNG_A), crc32(PNG_B)])
 
     expect(alertSpy).toHaveBeenCalledWith('הזיפ נשמר. לא הוגדלו ונכנסו כמקור: קידמי מלא.')
     expect(await screen.findByText(/✅ הזיפ נשמר/)).toBeInTheDocument()
@@ -390,6 +439,30 @@ describe('OrderZipButton — ההורדה והאריזה', () => {
       gates[1].resolve(fileRes('ישראל ישראלי גב.png', PNG_B))
     })
     await waitFor(() => expect(savedNames).toHaveLength(1))
+  })
+
+  // קובץ דפוס אמיתי מגיע במאות מקטעים. כאן נבדק שה-crc מצטבר על כולם
+  // ברצף הנכון, ולא רק על המקטע הראשון.
+  it('גוף שמגיע בכמה מקטעים — ה-crc מחושב על כל הבתים ברצף', async () => {
+    const parts = [
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+      new Uint8Array([250, 0, 7, 7, 13]),
+      new Uint8Array([9]),
+    ]
+    const whole = new Uint8Array([...parts[0], ...parts[1], ...parts[2]])
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: (q) =>
+        q.get('area') === 'front_full'
+          ? streamedRes('ישראל ישראלי קידמי מלא.png', parts)
+          : fileRes('ישראל ישראלי גב.png', PNG_B),
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await waitFor(() => expect(savedNames).toHaveLength(1))
+    const bytes = await bytesOf(savedBlobs[0])
+    expect(localHeaderCrcs(bytes)).toEqual([crc32(whole), crc32(PNG_B)])
+    expect(unzipSync(bytes)['ישראל ישראלי קידמי מלא (מקור).png']).toEqual(whole)
   })
 
   it('404 file_missing בקובץ אחד — השאר נארזים וההודעה מפרטת אותו', async () => {
@@ -491,6 +564,30 @@ describe('OrderZipButton — ההורדה והאריזה', () => {
     })
     expect(savedNames).toHaveLength(0)
     expect(alertSpy).not.toHaveBeenCalled()
+    // לא התחיל ניסיון חוזר ולא הקובץ הבא — ביטול הוא לא כשל
+    expect(downloadCalls()).toHaveLength(1)
+    expect(onEnd).toHaveBeenCalledTimes(1)
+  })
+
+  // המסלול השכיח במציאות: ה-fetch עצמו נדחה ב-AbortError ברגע ה-abort.
+  // מימוש שהתייחס אליו ככשל רגיל היה מנסה שוב או מקפיץ אלרט.
+  it('«ביטול» שמפיל את ה-fetch ב-AbortError — בשקט, בלי ניסיון חוזר', async () => {
+    const gate = deferred<Response>()
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: () => gate.promise,
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await screen.findByRole('button', { name: /מוריד קבצים 1\/2/ })
+    fireEvent.click(cancelButton())
+    await act(async () => {
+      gate.reject(new DOMException('The user aborted a request.', 'AbortError'))
+    })
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(downloadCalls()).toHaveLength(1)
+    expect(savedNames).toHaveLength(0)
+    expect(zipButton()).toBeInTheDocument()
     expect(onEnd).toHaveBeenCalledTimes(1)
   })
 })
