@@ -282,7 +282,8 @@ describe('buildStoreZip', () => {
   const bin = new Uint8Array(1000)
   for (let i = 0; i < bin.length; i++) bin[i] = (i * 31) % 256
 
-  function entry(name: string, data: Uint8Array) {
+  // Uint8Array<ArrayBuffer> ולא Uint8Array — BlobPart לא מקבל ArrayBufferLike
+  function entry(name: string, data: Uint8Array<ArrayBuffer>) {
     return { name, blob: new Blob([data]), crc: crc32(data), size: data.length }
   }
 
