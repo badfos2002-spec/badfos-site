@@ -13,6 +13,8 @@ const h = vi.hoisted(() => ({
   adminFetch: vi.fn(),
   /** כשמוגדר — buildStoreZip זורק את זה במקום לבנות זיפ */
   zipThrows: null as Error | null,
+  /** רץ בתוך buildStoreZip — החלון היחיד שבו הרכיב נמצא בוודאות בפאזת האריזה */
+  onBuildZip: null as null | (() => void),
 }))
 
 vi.mock('@/lib/admin-fetch', () => ({ adminFetch: h.adminFetch }))
@@ -25,6 +27,7 @@ vi.mock('@/lib/order-zip', async (importOriginal) => {
     ...actual,
     buildStoreZip: (...args: Parameters<typeof actual.buildStoreZip>) => {
       if (h.zipThrows) throw h.zipThrows
+      h.onBuildZip?.()
       return actual.buildStoreZip(...args)
     },
   }
@@ -37,6 +40,9 @@ import OrderZipButton from '@/components/admin/OrderZipButton'
 const ORDER_ID = 'ord1'
 const PNG_A = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3])
 const PNG_B = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 250, 251, 252, 253])
+/** הניסיון החוזר מגיע בכמה מקטעים — כך ה-crc שלו נבדק על ריצת בתים מלאה */
+const RETRY_PARTS = [new Uint8Array([0x89, 0x50, 0x4e, 0x47]), new Uint8Array([11, 22, 33, 44]), new Uint8Array([55])]
+const RETRY_WHOLE = new Uint8Array([...RETRY_PARTS[0], ...RETRY_PARTS[1], ...RETRY_PARTS[2]])
 
 const SWEPT_ALERT =
   'הקבצים של הזמנה זו נמחקו מהאחסון לפי מדיניות 30 הימים (הזמנות ישנות). ההעלאה המקורית של הלקוח אינה זמינה יותר להורדה.'
@@ -180,6 +186,19 @@ async function bytesOf(blob: Blob): Promise<Uint8Array> {
   })
 }
 
+/** כל תווית שהכפתור הציג בפועל, לפי הסדר — כולל כאלה שלא שורדות רנדר אחד */
+function recordLabels() {
+  const history: string[] = []
+  const push = () => {
+    const t = document.body.querySelector('button')?.textContent?.trim()
+    if (t && history[history.length - 1] !== t) history.push(t)
+  }
+  push()
+  const mo = new MutationObserver(push)
+  mo.observe(document.body, { subtree: true, childList: true, characterData: true })
+  return history
+}
+
 let savedBlobs: Blob[] = []
 let savedNames: string[] = []
 let alertSpy: ReturnType<typeof vi.spyOn>
@@ -189,6 +208,7 @@ const onEnd = vi.fn()
 beforeEach(() => {
   h.adminFetch.mockReset()
   h.zipThrows = null
+  h.onBuildZip = null
   savedBlobs = []
   savedNames = []
   onStart.mockReset()
@@ -495,10 +515,11 @@ describe('OrderZipButton — ההורדה והאריזה', () => {
           return brokenStreamRes('ישראל ישראלי קידמי מלא.png', new Uint8Array([1, 2, 3]))
         }
         return q.get('area') === 'front_full'
-          ? fileRes('ישראל ישראלי קידמי מלא.png', PNG_A)
+          ? streamedRes('ישראל ישראלי קידמי מלא.png', RETRY_PARTS)
           : fileRes('ישראל ישראלי גב.png', PNG_B)
       },
     })
+    const labels = recordLabels()
     renderButton(afterUpscales)
     clickZip()
     await waitFor(() => expect(savedNames).toHaveLength(1))
@@ -506,11 +527,138 @@ describe('OrderZipButton — ההורדה והאריזה', () => {
     expect(downloadQueries()).toEqual(['0_front_full:source', '0_front_full:source', '0_back:upscale'])
     const bytes = await bytesOf(savedBlobs[0])
     const out = unzipSync(bytes)
-    // הניסיון השני מתחיל מאפס: אין מקטעים, crc או גודל ששרדו מהניסיון שנפל
+    // הניסיון השני מתחיל מאפס: אין מקטעים, crc או גודל ששרדו מהניסיון שנפל.
+    // ה-crc הוא ההוכחה — fflate לא מאמת אותו, ולכן בתים נכונים לבדם לא מספיקים.
     expect(Object.keys(out)).toEqual(['ישראל ישראלי קידמי מלא (מקור).png', 'ישראל ישראלי גב.png'])
-    expect(out['ישראל ישראלי קידמי מלא (מקור).png']).toEqual(PNG_A)
-    expect(localHeaderCrcs(bytes)).toEqual([crc32(PNG_A), crc32(PNG_B)])
+    expect(out['ישראל ישראלי קידמי מלא (מקור).png']).toEqual(RETRY_WHOLE)
+    expect(localHeaderCrcs(bytes)).toEqual([crc32(RETRY_WHOLE), crc32(PNG_B)])
     expect(alertSpy).not.toHaveBeenCalledWith(DOWNLOAD_FAILED_ALERT)
+    // אותו שלב, לא התקדמות כפולה: אין 2/2 לפני שהקובץ הראשון נגמר, ו-n לא תפח
+    expect(labels.filter((l) => /מוריד קבצים/.test(l))).toEqual([
+      '⬇️ מוריד קבצים 0/2',
+      '⬇️ מוריד קבצים 1/2',
+      '⬇️ מוריד קבצים 2/2',
+    ])
+  })
+
+  // תקציב אחד של ניסיון חוזר לבקשה ולגוף יחד — לא אחד לכל אחד
+  it('כשל בבקשה ואז כשל באמצע הגוף — שני ניסיונות בסך הכול ועצירה', async () => {
+    let n = 0
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: () => {
+        n++
+        if (n === 1) return json({ error: 'server_error' }, 500)
+        return brokenStreamRes('ישראל ישראלי קידמי מלא.png', new Uint8Array([1, 2, 3]))
+      },
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(DOWNLOAD_FAILED_ALERT))
+    expect(downloadCalls()).toHaveLength(2)
+    expect(savedNames).toHaveLength(0)
+  })
+
+  it('«ביטול» באמצע הגוף — הזרימה נדחית ב-AbortError, בלי ניסיון חוזר', async () => {
+    let fail!: (e: unknown) => void
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: () =>
+        new Response(
+          new ReadableStream({
+            start(c) {
+              c.enqueue(new Uint8Array([1, 2, 3]))
+              fail = (e) => c.error(e)
+            },
+          }),
+          { headers: { 'content-disposition': contentDisposition({ filename: 'א.png', asciiFallback: 'a.png' }) } },
+        ),
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await screen.findByRole('button', { name: /מוריד קבצים 1\/2/ })
+    fireEvent.click(cancelButton())
+    await act(async () => {
+      fail(new DOMException('The user aborted a request.', 'AbortError'))
+    })
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(downloadCalls()).toHaveLength(1)
+    expect(savedNames).toHaveLength(0)
+    expect(onEnd).toHaveBeenCalledTimes(1)
+  })
+
+  // ביטול שנוחת בין הכישלון הראשון לניסיון השני — אסור שהשני ייצא לדרך
+  it('ביטול בין שני הניסיונות — אין ניסיון שני', async () => {
+    const gate = deferred<unknown>()
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: () =>
+        ({
+          ok: false,
+          status: 500,
+          headers: new Headers(),
+          json: () => gate.promise,
+        }) as unknown as Response,
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await screen.findByRole('button', { name: /מוריד קבצים 1\/2/ })
+    fireEvent.click(cancelButton())
+    await act(async () => {
+      gate.resolve({ error: 'server_error' })
+    })
+    expect(downloadCalls()).toHaveLength(1)
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(savedNames).toHaveLength(0)
+  })
+
+  it('410 בניסיון השני — עצירה עם הודעת הניקוי', async () => {
+    let n = 0
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: () => (++n === 1 ? json({ error: 'server_error' }, 500) : json({ error: 'file_swept' }, 410)),
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(SWEPT_ALERT))
+    expect(downloadCalls()).toHaveLength(2)
+    expect(savedNames).toHaveLength(0)
+  })
+
+  it('404 בניסיון השני — מדלגים, ממשיכים, והעיצוב מפורט בהודעה', async () => {
+    let n = 0
+    mockFetch({
+      retry: () => json({ success: true, claimedKeys: [] }),
+      download: (q) => {
+        if (q.get('area') !== 'front_full') return fileRes('ישראל ישראלי גב.png', PNG_B)
+        return ++n === 1 ? json({ error: 'server_error' }, 500) : json({ error: 'file_missing' }, 404)
+      },
+    })
+    renderButton(afterUpscales)
+    clickZip()
+    await waitFor(() => expect(savedNames).toHaveLength(1))
+    expect(downloadQueries()).toEqual(['0_front_full:source', '0_front_full:source', '0_back:upscale'])
+    expect(Object.keys(unzipSync(await bytesOf(savedBlobs[0])))).toEqual(['ישראל ישראלי גב.png'])
+    expect(alertSpy).toHaveBeenCalledWith('הזיפ נשמר. לא נמצאו קבצים: קידמי מלא.')
+  })
+
+  // Q3(b): «ביטול» זמין בכל הג׳וב — גם באריזה. בלי זה הפאזה לא מגיעה ל-DOM
+  // בכלל (שני עדכוני המצב נופלים באותה משימה) והתשובה הסגורה לא ניתנת לממש.
+  it('«ביטול» בזמן האריזה — התווית והכפתור קיימים, ואין זיפ', async () => {
+    const seen: string[] = []
+    h.onBuildZip = () => {
+      seen.push(screen.getByRole('button', { name: /אורז זיפ/ }).textContent?.trim() ?? '')
+      seen.push(cancelButton().textContent?.trim() ?? '')
+      fireEvent.click(cancelButton())
+    }
+    twoFiles([])
+    renderButton(afterUpscales)
+    clickZip()
+    await waitFor(() => expect(onEnd).toHaveBeenCalledTimes(1))
+    expect(seen).toEqual(['🗜️ אורז זיפ…', 'ביטול'])
+    expect(savedNames).toHaveLength(0)
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(zipButton()).toBeInTheDocument()
   })
 
   it('הגוף נקטע פעמיים — «ההורדה נכשלה», בלי זיפ', async () => {
