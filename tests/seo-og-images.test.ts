@@ -21,16 +21,17 @@ const productPages = SEO_PAGES.filter((page) => page.productType)
 const META_SLUGS = ['הדפסה-על-כובעים', 'הדפסת-תיקי-בד', 'בגדי-גוף-מודפסים-לתינוקות']
 
 describe('og:image files', () => {
-  // Regression guard — green before this ticket too (all 14 existing /og files are
-  // already 1200x630 and well under 300 KB). It is here so the 11 new files are
-  // held to the same contract the moment they land.
+  // Regression guard over EVERY SEO page, product pages and the rest alike — green
+  // before this ticket too (all 14 pre-existing /og files are already 1200x630 and
+  // at most 203 KB). It is here so the whole /og set is held to one contract.
   it.each(SEO_PAGES.map((page) => [page.slug, page.ogImage] as const))(
-    '%s — ogImage exists under /public and is 1200x630',
+    '%s — ogImage exists under /public, is 1200x630 and at most 300 KB',
     async (_slug, ogImage) => {
       expect(ogImage.startsWith('/og/'), ogImage).toBe(true)
       expect(existsSync(publicPath(ogImage)), ogImage).toBe(true)
       const meta = await sharp(publicPath(ogImage)).metadata()
       expect({ width: meta.width, height: meta.height }).toEqual({ width: 1200, height: 630 })
+      expect(statSync(publicPath(ogImage)).size, ogImage).toBeLessThanOrEqual(MAX_BYTES)
     },
   )
 })
