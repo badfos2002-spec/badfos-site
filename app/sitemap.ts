@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // SEO landing pages (Hebrew slugs — URL-encoded)
   const seoLandingPages: MetadataRoute.Sitemap = SEO_PAGES.map((page) => ({
     url: `${baseUrl}/${encodeURIComponent(page.slug)}`,
-    lastModified: '2026-10-21',
+    lastModified: page.updatedAt ?? '2026-10-21',
     changeFrequency: 'monthly',
     priority: 0.8,
   }))

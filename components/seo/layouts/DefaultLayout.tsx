@@ -42,8 +42,9 @@ const PRINTED_NOUN: Record<ProductType, string> = {
 export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
   // Product pages send visitors straight to their designer; audience pages keep
   // the original targets (homepage hero CTA, t-shirt designer in the strip).
+  // Service pages (page.service) have no designer — both CTAs go to service.ctaHref.
   const fabricQuery = page.fabric ? `?fabric=${page.fabric}` : ''
-  const ctaHref = page.productType ? `/designer/${page.productType}${fabricQuery}` : '/'
+  const ctaHref = page.service?.ctaHref ?? (page.productType ? `/designer/${page.productType}${fabricQuery}` : '/')
   const designerHref = page.productType ? `/designer/${page.productType}${fabricQuery}` : '/designer/tshirt'
   const relatedPages = page.related
     .map((slug) => getSeoPage(slug))
@@ -245,31 +246,33 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
           </section>
         ) : null}
 
-        {/* Pricing highlight strip */}
-        <section className="mb-14 rounded-3xl bg-gradient-to-l from-[#ffc32e]/20 via-[#fff6e6] to-white border border-[#ffc32e]/40 p-6 md:p-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-5 text-center md:text-right">
-            <div>
-              <p className="text-xl md:text-2xl font-black text-[#1e293b]">
-                מחירים שקופים — בלי הפתעות ובלי עלויות נסתרות
-              </p>
-              <p className="text-[#64748b] font-semibold mt-1">
-                מעצבים אונליין עם תצוגה מקדימה חיה ומקבלים הצעת מחיר מהירה
-              </p>
-              {page.productType && (
-                <p className="text-[#1e293b] font-extrabold mt-2">
-                  מחיר בסיס: <LiveBasePrice productType={page.productType} subType={page.fabric} /> ליחידה + תוספת הדפסה לפי אזור
+        {/* Pricing highlight strip — designer pages only (service pages have no designer) */}
+        {!page.service && (
+          <section className="mb-14 rounded-3xl bg-gradient-to-l from-[#ffc32e]/20 via-[#fff6e6] to-white border border-[#ffc32e]/40 p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-5 text-center md:text-right">
+              <div>
+                <p className="text-xl md:text-2xl font-black text-[#1e293b]">
+                  מחירים שקופים — בלי הפתעות ובלי עלויות נסתרות
                 </p>
-              )}
+                <p className="text-[#64748b] font-semibold mt-1">
+                  מעצבים אונליין עם תצוגה מקדימה חיה ומקבלים הצעת מחיר מהירה
+                </p>
+                {page.productType && (
+                  <p className="text-[#1e293b] font-extrabold mt-2">
+                    מחיר בסיס: <LiveBasePrice productType={page.productType} subType={page.fabric} /> ליחידה + תוספת הדפסה לפי אזור
+                  </p>
+                )}
+              </div>
+              <Link
+                href={designerHref}
+                className="inline-flex items-center gap-2 rounded-full border-2 border-[#f59e0b] px-6 py-3 font-extrabold text-[#b45309] hover:bg-[#f59e0b] hover:text-white transition-colors"
+              >
+                מתחילים לעצב
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
             </div>
-            <Link
-              href={designerHref}
-              className="inline-flex items-center gap-2 rounded-full border-2 border-[#f59e0b] px-6 py-3 font-extrabold text-[#b45309] hover:bg-[#f59e0b] hover:text-white transition-colors"
-            >
-              מתחילים לעצב
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* FAQ */}
         <section className="mb-14">
@@ -314,10 +317,12 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
         {/* Final CTA */}
         <section className="rounded-3xl bg-gradient-to-br from-[#ffc32e] to-[#f59e0b] p-8 md:p-12 text-center shadow-[0_25px_60px_-20px_rgba(245,158,11,0.6)]">
           <h2 className="text-2xl md:text-4xl font-black text-white mb-3">
-            מוכנים להתחיל לעצב?
+            {page.service ? page.service.closingTitle : 'מוכנים להתחיל לעצב?'}
           </h2>
           <p className="text-white/90 text-lg font-semibold mb-6">
-            מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים {page.productType ? PRINTED_NOUN[page.productType] : 'חולצות מודפסות'} עד הבית או באיסוף עצמי.
+            {page.service
+              ? page.service.closingText
+              : `מעצבים אונליין, רואים תצוגה מקדימה חיה ומקבלים ${page.productType ? PRINTED_NOUN[page.productType] : 'חולצות מודפסות'} עד הבית או באיסוף עצמי.`}
           </p>
           <div className="mx-auto flex max-w-sm sm:max-w-none flex-wrap items-center justify-center gap-3">
             <WhatsAppCta href={waUrl} slug={page.slug} />
