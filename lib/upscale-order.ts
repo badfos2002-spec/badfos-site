@@ -160,6 +160,13 @@ export interface UpscaleRunResult {
   designsCleaned?: boolean
   /** Designs whose source file no longer exists in Storage (gave up, not sent). */
   sourceMissing?: number
+  /**
+   * The `${itemIdx}_${area}` keys claimed by THIS run — each got a fresh
+   * `createdAt` + `status: 'pending'`. TICKET-032: the admin zip button waits
+   * exactly for these before it packs, and only counts a key as settled once
+   * its live `createdAt` differs from the pre-click one.
+   */
+  claimedKeys: string[]
 }
 
 /**
@@ -341,9 +348,9 @@ export async function runUpscaleForOrder(
     }
   })
 
-  if (notFound) return { notFound: true, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0 }
-  if (wrongStatus) return { wrongStatus, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0 }
-  if (designsCleaned) return { designsCleaned: true, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0 }
+  if (notFound) return { notFound: true, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0, claimedKeys: [] }
+  if (wrongStatus) return { wrongStatus, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0, claimedKeys: [] }
+  if (designsCleaned) return { designsCleaned: true, created: 0, total: 0, gaveUp: 0, skipped: 0, healed: 0, claimedKeys: [] }
 
   // Create Replicate predictions (completion webhook — we don't wait).
   // Network I/O only — never inside the claim transaction above.
@@ -454,7 +461,7 @@ export async function runUpscaleForOrder(
     await clearSweptFlagsIfFullyUpscaled(orderRef.id)
   }
 
-  return { created, total: claimed.length, gaveUp, skipped, healed, ...(sourceMissing > 0 && { sourceMissing }) }
+  return { created, total: claimed.length, gaveUp, skipped, healed, ...(sourceMissing > 0 && { sourceMissing }), claimedKeys: claimed.map(c => c.key) }
 }
 
 /**

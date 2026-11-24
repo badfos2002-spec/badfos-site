@@ -77,6 +77,9 @@ export async function POST(request: NextRequest) {
       healed: result.healed ?? 0,
       skipped: result.skipped ?? 0,
       sourceMissing: result.sourceMissing ?? 0,
+      // TICKET-032: the keys this run actually re-sent to Replicate — the zip
+      // button waits for exactly these before it packs.
+      claimedKeys: result.claimedKeys ?? [],
     })
   } catch (err) {
     console.error('retry-upscale error:', err)
