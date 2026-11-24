@@ -62,7 +62,7 @@ describe('item B — no speed promise, no shekel amount', () => {
   it('the business page drops the «עשרות שקלים בודדים» figure', () => {
     const texts = page('הדפסת-חולצות-לעסקים').paragraphs.map((x) => x.text)
     expect(texts.some((t) => t.includes('עשרות שקלים בודדים'))).toBe(false)
-    expect(texts.some((t) => t.includes('בהשקעה קטנה לכל עובד'))).toBe(true)
+    expect(texts.some((t) => t.includes('בהשקעה חד־פעמית קטנה'))).toBe(true)
   })
 })
 
