@@ -156,7 +156,8 @@ export default function Footer() {
                 הדפסה על חולצות
               </Link>
             </li>
-            {SEO_PAGES.filter((page) => page.productType).map((page) => (
+            {/* Service pages (page.service — e.g. גלילי DTF) belong here, not in the audience list below */}
+            {SEO_PAGES.filter((page) => page.productType || page.service).map((page) => (
               <li key={page.slug}>
                 <Link href={`/${page.slug}`} className="hover:text-yellow-400 transition-colors">
                   {page.h1}
@@ -170,7 +171,7 @@ export default function Footer() {
         <div className="border-t border-gray-800 mt-8 pt-6 text-center md:text-right" dir="rtl">
           <h3 className="text-white text-sm font-bold mb-3">הדפסת חולצות לכל אירוע</h3>
           <ul className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-xs">
-            {SEO_PAGES.filter((page) => !page.productType).map((page) => (
+            {SEO_PAGES.filter((page) => !page.productType && !page.service).map((page) => (
               <li key={page.slug}>
                 <Link href={`/${page.slug}`} className="hover:text-yellow-400 transition-colors">
                   {page.h1}
