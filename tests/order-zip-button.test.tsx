@@ -230,8 +230,9 @@ describe('OrderZipButton — הרטריי שלפני ההמתנה', () => {
     const gate = deferred<Response>()
     mockFetch({ retry: () => gate.promise })
     renderButton(makeOrder({ '0_front_full': { status: 'failed' }, '0_back': { status: 'failed' } }))
-    clickZip()
-    clickZip() // לחיצה שנייה בזמן ההפעלה לא מפעילה רטריי שני
+    const button = zipButton()
+    fireEvent.click(button)
+    fireEvent.click(button) // אותו כפתור, כבר מושבת — אין רטריי שני
     await waitFor(() => expect(retryCalls()).toHaveLength(1))
     expect(retryCalls()[0][1]).toMatchObject({ method: 'POST' })
     expect(JSON.parse(String(retryCalls()[0][1].body))).toEqual({ orderId: ORDER_ID })
@@ -335,9 +336,9 @@ describe('OrderZipButton — ההורדה והאריזה', () => {
     '0_back': { status: 'done', url: 'https://s/b.png' },
   })
 
-  function twoFiles() {
+  function twoFiles(claimedKeys: string[] = ['0_front_full']) {
     mockFetch({
-      retry: () => json({ success: true, claimedKeys: ['0_front_full'] }),
+      retry: () => json({ success: true, claimedKeys }),
       download: (q) =>
         q.get('area') === 'front_full'
           ? fileRes('ישראל ישראלי קידמי מלא.png', PNG_A)
@@ -461,7 +462,7 @@ describe('OrderZipButton — ההורדה והאריזה', () => {
 
   it('זיפ גדול מדי — ההודעה של OrderZipTooLarge, בלי קובץ', async () => {
     h.zipThrows = new OrderZipTooLarge()
-    twoFiles()
+    twoFiles([]) // אין מפתח שנתבע → אין המתנה, ישר להורדות ולאריזה
     renderButton(afterUpscales)
     clickZip()
     await waitFor(() =>
