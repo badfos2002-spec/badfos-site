@@ -21,3 +21,15 @@ faces as the main subject.
 | canvas-tote-on-beach-chair.webp | https://www.pexels.com/photo/shoulder-bag-with-bouquet-of-flowers-hanging-on-wooden-chair-9647573/ | Rahime Gül | Pexels License | |
 | white-tote-on-shoulder-by-the-sea.webp | https://www.pexels.com/photo/brunette-woman-with-bag-on-sea-shore-17767692/ | Ayşenaz Bilgin | Pexels License | Person seen from behind |
 | canvas-shopping-tote-with-bananas.webp | https://www.pexels.com/photo/crop-person-with-bunch-of-fresh-bananas-in-eco-bag-7194911/ | SHVETS production | Pexels License | |
+
+## og:image crops (public/og/)
+
+Share images for the tote landing pages (TICKET-031 D, 2026-11-24): a 1200x630 crop
+of the photo above, JPEG quality 82, no overlays. Same Pexels License and the same
+photographer credit as the source row.
+
+| og file | Source file |
+|---|---|
+| canvas-business.jpg | white-canvas-tote-held-up.webp |
+| teacher-gift.jpg | natural-tote-with-lilac-flowers.webp |
+| wedding-totes.jpg | canvas-tote-on-beach-chair.webp |
