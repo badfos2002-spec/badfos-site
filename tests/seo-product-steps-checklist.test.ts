@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { getSeoPage } from '@/lib/seo-pages'
 import { validateSeoPage } from '@/lib/seo-price-tokens'
 import { LAYOUTS } from '@/components/seo/layouts'
+
+// app/sitemap.ts reads live deals through the Admin SDK — no network in tests.
+vi.mock('@/lib/deals-server', () => ({ getLiveDeals: async () => [] }))
 
 // TICKET-031 §E — the 11 older product pages (the ones with `productType`) get the
 // two DefaultLayout article blocks that the 5 group pages already have:
@@ -131,6 +134,24 @@ describe('the copy is written per product', () => {
         expect(items.length, `${slug} / ${other}: ${items.join(' · ')}`).toBeLessThanOrEqual(1)
       }
     }
+  })
+})
+
+// TICKET-031 §F — every page this lane edits carries updatedAt: '2026-11-24',
+// which app/sitemap.ts serves as that URL's lastModified (fallback '2026-10-21').
+describe('sitemap dates', () => {
+  const lastModified = async (slug: string) => {
+    const { default: sitemap } = await import('@/app/sitemap')
+    const entries = await sitemap()
+    return entries.find((e) => e.url === `https://badfos.co.il/${encodeURIComponent(slug)}`)?.lastModified
+  }
+
+  it.each(PRODUCT_PAGES)('%s is dated 2026-11-24', async (slug) => {
+    expect(await lastModified(slug)).toBe('2026-11-24')
+  })
+
+  it('leaves a page this ticket never touched on the fallback date', async () => {
+    expect(await lastModified('חולצות-למסיבת-רווקים')).toBe('2026-10-21')
   })
 })
 
