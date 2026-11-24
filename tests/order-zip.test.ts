@@ -310,6 +310,24 @@ describe('buildStoreZip', () => {
     expect(u32(b, 22)).toBe(png.length)
   })
 
+  // לא משווים בתים מוחלטים (תלויי אזור זמן) אלא מפענחים את האריזה חזרה —
+  // כך נתפס באג הזזות/מסכות בשדה הזה, שבדיוק ממנו כלי פתיחה מסרסים תאריכים.
+  it('תאריך ושעת DOS מפוענחים חזרה לתאריך שהועבר — גם במדריך המרכזי', async () => {
+    const b = await bytesOf(buildStoreZip([entry('גב.png', png)], NOW))
+    const cdOffset = u32(b, b.length - 22 + 16)
+    for (const [time, date] of [
+      [u16(b, 10), u16(b, 12)],
+      [u16(b, cdOffset + 12), u16(b, cdOffset + 14)],
+    ]) {
+      expect((date >> 9) + 1980).toBe(NOW.getFullYear())
+      expect((date >> 5) & 0xf).toBe(NOW.getMonth() + 1)
+      expect(date & 0x1f).toBe(NOW.getDate())
+      expect(time >> 11).toBe(NOW.getHours())
+      expect((time >> 5) & 0x3f).toBe(NOW.getMinutes())
+      expect((time & 0x1f) * 2).toBe(NOW.getSeconds() - (NOW.getSeconds() % 2))
+    }
+  })
+
   it('EOCD סופר את הרשומות', async () => {
     const b = await bytesOf(buildStoreZip([entry('a.png', png), entry('b.bin', bin)], NOW))
     const eocd = b.length - 22
