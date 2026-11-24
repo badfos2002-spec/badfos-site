@@ -179,7 +179,7 @@ export default function DefaultLayout({ page, waUrl }: SeoLayoutProps) {
               {page.ideas.title}
             </h2>
             <p className="text-[#64748b] font-semibold mb-5">
-              קחו השראה — כל כיתוב כזה מעצבים אונליין תוך דקות, עם תצוגה מקדימה חיה.
+              קחו השראה — כל כיתוב כזה מעצבים אונליין בקלות, עם תצוגה מקדימה חיה.
             </p>
             <div className="flex flex-wrap gap-3">
               {page.ideas.items.map((item) => (

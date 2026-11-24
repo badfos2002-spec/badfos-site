@@ -123,7 +123,7 @@ export default function SoldiersLayout({ page, waUrl }: SeoLayoutProps) {
             <IdeaStickers
               title={page.ideas.title}
               emoji={page.accent?.emoji}
-              subtitle="קחו השראה — כל כיתוב כזה מעצבים אונליין תוך דקות, עם תצוגה מקדימה חיה."
+              subtitle="קחו השראה — כל כיתוב כזה מעצבים אונליין בקלות, עם תצוגה מקדימה חיה."
               items={page.ideas.items}
               stickerClasses={STICKER_CLASSES}
             />
