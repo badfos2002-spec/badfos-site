@@ -102,6 +102,23 @@ describe.each(PRODUCT_PAGES)('%s', (slug) => {
   })
 })
 
+describe('הדפסה-על-סינרים says only what its own entry says', () => {
+  const items = () => getSeoPage('הדפסה-על-סינרים')!.checklist ?? []
+
+  // "פריט נפרד בהזמנה" is true of the cart and the registry does state it — on the
+  // wedding tote page and on three group pages — but the apron entry never does,
+  // and the rule for this ticket is that a page may only say what it already says.
+  it('does not claim each design is a separate order item', () => {
+    expect(items().filter((item) => item.includes('פריט נפרד'))).toEqual([])
+  })
+
+  // The quantity item quotes the entry's own benefit ("סט אחיד לכל צוות המטבח וההגשה
+  // של המסעדה") instead of paraphrasing it.
+  it('quotes the entry wording for a whole-team set', () => {
+    expect(items().some((item) => item.includes('סט אחיד לכל צוות המטבח וההגשה'))).toBe(true)
+  })
+})
+
 describe('the copy is written per product', () => {
   it('no two pages share more than one step title or more than one checklist item', () => {
     const shared = (a: string[], b: string[]) => a.filter((x) => b.includes(x))
