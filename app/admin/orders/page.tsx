@@ -13,6 +13,7 @@ import ManualOrderForm from '@/components/admin/ManualOrderForm'
 import { isManualOrder, paymentMethodLabel } from '@/lib/manual-order'
 import SketchLinkButton from '@/components/admin/SketchLinkButton'
 import OrderItem3DButton from '@/components/admin/OrderItem3DButton'
+import OrderZipButton from '@/components/admin/OrderZipButton'
 import { sizeLabel } from '@/lib/daily-orders'
 import { typeLabelAfterNoun } from '@/lib/constants'
 import { adminFetch } from '@/lib/admin-fetch'
@@ -93,6 +94,8 @@ export default function AdminOrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null)
   const [retryingUpscaleOrderId, setRetryingUpscaleOrderId] = useState<string | null>(null)
+  // TICKET-032 — ג׳וב זיפ אחד בעמוד בכל רגע, כמו downloadingKey
+  const [zipOrderId, setZipOrderId] = useState<string | null>(null)
   const [showManualForm, setShowManualForm] = useState(false)
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
 
@@ -840,6 +843,16 @@ export default function AdminOrdersPage() {
                           <Package className="w-5 h-5 ml-2" />
                           פרטי הזמנה
                         </h3>
+                        {/* TICKET-032 — כל קבצי הדפוס של ההזמנה בזיפ אחד, לחיצה אחת:
+                            רטריי הגדלה, המתנה שההגדלות ייגמרו, ואז הורדה ואריזה */}
+                        <OrderZipButton
+                          className="mb-4"
+                          order={order}
+                          active={zipOrderId === order.id}
+                          locked={zipOrderId !== null && zipOrderId !== order.id}
+                          onStart={() => setZipOrderId(order.id)}
+                          onEnd={() => setZipOrderId(null)}
+                        />
                         <div className="space-y-4">
                           {order.items.map((item, idx) => {
                             const fabricName = item.fabricType ? (fabricLabels[item.fabricType] ?? item.fabricType) : ''
